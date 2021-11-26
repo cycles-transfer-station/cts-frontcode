@@ -10,7 +10,7 @@ import 'state_bind.dart';
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {
     @override
-    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfTheBrowserUrlString(route.location);
+    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfABrowserUrlString(route.location);
     @override
     RouteInformation restoreRouteInformation(CustomUrl custom_url) => RouteInformation(location: custom_url.string);
 }
@@ -40,11 +40,11 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     Future<void> setNewRoutePath(CustomUrl custom_url) async {
         print('set new route path');
         // state.current_url = custom_url;
-        state.move_url_branch(custom_url); 
+        state.move_url(custom_url); 
         // does this re-build the state?
     }
 
-    CustomUrl get currentConfiguration {print('get currentconfiguration'); return state.url_branch_levels.last; }
+    CustomUrl get currentConfiguration {print('get currentconfiguration'); return state.current_url; }
 
     CustomState _getState() {
         return state;
