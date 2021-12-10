@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:tuple/tuple.dart';
+
 import 'pages.dart';
 
 //:variables of the url-path are with the syntax: <variablename> with this set by this postmaster: Levi.
@@ -8,6 +11,10 @@ final Map<String, Map> urlmap = {
     'void': {
         'path': '/void',
         'page': VoidPage.create,
+    },
+    'home': {
+        'path': '/',
+        'page': HomePage.create,
     },
     'welcome': {
         'path': '/welcome',
@@ -39,21 +46,21 @@ Branch? getbranch_ofthekey(String keyname, Map branches, [ List<String> current_
     }
 }
 
-Branch? getbranch_ofthemapkeyvalue(String valuemapkey, bool Function(dynamic valuemapkeyvalue) isvaluematch , Map branches, [ List<String> current_branch_level = const [] ]) {
+Branch? getbranch_ofthemapkeyvalue(String mapkey, bool Function(dynamic valuemapkeyvalue) isvaluematch, Map branches, [ List<String> current_branch_level = const [] ]) {
     for (MapEntry mapitem in branches.entries) {
         List<String> branch_level = current_branch_level + [ mapitem.key ];
-        if (mapitem.value.containsKey(valuemapkey) && isvaluematch(mapitem.value[valuemapkey])) {
+        if (mapitem.value.containsKey(mapkey) && isvaluematch(mapitem.value[mapkey])) {
             return Tuple2(branch_level, mapitem.value);
         }
         if (mapitem.value.containsKey('branches')) {
-            Branch? circles = getbranch_ofthemapkeyvalue(valuemapkey, isvaluematch, mapitem.value['branches'], branch_level);
+            Branch? circles = getbranch_ofthemapkeyvalue(mapkey, isvaluematch, mapitem.value['branches'], branch_level);
             if (circles != null) return circles;
         }
     }
 }    
     
 
-Map get_url_map(String urlname) => getbranch_ofthekey(urlname, urlmap).item2;
+Map get_url_map(String urlname) => getbranch_ofthekey(urlname, urlmap)!.item2;
 
 
 
@@ -65,23 +72,51 @@ class CustomUrl {
     late final String string;
     CustomUrl(this.name, {this.variables = const {}}) { // variables should contain each variable for the whole path
         String urlstring = get_url_map(this.name)['path'];
-        this.variables.forEach((key,value){
-            urlstring.replace('<'+key+'>', value); // replaceAll if url-variable is ever used more than once
-        })
+        this.variables.forEach((key,value) => urlstring.replaceAll('<'+key+'>', value));
         this.string = urlstring;
     }
 
     Page get_page() => get_url_map(this.name)['page'](key: ValueKey<String>(this.string));
 
     static CustomUrl outOfABrowserUrlString(String urlstring) {
-        CustomUrl? curl;
-        // if (urlstring!=null) {
-            
-
-
-
-        // }
-        
+        final Uri uriParseBrowserUrl = Uri.parse(urlstring);
+        Map<String, String> urlvariables = {}; 
+        Branch? url_branch = getbranch_ofthemapkeyvalue(
+            'path', 
+            (path) {
+                Uri uriParseCustomUrlPath = Uri.parse(path);
+                if (uriParseCustomUrlPath.pathSegments.length == uriParseBrowserUrl.pathSegments.length) {
+                    int samePathSegments = 0;
+                    Map<String,String> urlVariables = {};
+                    for (int i=0; i < uriParseCustomUrlPath.pathSegments.length; i++) {
+                        if (uriParseCustomUrlPath.pathSegments[i].startsWith('<')) { 
+                            // validate the urlvariable if want
+                            samePathSegments += 1;
+                            urlVariables[uriParseCustomUrlPath.pathSegments[i].replaceFirst('<', '').replaceFirst('>','')] 
+                                = uriParseBrowserUrl.pathSegments[i]; 
+                        } else if (uriParseCustomUrlPath.pathSegments[i] == uriParseBrowserUrl.pathSegments[i]) {
+                            samePathSegments += 1;  
+                        } else {
+                            break; 
+                        }
+                    }
+                    if (uriParseCustomUrlPath.pathSegments.length == samePathSegments) {
+                        urlvariables = urlVariables;
+                        return true;
+                    }
+                }
+                return false;
+            },
+            urlmap
+        );
+        if (url_branch != null) {
+            CustomUrl curl = CustomUrl(url_branch.item1.last, variables: urlvariables);
+            assert(curl.string == urlstring);
+            return curl;
+        } else {
+            return CustomUrl('void');
+        } 
     }
+
     
 }

@@ -1,9 +1,36 @@
+import 'package:flutter/material.dart';
+
+import 'urls.dart';
+import 'state.dart';
 import 'state_bind.dart';
 
 
+
+class VoidPage {
+    static create({LocalKey? key}) => MaterialPage(key: key, child: VoidPageWidget());
+}
+class VoidPageWidget extends StatelessWidget {
+    Widget build(BuildContext context) {
+        return Text('The page is not found');
+    }
+}
+
+
+
+
+class HomePage {
+    static create({LocalKey? key}) => MaterialPage(key: key, child: HomePageWidget());
+}
+class HomePageWidget extends StatelessWidget {
+    Widget build(BuildContext context) {
+        return Text('Home Page');
+    }
+}
+
+
 class WelcomePage extends Page {
-    WelcomePage({Key? key}) : super(key: key);
-    static WelcomePage create({Key? key}) => WelcomePage(key: key);
+    WelcomePage({LocalKey? key}) : super(key: key);
+    static WelcomePage create({LocalKey? key}) => WelcomePage(key: key);
 
     Route createRoute(BuildContext context) {
         return PageRouteBuilder(
@@ -25,11 +52,11 @@ class WelcomePageWidget extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
         return ElevatedButton(
-            child: Text('buy this wallet')
+            child: Text('buy this wallet'),
             onPressed: () {
-                CustomState state = MainStateBind<CustomState>.get_state(context);
-                state.move_url(CustomUrl(name: 'buy_wallet'));
-                MainStateBind<CustomState>.set_state(state, tifyListeners: true);
+                CustomState state = MainStateBind.get_state<CustomState>(context);
+                state.move_url(CustomUrl('buy_wallet'));
+                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
             }
         );
     }
@@ -38,8 +65,8 @@ class WelcomePageWidget extends StatelessWidget {
 
 
 class BuyWalletPage extends Page {
-    BuyWalletPage({Key? key}) : super(key: key);
-    static BuyWalletPage create({Key? key}) => BuyWalletPage(key: key);
+    BuyWalletPage({LocalKey? key}) : super(key: key);
+    static BuyWalletPage create({LocalKey? key}) => BuyWalletPage(key: key);
 
     Route createRoute(BuildContext context) {
         return PageRouteBuilder(
@@ -57,7 +84,7 @@ class BuyWalletPage extends Page {
 }
 class BuyWalletPageWidget extends StatefulWidget {
     BuyWalletPageWidget({Key? key}) : super(key: key);
-    State<StatefulWidget> createState => _BuyWalletPageWidgetState();
+    State<StatefulWidget> createState() => _BuyWalletPageWidgetState();
 }
 class _BuyWalletPageWidgetState extends State<StatefulWidget> {
 
@@ -65,7 +92,7 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
     @override
     Widget build(BuildContext context) {
         return ElevatedButton(
-            child: Text('buy wallet now')
+            child: Text('buy wallet now'),
             onPressed: () {
                 print('buying wallet ....');
             }

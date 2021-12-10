@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 class _MainStateBindScope<T> extends InheritedWidget {
     final _MainStateBindState<T> state_bind;
-    const _MainStateBindScope<T>({
+    const _MainStateBindScope({
         Key? key, 
         required this.state_bind,
         required Widget child 
@@ -20,7 +20,7 @@ class MainStateBind<T> extends StatefulWidget {
     final T Function() getState;
     final void Function(T new_state, {required bool tifyListeners}) changeState;
     Widget child;
-    MainStateBind<T>({
+    MainStateBind({
         Key? key,
         required this.getState,
         required this.changeState,

@@ -1,5 +1,5 @@
+import 'dart:html';
 import 'package:flutter/material.dart';
-import 'package:flutter_session/flutter_session.dart';
 
 import 'urls.dart';
 import 'state.dart';
@@ -10,7 +10,7 @@ import 'state_bind.dart';
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {
     @override
-    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfABrowserUrlString(route.location);
+    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfABrowserUrlString(route.location!);
     @override
     RouteInformation restoreRouteInformation(CustomUrl custom_url) => RouteInformation(location: custom_url.string);
 }
@@ -29,7 +29,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     }
 
     Future<void> loadfirststate() async {
-        Map? session_map = await FlutterSession().get('state');
+        Map? session_map = window.localStorage['state'];
         if (session_map!= null) {
             state.map = session_map;
         }
@@ -52,7 +52,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
     void _changeState(CustomState new_state, {required bool tifyListeners}) {
         state = new_state;
-        FlutterSession().set('state', state.map);
+        window.localStorage['state'] = state.map;
         if (tifyListeners==true) { notifyListeners(); }
     }
 
@@ -76,11 +76,11 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                             changeState: _changeState,
                             child: Navigator(
                                 key: navigatorKey,
-                                pages: state.url_branch_levels.map<Page>((CustomUrl url)=>url.get_page()),
+                                pages: state.url_branch_levels.map<Page>((CustomUrl url)=>url.get_page()).toList(),
                                 onPopPage: (route, sult) {
                                     if (route.didPop(sult)==false) { return false; }
                                     state.url_branch_levels.removeLast();
-                                    FlutterSession().set('state', state.map);
+                                    window.localStorage['state'] = state.map;
                                     // notifyListeners();
                                     return true; // see if this calls tifyListeners anyway
                                 }
@@ -89,7 +89,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                     }
                 }
             }
-        )
+        );
     }
 }
 

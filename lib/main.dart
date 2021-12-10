@@ -20,11 +20,11 @@ class _BaseState extends State<Base> {
         return SafeArea(
             minimum: EdgeInsets.symmetric(), 
             child: Material(
-                color:,
+                color: const Color(0x303747), 
                 child: MaterialApp.router(
                     title: 'FOR THE CYCLES-TRANSFER-STATION.',
                     routeInformationParser : _routeParser,
-                    routeDelegate          : _routeLegate
+                    routerDelegate         : _routeLegate
                 )
             )
         );
