@@ -70,13 +70,15 @@ class CustomUrl {
     final String name;
     final Map<String, String> variables;
     late final String string;
+    late Branch branch;
     CustomUrl(this.name, {this.variables = const {}}) { // variables should contain each variable for the whole path
-        String urlstring = get_url_map(this.name)['path'];
+        this.branch = getbranch_ofthekey(this.name, urlmap)!;
+        String urlstring = branch.item2['path'];
         this.variables.forEach((key,value) => urlstring.replaceAll('<'+key+'>', value));
         this.string = urlstring;
     }
 
-    Page get_page() => get_url_map(this.name)['page'](key: ValueKey<String>(this.string));
+    Page get_page() => branch.item2['page'](key: ValueKey<String>(this.string));
 
     static CustomUrl outOfABrowserUrlString(String urlstring) {
         final Uri uriParseBrowserUrl = Uri.parse(urlstring);

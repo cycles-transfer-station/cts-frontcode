@@ -29,18 +29,13 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     }
 
     Future<void> loadfirststate() async {
-        Map? session_map = window.localStorage['state'];
-        if (session_map!= null) {
-            state.map = session_map;
-        }
-        
+        await state.loadfirststate();
     }
 
     @override
     Future<void> setNewRoutePath(CustomUrl custom_url) async {
         print('set new route path');
-        // state.current_url = custom_url;
-        state.move_url(custom_url); 
+        state.current_url = custom_url;
         // does this re-build the state?
     }
 
@@ -52,7 +47,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
     void _changeState(CustomState new_state, {required bool tifyListeners}) {
         state = new_state;
-        window.localStorage['state'] = state.map;
+        state.save_in_localstorage();
         if (tifyListeners==true) { notifyListeners(); }
     }
 
@@ -76,13 +71,14 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                             changeState: _changeState,
                             child: Navigator(
                                 key: navigatorKey,
-                                pages: state.url_branch_levels.map<Page>((CustomUrl url)=>url.get_page()).toList(),
+                                pages: state.current_url.branch.item1.map<Page>((String branch_level) {
+                                    
+                                }).toList();   state.url_branch_levels.map<Page>((CustomUrl url)=>url.get_page()).toList(),
                                 onPopPage: (route, sult) {
                                     if (route.didPop(sult)==false) { return false; }
-                                    state.url_branch_levels.removeLast();
-                                    window.localStorage['state'] = state.map;
-                                    // notifyListeners();
-                                    return true; // see if this calls tifyListeners anyway
+                                    state.current_url = CustomUrl(state.current_url.branch.item1.reversed[1]);
+                                    _changeState(state, tifyListeners: true);
+                                    return true;
                                 }
                             )
                         );
