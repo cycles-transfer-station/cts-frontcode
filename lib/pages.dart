@@ -17,17 +17,6 @@ class VoidPageWidget extends StatelessWidget {
 
 
 
-
-class HomePage {
-    static create({LocalKey? key}) => MaterialPage(key: key, child: HomePageWidget());
-}
-class HomePageWidget extends StatelessWidget {
-    Widget build(BuildContext context) {
-        return Text('Home Page');
-    }
-}
-
-
 class WelcomePage extends Page {
     WelcomePage({LocalKey? key}) : super(key: key);
     static WelcomePage create({LocalKey? key}) => WelcomePage(key: key);
@@ -55,7 +44,7 @@ class WelcomePageWidget extends StatelessWidget {
             child: Text('buy this wallet'),
             onPressed: () {
                 CustomState state = MainStateBind.get_state<CustomState>(context);
-                state.move_url(CustomUrl('buy_wallet'));
+                state.current_url = CustomUrl('buy_wallet');
                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
             }
         );
@@ -91,11 +80,21 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
 
     @override
     Widget build(BuildContext context) {
-        return ElevatedButton(
-            child: Text('buy wallet now'),
-            onPressed: () {
-                print('buying wallet ....');
-            }
+        return Column(
+            children: [
+                ElevatedButton(
+                    child: Text('buy wallet now'),
+                    onPressed: () {
+                        print('buying wallet ....');
+                    }
+                ),
+                ElevatedButton(
+                    child: Text('back'),
+                    onPressed: () {
+                        Navigator.pop(context);
+                    }
+                ),
+            ]
         );
     }
 }

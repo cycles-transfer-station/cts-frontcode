@@ -1,6 +1,4 @@
-import 'dart:html';
 import 'package:flutter/material.dart';
-
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
@@ -24,12 +22,8 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     late Future<void> loadfirststatefuture;
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        state.addListener(notifyListeners); 
-        loadfirststatefuture = loadfirststate();   
-    }
-
-    Future<void> loadfirststate() async {
-        await state.loadfirststate();
+        // state.addListener(notifyListeners); 
+        loadfirststatefuture = state.loadfirststate();   
     }
 
     @override
@@ -65,15 +59,14 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                     if (snapshot.connectionState != ConnectionState.done) {
                         return Text('loading page');
                     } else {
+                        List<String> page_branches = state.current_url.name.split('__');
                         return MainStateBind<CustomState>(
                             key: ValueKey<String>('mainstatebind'),
                             getState: _getState,
                             changeState: _changeState,
                             child: Navigator(
                                 key: navigatorKey,
-                                pages: state.current_url.branch.item1.map<Page>((String branch_level) {
-                                    
-                                }).toList();   state.url_branch_levels.map<Page>((CustomUrl url)=>url.get_page()).toList(),
+                                pages: List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() ); // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
                                 onPopPage: (route, sult) {
                                     if (route.didPop(sult)==false) { return false; }
                                     state.current_url = CustomUrl(state.current_url.branch.item1.reversed[1]);
