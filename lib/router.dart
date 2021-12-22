@@ -66,10 +66,10 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                             changeState: _changeState,
                             child: Navigator(
                                 key: navigatorKey,
-                                pages: List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() ); // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
+                                pages: List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() ), // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
                                 onPopPage: (route, sult) {
                                     if (route.didPop(sult)==false) { return false; }
-                                    state.current_url = CustomUrl(state.current_url.branch.item1.reversed[1]);
+                                    state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
                                     _changeState(state, tifyListeners: true);
                                     return true;
                                 }

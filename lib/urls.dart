@@ -14,7 +14,7 @@ final Map<String, Map> urlmap = {
         'page': VoidPage.create,
     },
     'welcome': {
-        'path': '/welcome',
+        'path': '/',
         'page': WelcomePage.create,
     },
     'welcome__buy_wallet': {
@@ -31,12 +31,12 @@ class CustomUrl {
     late final String string;
 
     CustomUrl(this.name, {this.variables = const {}}) {             // variables should contain each variable for the whole path
-        String urlstring = urlmap[this.name]['path'];
+        String urlstring = urlmap[this.name]!['path']!;
         this.variables.forEach((key,value) => urlstring.replaceAll('<'+key+'>', value));
         this.string = urlstring;
     }
 
-    Page get_page() => urlmap[this.name]['page'](key: ValueKey<String>(this.string));
+    Page get_page() => urlmap[this.name]!['page']!(key: ValueKey<String>(this.string));
 
     static CustomUrl outOfABrowserUrlString(String urlstring) {
         final Uri uriParseBrowserUrl = Uri.parse(urlstring);

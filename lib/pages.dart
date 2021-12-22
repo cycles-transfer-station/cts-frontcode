@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:ic_tools/ic_tools.dart';
+import 'package:ic_tools/candid.dart' show 
+    c_backwards;
+
 
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
+
+
+final Canister cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai'));
+
 
 
 
@@ -44,7 +52,7 @@ class WelcomePageWidget extends StatelessWidget {
             child: Text('buy this wallet'),
             onPressed: () {
                 CustomState state = MainStateBind.get_state<CustomState>(context);
-                state.current_url = CustomUrl('buy_wallet');
+                state.current_url = CustomUrl('welcome__buy_wallet');
                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
             }
         );
@@ -84,8 +92,13 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
             children: [
                 ElevatedButton(
                     child: Text('buy wallet now'),
-                    onPressed: () {
+                    onPressed: () async {
                         print('buying wallet ....');
+                        print(c_backwards(await cts.call(
+                            calltype: 'call',
+                            method_name: 'see_caller',
+
+                        )));
                     }
                 ),
                 ElevatedButton(
