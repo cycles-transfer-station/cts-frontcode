@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/candid.dart' show c_backwards;
+import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/src/tools/cross_platform_tools/js/tools.dart';
 import './ii_jslib.dart';
@@ -63,8 +63,11 @@ class WelcomePageWidget extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
+        
+    
         return Column(
             children: [
+                Text('Caller: ${MainStateBind.get_state<CustomState>(context).user_principal}'),
                 ElevatedButton(
                     child: Text('buy this wallet'),
                     onPressed: () {
@@ -105,13 +108,6 @@ class WelcomePageWidget extends StatelessWidget {
                                             sessionPublicKey: legatee_caller.public_key_DER,
                                             //maxTimeToLive: BigInt.parse((1000000000*60*60).toString(), radix: 10)
                                         ),
-                                        /*
-                                        dartmapasajsstruct({
-                                            'kind': "authorize-client", 
-                                            'sessionPublicKey': legatee_caller.public_key_DER,
-                                            //'maxTimeToLive': BigInt.parse((1000000000*60*60).toString(), radix: 10)
-                                        }), 
-                                        */
                                         "https://identity.ic0.app"
                                     );
                                 }   
@@ -164,12 +160,19 @@ class WelcomePageWidget extends StatelessWidget {
                                     
                                     
                                     print('cts see_caller');
-                                    print(c_backwards(await cts.call(
+
+                                    Principal user_principal = (c_backwards(await cts.call(
                                         calltype: 'call',
                                         method_name: 'see_caller',
                                         caller: legatee_caller,
                                         legations: legations
-                                    )));
+                                    ))[0] as PrincipalReference).principal!;                         
+                                    print(user_principal);
+                                    
+                                    CustomState state = MainStateBind.get_state<CustomState>(context);
+                                    state.user_principal = user_principal;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
                                        
                                 }
                                 
@@ -219,7 +222,8 @@ class BuyWalletPageWidget extends StatefulWidget {
     State<StatefulWidget> createState() => _BuyWalletPageWidgetState();
 }
 class _BuyWalletPageWidgetState extends State<StatefulWidget> {
-
+    
+    String? caller_text;
 
     @override
     Widget build(BuildContext context) {
@@ -229,12 +233,9 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
                     child: Text('buy wallet now'),
                     onPressed: () async {
                         print('buying wallet ....');
-                        print(c_backwards(await cts.call(
-                            calltype: 'call',
-                            method_name: 'see_caller',
-                            caller: CallerEd25519.new_keys()
-
-                        )));
+                        
+                        
+                        
                     }
                 ),
                 ElevatedButton(
@@ -242,7 +243,7 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
                     onPressed: () {
                         Navigator.pop(context);
                     }
-                ),
+                )
             ]
         );
     }

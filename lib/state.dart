@@ -1,5 +1,8 @@
 import 'dart:html';
+
+import 'package:ic_tools/ic_tools.dart';
 import 'package:flutter/material.dart';
+
 import 'urls.dart';
 
 
@@ -8,7 +11,8 @@ import 'urls.dart';
 class CustomState { // with ChangeNotifier  // do i want change notifier here?
 
     CustomUrl current_url = CustomUrl('welcome');
-
+    
+    Principal? user_principal; 
 
 
 
@@ -16,7 +20,8 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
 
 
     Future<void> loadfirststate() async {
-        await Future.delayed(Duration(seconds: 5));
+        //await Future.delayed(Duration(seconds: 5));
+        
         
     }
 
