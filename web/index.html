@@ -35,7 +35,30 @@
   <script src="ic_tools_webfiles/unpkg_bignumber.js"></script>  
   <script src="ic_tools_webfiles/cbor-web.js"></script>  
   <script src="ic_tools_webfiles/rust_wasm_bls12381/rust_wasm_bls12381.js"></script>   
-
+  <script>
+    function bigintToString(bi) {
+        console.log(typeof(bi));
+        return bi.toString();
+    }
+    
+    var logBackup = console.log;
+    var logMessages = [];
+    
+    function start_logMessages() {
+        console.log = function() {
+            logMessages.push.apply(logMessages, arguments);
+            logBackup.apply(console, arguments);
+        };
+    }
+    
+    function get_last_logMessage_toString() {
+        console.log = logBackup; 
+        console.log(typeof(logMessages[logMessages.length-1]));
+        return logMessages[logMessages.length-1].toString();    
+    }
+    
+    
+  </script>
   
   <!-- This script installs service_worker.js to provide PWA functionality to
        application. For more information, see:

@@ -35,7 +35,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
 
-  ic_tools: 1.0.9
+  ic_tools: 
+    path: '/home/levi/Documents/code/ic_tools_dart'
+  
   tuple: ^2.0.0
 
 

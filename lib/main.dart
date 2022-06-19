@@ -18,7 +18,7 @@ class _BaseState extends State<Base> {
     @override
     Widget build(BuildContext context) {
         return MaterialApp.router(
-            title: 'FOR THE CYCLES-TRANSFER-STATION.',
+            title: 'CTS',
             routeInformationParser : _routeParser,
             routerDelegate         : _routeLegate
         );
