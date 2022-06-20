@@ -28,12 +28,12 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
     @override
     Future<void> setNewRoutePath(CustomUrl custom_url) async {
-        print('set new route path');
+        //print('set new route path');
         state.current_url = custom_url;
         // does this re-build the state?
     }
 
-    CustomUrl get currentConfiguration {print('get currentconfiguration'); return state.current_url; }
+    CustomUrl get currentConfiguration {/*print('get currentconfiguration'); */return state.current_url; }
 
     CustomState _getState() {
         return state;
@@ -54,7 +54,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             future: loadfirststatefuture,
             builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
                 if (snapshot.hasError) {
-                    return Text('something went wrong, try re-freshing the page');
+                    return Text('something went wrong, try re-freshing the page\nloadfirststatefuture Error: ${snapshot.error}');
                 } else {
                     if (snapshot.connectionState != ConnectionState.done) {
                         return Text('loading page');
