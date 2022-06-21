@@ -14,6 +14,7 @@ import './ii_jslib.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
+import './cts.dart';
 
 
 
@@ -22,9 +23,7 @@ import 'state_bind.dart';
 
 
 
-
-
-final Canister cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai'));
+// most state can be held in the MainState and can re-build with MainStateBind.set_state.tifyListeners so the page widgets can be StatelessWidget s
 
 
 
@@ -63,30 +62,17 @@ class WelcomePageWidget extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-    
-        Tuple3<Principal, LegateeCaller, List<Legation>>? ii_user = MainStateBind.get_state<CustomState>(context).ii_user;
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        Tuple3<Principal, LegateeCaller, List<Legation>>? ii_user = state.ii_user;
         Principal? ii_user_principal = ii_user != null ? ii_user.item1 : null;
         
-        return Scaffold(
-            appBar: AppBar(
-                title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
-            ),
-            body: Center(
-                child: Column(                  
-                    children: [
-                        Text('ii_user_principal: ${ii_user_principal}'),
-                        OutlinedButton(
-                            child: Text('buy this wallet'),
-                            style: ButtonStyle(
-                                foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-                            ),
-                            onPressed: () {
-                                CustomState state = MainStateBind.get_state<CustomState>(context);
-                                state.current_url = CustomUrl('welcome__buy_wallet');
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            }
-                        ),
-                        OutlinedButton(
+        List<Widget> column_children = [];
+        if (state.ii_user == null) {
+            column_children.add(
+                Padding(
+                    padding: EdgeInsets.all(17.0),
+                    child: Container(
+                        child: OutlinedButton(
                             child: Text('ii login'),
                             style: ButtonStyle(
                                 foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
@@ -158,14 +144,90 @@ class WelcomePageWidget extends StatelessWidget {
                                         if (message_event.data['kind'] == 'authorize-client-failure') {
                                             //
                                             print('authorize-client-failure:\n${message_event.data['text']}');
+                                            await showDialog(
+                                                context: context,
+                                                barrierDismissible: true,
+                                                builder: (BuildContext context) {
+                                                    return AlertDialog(
+                                                        title: Text('Internet Identity authorize-client-failure'),
+                                                        content: Text(message_event.data['text']),
+                                                        elevation: 25.0,
+                                                    );
+                                                }
+                                            );
                                         }
                                     }
                                 });
                                 
                                 identityWindow = window.open('https://identity.ic0.app/#authorize', 'identityWindow');  
                             }
-                        ),      
-                    ]
+                        )
+                    )
+                )
+            );
+        }
+        else /*if (state.ii_user != null)*/ {
+            column_children.add(
+                Padding(
+                    padding: EdgeInsets.all(17.0),
+                    child: Container(
+                        child: Text('Internet Identity User Principal: ${state.ii_user!.item1.text}')
+                    )
+                )
+            );
+            if (state.cts_user == null) {
+                column_children.add(
+                    Padding(
+                        padding: EdgeInsets.all(17.0),
+                        child: Container(
+                            child: Text('Before creating a CTS user, send 5Tcycles worth of ICP, ') 
+                        )
+                    )
+                );
+                column_children.add(
+                    Padding(
+                        padding: EdgeInsets.all(17.0),
+                        child: Container(
+                            child: OutlinedButton(
+                                child: Text('Create CTS User'),
+                                style: ButtonStyle(
+                                    foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+                                ),
+                                onPressed: () async {
+                                    
+                                } 
+                            )
+                        )
+                    )
+                );
+            }
+            
+        }
+        
+        
+        
+        
+        
+        return Scaffold(
+            appBar: AppBar(
+                title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
+            ),
+            body: Container(
+                child: Column(                  
+                    children: column_children 
+                        /*
+                        OutlinedButton(
+                            child: Text('buy this wallet'),
+                            style: ButtonStyle(
+                                foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+                            ),
+                            onPressed: () {
+                                CustomState state = MainStateBind.get_state<CustomState>(context);
+                                state.current_url = CustomUrl('welcome__buy_wallet');
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            }
+                        ),
+                        */
                 )
             ), 
         );

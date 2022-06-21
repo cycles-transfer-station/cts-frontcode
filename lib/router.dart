@@ -57,7 +57,12 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                     return Text('something went wrong, try re-freshing the page\nloadfirststatefuture Error: ${snapshot.error}');
                 } else {
                     if (snapshot.connectionState != ConnectionState.done) {
-                        return Text('loading page');
+                        return Scaffold(
+                            body: Padding(
+                                padding: EdgeInsets.all(17.0),
+                                child: Text('loading ...')
+                            )
+                        );
                     } else {
                         List<String> page_branches = state.current_url.name.split('__');
                         return MainStateBind<CustomState>(
