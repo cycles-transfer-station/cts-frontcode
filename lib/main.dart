@@ -20,7 +20,7 @@ class _BaseState extends State<Base> {
         return MaterialApp.router(
             routeInformationParser : _routeParser,
             routerDelegate         : _routeLegate,
-            title: ':C.-T.-S.',
+            title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(
                 brightness: Brightness.dark,
                 backgroundColor: const Color.fromRGBO(30, 30, 31, 0.9), //Colors.blueGrey

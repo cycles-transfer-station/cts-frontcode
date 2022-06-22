@@ -180,7 +180,7 @@ class WelcomePageWidget extends StatelessWidget {
                     Padding(
                         padding: EdgeInsets.all(17.0),
                         child: Container(
-                            child: Text('Before creating a CTS user, send 5Tcycles worth of ICP, ') 
+                            child: Text('coming soon ...')   //'Before creating a CTS user, send 5Tcycles worth of ICP, ') 
                         )
                     )
                 );
@@ -193,9 +193,7 @@ class WelcomePageWidget extends StatelessWidget {
                                 style: ButtonStyle(
                                     foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
                                 ),
-                                onPressed: () async {
-                                    
-                                } 
+                                onPressed: null //() async {} 
                             )
                         )
                     )
@@ -212,7 +210,7 @@ class WelcomePageWidget extends StatelessWidget {
             appBar: AppBar(
                 title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
             ),
-            body: Container(
+            body: Center(
                 child: Column(                  
                     children: column_children 
                         /*
