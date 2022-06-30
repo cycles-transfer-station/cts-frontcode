@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content=":CYCLES-TRANSFER-STATION.">
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,15 +26,21 @@
   <meta name="apple-mobile-web-app-title" content="cycles_transfer_station_frontcode">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <title>cycles_transfer_station_frontcode</title>
+  <title>CTS</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
-
+  <script>
+  
+    if (window.location.href.includes('.raw.ic0.app')) {
+        window.location.replace('https://thp4z-laaaa-aaaam-qaaea-cai.ic0.app'); // hostname + '.ic0.app'
+    }
+    
+  </script>
   <script src="ic_tools_webfiles/unpkg_bignumber.js"></script>  
   <script src="ic_tools_webfiles/cbor-web.js"></script>  
-  <script src="ic_tools_webfiles/rust_wasm_bls12381/rust_wasm_bls12381.js"></script>   
+  <script src="ic_tools_webfiles/rust_wasm_bls12381/rust_wasm_bls12381.js"></script>    
   <script>
     
     var logBackup = console.log;
@@ -56,9 +62,12 @@
     
   </script>
   
+  <script src="main.dart.js" type="application/javascript"></script>   
+
   <!-- This script installs service_worker.js to provide PWA functionality to
        application. For more information, see:
        https://developers.google.com/web/fundamentals/primers/service-workers -->
+  <!-- 
   <script>
     var serviceWorkerVersion = null;
     var scriptLoaded = false;
@@ -123,5 +132,6 @@
       loadMainDartJs();
     }
   </script>
+    --> 
 </body>
 </html>
