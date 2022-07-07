@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference;
 import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/common.dart' as common;
+
 import 'package:tuple/tuple.dart';
 
 import './ii_jslib.dart';
@@ -15,7 +17,7 @@ import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
 import './cts.dart';
-
+import 'widgets.dart';
 
 
 
@@ -26,6 +28,50 @@ import './cts.dart';
 // most state can be held in the MainState and can re-build with MainStateBind.set_state.tifyListeners so the page widgets can be StatelessWidget s
 
 
+
+
+
+class LoadingPage extends Page {
+    
+    LoadingPage({LocalKey? key}) : super(key: key);
+    
+    Route createRoute(BuildContext context) {
+        return PageRouteBuilder(
+            settings: this,
+            // do a cool fade in and fade out 
+            pageBuilder: (context, animation, animation2) {
+                //final tween = Tween(begin: 0.0, end: 1.0);
+                //final curveTween = CurveTween(curve: Curves.fastOutSlowIn);
+                //Animation<double> a = CurvedAnimation(
+                //    parent: a_c,
+                //    curve: Curves.fastOutSlowIn,
+                //  );
+                //return FadeTransition(
+                //);
+                /*
+                return AnimatedOpacity(
+                    duration: Duration(milliseconds: 734),
+                    curve: Curves.fastOutSlowIn,
+                    opacity: 1.0,    
+                    child: Loading()
+                );
+                */
+                final tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero);
+                final curveTween = CurveTween(curve: Curves.easeInOut);
+                return SlideTransition(
+                    position: animation.drive(curveTween).drive(tween),
+                    child: Loading()
+                );
+            }
+        );
+    }
+}
+
+
+
+
+
+// urls pages
 
 
 class VoidPage {
@@ -47,27 +93,58 @@ class WelcomePage extends Page {
         return PageRouteBuilder(
             settings: this,
             pageBuilder: (context, animation, animation2) {
-                final tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero);
+                /*final tween = Tween(begin: Offset(0.0, 1.0), end: Offset.zero);
                 final curveTween = CurveTween(curve: Curves.easeInOut);
-                return SlideTransition(
+                */return /*SlideTransition(
                     position: animation.drive(curveTween).drive(tween),
-                    child: WelcomePageWidget()
-                );
+                    child: */WelcomePageWidget()
+                /*)*/;
             }
         );
     }
 }
 class WelcomePageWidget extends StatelessWidget {
-    const WelcomePageWidget({Key? key}) : super(key: key);
+    WelcomePageWidget({Key? key}) : super(key: key);
 
     @override
     Widget build(BuildContext context) {
+    
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        Tuple3<Principal, LegateeCaller, List<Legation>>? ii_user = state.ii_user;
-        Principal? ii_user_principal = ii_user != null ? ii_user.item1 : null;
-        
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+    
+    
         List<Widget> column_children = [];
-        if (state.ii_user == null) {
+        column_children.add(
+            Padding(
+                padding: EdgeInsets.all(17.0),
+                child: Container(
+                    child: OutlinedButton(
+                        child: Text('test loading '),
+                        style: ButtonStyle(
+                            foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+                        ),
+                        onPressed: () async {
+                            /*test*/
+                            state.is_loading = true;
+                            state.loading_text = 'loading test';
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            
+                            await Future.delayed(Duration(seconds: 5));
+                            state.user = null;
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                 
+                            
+                        }
+                    )
+                )
+            )
+        );
+        
+        
+        
+        if (state.user == null) {
             column_children.add(
                 Padding(
                     padding: EdgeInsets.all(17.0),
@@ -79,14 +156,14 @@ class WelcomePageWidget extends StatelessWidget {
                             ),
                             onPressed: () async {
                                 // ii login
-                                // use local storage
-                                // 
-                                CallerEd25519 legatee_caller = CallerEd25519.new_keys();
-                                Map ii_map = {};
-                                ii_map['legatee_caller_public_key_hex'] = bytesasahexstring(legatee_caller.public_key); 
-                                ii_map['legatee_caller_private_key_hex'] = bytesasahexstring(legatee_caller.private_key); 
+                                //                              
                                 
-                                window.localStorage['ii_json'] = jsonEncode(ii_map); 
+                                CallerEd25519 legatee_caller = CallerEd25519.new_keys();
+                                Map user_map = {};
+                                user_map['legatee_caller_public_key'] = legatee_caller.public_key; 
+                                user_map['legatee_caller_private_key'] = legatee_caller.private_key; 
+                                
+                                window.localStorage['user_json'] = jsonEncode(user_map); 
                                 
                                 late WindowBase identityWindow;
                                 
@@ -113,16 +190,26 @@ class WelcomePageWidget extends StatelessWidget {
                                         
                                         if (message_event.data['kind'] == 'authorize-client-success') {
                                             identityWindow.close();
-                                            window.console.log(message_event.data);
-                                            Map ii_map = jsonDecode(window.localStorage['ii_json']!);
-                                            ii_map['original_user_public_key_DER'] = message_event.data['userPublicKey'].toList();
-                                            ii_map['legations'] = List<Map>.generate(message_event.data['delegations'].length, (int i) { // because it is a js thing we are convert to dart
+                                            //window.console.log(message_event.data);
+                                            Map user_map = jsonDecode(window.localStorage['user_json']!);
+                                            CallerEd25519 user_caller = CallerEd25519(
+                                                public_key: Uint8List.fromList(user_map['legatee_caller_public_key'].cast<int>()),
+                                                private_key: Uint8List.fromList(user_map['legatee_caller_private_key'].cast<int>())
+                                            );
+                                            List<Legation> user_legations = user_map['legations'] = List<Legation>.generate(message_event.data['delegations'].length, (int i) {
                                                 var sl = message_event.data['delegations'][i];
                                                 js.context.callMethod('start_logMessages');
                                                 window.console.log(sl['delegation']['expiration']);
                                                 String expiration_string = js.context.callMethod('get_last_logMessage_toString').replaceAll('n', ''); 
                                                 print(expiration_string);
-                                                
+                                                return Legation(
+                                                    legator_public_key_DER: i == 0 ? Uint8List.fromList(message_event.data['userPublicKey'].toList()) : Uint8List.fromList(message_event.data['delegations'][i-1]['delegation']['pubkey'].toList()), 
+                                                    legator_signature: Uint8List.fromList(sl['signature'].toList()),
+                                                    legatee_public_key_DER: Uint8List.fromList(sl['delegation']['pubkey'].toList()),
+                                                    expiration_unix_timestamp_nanoseconds: BigInt.parse(expiration_string), 
+                                                    target_canisters_ids: sl['delegation']['targets'] != null ? sl['delegation']['targets'].toList().map<Principal>((String ps)=>Principal(ps)).toList() : null 
+                                                );
+                                                /*
                                                 Map signed_legation = {
                                                     'delegation': {
                                                         'pubkey': sl['delegation']['pubkey'].toList(),
@@ -132,12 +219,37 @@ class WelcomePageWidget extends StatelessWidget {
                                                     'signature': sl['signature'].toList()
                                                 };
                                                 return signed_legation;
+                                                */
                                             });
-                                            window.localStorage['ii_json'] = jsonEncode(ii_map);
+
+                                            await Future.delayed(Duration(seconds: 5));
+                                            print('test if tifyListeners cuts the current code. before ');
+                                            //CustomState state = MainStateBind.get_state<CustomState>(context_r);
+                                            state.is_loading = true;
+                                            state.loading_text = 'loading user ...';
+                                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                            //MainStateBind.set_state<CustomState>(context_r, state, tifyListeners: true);
                                             
-                                            CustomState state = MainStateBind.get_state<CustomState>(context);
-                                            state.get_ii_user_of_the_localStorage();
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                            await Future.delayed(Duration(seconds: 5));
+                                            print('test if tifyListeners cuts the current code ');
+                                            
+                                            
+                                            Principal user_principal = user_legations.length >= 1 ? Principal.ofthePublicKeyDER(user_legations[0].legator_public_key_DER) : user_caller.principal;
+                                            
+                                            Uint8List user_subaccount_bytes = Uint8List.fromList([ ...utf8.encode('UT'), user_principal.bytes.length, ...user_principal.bytes ]);
+                                            while (user_subaccount_bytes.length < 32) { user_subaccount_bytes.add(0); }
+                                            
+                                            //state = MainStateBind.get_state<CustomState>(context);
+                                            state.user = User(
+                                                caller: user_caller,
+                                                legations: user_legations,
+                                                user_cycles_topup_cycles_transfer_memo_blob_bytes: user_subaccount_bytes,
+                                                user_icp_topup_icp_id: hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_subaccount_bytes))
+                                            );
+                                            state.save_state_in_the_localstorage();
+                                            state.is_loading = false;
+                                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                            //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                             
                                         }
                                         
@@ -158,6 +270,13 @@ class WelcomePageWidget extends StatelessWidget {
                                         }
                                     }
                                 });
+
+                                state = MainStateBind.get_state<CustomState>(context);
+                                state.is_loading = true;
+                                state.loading_text = 'ii login ...';
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                
+                                //await Future.delayed(Duration(seconds: 5));
                                 
                                 identityWindow = window.open('https://identity.ic0.app/#authorize', 'identityWindow');  
                             }
@@ -166,16 +285,16 @@ class WelcomePageWidget extends StatelessWidget {
                 )
             );
         }
-        else /*if (state.ii_user != null)*/ {
+        else /*if (state.user != null)*/ {
             column_children.add(
                 Padding(
                     padding: EdgeInsets.all(17.0),
                     child: Container(
-                        child: Text('Internet Identity User Principal: ${state.ii_user!.item1.text}')
+                        child: Text('user_id: ${state.user!.principal.text}')
                     )
                 )
             );
-            if (state.cts_user == null) {
+            if (state.user!.cts_user_canister == null) {
                 column_children.add(
                     Padding(
                         padding: EdgeInsets.all(17.0),
@@ -201,8 +320,6 @@ class WelcomePageWidget extends StatelessWidget {
             }
             
         }
-        
-        
         
         
         

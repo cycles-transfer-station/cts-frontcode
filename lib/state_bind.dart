@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 
 
 
-class _MainStateBindScope<T> extends InheritedWidget {
+class MainStateBindScope<T> extends InheritedWidget {
     final _MainStateBindState<T> state_bind;
-    const _MainStateBindScope({
+    const MainStateBindScope({
         Key? key, 
         required this.state_bind,
         required Widget child 
     }) : super(key: key, child: child);
 
     @override
-    bool updateShouldNotify(_MainStateBindScope oldwidget) => true;
+    bool updateShouldNotify(MainStateBindScope oldwidget) => true;
 }
 
 
@@ -32,13 +32,17 @@ class MainStateBind<T> extends StatefulWidget {
 
 
     static T get_state<T>(BuildContext context) {
-        final _MainStateBindScope<T> scope = context.dependOnInheritedWidgetOfExactType<_MainStateBindScope<T>>()!;
+        final MainStateBindScope<T> scope = context.dependOnInheritedWidgetOfExactType<MainStateBindScope<T>>()!;
         return scope.state_bind.getState();
     }
     static void set_state<T>(BuildContext context, T new_state, {required bool tifyListeners}) {
-        final _MainStateBindScope<T> scope = context.dependOnInheritedWidgetOfExactType<_MainStateBindScope<T>>()!;
+        final MainStateBindScope<T> scope = context.dependOnInheritedWidgetOfExactType<MainStateBindScope<T>>()!;
         return scope.state_bind.changeState(new_state, tifyListeners: tifyListeners);
     }
+    static MainStateBindScope<T> get_main_state_bind_scope<T>(BuildContext context) {
+        return context.dependOnInheritedWidgetOfExactType<MainStateBindScope<T>>()!;
+    }
+    
 }
 
 
@@ -47,7 +51,7 @@ class _MainStateBindState<T> extends State<MainStateBind<T>> {
     void changeState(T new_state, {required bool tifyListeners}) => widget.changeState(new_state, tifyListeners: tifyListeners);
     @override
     Widget build(BuildContext context) {
-        return _MainStateBindScope<T>(
+        return MainStateBindScope<T>(
             state_bind: this,
             child: widget.child
         );

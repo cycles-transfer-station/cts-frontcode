@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'dart:html';
+import 'dart:html' show window;
 import 'dart:convert';
 
 import 'package:ic_tools/ic_tools.dart';
@@ -9,11 +9,14 @@ import 'package:ic_tools/candid.dart' show
     c_forwards,
     CandidType,
     Nat,
+    Nat64,
     Vector,
+    Blob,
     Record,
     Variant,
     PrincipalReference
 ;
+import 'package:ic_tools/common.dart' as common;
 
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
@@ -26,13 +29,21 @@ import './cts.dart';
 
 
 
-class CustomState { // with ChangeNotifier  // do i want change notifier here?
+class CustomState { // with ChangeNotifier  // do i want change notifier here? false.
 
     CustomUrl current_url = CustomUrl('welcome');
     
-    User? user; 
+    String loading_text = 'loading ...';
+    bool is_loading = true; // state starts loading. in the load_first_state function, the state sets is_loading = false and then completes and the router calls tifyListeners 
     
-
+    
+    
+    User? user; 
+        
+    
+    
+    
+    
     
 
     Future<void> loadfirststate() async {
@@ -41,13 +52,13 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
         
         if (this.user != null) {
                 
-            if (this.user.cts_user_canister == null) {
+            if (this.user!.cts_user_canister == null) {
                 
-                await this.user.find_cts_user_canister();
+                await this.user!.find_cts_user_canister();
                 
                 // if UserNotFound
-                if (this.user.cts_user_canister == null) {
-                    await this.user.fresh_latest_known_user_icp_ledger_balance();
+                if (this.user!.cts_user_canister == null) {
+                    await this.user!.fresh_latest_known_user_icp_ledger_balance();
                 }
                 
             }
@@ -59,6 +70,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
         
         this.save_state_in_the_localstorage();
         
+        this.is_loading = false;
     }
 
     void save_state_in_the_localstorage() {
@@ -68,42 +80,42 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
             Map user_map = {};
             
             List<Map> legations_maps = [];
-            for (Legation legation in this.user.legations) {
+            for (Legation legation in this.user!.legations) {
                 legations_maps.add(
                     {
                         'delegation': {
                             'pubkey': legation.legatee_public_key_DER,
                             'expiration': legation.expiration_unix_timestamp_nanoseconds.toString(),
-                            if (legation.target_canisters_ids != null) 'targets': legation.target_canisters_ids.map<String>((Principal p)=>p.text).toList() 
+                            if (legation.target_canisters_ids != null) 'targets': legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() 
                         },
                         'signature': legation.legator_signature
                     }
                 );
             }
             user_map['legations'] = legations_maps; 
-            user_map['original_user_public_key_DER'] = this.user.legations.length >= 1 ? this.user.legations[0].legator_public_key_DER : this.user.caller.public_key_DER;
-            user_map['legatee_caller_public_key'] = this.user.caller.public_key;
-            user_map['legatee_caller_private_key'] = this.user.caller.private_key;
-            user_map['user_cycles_topup_cycles_transfer_memo_blob_bytes'] = this.user.user_cycles_topup_cycles_transfer_memo_blob_bytes;
-            user_map['user_icp_topup_icp_id'] = this.user.user_icp_topup_icp_id;            
+            user_map['original_user_public_key_DER'] = this.user!.legations.length >= 1 ? this.user!.legations[0].legator_public_key_DER : this.user!.caller.public_key_DER;
+            user_map['legatee_caller_public_key'] = this.user!.caller.public_key;
+            user_map['legatee_caller_private_key'] = this.user!.caller.private_key;
+            user_map['user_cycles_topup_cycles_transfer_memo_blob_bytes'] = this.user!.user_cycles_topup_cycles_transfer_memo_blob_bytes;
+            user_map['user_icp_topup_icp_id'] = this.user!.user_icp_topup_icp_id;            
             
-            if (this.user.cts_user_canister != null) {
+            if (this.user!.cts_user_canister != null) {
             
                 Map cts_user_canister_map = {
-                    'cts_user_canister_id_text': this.user.cts_user_canister.principal.text 
-                };                
+                    'cts_user_canister_id_text': this.user!.cts_user_canister!.principal.text 
+                };
                 
-                if (this.user.cts_user_canister.latest_known_cycles_balance != null) {
+                if (this.user!.cts_user_canister!.latest_known_cycles_balance != null) {
                     cts_user_canister_map['latest_known_cycles_balance'] = {
-                        'cycles_balance': this.user.cts_user_canister.latest_known_cycles_balance.cycles_balance.toString(),
-                        'timestamp_nanos': this.user.cts_user_canister.latest_known_cycles_balance.timestamp_nanos.toString()
+                        'cycles_balance': this.user!.cts_user_canister!.latest_known_cycles_balance!.cycles_balance.toString(),
+                        'timestamp_nanos': this.user!.cts_user_canister!.latest_known_cycles_balance!.timestamp_nanos.toString()
                     };
                 }
                 
-                if (this.user.cts_user_canister.latest_known_icp_balance) {
+                if (this.user!.cts_user_canister!.latest_known_icp_balance != null) {
                     cts_user_canister_map['latest_known_icp_balance'] = {
-                        'icp_balance_e8s': this.user.cts_user_canister.latest_known_icp_balance.icp_balance_e8s.toString(),
-                        'timestamp_nanos': this.user.cts_user_canister.latest_known_icp_balance.timestamp_nanos.toString()
+                        'icp_balance_e8s': this.user!.cts_user_canister!.latest_known_icp_balance!.icp_balance_e8s.toString(),
+                        'timestamp_nanos': this.user!.cts_user_canister!.latest_known_icp_balance!.timestamp_nanos.toString()
                     };
                 }
 
@@ -123,10 +135,10 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
             Map user_map = jsonDecode(window.localStorage['user_json']!);
             if (
                 user_map.containsKey('legations')
-                && user_map.containsKey('original_user_public_key_DER'),
+                && user_map.containsKey('original_user_public_key_DER')
                 && user_map.containsKey('legatee_caller_public_key')
                 && user_map.containsKey('legatee_caller_private_key')
-                && user_map.containsKey('user_cycles_topup_cycles_transfer_memo_blob_bytes'),
+                && user_map.containsKey('user_cycles_topup_cycles_transfer_memo_blob_bytes')
                 && user_map.containsKey('user_icp_topup_icp_id')
             ) {
                 List<Legation> legations = [];
@@ -163,7 +175,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
                     && user_map['cts_user_canister'].containsKey('cts_user_canister_id_text')
                 ) {
                     
-                    this.user.cts_user_canister = CTSUserCanister(Principal(user_map['cts_user_canister']['cts_user_canister_id_text'] as String), this.user);   
+                    this.user!.cts_user_canister = CTSUserCanister(Principal(user_map['cts_user_canister']['cts_user_canister_id_text'] as String), this.user!);   
                     
                     Map cts_user_canister_map = user_map['cts_user_canister'];
                     
@@ -172,7 +184,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
                         && cts_user_canister_map['latest_known_cycles_balance'].containsKey('cycles_balance') 
                         && cts_user_canister_map['latest_known_cycles_balance'].containsKey('timestamp_nanos')
                     ) { 
-                        this.user.cts_user_canister.latest_known_cycles_balance = LatestKnownCyclesBalance(
+                        this.user!.cts_user_canister!.latest_known_cycles_balance = LatestKnownCyclesBalance(
                             cycles_balance: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['cycles_balance']),
                             timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['timestamp_nanos'])
                         ); 
@@ -182,7 +194,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here?
                         && cts_user_canister_map['latest_known_icp_balance'].containsKey('icp_balance_e8s') 
                         && cts_user_canister_map['latest_known_icp_balance'].containsKey('timestamp_nanos')
                     ) { 
-                        this.user.cts_user_canister.latest_known_icp_balance = LatestKnownIcpBalance(
+                        this.user!.cts_user_canister!.latest_known_icp_balance = LatestKnownIcpBalance(
                             icp_balance_e8s: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['icp_balance_e8s']),
                             timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['timestamp_nanos'])
                         ); 
@@ -230,7 +242,7 @@ class LatestKnownIcpBalance {
 
 
 class User {
-    Caller caller;
+    CallerEd25519 caller;
     List<Legation> legations;
     
     Principal get principal => legations.length >= 1 ? Principal.ofthePublicKeyDER(legations[0].legator_public_key_DER) : caller.principal; 
@@ -259,7 +271,7 @@ class User {
                 calltype: CallType.call,
                 method_name: 'find_user_canister',
                 put_bytes: c_forwards([]),
-                caller: this.legatee_caller,
+                caller: this.caller,
                 legations: this.legations,
             ));
         } catch(e) {
@@ -324,7 +336,7 @@ class User {
     Future<void> fresh_latest_known_user_icp_ledger_balance() async {
         late Nat64 icp_balance_e8s_nat64;
         try {
-            icp_balance_e8s_nat64 = (c_backwards(await ledger.call(
+            icp_balance_e8s_nat64 = (c_backwards(await common.ledger.call(
                 calltype: CallType.call,
                 method_name: 'account_balance',
                 put_bytes: c_forwards([
@@ -339,7 +351,7 @@ class User {
         }
         
         this.latest_known_user_icp_ledger_balance = LatestKnownIcpBalance(
-            icp_balance_e8s: icp_balance_e8s_nat64.value is BigInt ? icp_balance_e8s_nat64.value : BigInt.from(icp_balance_e8s_nat64.value);
+            icp_balance_e8s: icp_balance_e8s_nat64.value is BigInt ? icp_balance_e8s_nat64.value : BigInt.from(icp_balance_e8s_nat64.value),
             timestamp_nanos: get_current_time_nanoseconds() //  of the ic-sponse-certificate
         );
     
@@ -408,23 +420,24 @@ class CTSUserCanister extends Canister {
     LatestKnownCyclesBalance? latest_known_cycles_balance;
     LatestKnownIcpBalance? latest_known_icp_balance;
 
-    CTSUserCanister({
-        required Principal user_canister_id,
-        required User user,
-        this.latest_known_cycles_balance,
-        this.latest_known_icp_balance,
+    CTSUserCanister(
+        Principal user_canister_id,
+        User user,
+        {
+            this.latest_known_cycles_balance,
+            this.latest_known_icp_balance,
     }) : super(user_canister_id) {
         
         user_call_f = ({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 5)}) {
-            return super.call({calltype: calltype, method_name: method_name, put_bytes: put_bytes, caller: user.caller, legations: user.legations, timeout_duration: timeout_duration});
-        }
+            return super.call(calltype: calltype, method_name: method_name, put_bytes: put_bytes, caller: user.caller, legations: user.legations, timeout_duration: timeout_duration);
+        };
     
-    };
+    }
     
-    late Future<Uint8List> Function({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 5)}) user_call_f;
+    late Future<Uint8List> Function({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration}) user_call_f;
     
     Future<Uint8List> user_call({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 5)}) {
-        return user_call_f({calltype: calltype, method_name: method_name, put_bytes: put_bytes, timeout_duration: timeout_duration});
+        return user_call_f(calltype: calltype, method_name: method_name, put_bytes: put_bytes, timeout_duration: timeout_duration);
     }
     
     
@@ -440,7 +453,7 @@ class CTSUserCanister extends Canister {
             BigInt user_cycles_balance = user_cycles_balance_dyn is BigInt ? user_cycles_balance_dyn : BigInt.from(user_cycles_balance_dyn);
             this.latest_known_cycles_balance = LatestKnownCyclesBalance(
                 cycles_balance: user_cycles_balance,
-                timestamp_nanos: get_current_time_nanoseconds(); // take of the ic-sponse-certificate [?]
+                timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
             );
         } catch(e) {
             window.alert('see user cycles balance call error:\n${e.toString()}');
@@ -460,11 +473,11 @@ class CTSUserCanister extends Canister {
                 dynamic user_icp_balance_e8s_dyn = (icp_tokens['e8s'] as Nat64).value;
                 BigInt user_icp_balance_e8s = user_icp_balance_e8s_dyn is BigInt ? user_icp_balance_e8s_dyn : BigInt.from(user_icp_balance_e8s_dyn);
                 this.latest_known_icp_balance = LatestKnownIcpBalance(
-                    icp_balance: user_icp_balance_e8s,
-                    timestamp_nanos: get_current_time_nanoseconds(); // take of the ic-sponse-certificate [?]
+                    icp_balance_e8s: user_icp_balance_e8s,
+                    timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
                 );
             } 
-            else if user_icp_balance_call_sponse.containsKey('Err') {
+            else if (user_icp_balance_call_sponse.containsKey('Err')) {
                 window.alert('see user icp balance error:\n${user_icp_balance_call_sponse['Err']}');
             }
             else {

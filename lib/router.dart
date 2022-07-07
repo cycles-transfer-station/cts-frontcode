@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
-
-
+import 'widgets.dart';
+import 'pages.dart';
 
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {
@@ -19,11 +19,11 @@ class CustomRouteParser extends RouteInformationParser<CustomUrl> {
 class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, PopNavigatorRouterDelegateMixin<CustomUrl> { // what is this popnavigatorrouterdelegatemixin?
     final GlobalKey<NavigatorState> navigatorKey;
     CustomState state = CustomState();
-    late Future<void> loadfirststatefuture;
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        // state.addListener(notifyListeners); 
-        loadfirststatefuture = state.loadfirststate();   
+        state.loadfirststate().then((_){
+            notifyListeners();
+        });
     }
 
     @override
@@ -41,48 +41,43 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
     void _changeState(CustomState new_state, {required bool tifyListeners}) {
         state = new_state;
-        state.save_in_localstorage();
         if (tifyListeners==true) { notifyListeners(); }
     }
 
 
     @override
     Widget build(BuildContext context) {
-
-        return FutureBuilder<void>(
-            key: ValueKey<String>('loadfirststatefuturebuilder'),
-            future: loadfirststatefuture,
-            builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-                if (snapshot.hasError) {
-                    return Text('something went wrong, try re-freshing the page\nloadfirststatefuture Error: ${snapshot.error}');
-                } else {
-                    if (snapshot.connectionState != ConnectionState.done) {
-                        return Scaffold(
-                            body: Padding(
-                                padding: EdgeInsets.all(17.0),
-                                child: Text('loading ...')
-                            )
-                        );
-                    } else {
-                        List<String> page_branches = state.current_url.name.split('__');
-                        return MainStateBind<CustomState>(
-                            key: ValueKey<String>('mainstatebind'),
-                            getState: _getState,
-                            changeState: _changeState,
-                            child: Navigator(
-                                key: navigatorKey,
-                                pages: List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() ), // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
-                                onPopPage: (route, sult) {
-                                    if (route.didPop(sult)==false) { return false; }
-                                    state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
-                                    _changeState(state, tifyListeners: true);
-                                    return true;
-                                }
-                            )
-                        );
-                    }
-                }
-            }
+    
+        List<String> page_branches = state.current_url.name.split('__');
+        
+        // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
+        List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() );
+    
+        late bool Function(Route route, dynamic sult) onPopPage; 
+        
+        if (state.is_loading) {
+            navigator_pages.add(LoadingPage());
+            onPopPage = (r,s)=>false;
+        } else {
+            onPopPage = (route, sult) {
+                if (route.didPop(sult)==false) { return false; }
+                state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
+                //_changeState(state, tifyListeners: true);
+                return true;
+            };
+            
+        }
+        
+        
+        return MainStateBind<CustomState>(
+            key: ValueKey<String>('mainstatebind'),
+            getState: _getState,
+            changeState: _changeState,
+            child: Navigator(
+                key: navigatorKey,
+                pages: navigator_pages,
+                onPopPage: onPopPage
+            )
         );
     }
 }
