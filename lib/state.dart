@@ -17,6 +17,8 @@ import 'package:ic_tools/candid.dart' show
     PrincipalReference
 ;
 import 'package:ic_tools/common.dart' as common;
+import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
+
 
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
@@ -40,6 +42,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     User? user; 
         
+    LatestKnownXDRICPRate? latest_known_xdr_icp_rate;
     
     
     
@@ -47,6 +50,27 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
 
     Future<void> loadfirststate() async {
+    
+        /*TEST*/
+            
+        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
+        
+        print(c_backwards(await cts.call(
+            calltype: CallType.call,
+            method_name: 'see_caller',
+            caller: test_caller
+        )));
+        
+        Uint8List test_message = Uint8List.fromList([1,2,3]);
+        print(await SubtleCryptoECDSAP256Caller.verify(
+            message: test_message,
+            signature: await test_caller.private_key_authorize_function(test_message),
+            public_key_DER: test_caller.public_key_DER
+        ));
+        
+        // ------
+        
+        
         
         this.get_state_of_the_localstorage();
         
@@ -67,11 +91,19 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         }
         
         
+        await this.fresh_latest_known_xdr_icp_rate();
+        
         
         this.save_state_in_the_localstorage();
         
         this.is_loading = false;
     }
+
+
+    Future<void> fresh_latest_known_xdr_icp_rate() async {
+        // call the cmc
+    }
+
 
     void save_state_in_the_localstorage() {
         // user
@@ -233,8 +265,23 @@ class LatestKnownIcpBalance {
     BigInt icp_balance_e8s;
     BigInt timestamp_nanos;
     LatestKnownIcpBalance({required this.icp_balance_e8s, required this.timestamp_nanos});
+    
+    String icp_balance_string() {
+        String s = this.icp_balance_e8s.toRadixString(10);
+        while (s.length < 9) { s = '0$s'; }
+        int split_i = s.length - 8;
+        s = '${s.substring(0, split_i)}.${s.substring(split_i)}';
+        while (s[s.length - 1] == '0' && s.length > 3/*minimum '0.0'*/) { s = s.substring(0, s.length - 1); }
+        return s;   
+    }
 }
 
+
+class LatestKnownXDRICPRate {
+    BigInt xdr_permyriad_per_icp;
+    BigInt timestamp_nanos;
+    LatestKnownXDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_nanos});
+}
 
 
 
@@ -251,6 +298,7 @@ class User {
     Uint8List user_icp_topup_icp_id;
     
     CTSUserCanister? cts_user_canister;
+    
     LatestKnownIcpBalance? latest_known_user_icp_ledger_balance;
     
     User({
@@ -262,6 +310,15 @@ class User {
         this.latest_known_user_icp_ledger_balance,
     });
 
+    
+    static Uint8List get_user_subaccount_bytes(Principal user_principal) { 
+        Uint8List user_subaccount_bytes = Uint8List.fromList([ ...utf8.encode('UT'), user_principal.bytes.length, ...user_principal.bytes ]);
+        while (user_subaccount_bytes.length < 32) { user_subaccount_bytes.add(0); }
+        if (user_subaccount_bytes.length != 32) { throw Exception('wrong user subaccount length'); }
+        return user_subaccount_bytes;
+    }
+    
+    
     
     Future<void> find_cts_user_canister() async {
 
@@ -405,6 +462,9 @@ class User {
             window.alert('unknown new_user_sponse: ${new_user_sponse}');
         }
     }
+
+
+
 
 
 

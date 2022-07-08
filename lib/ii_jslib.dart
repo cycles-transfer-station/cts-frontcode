@@ -2,7 +2,7 @@
 library ii_jslib;
 
 import 'dart:typed_data';
-import 'dart:js';
+//import 'dart:js';
 import 'package:js/js.dart';
 //import 'package:js/js_util.dart';
 
@@ -22,12 +22,6 @@ class InternetIdentityAuthorize {
         int maxTimeToLive
     });
 }
-
-
-
-
-
-
 
 
 

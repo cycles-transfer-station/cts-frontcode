@@ -24,3 +24,32 @@ class Loading extends StatelessWidget {
 }
 
     
+
+    
+
+class OutlineButton extends StatelessWidget {
+    Function()? on_press_complete;
+    String button_text;
+    
+    OutlineButton({required this.button_text, required this.on_press_complete}) : super(key: ValueKey(button_text));
+    
+    
+    Widget build(BuildContext context) {    
+        
+        return Padding(
+            padding: EdgeInsets.all(17.0),
+            child: Container(
+                child: OutlinedButton(
+                    child: Text(this.button_text),
+                    style: ButtonStyle(
+                        foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+                    ),
+                    onPressed: on_press_complete
+                )
+            )
+        );
+    
+    }
+    
+    
+}
