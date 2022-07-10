@@ -9,6 +9,7 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' as common;
+import 'package:ic_tools/common_web.dart';
 
 import 'package:tuple/tuple.dart';
 
@@ -115,12 +116,9 @@ class WelcomePageWidget extends StatelessWidget {
                             public_key: Uint8List.fromList([250,16,64,7,35,238,104,233,191,156,14,131,25,180,140,149,150,121,196,140,182,57,254,239,218,137,24,25,234,238,215,92]),
                             private_key: Uint8List.fromList([120,47,130,3,239,149,252,232,58,208,103,95,175,172,68,18,37,40,191,193,201,190,159,142,27,192,137,3,34,176,2,146])
                         );
-                        Uint8List user_subaccount_bytes = User.get_user_subaccount_bytes(user_caller.principal);
                         state.user = User(
                             caller: user_caller,
                             legations: [],
-                            user_cycles_topup_cycles_transfer_memo_blob_bytes: user_subaccount_bytes,
-                            user_icp_topup_icp_id: hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_subaccount_bytes))
                         );
                         state.save_state_in_the_localstorage();
                         
@@ -194,30 +192,22 @@ class WelcomePageWidget extends StatelessWidget {
                                         );
                                     });
 
-                                    await Future.delayed(Duration(seconds: 5));
-                                    print('test if tifyListeners cuts the current code. before. no it doesnt cut it but it does build the ui widgets so the old context is invalid. make sure to hold a ference for the mainstatebindscope if want change the state and tifyListeners when the context in void-valid ');
+                                    //await Future.delayed(Duration(seconds: 5));
+                                    //print('test if tifyListeners cuts the current code. before. no it doesnt cut it but it does build the ui widgets so the old context is invalid. make sure to hold a ference for the mainstatebindscope if want change the state and tifyListeners when the context in void-valid ');
                                     //CustomState state = MainStateBind.get_state<CustomState>(context_r);
+                                    
                                     state.is_loading = true;
                                     state.loading_text = 'loading user ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
                                     //MainStateBind.set_state<CustomState>(context_r, state, tifyListeners: true);
                                     
-                                    await Future.delayed(Duration(seconds: 5));
+                                    //await Future.delayed(Duration(seconds: 5));
                                     print('test if tifyListeners cuts the current code ');
                                     
-                                    
-                                    Principal user_principal = user_legations.length >= 1 ? Principal.ofthePublicKeyDER(user_legations[0].legator_public_key_DER) : user_caller.principal;
-                                    
-                                    
-                                    Uint8List user_subaccount_bytes = User.get_user_subaccount_bytes(user_principal); 
-                                    
-                                    //state = MainStateBind.get_state<CustomState>(context);
                                     state.user = User(
                                         caller: legatee_caller,
                                         legations: user_legations,
-                                        user_cycles_topup_cycles_transfer_memo_blob_bytes: user_subaccount_bytes,
-                                        user_icp_topup_icp_id: hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_subaccount_bytes))
-                                    
                                     );
                                     state.save_state_in_the_localstorage();
                                     
@@ -258,16 +248,19 @@ class WelcomePageWidget extends StatelessWidget {
                     }  
                 ))
             );
-        }
+        } 
+        
         else /*if (state.user != null)*/ {
+            
             column_children.add(
                 Padding(
                     padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 34.0), //EdgeInsets.all(17.0),
                     child: Container(
-                        child: Text('user_id: ${state.user!.principal.text}')
+                        child: SelectableText('user id: ${state.user!.principal.text}')
                     )
                 )
             );
+            
             if (state.user!.cts_user_canister == null) {
                 
                 column_children.add(
@@ -307,6 +300,12 @@ class WelcomePageWidget extends StatelessWidget {
                         on_press_complete: null 
                     ))
                 );
+            }
+            
+            else /*if (state.user!.cts_user_canister != null) */{
+            
+            
+            
             }
             
         }

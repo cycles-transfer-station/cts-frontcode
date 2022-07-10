@@ -1,6 +1,10 @@
 import 'dart:typed_data';
-import 'dart:html' show window;
 import 'dart:convert';
+import 'dart:html' show window, CryptoKey, Event;
+import 'dart:indexed_db';
+import 'package:js/js.dart';
+import 'package:js/js_util.dart';
+
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
@@ -52,7 +56,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     Future<void> loadfirststate() async {
     
         /*TEST*/
-            
+        /*
         SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
         
         print(c_backwards(await cts.call(
@@ -67,9 +71,71 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             signature: await test_caller.private_key_authorize_function(test_message),
             public_key_DER: test_caller.public_key_DER
         ));
+        */
         
-        // ------
         
+        if (IndexDB.is_support_here() != true) {
+            window.alert('indexdb not supported');
+        }
+        
+        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
+        print(test_caller);
+        
+        IndexDB idb = await IndexDB.open('cts_user', ['cks']);
+
+        print(idb.object_store_names());
+
+        if (await idb.add_object(
+            object_store_name: 'cks', 
+            key: 'pubkey', 
+            value: test_caller.public_key
+        ) == false) {
+            await idb.put_object(
+                object_store_name: 'cks', 
+                key: 'pubkey', 
+                value: test_caller.public_key
+            );  
+        }
+        if (await idb.add_object(
+            object_store_name: 'cks', 
+            key: 'skey', 
+            value: test_caller.private_key
+        ) == false) {
+            await idb.put_object(
+                object_store_name: 'cks', 
+                key: 'skey', 
+                value: test_caller.private_key
+            );   
+        }
+        
+
+        
+        
+        CryptoKey private_key = (await idb.get_object(
+            object_store_name: 'cks', 
+            key: 'skey'
+        ))! as CryptoKey;
+        CryptoKey public_key = (await idb.get_object(
+            object_store_name: 'cks', 
+            key: 'pubkey'
+        ))! as CryptoKey;
+        Uint8List public_key_DER = (await promiseToFuture(callMethod(window.crypto!.subtle!, 'exportKey', ['spki', public_key]))).asUint8List();
+        
+        test_caller = SubtleCryptoECDSAP256Caller(
+            public_key_DER: public_key_DER, 
+            private_key: private_key, 
+            public_key: public_key
+        );
+        
+        print(test_caller);        
+        
+        
+        // --------------
+        
+        
+        if (IndexDB.is_support_here() != true) {
+            window.alert('indexdb not supported');
+        }
         
         
         this.get_state_of_the_localstorage();
@@ -83,6 +149,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                 // if UserNotFound
                 if (this.user!.cts_user_canister == null) {
                     await this.user!.fresh_latest_known_user_icp_ledger_balance();
+                    await this.fresh_latest_known_xdr_icp_rate();
                 }
                 
             }
@@ -91,7 +158,6 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         }
         
         
-        await this.fresh_latest_known_xdr_icp_rate();
         
         
         this.save_state_in_the_localstorage();
@@ -111,25 +177,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             
             Map user_map = {};
             
-            List<Map> legations_maps = [];
-            for (Legation legation in this.user!.legations) {
-                legations_maps.add(
-                    {
-                        'delegation': {
-                            'pubkey': legation.legatee_public_key_DER,
-                            'expiration': legation.expiration_unix_timestamp_nanoseconds.toString(),
-                            if (legation.target_canisters_ids != null) 'targets': legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() 
-                        },
-                        'signature': legation.legator_signature
-                    }
-                );
-            }
-            user_map['legations'] = legations_maps; 
-            user_map['original_user_public_key_DER'] = this.user!.legations.length >= 1 ? this.user!.legations[0].legator_public_key_DER : this.user!.caller.public_key_DER;
-            user_map['legatee_caller_public_key'] = this.user!.caller.public_key;
-            user_map['legatee_caller_private_key'] = this.user!.caller.private_key;
-            user_map['user_cycles_topup_cycles_transfer_memo_blob_bytes'] = this.user!.user_cycles_topup_cycles_transfer_memo_blob_bytes;
-            user_map['user_icp_topup_icp_id'] = this.user!.user_icp_topup_icp_id;            
+            user_map['original_user_public_key_DER'] = this.user!.public_key_DER;
             
             if (this.user!.cts_user_canister != null) {
             
@@ -163,75 +211,45 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     void get_state_of_the_localstorage() {
         // user
-        if (window.localStorage.containsKey('user_json')) {
+        
+        if (this.user != null && window.localStorage.containsKey('user_json')) {
             Map user_map = jsonDecode(window.localStorage['user_json']!);
-            if (
-                user_map.containsKey('legations')
-                && user_map.containsKey('original_user_public_key_DER')
-                && user_map.containsKey('legatee_caller_public_key')
-                && user_map.containsKey('legatee_caller_private_key')
-                && user_map.containsKey('user_cycles_topup_cycles_transfer_memo_blob_bytes')
-                && user_map.containsKey('user_icp_topup_icp_id')
-            ) {
-                List<Legation> legations = [];
-                for (int i = 0; i < user_map['legations'].length; i++) {
-                    var l = user_map['legations'][i];
-                    BigInt expiration_unix_timestamp_nanoseconds = BigInt.parse(l['delegation']['expiration'], radix: 10);
-                    if ( expiration_unix_timestamp_nanoseconds - get_current_time_nanoseconds() < BigInt.from(1000000000*60*5) ) {
-                        return;
-                    }
-                    legations.add(
-                        Legation(
-                            legatee_public_key_DER: Uint8List.fromList(l['delegation']['pubkey'].cast<int>()),
-                            expiration_unix_timestamp_nanoseconds: expiration_unix_timestamp_nanoseconds, 
-                            target_canisters_ids: l['delegation'].containsKey('targets') ? (l['delegation']['targets'] as List<String>).map<Principal>((String pstring)=>Principal(pstring)).toList() : null, 
-                            legator_public_key_DER: i==0 ? Uint8List.fromList(user_map['original_user_public_key_DER'].cast<int>()) : Uint8List.fromList(user_map['legations'][i-1]['delegation']['pubkey'].cast<int>()), 
-                            legator_signature: Uint8List.fromList(l['signature'].cast<int>())
-                        )
-                    );  
-                }
-
-                this.user = User(
-                    caller: CallerEd25519(
-                        public_key: Uint8List.fromList(user_map['legatee_caller_public_key'].cast<int>()),
-                        private_key: Uint8List.fromList(user_map['legatee_caller_private_key'].cast<int>())
-                    ), 
-                    legations: legations,
-                    user_cycles_topup_cycles_transfer_memo_blob_bytes: Uint8List.fromList(user_map['user_cycles_topup_cycles_transfer_memo_blob_bytes'].cast<int>()),
-                    user_icp_topup_icp_id: Uint8List.fromList(user_map['user_icp_topup_icp_id'].cast<int>()),
-                );
+            if (user_map.containsKey('original_user_public_key_DER')) {
+                Uint8List original_user_public_key_DER = Uint8List.fromList(user_map['original_user_public_key_DER'].cast<int>());
                 
-                
-                if (
-                    user_map.containsKey('cts_user_canister')
-                    && user_map['cts_user_canister'].containsKey('cts_user_canister_id_text')
-                ) {
-                    
-                    this.user!.cts_user_canister = CTSUserCanister(Principal(user_map['cts_user_canister']['cts_user_canister_id_text'] as String), this.user!);   
-                    
-                    Map cts_user_canister_map = user_map['cts_user_canister'];
+                if (original_user_public_key_DER == this.user!.public_key_DER) {
                     
                     if (
-                        cts_user_canister_map.containsKey('latest_known_cycles_balance') 
-                        && cts_user_canister_map['latest_known_cycles_balance'].containsKey('cycles_balance') 
-                        && cts_user_canister_map['latest_known_cycles_balance'].containsKey('timestamp_nanos')
-                    ) { 
-                        this.user!.cts_user_canister!.latest_known_cycles_balance = LatestKnownCyclesBalance(
-                            cycles_balance: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['cycles_balance']),
-                            timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['timestamp_nanos'])
-                        ); 
-                    }
-                    if (
-                        cts_user_canister_map.containsKey('latest_known_icp_balance') 
-                        && cts_user_canister_map['latest_known_icp_balance'].containsKey('icp_balance_e8s') 
-                        && cts_user_canister_map['latest_known_icp_balance'].containsKey('timestamp_nanos')
-                    ) { 
-                        this.user!.cts_user_canister!.latest_known_icp_balance = LatestKnownIcpBalance(
-                            icp_balance_e8s: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['icp_balance_e8s']),
-                            timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['timestamp_nanos'])
-                        ); 
-                    }
+                        user_map.containsKey('cts_user_canister')
+                        && user_map['cts_user_canister'].containsKey('cts_user_canister_id_text')
+                    ) {
                         
+                        Map cts_user_canister_map = user_map['cts_user_canister'];
+                        this.user!.cts_user_canister = CTSUserCanister(Principal(cts_user_canister_map['cts_user_canister_id_text'] as String), this.user!);   
+                        
+                        
+                        if (
+                            cts_user_canister_map.containsKey('latest_known_cycles_balance') 
+                            && cts_user_canister_map['latest_known_cycles_balance'].containsKey('cycles_balance') 
+                            && cts_user_canister_map['latest_known_cycles_balance'].containsKey('timestamp_nanos')
+                        ) { 
+                            this.user!.cts_user_canister!.latest_known_cycles_balance = LatestKnownCyclesBalance(
+                                cycles_balance: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['cycles_balance']),
+                                timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['timestamp_nanos'])
+                            ); 
+                        }
+                        if (
+                            cts_user_canister_map.containsKey('latest_known_icp_balance') 
+                            && cts_user_canister_map['latest_known_icp_balance'].containsKey('icp_balance_e8s') 
+                            && cts_user_canister_map['latest_known_icp_balance'].containsKey('timestamp_nanos')
+                        ) { 
+                            this.user!.cts_user_canister!.latest_known_icp_balance = LatestKnownIcpBalance(
+                                icp_balance_e8s: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['icp_balance_e8s']),
+                                timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['timestamp_nanos'])
+                            ); 
+                        }
+                            
+                    }
                 }
                 
             }
@@ -289,13 +307,14 @@ class LatestKnownXDRICPRate {
 
 
 class User {
-    CallerEd25519 caller;
-    List<Legation> legations;
+    final Caller caller;
+    final List<Legation> legations;
     
-    Principal get principal => legations.length >= 1 ? Principal.ofthePublicKeyDER(legations[0].legator_public_key_DER) : caller.principal; 
+    late final Uint8List user_topup_balance_subaccount_bytes;
+    late final Uint8List user_topup_icp_id;
     
-    Uint8List user_cycles_topup_cycles_transfer_memo_blob_bytes;
-    Uint8List user_icp_topup_icp_id;
+    Uint8List get public_key_DER => legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
+    Principal get principal => Principal.ofthePublicKeyDER(this.public_key_DER);
     
     CTSUserCanister? cts_user_canister;
     
@@ -303,12 +322,13 @@ class User {
     
     User({
         required this.caller,
-        required this.legations,
-        required this.user_cycles_topup_cycles_transfer_memo_blob_bytes,
-        required this.user_icp_topup_icp_id,
+        required this.legations,        
         this.cts_user_canister,
         this.latest_known_user_icp_ledger_balance,
-    });
+    }) {
+        user_topup_balance_subaccount_bytes = User.get_user_subaccount_bytes(this.principal);
+        user_topup_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_topup_balance_subaccount_bytes));
+    }
 
     
     static Uint8List get_user_subaccount_bytes(Principal user_principal) { 
@@ -398,7 +418,7 @@ class User {
                 method_name: 'account_balance',
                 put_bytes: c_forwards([
                     Record.oftheMap({
-                        'account': Blob(this.user_icp_topup_icp_id)
+                        'account': Blob(this.user_topup_icp_id)
                     })
                 ])
             ))[0] as Record)['e8s'] as Nat64;
@@ -561,6 +581,349 @@ class CTSUserCanister extends Canister {
     
     
 }
+
+
+
+
+
+//'cts_user_subtlecrypto_caller'
+
+class IndexDB {
+    
+    static bool is_support_here() => window.indexedDB != null;
+    
+    final String name;
+    Object idb_open_db_quest; // save the q bc it needs to stay 
+    Object/*IDBDatabase*/ idb_database;
+    
+    
+    
+    IndexDB({required this.name, required this.idb_database, required this.idb_open_db_quest});
+    
+    static Future<IndexDB> open(String db_name, List<String> object_stores_names) async {
+        var/*IDBOpenDBRequest*/ q = callMethod(window.indexedDB!, 'open', [db_name, 1]);
+        late Object/*IDBDatabase*/ idb_database;
+        
+        setProperty(q, 
+            'onupgradeneeded',
+            allowInterop((event) {
+                window.console.log('upgradeneeded');
+                idb_database = getProperty(getProperty(event, 'target'), 'result');
+                callMethod(idb_database, 'addEventListener', [
+                    'error',
+                    allowInterop((Event event) {
+                        window.console.log(event);
+                        window.alert('idb error');  
+                    })  
+                ]);
+                for (String object_store_name in object_stores_names) {
+                    Object/*IDBObjectStore.)*/ idb_object_store = callMethod(idb_database, 'createObjectStore', [ object_store_name ]);
+                }
+            })
+        );
+        
+        bool onsuccessorerror = false;
+        setProperty(q, 
+            'onsuccess',
+            allowInterop((event) {
+                idb_database = getProperty(q, 'result');
+                onsuccessorerror = true;
+                
+            })
+        );
+        setProperty(q, 
+            'onerror',
+            allowInterop((event) {
+                onsuccessorerror = true;
+            })
+        );
+        
+        // poll the result
+        while (onsuccessorerror == false || getProperty(q, 'readyState') == 'pending') {
+            await Future.delayed(Duration(milliseconds: 300));
+        }        
+        if (getProperty(q, 'readyState') != 'done') { throw Exception('unknown idb open request readyState'); }
+        
+        if (getProperty(q, 'error') == null) {
+            return IndexDB(
+                name: db_name, 
+                idb_database: idb_database, 
+                idb_open_db_quest: q,
+            );
+        } else {
+            throw getProperty(q, 'error');
+            //throw Exception('idb open request error');
+        }
+    
+    }    
+    
+    
+    List<String> object_store_names() {
+        return getProperty(this.idb_database, 'objectStoreNames');
+    }
+    
+    
+    
+    Future<Object?> get_object({required String object_store_name, required String key}) async {
+        Object/*IDBTransaction)*/ transaction = callMethod(this.idb_database, 'transaction', [
+            [object_store_name], 
+            'readonly'/*'readwrite'*/, 
+            IDBDatabaseTransactionOptions(durability: 'strict')
+        ]);
+        
+        callMethod(transaction, 'addEventListener', [
+            'complete',
+            allowInterop((Event event) {
+
+            })
+        ]);
+        
+        Object/*IDBObjectStore*/ object_store = callMethod(transaction, 'objectStore', [object_store_name]);
+        
+        Object/*IDBRequest*/ idb_quest_object_store_open_cursor = callMethod(object_store, 'openCursor', []);
+        late Object?/*IDBCursorWithValue*/ object_store_cursor_with_value; 
+        
+        bool onsuccess_cursor_complete_orerror = false;
+        Object? value;
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onsuccess',
+            allowInterop((event) {
+                object_store_cursor_with_value = getProperty(getProperty(event, 'target'), 'result');
+                if (object_store_cursor_with_value != null) {
+                    if (getProperty(object_store_cursor_with_value!, 'key') == key) {
+                        value = getProperty(object_store_cursor_with_value!, 'value');
+                        onsuccess_cursor_complete_orerror = true;
+                    } else {
+                        callMethod(object_store_cursor_with_value!, 'continue', []); // continue must be call within the onsuccess handler before any awaits
+                    }
+                } else {
+                    onsuccess_cursor_complete_orerror = true;
+                }
+            })
+        );
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onerror',
+            allowInterop((event) {
+                onsuccess_cursor_complete_orerror = true;
+            })
+        );
+        
+        while (onsuccess_cursor_complete_orerror == false || getProperty(idb_quest_object_store_open_cursor, 'readyState') == 'pending') {
+            await Future.delayed(Duration(milliseconds: 300));
+        }
+        if (getProperty(idb_quest_object_store_open_cursor, 'error') == null) {
+            return value;
+        } else {
+            throw getProperty(idb_quest_object_store_open_cursor, 'error');
+        }
+        
+    }
+    
+    
+    // returns true if the object-add is success and false if the key is already in the object_store. use put to update a key.
+    Future<bool> add_object({required String object_store_name, required String key, required Object value}) async {
+        Object/*IDBTransaction)*/ transaction = callMethod(this.idb_database, 'transaction', [
+            [object_store_name], 
+            'readonly', // here to check if the key is already in the object_store
+            IDBDatabaseTransactionOptions(durability: 'strict')
+        ]);
+        
+        Object/*IDBObjectStore*/ object_store = callMethod(transaction, 'objectStore', [object_store_name]);
+        
+        Object/*IDBRequest*/ idb_quest_object_store_open_cursor = callMethod(object_store, 'openCursor', []);
+        
+        late Object?/*can be null if 0 objects*//*IDBCursorWithValue*/ object_store_cursor_with_value; 
+        
+        bool onsuccess_cursor_complete_orerror = false;
+        bool is_key_in_the_object_store = false;
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onsuccess',
+            allowInterop((event) {
+                object_store_cursor_with_value = getProperty(getProperty(event, 'target'), 'result');
+                if (object_store_cursor_with_value != null) {
+                    if (getProperty(object_store_cursor_with_value!, 'key') == key) {
+                        is_key_in_the_object_store = true;
+                        onsuccess_cursor_complete_orerror = true;
+                    } else {
+                        callMethod(object_store_cursor_with_value!, 'continue', []); // continue must be call within the onsuccess handler before any awaits
+                    }
+                } else {
+                    onsuccess_cursor_complete_orerror = true;
+                }
+            })
+        );
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onerror',
+            allowInterop((event) {
+                onsuccess_cursor_complete_orerror = true;
+            })
+        );
+        
+        while (onsuccess_cursor_complete_orerror == false || getProperty(idb_quest_object_store_open_cursor, 'readyState') == 'pending') {
+            await Future.delayed(Duration(milliseconds: 300));
+        }
+        
+        if (getProperty(idb_quest_object_store_open_cursor, 'error') == null) {
+            if (is_key_in_the_object_store == true) {
+                return false;
+            }
+        } else {
+            throw getProperty(idb_quest_object_store_open_cursor, 'error');
+
+        }
+
+        
+        Object/*IDBTransaction)*/ transaction2 = callMethod(this.idb_database, 'transaction', [
+            [object_store_name], 
+            'readwrite', 
+            IDBDatabaseTransactionOptions(durability: 'strict')
+        ]);
+        
+        Object/*IDBObjectStore*/ object_store2 = callMethod(transaction2, 'objectStore', [object_store_name]);
+        
+        bool transaction_complete = false;
+        callMethod(transaction2, 'addEventListener', [
+            'complete',
+            allowInterop((event) {
+                transaction_complete = true;
+            })
+        ]);
+        
+        Object/*IDBRequest*/ idb_quest_object_store_add = callMethod(object_store2, 'add', [value, key]);
+
+        while (getProperty(idb_quest_object_store_add, 'readyState') == 'pending') {
+            await Future.delayed(Duration(milliseconds: 300));
+        }
+        if (getProperty(idb_quest_object_store_add, 'error') == null) {
+            // the add in the queue now wait for the complete
+            while (transaction_complete == false) { await Future.delayed(Duration(milliseconds: 300)); }
+            return true;
+        } else {
+            throw getProperty(idb_quest_object_store_add, 'error');
+        }
+        
+        
+    }
+    
+    
+    // returns true if the object-put/update is success and false if the key is not found in the object_store. use add to add a new key.
+    Future<bool> put_object({required String object_store_name, required String key, required Object value}) async {
+        Object/*IDBTransaction)*/ transaction = callMethod(this.idb_database, 'transaction', [
+            [object_store_name], 
+            'readwrite', 
+            IDBDatabaseTransactionOptions(durability: 'strict')
+        ]);
+        
+        Object/*IDBObjectStore*/ object_store = callMethod(transaction, 'objectStore', [object_store_name]);
+        
+        Object/*IDBRequest*/ idb_quest_object_store_open_cursor = callMethod(object_store, 'openCursor', []);
+        late Object?/*IDBCursorWithValue*/ object_store_cursor_with_value; 
+        
+        bool onsuccess_cursor_complete_orerror = false;
+        bool is_key_in_the_object_store = false;
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onsuccess',
+            allowInterop((event) async {
+                object_store_cursor_with_value = getProperty(getProperty(event, 'target'), 'result');
+                if (object_store_cursor_with_value != null) {
+                    if (getProperty(object_store_cursor_with_value!, 'key') == key) {
+                        // update
+                        Object/*IDBRequest*/ idb_quest_update = callMethod(object_store_cursor_with_value!, 'update', [value]);
+                        // await here is ok bc we call cursor.update before this await and we wont call cursor.continue after this
+                        while (getProperty(idb_quest_update, 'readyState') == 'pending') { await Future.delayed(Duration(milliseconds: 300)); } 
+                        if (getProperty(idb_quest_update, 'error') == null) {
+                            is_key_in_the_object_store = true;
+                            onsuccess_cursor_complete_orerror = true;
+                        } else {
+                            throw getProperty(idb_quest_update, 'error');
+                        }
+                    } else {
+                        callMethod(object_store_cursor_with_value!, 'continue', []); // continue must be call within the onsuccess handler before any awaits
+                    }
+                } else {
+                    onsuccess_cursor_complete_orerror = true;
+                }
+            })
+        );
+        setProperty(idb_quest_object_store_open_cursor, 
+            'onerror',
+            allowInterop((event) {
+                onsuccess_cursor_complete_orerror = true;
+            })
+        );
+        
+        while (onsuccess_cursor_complete_orerror == false || getProperty(idb_quest_object_store_open_cursor, 'readyState') == 'pending') {
+            await Future.delayed(Duration(milliseconds: 300));
+        }
+        if (getProperty(idb_quest_object_store_open_cursor, 'error') == null) {
+            if (is_key_in_the_object_store == true) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw getProperty(idb_quest_object_store_open_cursor, 'error');
+        }
+        
+        
+    }
+    
+    
+    
+    
+
+}
+
+
+
+
+@JS()
+@anonymous
+class IDBDatabaseTransactionOptions  {
+    external String get durability;
+    
+    external factory IDBDatabaseTransactionOptions({
+        String durability
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -34,7 +34,7 @@
   <script>
   
     if (window.location.href.includes('.raw.ic0.app')) {
-        window.location.replace('https://thp4z-laaaa-aaaam-qaaea-cai.ic0.app'); // hostname + '.ic0.app'
+        window.location.replace('https://' + window.location.hostname.split('.')[0] + '.ic0.app'); // hostname + '.ic0.app'
     }
     
   </script>
