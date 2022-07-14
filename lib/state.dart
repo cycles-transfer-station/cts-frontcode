@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:html' show window, CryptoKey, Event;
 import 'dart:indexed_db';
+import 'dart:js';
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
 
@@ -14,6 +15,7 @@ import 'package:ic_tools/candid.dart' show
     CandidType,
     Nat,
     Nat64,
+    Option,
     Vector,
     Blob,
     Record,
@@ -44,7 +46,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     
     
-    User? user; 
+    User? user;
         
     LatestKnownXDRICPRate? latest_known_xdr_icp_rate;
     
@@ -53,7 +55,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     
 
-    Future<void> loadfirststate() async {
+    Future<Exception?> loadfirststate() async {
     
         /*TEST*/
         /*
@@ -74,51 +76,15 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         */
         
         
-        if (IndexDB.is_support_here() != true) {
-            window.alert('indexdb not supported');
-        }
+        //SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
+        //print(test_caller);
         
-        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-        print(test_caller);
-        
-        IndexDB idb = await IndexDB.open('cts_user', ['cks']);
-
-        print(idb.object_store_names());
-
-        if (await idb.add_object(
-            object_store_name: 'cks', 
-            key: 'pubkey', 
-            value: test_caller.public_key
-        ) == false) {
-            await idb.put_object(
-                object_store_name: 'cks', 
-                key: 'pubkey', 
-                value: test_caller.public_key
-            );  
-        }
-        if (await idb.add_object(
-            object_store_name: 'cks', 
-            key: 'skey', 
-            value: test_caller.private_key
-        ) == false) {
-            await idb.put_object(
-                object_store_name: 'cks', 
-                key: 'skey', 
-                value: test_caller.private_key
-            );   
-        }
+       
         
 
         
-        
-        CryptoKey private_key = (await idb.get_object(
-            object_store_name: 'cks', 
-            key: 'skey'
-        ))! as CryptoKey;
-        CryptoKey public_key = (await idb.get_object(
-            object_store_name: 'cks', 
-            key: 'pubkey'
-        ))! as CryptoKey;
+         
+        /*
         Uint8List public_key_DER = (await promiseToFuture(callMethod(window.crypto!.subtle!, 'exportKey', ['spki', public_key]))).asUint8List();
         
         test_caller = SubtleCryptoECDSAP256Caller(
@@ -128,142 +94,226 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         );
         
         print(test_caller);        
+        */
         
-        
-        // --------------
-        
+      
+      
+      
+        // --------------------------------------
+      
         
         if (IndexDB.is_support_here() != true) {
-            window.alert('indexdb not supported');
+            window.alert('indexdb not supported. the user is log-out when the page closes.');
         }
         
         
-        this.get_state_of_the_localstorage();
+        
+        print('get state of the browser storage');
+        await this.get_state_of_the_browser_storage();
         
         if (this.user != null) {
                 
             if (this.user!.cts_user_canister == null) {
-                
-                await this.user!.find_cts_user_canister();
+                print('find cts user canister');
+                Exception? find_cts_user_canister_possible_error = await this.user!.find_cts_user_canister();
+                if (find_cts_user_canister_possible_error != null) {
+                    return find_cts_user_canister_possible_error;
+                }
                 
                 // if UserNotFound
                 if (this.user!.cts_user_canister == null) {
-                    await this.user!.fresh_latest_known_user_icp_ledger_balance();
-                    await this.fresh_latest_known_xdr_icp_rate();
-                }
-                
-            }
-        
-            
-        }
-        
-        
-        
-        
-        this.save_state_in_the_localstorage();
-        
-        this.is_loading = false;
-    }
-
-
-    Future<void> fresh_latest_known_xdr_icp_rate() async {
-        // call the cmc
-    }
-
-
-    void save_state_in_the_localstorage() {
-        // user
-        if (this.user != null) {
-            
-            Map user_map = {};
-            
-            user_map['original_user_public_key_DER'] = this.user!.public_key_DER;
-            
-            if (this.user!.cts_user_canister != null) {
-            
-                Map cts_user_canister_map = {
-                    'cts_user_canister_id_text': this.user!.cts_user_canister!.principal.text 
-                };
-                
-                if (this.user!.cts_user_canister!.latest_known_cycles_balance != null) {
-                    cts_user_canister_map['latest_known_cycles_balance'] = {
-                        'cycles_balance': this.user!.cts_user_canister!.latest_known_cycles_balance!.cycles_balance.toString(),
-                        'timestamp_nanos': this.user!.cts_user_canister!.latest_known_cycles_balance!.timestamp_nanos.toString()
-                    };
-                }
-                
-                if (this.user!.cts_user_canister!.latest_known_icp_balance != null) {
-                    cts_user_canister_map['latest_known_icp_balance'] = {
-                        'icp_balance_e8s': this.user!.cts_user_canister!.latest_known_icp_balance!.icp_balance_e8s.toString(),
-                        'timestamp_nanos': this.user!.cts_user_canister!.latest_known_icp_balance!.timestamp_nanos.toString()
-                    };
-                }
-
-
-                user_map['cts_user_canister'] = cts_user_canister_map; 
-            }
-        
-        
-        
-            window.localStorage['user_json'] = jsonEncode(user_map);
-        }
-    }
-    
-    void get_state_of_the_localstorage() {
-        // user
-        
-        if (this.user != null && window.localStorage.containsKey('user_json')) {
-            Map user_map = jsonDecode(window.localStorage['user_json']!);
-            if (user_map.containsKey('original_user_public_key_DER')) {
-                Uint8List original_user_public_key_DER = Uint8List.fromList(user_map['original_user_public_key_DER'].cast<int>());
-                
-                if (original_user_public_key_DER == this.user!.public_key_DER) {
+                    print('fresh_latest_known_user_icp_ledger_balance');
+                    Exception? fresh_latest_known_user_icp_ledger_balance_possible_error = await this.user!.fresh_latest_known_user_icp_ledger_balance();
+                    if (fresh_latest_known_user_icp_ledger_balance_possible_error != null) {
+                        return fresh_latest_known_user_icp_ledger_balance_possible_error; 
+                    }
                     
-                    if (
-                        user_map.containsKey('cts_user_canister')
-                        && user_map['cts_user_canister'].containsKey('cts_user_canister_id_text')
-                    ) {
-                        
-                        Map cts_user_canister_map = user_map['cts_user_canister'];
-                        this.user!.cts_user_canister = CTSUserCanister(Principal(cts_user_canister_map['cts_user_canister_id_text'] as String), this.user!);   
-                        
-                        
-                        if (
-                            cts_user_canister_map.containsKey('latest_known_cycles_balance') 
-                            && cts_user_canister_map['latest_known_cycles_balance'].containsKey('cycles_balance') 
-                            && cts_user_canister_map['latest_known_cycles_balance'].containsKey('timestamp_nanos')
-                        ) { 
-                            this.user!.cts_user_canister!.latest_known_cycles_balance = LatestKnownCyclesBalance(
-                                cycles_balance: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['cycles_balance']),
-                                timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_cycles_balance']['timestamp_nanos'])
-                            ); 
-                        }
-                        if (
-                            cts_user_canister_map.containsKey('latest_known_icp_balance') 
-                            && cts_user_canister_map['latest_known_icp_balance'].containsKey('icp_balance_e8s') 
-                            && cts_user_canister_map['latest_known_icp_balance'].containsKey('timestamp_nanos')
-                        ) { 
-                            this.user!.cts_user_canister!.latest_known_icp_balance = LatestKnownIcpBalance(
-                                icp_balance_e8s: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['icp_balance_e8s']),
-                                timestamp_nanos: BigInt.parse(cts_user_canister_map['latest_known_icp_balance']['timestamp_nanos'])
-                            ); 
-                        }
-                            
+                    print('fresh_latest_known_xdr_icp_rate');
+                    Exception? fresh_latest_known_xdr_icp_rate_possible_error = await this.fresh_latest_known_xdr_icp_rate();
+                    if (fresh_latest_known_xdr_icp_rate_possible_error != null) {
+                        return fresh_latest_known_xdr_icp_rate_possible_error;
                     }
                 }
                 
             }
+        
+            
         }
-    
-
+        
+        print('save state in the browser_storage');
+        await this.save_state_in_the_browser_storage();
     }
 
+
+    Future<Exception?> fresh_latest_known_xdr_icp_rate() async {
+        // call the cmc
+        //query call with the certification-data
+    }
+
+
+    Future<void> save_state_in_the_browser_storage() async {
+    
+        if (this.user != null) {
+            List<Map> legations_maps = [];
+            for (Legation legation in this.user!.legations) {
+                legations_maps.add(
+                    {
+                        'legatee_public_key_DER': legation.legatee_public_key_DER,
+                        'expiration_unix_timestamp_nanoseconds': legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
+                        'target_canisters_ids': legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,  
+                        'legator_public_key_DER': legation.legator_public_key_DER,
+                        'legator_signature': legation.legator_signature 
+                    }
+                );
+            }
+            
+            Map user_map = {
+                'crypto_key_public': await this.user!.caller.public_key,
+                'crypto_key_private': this.user!.caller.private_key,
+                'legations': legations_maps
+            };
+            
+            UserMapIDB user_map_js = UserMapIDB(
+                crypto_key_public: await this.user!.caller.public_key,
+                crypto_key_private: this.user!.caller.private_key,
+                legations: JsArray.from(legations_maps.map<JsObject>((Map legation_map)=>JsObject.jsify(legation_map))), 
+            ); 
+            
+            
+            try {
+                IndexDB idb = await IndexDB.open('cts', ['state']);
+                if (
+                    await idb.add_object(
+                        object_store_name: 'state', 
+                        key: 'user_crypto_key_public', 
+                        value: await this.user!.caller.public_key,
+                        
+                    ) == false
+                ) {
+                    await idb.put_object(
+                        object_store_name: 'state', 
+                        key: 'user_crypto_key_public', 
+                        value: await this.user!.caller.public_key
+                    );  
+                }                
+                if (
+                    await idb.add_object(
+                        object_store_name: 'state', 
+                        key: 'user_crypto_key_private', 
+                        value: this.user!.caller.private_key
+                    ) == false
+                ) {
+                    await idb.put_object(
+                        object_store_name: 'state', 
+                        key: 'user_crypto_key_private', 
+                        value: this.user!.caller.private_key
+                    );  
+                }                
+                if (
+                    await idb.add_object(
+                        object_store_name: 'state', 
+                        key: 'user_legations', 
+                        value: this.user!.legations.map<JSLegation>((Legation l)=>JSLegation.ofaLegation(l)).toList(), 
+                    ) == false
+                ) {
+                    await idb.put_object(
+                        object_store_name: 'state', 
+                        key: 'user_legations', 
+                        value: this.user!.legations.map<JSLegation>((Legation l)=>JSLegation.ofaLegation(l)).toList(), 
+                    );  
+                }                
+                
+                idb.shutdown();
+            } catch(e) {
+                window.alert('idb error saving the user state: ${e}');                        
+            }
+        }
+        
+               
+    }
+    
+    
+    Future<void> get_state_of_the_browser_storage() async {
+    
+        try {
+            IndexDB idb = await IndexDB.open('cts', ['state']);
+            //print(idb.object_store_names());
+            
+            // user
+            CryptoKey user_crypto_key_public = await idb.get_object(
+                object_store_name: 'state', 
+                key: 'user_crypto_key_public'
+            ) as CryptoKey;
+            
+            CryptoKey user_crypto_key_private = await idb.get_object(
+                object_store_name: 'state', 
+                key: 'user_crypto_key_private'
+            ) as CryptoKey;
+
+            List<Legation> legations = (await idb.get_object(
+                object_store_name: 'state', 
+                key: 'user_legations'
+            ) as List<dynamic>).cast<JSLegation>().map<Legation>((JSLegation jslegation)=>JSLegation.asaLegation(jslegation)).toList(); 
+
+            idb.shutdown();
+            
+            //prException?int(legations.length);
+
+            //if (possible_o != null) {
+                //JsObject user_map = JsObject.fromBrowserObject(possible_o!);                      
+            User user_of_the_idb = User(
+                caller: await SubtleCryptoECDSAP256Caller.of_the_cryptokeys(public_key: user_crypto_key_public, private_key: user_crypto_key_private),
+                legations: legations
+                /*
+                legations_maps.map<Legation>(
+                    (legation_map){
+                        return Legation(
+                            legatee_public_key_DER: legation_map['legatee_public_key_DER'],
+                            expiration_unix_timestamp_nanoseconds: BigInt.parse(legation_map['expiration_unix_timestamp_nanoseconds'], radix: 10),
+                            target_canisters_ids: legation_map['target_canisters_ids'] != null ? legation_map['target_canisters_ids'].map<Principal>((String ps)=>Principal(ps)).toList() : null,  
+                            legator_public_key_DER: legation_map['legator_public_key_DER'],
+                            legator_signature: legation_map['legator_signature'], 
+                        );
+                    }
+                ).toList() 
+                */
+            );    
+            //print(user_of_the_idb.caller);
+            if (user_of_the_idb.expiration_unix_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_unix_timestamp_nanoseconds! - BigInt.from(1000000000*60*20) ) {
+                this.user = user_of_the_idb;
+                //print(this.user!.caller);
+            }
+//            }
+            
+            
+            
+        } catch(e) {
+            // no error, let the user log in
+            window.console.log(e);
+        }
+
+    }
     
 }
 
 
 
 
+
+
+@JS()
+@anonymous
+class UserMapIDB {
+    external CryptoKey get crypto_key_public;
+    external CryptoKey get crypto_key_private;
+    external List<Map> get legations; 
+    
+    external factory UserMapIDB({
+        CryptoKey crypto_key_public,
+        CryptoKey crypto_key_private,
+        JsArray<JsObject> legations, 
+    }); 
+}
 
 
 
@@ -307,7 +357,7 @@ class LatestKnownXDRICPRate {
 
 
 class User {
-    final Caller caller;
+    final SubtleCryptoECDSAP256Caller caller;
     final List<Legation> legations;
     
     late final Uint8List user_topup_balance_subaccount_bytes;
@@ -339,8 +389,10 @@ class User {
     }
     
     
+    BigInt? get expiration_unix_timestamp_nanoseconds => this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
     
-    Future<void> find_cts_user_canister() async {
+    
+    Future<Exception?> find_cts_user_canister() async {
 
         late List<CandidType> find_user_canister_cs;
         try {
@@ -352,55 +404,42 @@ class User {
                 legations: this.legations,
             ));
         } catch(e) {
-            /*
-            await showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext context) {
-                    return AlertDialog(
-                        title: Text('Find CTS User Call Error'),
-                        content: Text(e.toString()),
-                        elevation: 25.0,
-                        //shape:   
-                    );
-                }
-            );
-            */
-            window.alert('Find CTS User Call Error:\n${e.toString()}');
-            window.location.reload();
+            return Exception('Find CTS User Call Error:\n${e.toString()}');
         }
         if (find_user_canister_cs[0] is Variant) {
             Variant find_user_canister_sponse = find_user_canister_cs[0] as Variant;
             if (find_user_canister_sponse.containsKey('Ok')) {
-                this.cts_user_canister = CTSUserCanister((find_user_canister_sponse['Ok'] as PrincipalReference).principal!, this);
+                Option opt_user_canister_id = find_user_canister_sponse['Ok'] as Option;
+                if (opt_user_canister_id.value != null) {
+                    this.cts_user_canister = CTSUserCanister((opt_user_canister_id.value as PrincipalReference).principal!, this);
+                } else {
+                    // set this.cts_user = null, which means the call: find_user_canister is success and the user is not found. let the user purchase a cts-user-canister
+                    this.cts_user_canister = null;
+                }
             }
             else if (find_user_canister_sponse.containsKey('Err')) {
                 Variant find_user_canister_sponse_error = find_user_canister_sponse['Err'] as Variant; 
                 if (find_user_canister_sponse_error.containsKey('FindUserInTheUsersMapCanistersError')) {
                     Variant find_user_in_the_users_map_canisters_error = find_user_canister_sponse_error['FindUserInTheUsersMapCanistersError'] as Variant;
-                    if (find_user_in_the_users_map_canisters_error.containsKey('UserNotFound')) {
-                        // leave this.cts_user null, which means the call: find_user_canister is success and the user is not found. let the user purchase a cts-user-canister
-                        this.cts_user_canister = null;
-                    } else if (find_user_in_the_users_map_canisters_error.containsKey('UsersMapCanistersFindUserCallFails')) {
+                    if (find_user_in_the_users_map_canisters_error.containsKey('UsersMapCanistersFindUserCallFails')) {
                         String alert_dialog_content_string = 'Users-Map-Canisters Call-Fails:';
                         for (Record users_map_canister_call_fail in (find_user_canister_sponse_error['UsersMapCanistersFindUserCallFails'] as Vector).cast_vector<Record>()) {
                             alert_dialog_content_string = alert_dialog_content_string+' \n${users_map_canister_call_fail[0]}, error: ${users_map_canister_call_fail[1]}';                   
                         }
-                        window.alert('Find CTS User Error:\n${alert_dialog_content_string}');
-                        window.location.reload();
+                        return Exception('Find CTS User Error:\n${alert_dialog_content_string}');
                     } else {
-                        window.alert('Unknown find_user_in_the_users_map_canisters_error. \n${find_user_in_the_users_map_canisters_error}');
+                        return Exception('Unknown find_user_in_the_users_map_canisters_error. \n${find_user_in_the_users_map_canisters_error}');
                     }  
                 } else if (find_user_canister_sponse_error.containsKey('UserIsInTheNewUsersMap')) {
                     await this.call_new_user();
                 } else {
-                    window.alert('Unknown find_user_canister_sponse_error. \n${find_user_canister_sponse_error}');
+                    return Exception('Unknown find_user_canister_sponse_error. \n${find_user_canister_sponse_error}');
                 } 
             } else {
-                window.alert('Unknown find_user_canister_sponse. \n${find_user_canister_sponse}');
+                return Exception('Unknown find_user_canister_sponse. \n${find_user_canister_sponse}');
             }
         } else {
-            window.alert('Unknown find_user_canister_sponse candidtype. \n${find_user_canister_cs[0]}');
+            return Exception('Unknown find_user_canister_sponse candidtype. \n${find_user_canister_cs[0]}');
         }
     
     }
@@ -410,7 +449,7 @@ class User {
 
 
 
-    Future<void> fresh_latest_known_user_icp_ledger_balance() async {
+    Future<Exception?> fresh_latest_known_user_icp_ledger_balance() async {
         late Nat64 icp_balance_e8s_nat64;
         try {
             icp_balance_e8s_nat64 = (c_backwards(await common.ledger.call(
@@ -423,8 +462,7 @@ class User {
                 ])
             ))[0] as Record)['e8s'] as Nat64;
         } catch(error) {
-            window.alert('user_icp_ledger_balance error: \n${error}');
-            window.location.reload(); // ?
+            return Exception('fresh user icp ledger balance error: \n${error}');
         }
         
         this.latest_known_user_icp_ledger_balance = LatestKnownIcpBalance(
@@ -441,7 +479,7 @@ class User {
 
 
     
-    Future<void> call_new_user() async {
+    Future<Exception?> call_new_user() async {
         //call and call till the user_canister.
         // create this.cts_user = CTSUser
         late Variant new_user_sponse;
@@ -456,8 +494,7 @@ class User {
                 )
             )[0] as Variant;
         } catch(e) {
-            window.alert('call new_user error: ${e}');
-            window.location.reload();
+            return Exception('call new_user error: ${e}');
         }
         
         if (new_user_sponse.containsKey('Ok') && new_user_sponse['Ok'] is Record) {
@@ -476,10 +513,14 @@ class User {
                 print(new_user_error['MidCallError']);
                 await this.call_new_user();
             } else {
-                window.alert('new_user_error: ${new_user_error}');
+                if (new_user_error.containsKey('FoundUserCanister')) { 
+                    this.cts_user_canister = CTSUserCanister((new_user_error['FoundUserCanister'] as PrincipalReference).principal!, this);
+                } else {
+                    return Exception('new_user_error: ${new_user_error}');
+                }
             }
         } else {
-            window.alert('unknown new_user_sponse: ${new_user_sponse}');
+            return Exception('unknown new_user_sponse: ${new_user_sponse}');
         }
     }
 
@@ -521,7 +562,7 @@ class CTSUserCanister extends Canister {
     }
     
     
-    Future<void> fresh_user_cycles_balance() async {
+    Future<Exception?> fresh_user_cycles_balance() async {
         try {
             List<CandidType> user_cycles_balance_call_sponse_candids = c_backwards(await this.user_call(
                 calltype: CallType.call,
@@ -536,11 +577,11 @@ class CTSUserCanister extends Canister {
                 timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
             );
         } catch(e) {
-            window.alert('see user cycles balance call error:\n${e.toString()}');
+            return Exception('see user cycles balance call error:\n${e.toString()}');
         }
     }
     
-    Future<void> fresh_user_icp_balance() async {
+    Future<Exception?> fresh_user_icp_balance() async {
         try {
             List<CandidType> user_icp_balance_call_sponse_candids = c_backwards(await this.user_call(
                 calltype: CallType.call,
@@ -558,13 +599,13 @@ class CTSUserCanister extends Canister {
                 );
             } 
             else if (user_icp_balance_call_sponse.containsKey('Err')) {
-                window.alert('see user icp balance error:\n${user_icp_balance_call_sponse['Err']}');
+                return Exception('see user icp balance error:\n${user_icp_balance_call_sponse['Err']}');
             }
             else {
-                window.alert('see user icp balance sponse unknown \n${user_icp_balance_call_sponse}');
+                return Exception('see user icp balance sponse unknown \n${user_icp_balance_call_sponse}');
             }
         } catch(e) {
-            window.alert('see user icp balance call error:\n${e.toString()}');
+            return Exception('see user icp balance call error:\n${e.toString()}');
         }
     
     }
@@ -664,7 +705,7 @@ class IndexDB {
     
     
     
-    Future<Object?> get_object({required String object_store_name, required String key}) async {
+    Future<dynamic> get_object({required String object_store_name, required String key}) async {
         Object/*IDBTransaction)*/ transaction = callMethod(this.idb_database, 'transaction', [
             [object_store_name], 
             'readonly'/*'readwrite'*/, 
@@ -869,7 +910,9 @@ class IndexDB {
     }
     
     
-    
+    void shutdown() {
+        callMethod(this.idb_database, 'close', []);
+    }
     
 
 }
@@ -888,6 +931,45 @@ class IDBDatabaseTransactionOptions  {
 }
 
 
+@JS()
+@anonymous
+class JSLegation  {
+    external Uint8List get legatee_public_key_DER;
+    external String get expiration_unix_timestamp_nanoseconds;
+    external List<String>? get target_canisters_ids;  
+    external Uint8List get legator_public_key_DER;
+    external Uint8List get legator_signature; 
+    
+    external factory JSLegation({
+        Uint8List legatee_public_key_DER,
+        String expiration_unix_timestamp_nanoseconds,
+        List<String>? target_canisters_ids,
+        Uint8List legator_public_key_DER,
+        Uint8List legator_signature,
+        
+    });
+    
+    
+    static JSLegation ofaLegation(Legation legation) {
+        return JSLegation(
+            legatee_public_key_DER: legation.legatee_public_key_DER,
+            expiration_unix_timestamp_nanoseconds: legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
+            target_canisters_ids: legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,
+            legator_public_key_DER: legation.legator_public_key_DER,
+            legator_signature: legation.legator_signature, 
+        );
+    }
+    
+    static Legation asaLegation(JSLegation jslegation) {
+        return Legation(
+            legatee_public_key_DER: jslegation.legatee_public_key_DER,
+            expiration_unix_timestamp_nanoseconds: BigInt.parse(jslegation.expiration_unix_timestamp_nanoseconds, radix:10),
+            target_canisters_ids: jslegation.target_canisters_ids != null ? jslegation.target_canisters_ids!.map<Principal>((String ps)=>Principal(ps)).toList() : null,
+            legator_public_key_DER: jslegation.legator_public_key_DER,
+            legator_signature: jslegation.legator_signature, 
+        );
+    }
+}
 
 
 

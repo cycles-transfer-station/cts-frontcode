@@ -6,7 +6,7 @@ import 'package:ic_tools/ic_tools.dart';
 
 /*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
 
-main() {
+void main() {
     if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
         print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
     }

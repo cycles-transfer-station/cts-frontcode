@@ -79,7 +79,12 @@ class WelcomePage extends Page {
         return PageRouteBuilder(
             settings: this,
             pageBuilder: (context, animation, animation2) {
-                return WelcomePageWidget();
+                final tween = Tween(begin: 0.0, end: 1.0);
+                final curve_tween = CurveTween(curve: Curves.easeOutSine);
+                return FadeTransition(
+                    opacity: animation.drive(tween).drive(curve_tween),
+                    child: WelcomePageWidget()
+                );
             }
         );
     }
@@ -109,25 +114,31 @@ class WelcomePageWidget extends StatelessWidget {
                         state.is_loading = true;
                         state.loading_text = 'loading test';
                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                        
-                        await Future.delayed(Duration(seconds: 5));
                                 
-                        CallerEd25519 user_caller = CallerEd25519(
-                            public_key: Uint8List.fromList([250,16,64,7,35,238,104,233,191,156,14,131,25,180,140,149,150,121,196,140,182,57,254,239,218,137,24,25,234,238,215,92]),
-                            private_key: Uint8List.fromList([120,47,130,3,239,149,252,232,58,208,103,95,175,172,68,18,37,40,191,193,201,190,159,142,27,192,137,3,34,176,2,146])
-                        );
+                        //CallerEd25519 user_caller = CallerEd25519(
+                        //    public_key: Uint8List.fromList([250,16,64,7,35,238,104,233,191,156,14,131,25,180,140,149,150,121,196,140,182,57,254,239,218,137,24,25,234,238,215,92]),
+                        //    private_key: Uint8List.fromList([120,47,130,3,239,149,252,232,58,208,103,95,175,172,68,18,37,40,191,193,201,190,159,142,27,192,137,3,34,176,2,146])
+                        //);
+                        
+                        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
+                        
                         state.user = User(
-                            caller: user_caller,
+                            caller: test_caller,
                             legations: [],
                         );
-                        state.save_state_in_the_localstorage();
                         
-                        await state.loadfirststate();
+                        await state.save_state_in_the_browser_storage();
+                        
+                        Exception? loadfirststate_possible_e = await state.loadfirststate();
+                        if (loadfirststate_possible_e != null) {
+                            window.alert(loadfirststate_possible_e.toString());
+                            state.loading_text = 'Error: ${loadfirststate_possible_e}';
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                            return;
+                        }
                         
                         state.is_loading = false;
                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                             
-                        
                     }
                 )
             
@@ -138,15 +149,6 @@ class WelcomePageWidget extends StatelessWidget {
                     on_press_complete: () async {
                         // ii login
                         //                              
-                        
-                        /*
-                        CallerEd25519 legatee_caller = CallerEd25519.new_keys();
-                        Map user_map = {};
-                        user_map['legatee_caller_public_key'] = legatee_caller.public_key; 
-                        user_map['legatee_caller_private_key'] = legatee_caller.private_key; 
-                        
-                        window.localStorage['user_json'] = jsonEncode(user_map); 
-                        */
 
                         SubtleCryptoECDSAP256Caller legatee_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
                         
@@ -168,7 +170,7 @@ class WelcomePageWidget extends StatelessWidget {
                                         InternetIdentityAuthorize(
                                             kind: "authorize-client", 
                                             sessionPublicKey: legatee_caller.public_key_DER,
-                                            maxTimeToLive: 1000000000*60*60*3
+                                            maxTimeToLive: 1000000000*60*60*24
                                         ),
                                         "https://identity.ic0.app"
                                     );
@@ -192,73 +194,66 @@ class WelcomePageWidget extends StatelessWidget {
                                         );
                                     });
 
-                                    //await Future.delayed(Duration(seconds: 5));
-                                    //print('test if tifyListeners cuts the current code. before. no it doesnt cut it but it does build the ui widgets so the old context is invalid. make sure to hold a ference for the mainstatebindscope if want change the state and tifyListeners when the context in void-valid ');
-                                    //CustomState state = MainStateBind.get_state<CustomState>(context_r);
-                                    
-                                    state.is_loading = true;
                                     state.loading_text = 'loading user ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    //MainStateBind.set_state<CustomState>(context_r, state, tifyListeners: true);
-                                    
-                                    //await Future.delayed(Duration(seconds: 5));
-                                    print('test if tifyListeners cuts the current code ');
                                     
                                     state.user = User(
                                         caller: legatee_caller,
                                         legations: user_legations,
                                     );
-                                    state.save_state_in_the_localstorage();
                                     
-                                    await state.loadfirststate();
+                                    await state.save_state_in_the_browser_storage();
+                                    
+                                    Exception? loadfirststate_possible_e = await state.loadfirststate();
+                                    if (loadfirststate_possible_e != null) {
+                                        window.alert(loadfirststate_possible_e.toString());
+                                        state.loading_text = 'Error: ${loadfirststate_possible_e}';
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                                        return;
+                                    }
                                     
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    
                                 }
                                 
                                 if (message_event.data['kind'] == 'authorize-client-failure') {
-                                    //
                                     print('authorize-client-failure:\n${message_event.data['text']}');
-                                    await showDialog(
-                                        context: context,
-                                        barrierDismissible: true,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Internet Identity authorize-client-failure'),
-                                                content: Text(message_event.data['text']),
-                                                elevation: 25.0,
-                                            );
-                                        }
-                                    );
+                                    window.alert('authorize-client-failure:\n${message_event.data['text']}');
+                                    state.loading_text = 'Error: authorize-client-failure:\n${message_event.data['text']}';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                                    return;
                                 }
                             }
                         });
                         
-                        //await Future.delayed(Duration(seconds: 5));
-                        
                         identityWindow = window.open('https://identity.ic0.app/#authorize', 'identityWindow');  
                     
-                        state = MainStateBind.get_state<CustomState>(context);
                         state.is_loading = true;
                         state.loading_text = 'ii login ...';
                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                     }  
                 ))
             );
-        } 
+        }
         
         else /*if (state.user != null)*/ {
             
-            column_children.add(
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 34.0), //EdgeInsets.all(17.0),
-                    child: Container(
-                        child: SelectableText('user id: ${state.user!.principal.text}')
+            column_children.addAll(
+                [
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
+                        child: Container(
+                            child: SelectableText('user id: ${state.user!.principal.text}')
+                        )
+                    ),
+                    Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 17.0,
+                        endIndent: 17.0,
+                        //color: 
                     )
-                )
+                ]
             );
             
             if (state.user!.cts_user_canister == null) {
@@ -266,39 +261,110 @@ class WelcomePageWidget extends StatelessWidget {
                 column_children.add(
                     Padding(
                         padding: EdgeInsets.all(17.0),
-                        child: 
-                    //  'coming soon ...'  'Before creating a CTS user, send 10Tcycles worth of ICP, ')     
-                        Text(
-        '''
-        user icp balance: 
-            ICP: ${state.user!.latest_known_user_icp_ledger_balance != null ? state.user!.latest_known_user_icp_ledger_balance!.icp_balance_string() : 'unknown'}
-            unix timestamp nanoseconds: ${state.user!.latest_known_user_icp_ledger_balance != null ? state.user!.latest_known_user_icp_ledger_balance!.timestamp_nanos : 'unknown'}
-        '''
+                        child: Text.rich(     //  'coming soon ...'  'Before creating a CTS user, send 10Tcycles worth of ICP, ')     
+                            TextSpan(
+                                text: '',
+                                children: <InlineSpan>[
+                                    TextSpan(
+                                        text: 'user topup icp id: '
+                                    ),
+                                    WidgetSpan(
+                                        child: SelectableText(bytesasahexstring(state.user!.user_topup_icp_id), style: TextStyle(fontSize: 11)),
+                                    ),
+                                    TextSpan(
+                                        text:
+'''
+
+\nICP: ${state.user!.latest_known_user_icp_ledger_balance != null ? state.user!.latest_known_user_icp_ledger_balance!.icp_balance_string() : 'unknown'}
+'''
+                                    ),
+                                    WidgetSpan(
+                                        child: SelectableText(
+'''                                        
+timestamp: ${state.user!.latest_known_user_icp_ledger_balance != null ? (state.user!.latest_known_user_icp_ledger_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
+'''                                     
+                                            ,
+                                            style: TextStyle(fontSize:9)
+                                        )
+                                    ),
+                                    
+                                ]
+                            )
                         )
                     )
                 );
                 
                 column_children.add(
-                    OutlineButton(
-                        button_text: 'fresh user icp balance',
-                        on_press_complete: () async {
-                            state.loading_text = 're-freshing user icp balance ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            
-                            await state.user!.fresh_latest_known_user_icp_ledger_balance();
-                            
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
+                    /*Align(
+                        alignment: Alignment.centerLeft,
+                        child: */TextButton(
+                            child: Text('fresh user icp balance', style: TextStyle(fontSize:11)),
+                            onPressed: () async {
+                                state.loading_text = 're-freshing user icp balance ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                
+                                Exception? fresh_latest_known_user_icp_ledger_balance_possible_e = await state.user!.fresh_latest_known_user_icp_ledger_balance();
+                                if (fresh_latest_known_user_icp_ledger_balance_possible_e != null) {
+                                    window.alert('Error re-freshing the user icp balance: ${fresh_latest_known_user_icp_ledger_balance_possible_e}');
+                                }
+                                
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            }
+                        )
+                    //)
                 );
                 
                 column_children.add(
-                    Center(child: OutlineButton(
-                        button_text: 'Create CTS User',
-                        on_press_complete: null 
-                    ))
+                    Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 17.0,
+                        endIndent: 17.0,
+                        //color: 
+                    )
+                );
+                    
+                column_children.add(
+                    Padding(
+                        padding: EdgeInsets.all(17.0),
+                        child: Text.rich(     
+                            TextSpan(
+                                text: '',
+                                children: <InlineSpan>[
+                                    TextSpan(
+                                        text: 
+'''
+A CTS-USER-CONTRACT gives the purchaser a  
+'''                                     ,
+                                    ),
+                                ]
+                            )
+                        )
+                    )
+                );    
+                    
+                column_children.add(
+                    /*Center(child: */OutlineButton(
+                        button_text: 'CREATE CTS USER CONTRACT',
+                        on_press_complete: null/*() async {
+                            state.loading_text = 'checking the icp-xdr exchange rate ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            
+                            BigInt current_membership_start_cost_icp_e8s = await state.get_current_cts_user_membership_start_cost_icp_e8s();
+                            
+                            if (state.user!.latest_known_user_icp_ledger_balance == null || state.user!.latest_known_user_icp_ledger_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
+                                state.loading_text = 're-freshing user icp balance ...';
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                
+                                await state.user!.fresh_latest_known_user_icp_ledger_balance();
+                            
+                            }
+                            
+                        } */
+                    )/*)*/
                 );
             }
             
@@ -316,14 +382,35 @@ class WelcomePageWidget extends StatelessWidget {
             appBar: AppBar(
                 title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
             ),
-            body: Column(                  
-                children: column_children
+            body: Column(                
+                children: column_children,
+                crossAxisAlignment: CrossAxisAlignment.center 
             ), 
         );
     }
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ---------------------------------------------
 
 class BuyWalletPage extends Page {
     BuyWalletPage({LocalKey? key}) : super(key: key);

@@ -1,4 +1,7 @@
+import 'dart:html';
+
 import 'package:flutter/material.dart';
+
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
@@ -21,7 +24,13 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     CustomState state = CustomState();
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        state.loadfirststate().then((_){
+        state.loadfirststate().then((Exception? possible_exception){
+            if (possible_exception != null) {
+                state.loading_text = 'Error: ${possible_exception}';
+                window.alert(possible_exception.toString());  
+            } else {
+                state.is_loading = false;
+            }
             notifyListeners();
         });
     }
