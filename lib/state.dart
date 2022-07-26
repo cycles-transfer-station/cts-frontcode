@@ -20,8 +20,10 @@ import 'package:ic_tools/candid.dart' show
     Blob,
     Record,
     Variant,
-    PrincipalReference
-;
+    PrincipalReference,
+    Nat8
+    ;
+
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
@@ -148,6 +150,40 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     Future<Exception?> fresh_latest_known_xdr_icp_rate() async {
         // call the cmc
         //query call with the certification-data
+        
+        /// certified data test
+        try {
+            Uint8List sponse = await common.cycles_mint.call(
+                calltype: CallType.query,
+                method_name: 'get_icp_xdr_conversion_rate',
+            );
+            List<CandidType> cs = c_backwards(sponse);
+            Record rc = cs[0] as Record;
+            Uint8List certificate_bytes = Blob.oftheVector((rc['certificate'] as Vector).cast_vector<Nat8>()).bytes;
+            Map certificate = cbor.cborbytesasadart(certificate_bytes);
+            await verify_certificate(certificate);
+            dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
+            BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
+            if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
+            Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.cycles_mint.principal.bytes, 'certified_data']);
+            List canister_hash_tree = cbor.cborbytesasadart((rc['hash_tree'] as Blob).bytes);
+            Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
+            if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }
+            Record certified_icpxdrrate = c_backwards(lookuppathvalueinaniccertificatetree(canister_hash_tree, ["ICP_XDR_CONVERSION_RATE"], 'blob'))[0] as Record;
+            //Record r = rc['data'] as Record;
+            //print(r['xdr_permyriad_per_icp']);
+            //print(r['timestamp_seconds']);
+            Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
+            Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
+
+            this.latest_known_xdr_icp_rate = LatestKnownXDRICPRate(
+                xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value is BigInt ? certified_xdr_permyriad_per_icp.value : BigInt.from(certified_xdr_permyriad_per_icp.value),
+                timestamp_seconds: certified_timestamp_seconds.value is BigInt ? certified_timestamp_seconds.value : BigInt.from(certified_timestamp_seconds.value) 
+            );
+            
+        } catch(e) {
+            return Exception('fresh latest known xdr icp rate error: $e');
+        }
     }
 
 
@@ -347,8 +383,8 @@ class LatestKnownIcpBalance {
 
 class LatestKnownXDRICPRate {
     BigInt xdr_permyriad_per_icp;
-    BigInt timestamp_nanos;
-    LatestKnownXDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_nanos});
+    BigInt timestamp_seconds;
+    LatestKnownXDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
 }
 
 

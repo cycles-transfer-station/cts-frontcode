@@ -243,7 +243,7 @@ class WelcomePageWidget extends StatelessWidget {
                     Padding(
                         padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
                         child: Container(
-                            child: SelectableText('user id: ${state.user!.principal.text}')
+                            child: SelectableText('USER ID: ${state.user!.principal.text}')
                         )
                     ),
                     Divider(
@@ -266,7 +266,7 @@ class WelcomePageWidget extends StatelessWidget {
                                 text: '',
                                 children: <InlineSpan>[
                                     TextSpan(
-                                        text: 'user topup icp id: '
+                                        text: 'USER TOPUP ICP ID: '
                                     ),
                                     WidgetSpan(
                                         child: SelectableText(bytesasahexstring(state.user!.user_topup_icp_id), style: TextStyle(fontSize: 11)),
