@@ -129,10 +129,12 @@ class WelcomePageWidget extends StatelessWidget {
                         
                         await state.save_state_in_the_browser_storage();
                         
-                        Exception? loadfirststate_possible_e = await state.loadfirststate();
-                        if (loadfirststate_possible_e != null) {
-                            window.alert(loadfirststate_possible_e.toString());
-                            state.loading_text = 'Error: ${loadfirststate_possible_e}';
+                        try {
+                            await state.loadfirststate();
+                        
+                        } catch(e) {
+                            window.alert(e.toString());
+                            state.loading_text = 'Error: ${e}';
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
                             return;
                         }
@@ -204,11 +206,12 @@ class WelcomePageWidget extends StatelessWidget {
                                     
                                     await state.save_state_in_the_browser_storage();
                                     
-                                    Exception? loadfirststate_possible_e = await state.loadfirststate();
-                                    if (loadfirststate_possible_e != null) {
-                                        window.alert(loadfirststate_possible_e.toString());
-                                        state.loading_text = 'Error: ${loadfirststate_possible_e}';
+                                    try {
+                                        await state.loadfirststate();
+                                    } catch(e) {
+                                        state.loading_text = 'Error: ${e}';
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                                        window.alert(e.toString());
                                         return;
                                     }
                                     
@@ -266,22 +269,22 @@ class WelcomePageWidget extends StatelessWidget {
                                 text: '',
                                 children: <InlineSpan>[
                                     TextSpan(
-                                        text: 'USER TOPUP ICP ID: '
+                                        text: 'USER ICP ID: '
                                     ),
                                     WidgetSpan(
-                                        child: SelectableText(bytesasahexstring(state.user!.user_topup_icp_id), style: TextStyle(fontSize: 11)),
+                                        child: SelectableText(bytesasahexstring(state.user!.user_icp_id), style: TextStyle(fontSize: 11)),
                                     ),
                                     TextSpan(
                                         text:
 '''
 
-\nICP: ${state.user!.latest_known_user_icp_ledger_balance != null ? state.user!.latest_known_user_icp_ledger_balance!.icp_balance_string() : 'unknown'}
+\nICP: ${state.user!.user_icp_ledger_balance != null ? state.user!.user_icp_ledger_balance!.icp_balance_string() : 'unknown'}
 '''
                                     ),
                                     WidgetSpan(
                                         child: SelectableText(
 '''                                        
-timestamp: ${state.user!.latest_known_user_icp_ledger_balance != null ? (state.user!.latest_known_user_icp_ledger_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
+timestamp: ${state.user!.user_icp_ledger_balance != null ? (state.user!.user_icp_ledger_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
 '''                                     
                                             ,
                                             style: TextStyle(fontSize:9)
@@ -300,13 +303,14 @@ timestamp: ${state.user!.latest_known_user_icp_ledger_balance != null ? (state.u
                         child: */TextButton(
                             child: Text('fresh user icp balance', style: TextStyle(fontSize:11)),
                             onPressed: () async {
-                                state.loading_text = 're-freshing user icp balance ...';
+                                state.loading_text = 'fresh user icp balance ...';
                                 state.is_loading = true;
                                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                 
-                                Exception? fresh_latest_known_user_icp_ledger_balance_possible_e = await state.user!.fresh_latest_known_user_icp_ledger_balance();
-                                if (fresh_latest_known_user_icp_ledger_balance_possible_e != null) {
-                                    window.alert('Error re-freshing the user icp balance: ${fresh_latest_known_user_icp_ledger_balance_possible_e}');
+                                try {
+                                    await state.user!.fresh_user_icp_ledger_balance();
+                                } catch(e) {
+                                    window.alert('Error when freshing the user icp balance: ${e}');
                                 }
                                 
                                 state.is_loading = false;
@@ -355,11 +359,11 @@ A CTS-USER-CONTRACT gives the purchaser a
                             
                             BigInt current_membership_start_cost_icp_e8s = await state.get_current_cts_user_membership_start_cost_icp_e8s();
                             
-                            if (state.user!.latest_known_user_icp_ledger_balance == null || state.user!.latest_known_user_icp_ledger_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
+                            if (state.user!.user_icp_ledger_balance == null || state.user!.user_icp_ledger_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
                                 state.loading_text = 're-freshing user icp balance ...';
                                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                 
-                                await state.user!.fresh_latest_known_user_icp_ledger_balance();
+                                await state.user!.fresh_user_icp_ledger_balance();
                             
                             }
                             
@@ -382,10 +386,73 @@ A CTS-USER-CONTRACT gives the purchaser a
             appBar: AppBar(
                 title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
             ),
+            drawer: Drawer(
+                child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                        DrawerHeader(
+                            child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: null)) : SelectableText('USER ID: ${state.user!.principal.text}')
+                
+                        ),
+                        ListTile(
+                            title: const Text('USER-TRANSFER-ICP'),
+                            onTap: () {
+                              // Update the state of the app.
+                              // ...
+                              Navigator.pop(context);
+                            },
+                        ),
+                        ListTile(
+                            title: const Text('CYCLES-BANK'),
+                            onTap: () {
+                              // Update the state of the app.
+                              // ...
+                            },
+                        ),
+                        ListTile(
+                            title: const Text('CYCLES-MARKET'),
+                            onTap: () {
+                              // Update the state of the app.
+                              // ...
+                              Navigator.pop(context);
+                            },
+                        ),
+                        AboutListTile(
+                        
+                        )
+                    ]
+                )
+            ),
             body: Column(                
                 children: column_children,
                 crossAxisAlignment: CrossAxisAlignment.center 
             ), 
+            bottomNavigationBar: BottomAppBar(
+                color: Colors.blue,
+                child: IconTheme(
+                    data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+                    child: Row(
+                        children: <Widget>[
+                            IconButton(
+                                tooltip: 'Open navigation menu',
+                                icon: const Icon(Icons.menu),
+                                onPressed: () {},
+                            ),
+                            if (true) const Spacer(),
+                            IconButton(
+                                tooltip: 'Search',
+                                icon: const Icon(Icons.search),
+                                onPressed: () {},
+                            ),
+                            IconButton(
+                                tooltip: 'Favorite',
+                                icon: const Icon(Icons.favorite),
+                                onPressed: () {},
+                            ),
+                        ]
+                    ) 
+                )       
+            )
         );
     }
 }

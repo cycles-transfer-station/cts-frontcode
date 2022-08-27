@@ -24,15 +24,17 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     CustomState state = CustomState();
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        state.loadfirststate().then((Exception? possible_exception){
-            if (possible_exception != null) {
-                state.loading_text = 'Error: ${possible_exception}';
-                window.alert(possible_exception.toString());  
-            } else {
+        () async {
+            try {
+                await state.loadfirststate();
                 state.is_loading = false;
+                notifyListeners();
+            } catch(e) {
+                state.loading_text = 'Error: ${e}';
+                notifyListeners();
+                window.alert(e.toString());
             }
-            notifyListeners();
-        });
+        }.then((){});
     }
 
     @override

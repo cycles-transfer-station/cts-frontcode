@@ -21,6 +21,7 @@ import 'package:ic_tools/candid.dart' show
     Record,
     Variant,
     PrincipalReference,
+    PrincipalCandid,
     Nat8
     ;
 
@@ -36,6 +37,11 @@ import './cts.dart';
 
 
 
+const String Ok  = 'Ok';
+const String Err = 'Err';
+
+
+
 
 
 
@@ -47,62 +53,16 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     bool is_loading = true; // state starts loading. in the load_first_state function, the state sets is_loading = false and then completes and the router calls tifyListeners 
     
     
+    LatestKnownXDRICPRate? xdr_icp_rate;
     
     User? user;
         
-    LatestKnownXDRICPRate? latest_known_xdr_icp_rate;
-    
     
     
     
     
 
-    Future<Exception?> loadfirststate() async {
-    
-        /*TEST*/
-        /*
-        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-        
-        print(c_backwards(await cts.call(
-            calltype: CallType.call,
-            method_name: 'see_caller',
-            caller: test_caller
-        )));
-        
-        Uint8List test_message = Uint8List.fromList([1,2,3]);
-        print(await SubtleCryptoECDSAP256Caller.verify(
-            message: test_message,
-            signature: await test_caller.private_key_authorize_function(test_message),
-            public_key_DER: test_caller.public_key_DER
-        ));
-        */
-        
-        
-        //SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-        //print(test_caller);
-        
-       
-        
-
-        
-         
-        /*
-        Uint8List public_key_DER = (await promiseToFuture(callMethod(window.crypto!.subtle!, 'exportKey', ['spki', public_key]))).asUint8List();
-        
-        test_caller = SubtleCryptoECDSAP256Caller(
-            public_key_DER: public_key_DER, 
-            private_key: private_key, 
-            public_key: public_key
-        );
-        
-        print(test_caller);        
-        */
-        
-      
-      
-      
-        // --------------------------------------
-      
+    Future<void> loadfirststate() async { 
         
         if (IndexDB.is_support_here() != true) {
             window.alert('indexdb not supported. the user is log-out when the page closes.');
@@ -117,24 +77,16 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                 
             if (this.user!.cts_user_canister == null) {
                 print('find cts user canister');
-                Exception? find_cts_user_canister_possible_error = await this.user!.find_cts_user_canister();
-                if (find_cts_user_canister_possible_error != null) {
-                    return find_cts_user_canister_possible_error;
-                }
+                await this.user!.find_cts_user_canister();
                 
                 // if UserNotFound
                 if (this.user!.cts_user_canister == null) {
-                    print('fresh_latest_known_user_icp_ledger_balance');
-                    Exception? fresh_latest_known_user_icp_ledger_balance_possible_error = await this.user!.fresh_latest_known_user_icp_ledger_balance();
-                    if (fresh_latest_known_user_icp_ledger_balance_possible_error != null) {
-                        return fresh_latest_known_user_icp_ledger_balance_possible_error; 
-                    }
+                    print('fresh_user_icp_ledger_balance');
+                    await this.user!.fresh_user_icp_ledger_balance();
                     
-                    print('fresh_latest_known_xdr_icp_rate');
-                    Exception? fresh_latest_known_xdr_icp_rate_possible_error = await this.fresh_latest_known_xdr_icp_rate();
-                    if (fresh_latest_known_xdr_icp_rate_possible_error != null) {
-                        return fresh_latest_known_xdr_icp_rate_possible_error;
-                    }
+                    print('fresh_xdr_icp_rate');
+                    await this.fresh_xdr_icp_rate();
+                    
                 }
                 
             }
@@ -147,43 +99,37 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     }
 
 
-    Future<Exception?> fresh_latest_known_xdr_icp_rate() async {
+    Future<void> fresh_xdr_icp_rate() async {
         // call the cmc
         //query call with the certification-data
         
-        /// certified data test
-        try {
-            Uint8List sponse = await common.cycles_mint.call(
-                calltype: CallType.query,
-                method_name: 'get_icp_xdr_conversion_rate',
-            );
-            List<CandidType> cs = c_backwards(sponse);
-            Record rc = cs[0] as Record;
-            Uint8List certificate_bytes = Blob.oftheVector((rc['certificate'] as Vector).cast_vector<Nat8>()).bytes;
-            Map certificate = cbor.cborbytesasadart(certificate_bytes);
-            await verify_certificate(certificate);
-            dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
-            BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
-            if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
-            Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.cycles_mint.principal.bytes, 'certified_data']);
-            List canister_hash_tree = cbor.cborbytesasadart((rc['hash_tree'] as Blob).bytes);
-            Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
-            if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }
-            Record certified_icpxdrrate = c_backwards(lookuppathvalueinaniccertificatetree(canister_hash_tree, ["ICP_XDR_CONVERSION_RATE"], 'blob'))[0] as Record;
-            //Record r = rc['data'] as Record;
-            //print(r['xdr_permyriad_per_icp']);
-            //print(r['timestamp_seconds']);
-            Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
-            Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
+        Uint8List sponse = await common.cycles_mint.call(
+            calltype: CallType.query,
+            method_name: 'get_icp_xdr_conversion_rate',
+        );
+        List<CandidType> cs = c_backwards(sponse);
+        Record rc = cs[0] as Record;
+        Uint8List certificate_bytes = Blob.oftheVector((rc['certificate'] as Vector).cast_vector<Nat8>()).bytes;
+        Map certificate = cbor.cborbytesasadart(certificate_bytes);
+        await verify_certificate(certificate);
+        dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
+        BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
+        if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
+        Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.cycles_mint.principal.bytes, 'certified_data']);
+        List canister_hash_tree = cbor.cborbytesasadart((rc['hash_tree'] as Blob).bytes);
+        Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
+        if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }
+        Record certified_icpxdrrate = c_backwards(lookuppathvalueinaniccertificatetree(canister_hash_tree, ["ICP_XDR_CONVERSION_RATE"], 'blob'))[0] as Record;
+        //Record r = rc['data'] as Record;
+        //print(r['xdr_permyriad_per_icp']);
+        //print(r['timestamp_seconds']);
+        Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
+        Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
-            this.latest_known_xdr_icp_rate = LatestKnownXDRICPRate(
-                xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value is BigInt ? certified_xdr_permyriad_per_icp.value : BigInt.from(certified_xdr_permyriad_per_icp.value),
-                timestamp_seconds: certified_timestamp_seconds.value is BigInt ? certified_timestamp_seconds.value : BigInt.from(certified_timestamp_seconds.value) 
-            );
-            
-        } catch(e) {
-            return Exception('fresh latest known xdr icp rate error: $e');
-        }
+        this.xdr_icp_rate = LatestKnownXDRICPRate(
+            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value is BigInt ? certified_xdr_permyriad_per_icp.value : BigInt.from(certified_xdr_permyriad_per_icp.value),
+            timestamp_seconds: certified_timestamp_seconds.value is BigInt ? certified_timestamp_seconds.value : BigInt.from(certified_timestamp_seconds.value) 
+        );        
     }
 
 
@@ -202,19 +148,6 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                     }
                 );
             }
-            
-            Map user_map = {
-                'crypto_key_public': await this.user!.caller.public_key,
-                'crypto_key_private': this.user!.caller.private_key,
-                'legations': legations_maps
-            };
-            
-            UserMapIDB user_map_js = UserMapIDB(
-                crypto_key_public: await this.user!.caller.public_key,
-                crypto_key_private: this.user!.caller.private_key,
-                legations: JsArray.from(legations_maps.map<JsObject>((Map legation_map)=>JsObject.jsify(legation_map))), 
-            ); 
-            
             
             try {
                 IndexDB idb = await IndexDB.open('cts', ['state']);
@@ -292,40 +225,21 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             ) as List<dynamic>).cast<JSLegation>().map<Legation>((JSLegation jslegation)=>JSLegation.asaLegation(jslegation)).toList(); 
 
             idb.shutdown();
-            
-            //prException?int(legations.length);
-
-            //if (possible_o != null) {
-                //JsObject user_map = JsObject.fromBrowserObject(possible_o!);                      
+                            
             User user_of_the_idb = User(
                 caller: await SubtleCryptoECDSAP256Caller.of_the_cryptokeys(public_key: user_crypto_key_public, private_key: user_crypto_key_private),
                 legations: legations
-                /*
-                legations_maps.map<Legation>(
-                    (legation_map){
-                        return Legation(
-                            legatee_public_key_DER: legation_map['legatee_public_key_DER'],
-                            expiration_unix_timestamp_nanoseconds: BigInt.parse(legation_map['expiration_unix_timestamp_nanoseconds'], radix: 10),
-                            target_canisters_ids: legation_map['target_canisters_ids'] != null ? legation_map['target_canisters_ids'].map<Principal>((String ps)=>Principal(ps)).toList() : null,  
-                            legator_public_key_DER: legation_map['legator_public_key_DER'],
-                            legator_signature: legation_map['legator_signature'], 
-                        );
-                    }
-                ).toList() 
-                */
             );    
             //print(user_of_the_idb.caller);
             if (user_of_the_idb.expiration_unix_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_unix_timestamp_nanoseconds! - BigInt.from(1000000000*60*20) ) {
                 this.user = user_of_the_idb;
                 //print(this.user!.caller);
             }
-//            }
-            
             
             
         } catch(e) {
             // no error, let the user log in
-            window.console.log(e);
+            window.console.log('get state of the browser storage idb error: $e');
         }
 
     }
@@ -333,23 +247,6 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 }
 
 
-
-
-
-
-@JS()
-@anonymous
-class UserMapIDB {
-    external CryptoKey get crypto_key_public;
-    external CryptoKey get crypto_key_private;
-    external List<Map> get legations; 
-    
-    external factory UserMapIDB({
-        CryptoKey crypto_key_public,
-        CryptoKey crypto_key_private,
-        JsArray<JsObject> legations, 
-    }); 
-}
 
 
 
@@ -365,18 +262,32 @@ class LatestKnownCyclesBalance {
 }
 
 
-class LatestKnownIcpBalance {
-    BigInt icp_balance_e8s;
-    BigInt timestamp_nanos;
-    LatestKnownIcpBalance({required this.icp_balance_e8s, required this.timestamp_nanos});
-    
-    String icp_balance_string() {
-        String s = this.icp_balance_e8s.toRadixString(10);
+class IcpTokens extends Record {
+    final BigInt e8s;
+    final BigInt timestamp_nanos;
+    IcpTokens({required this.e8s, BigInt? timestamp_nanos}) 
+        : timestamp_nanos==null ? this.timestamp_nanos = get_current_timestamp_nanos() : this.timestamp_nanos = timestamp_nanos, {
+        super['e8s'] = Nat64(this.e8s);
+    }
+    String toString() {
+        String s = this.e8s.toRadixString(10);
         while (s.length < 9) { s = '0$s'; }
         int split_i = s.length - 8;
         s = '${s.substring(0, split_i)}.${s.substring(split_i)}';
         while (s[s.length - 1] == '0' && s.length > 3/*minimum '0.0'*/) { s = s.substring(0, s.length - 1); }
         return s;   
+    }
+    
+    static IcpTokens oftheRecord(CandidType icptokensrecord) {
+        Nat64 e8s_nat64 = (icptokensrecord as Record)['e8s'] as Nat64; 
+        return IcpTokens(
+            e8s: e8s_nat64.value
+        );
+    }
+    static IcpTokens ofthedouble(double icp) {
+        return IcpTokens(
+            e8s: BigInt.from((icp * 100000000).toInt())
+        );
     }
 }
 
@@ -388,175 +299,309 @@ class LatestKnownXDRICPRate {
 }
 
 
+typedef Cycles = BigInt; 
+
+class UserBurnIcpMintCyclesSuccess {
+    final Cycles mint_cycles_for_the_user;
+    final Cycles cts_fee_taken;
+    
+    static UserBurnIcpMintCyclesSuccess oftheRecord(CandidType user_burn_icp_mint_cycles_success_record) {
+        Record r = user_burn_icp_mint_cycles_success_record as Record;
+        return UserBurnIcpMintCyclesSuccess(
+            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value,
+            cts_fee_taken: (r['cts_fee_taken'] as Nat).value            
+        );
+    }
+
+}
 
 
 
 
 class User {
+
     final SubtleCryptoECDSAP256Caller caller;
     final List<Legation> legations;
     
-    late final Uint8List user_topup_balance_subaccount_bytes;
-    late final Uint8List user_topup_icp_id;
+    late final BigInt? expiration_unix_timestamp_nanoseconds;
     
-    Uint8List get public_key_DER => legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
-    Principal get principal => Principal.ofthePublicKeyDER(this.public_key_DER);
+    late final Uint8List public_key_DER;
+    late final Principal principal;
+    late final Uint8List user_icp_subaccount_bytes;
+    late final Uint8List user_icp_id;
     
+    
+    IcpTokens? user_icp_ledger_balance;
     CTSUserCanister? cts_user_canister;
-    
-    LatestKnownIcpBalance? latest_known_user_icp_ledger_balance;
     
     User({
         required this.caller,
-        required this.legations,        
+        required this.legations,
+        this.user_icp_ledger_balance,
         this.cts_user_canister,
-        this.latest_known_user_icp_ledger_balance,
     }) {
-        user_topup_balance_subaccount_bytes = User.get_user_subaccount_bytes(this.principal);
-        user_topup_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_topup_balance_subaccount_bytes));
+        expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
+        this.public_key_DER = legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
+        this.principal = Principal.ofthePublicKeyDER(this.public_key_DER);
+        user_icp_subaccount_bytes = User.get_user_icp_subaccount_bytes(this.principal);
+        user_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_icp_subaccount_bytes));
     }
 
     
-    static Uint8List get_user_subaccount_bytes(Principal user_principal) { 
-        Uint8List user_subaccount_bytes = Uint8List.fromList([ ...utf8.encode('UT'), user_principal.bytes.length, ...user_principal.bytes ]);
+    static Uint8List get_user_icp_subaccount_bytes(Principal user_principal) { 
+        List<int> user_subaccount_bytes = [ user_principal.bytes.length, ...user_principal.bytes ];
         while (user_subaccount_bytes.length < 32) { user_subaccount_bytes.add(0); }
         if (user_subaccount_bytes.length != 32) { throw Exception('wrong user subaccount length'); }
-        return user_subaccount_bytes;
+        return Uint8List.fromList(user_subaccount_bytes);
+    }
+    
+        
+    Future<Uint8List> call(Canister canister, {required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 10)}) {
+        return canister.call(caller:this.caller, legations:this.legations, calltype:calltype, method_name:method_name, put_bytes:put_bytes, timeout_duration:timeout_duration);
     }
     
     
-    BigInt? get expiration_unix_timestamp_nanoseconds => this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
     
+    Future<void> fresh_user_icp_ledger_balance() async {
     
-    Future<Exception?> find_cts_user_canister() async {
+        icptokens_record = (c_backwards(await common.ledger.call(
+            calltype: CallType.call,
+            method_name: 'account_balance',
+            put_bytes: c_forwards([
+                Record.oftheMap({
+                    'account': Blob(this.user_icp_id)
+                })
+            ])
+        ))[0] as Record;
+        
+        this.user_icp_ledger_balance = IcpTokens.oftheRecord(icptokens_record);    
+    }
 
-        late List<CandidType> find_user_canister_cs;
-        try {
-            find_user_canister_cs = c_backwards(await cts.call(
-                calltype: CallType.call,
-                method_name: 'find_user_canister',
-                put_bytes: c_forwards([]),
-                caller: this.caller,
-                legations: this.legations,
-            ));
-        } catch(e) {
-            return Exception('Find CTS User Call Error:\n${e.toString()}');
-        }
-        if (find_user_canister_cs[0] is Variant) {
-            Variant find_user_canister_sponse = find_user_canister_cs[0] as Variant;
-            if (find_user_canister_sponse.containsKey('Ok')) {
-                Option opt_user_canister_id = find_user_canister_sponse['Ok'] as Option;
-                if (opt_user_canister_id.value != null) {
-                    this.cts_user_canister = CTSUserCanister((opt_user_canister_id.value as PrincipalReference).principal!, this);
-                } else {
-                    // set this.cts_user = null, which means the call: find_user_canister is success and the user is not found. let the user purchase a cts-user-canister
-                    this.cts_user_canister = null;
-                }
-            }
-            else if (find_user_canister_sponse.containsKey('Err')) {
-                Variant find_user_canister_sponse_error = find_user_canister_sponse['Err'] as Variant; 
-                if (find_user_canister_sponse_error.containsKey('FindUserInTheUsersMapCanistersError')) {
-                    Variant find_user_in_the_users_map_canisters_error = find_user_canister_sponse_error['FindUserInTheUsersMapCanistersError'] as Variant;
-                    if (find_user_in_the_users_map_canisters_error.containsKey('UsersMapCanistersFindUserCallFails')) {
-                        String alert_dialog_content_string = 'Users-Map-Canisters Call-Fails:';
-                        for (Record users_map_canister_call_fail in (find_user_canister_sponse_error['UsersMapCanistersFindUserCallFails'] as Vector).cast_vector<Record>()) {
-                            alert_dialog_content_string = alert_dialog_content_string+' \n${users_map_canister_call_fail[0]}, error: ${users_map_canister_call_fail[1]}';                   
-                        }
-                        return Exception('Find CTS User Error:\n${alert_dialog_content_string}');
-                    } else {
-                        return Exception('Unknown find_user_in_the_users_map_canisters_error. \n${find_user_in_the_users_map_canisters_error}');
-                    }  
-                } else if (find_user_canister_sponse_error.containsKey('UserIsInTheNewUsersMap')) {
-                    await this.call_new_user();
-                } else {
-                    return Exception('Unknown find_user_canister_sponse_error. \n${find_user_canister_sponse_error}');
-                } 
+    
+    Future<void> find_cts_user_canister() async {
+
+        List<CandidType> find_user_canister_cs = c_backwards(await call(
+            cts,
+            calltype: CallType.call,
+            method_name: 'find_user_canister',
+            put_bytes: c_forwards([]),
+        ));
+        Variant find_user_canister_sponse = find_user_canister_cs[0] as Variant;
+        if (find_user_canister_sponse.containsKey(Ok)) {
+            Option opt_user_canister_id = find_user_canister_sponse[Ok] as Option;
+            if (opt_user_canister_id.value != null) {
+                this.cts_user_canister = CTSUserCanister((opt_user_canister_id.value as PrincipalReference).principal!, this);
             } else {
-                return Exception('Unknown find_user_canister_sponse. \n${find_user_canister_sponse}');
+                this.cts_user_canister = null;
             }
-        } else {
-            return Exception('Unknown find_user_canister_sponse candidtype. \n${find_user_canister_cs[0]}');
         }
-    
+        else if (find_user_canister_sponse.containsKey(Err)) {
+            Variant find_user_canister_sponse_error = find_user_canister_sponse[Err] as Variant; 
+            if (find_user_canister_sponse_error.containsKey('FindUserInTheUsersMapCanistersError')) {
+                Variant find_user_in_the_users_map_canisters_error = find_user_canister_sponse_error['FindUserInTheUsersMapCanistersError'] as Variant;
+                String alert_dialog_content_string = 'Users-Map-Canisters Call-Fails:';
+                for (Record users_map_canister_call_fail in (find_user_canister_sponse_error['UsersMapCanistersFindUserCallFails'] as Vector).cast_vector<Record>()) {
+                    alert_dialog_content_string = alert_dialog_content_string+' \n${users_map_canister_call_fail[0]}, error: ${users_map_canister_call_fail[1]}';                   
+                }
+                throw Exception('Find CTS-User-Canister Error:\n${alert_dialog_content_string}');  
+            } else if (find_user_canister_sponse_error.containsKey('UserIsInTheNewUsersMap')) {
+                await this.call_complete_new_user();
+            } else {
+                throw Exception('Unknown find_user_canister_sponse_error. \n${find_user_canister_sponse_error}');
+            } 
+        } else {
+            throw Exception('Unknown find_user_canister_sponse. \n${find_user_canister_sponse}');
+        }    
+
     }
 
-
-
-
-
-
-    Future<Exception?> fresh_latest_known_user_icp_ledger_balance() async {
-        late Nat64 icp_balance_e8s_nat64;
-        try {
-            icp_balance_e8s_nat64 = (c_backwards(await common.ledger.call(
+    
+    Future<void> call_new_user(Principal? opt_referral_user_id) async {
+        Variant new_user_sponse = c_backwards(
+            await call(
+                cts,
                 calltype: CallType.call,
-                method_name: 'account_balance',
+                method_name: 'new_user',
                 put_bytes: c_forwards([
                     Record.oftheMap({
-                        'account': Blob(this.user_topup_icp_id)
+                        'opt_referral_user_id': Option(value: opt_referral_user_id !=null ? opt_referral_user_id.c : null, value_type: PrincipalReference(isTypeStance:true))
                     })
                 ])
-            ))[0] as Record)['e8s'] as Nat64;
-        } catch(error) {
-            return Exception('fresh user icp ledger balance error: \n${error}');
+            )
+        )[0] as Variant;
+        if (new_user_sponse.containsKey(Ok)) {
+            return await _handle_new_user_ok(new_user_sponse[Ok]);
+        } else if (new_user_sponse.containsKey(Err)) {
+            return await _handle_new_user_err(new_user_sponse[Err]);
+        } else {
+            throw Exception('unknown new_user_sponse: ${new_user_sponse}');
+        }   
+    }
+
+    Future<void> call_complete_new_user() async {
+        Variant sponse = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'complete_new_user',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        if (sponse.containsKey(Ok)) {
+            return await _handle_new_user_ok(sponse[Ok]);
+        } else if (sponse.containsKey(Err)) {
+            Variant complete_new_user_error = sponse[Err] as Variant;
+            if (complete_new_user_error.containsKey('UserNotFoundInTheNewUsersMap')) {
+                throw Exception('call complete_new_user error: user is not in the middle of a new_user call.');
+            } else if (complete_new_user_error.containsKey('NewUserError')) {
+                return await _handle_new_user_err(complete_new_user_error['NewUserError']);    
+            } else {
+                throw Exception('unknown complete_new_user_error: ${complete_new_user_error}');
+            }
+        } else {
+            throw Exception('unknown complete_new_user_sponse: ${sponse}');
         }
-        
-        this.latest_known_user_icp_ledger_balance = LatestKnownIcpBalance(
-            icp_balance_e8s: icp_balance_e8s_nat64.value is BigInt ? icp_balance_e8s_nat64.value : BigInt.from(icp_balance_e8s_nat64.value),
-            timestamp_nanos: get_current_time_nanoseconds() //  of the ic-sponse-certificate
-        );
-    
+    }
+
+    Future<void> _handle_new_user_err(CandidType new_user_err_ctype) async {
+        Variant new_user_error = new_user_err_ctype as Variant;
+        if (new_user_error.containsKey('MidCallError')) {
+            print('new_user mid_call_error: ${new_user_error['MidCallError']}');
+            return await this.call_complete_new_user();
+        } else if (new_user_error.containsKey('FoundUserCanister')) { 
+            this.cts_user_canister = CTSUserCanister((new_user_error['FoundUserCanister'] as PrincipalReference).principal!, this);
+        } else if (new_user_error.containsKey('UserIcpLedgerBalanceTooLow')) {
+            Record user_icp_ledger_balance_too_low_error = new_user_error['UserIcpLedgerBalanceTooLow'] as Record;
+            IcpTokens cts_user_contract_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cts_user_contract_cost_icp']);
+            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']);
+            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']);
+            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cts_user_contract_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*2) );
+            throw Exception('user icp balance is too low.\ncts-user-contract current cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+        } else if (new_user_error.containsKey('UserIsInTheMiddleOfANewUserCallMustCallComplete')) {
+            call_complete_new_user().then((e){ if (e!=null) { window.alert('new_user call error: ${e}'); } });
+            throw Exception('user is in the middle of a different new_user call. completing that now in the background.');
+        } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
+            call_complete_user_transfer_icp().then((e){ print(e); });
+            throw Exception('user is in the middle of a user_transfer_icp call.');
+        } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall')) {
+            call_complete_user_burn_icp_mint_cycles().then((e){ print(e); });
+            throw Exception('user is in the middle of a user_burn_icp_mint_cycles call.');
+        } else {
+            String new_user_error_type = 'unknown error: ${new_user_error.keys.first}';
+            for (String possible_error_variant in [
+                'ReferralUserCannotBeTheCaller',
+                'CheckIcpBalanceCallError',
+                'CheckCurrentXdrPerMyriadPerIcpCmcRateError',
+                'UserIsInTheMiddleOfANewUserCall',
+                'MaxNewUsers',
+                'ReferralUserNotFound',
+                'CreateUserCanisterCmcNotifyError',
+            ]) {
+                if (new_user_error.containsKey(possible_error_variant)) {
+                    new_user_error_type = possible_error_variant;
+                }
+            }
+            if (new_user_error.values.first is! Null) {
+                new_user_error_type += '\n${new_user_error.values.first}';
+            }
+            throw Exception('new_user error: ${new_user_error_type}');
+        }
+    }
+
+    Future<void> _handle_new_user_ok(CandidType new_user_ok_ctype) async {
+        Record new_user_success = new_user_ok_ctype as Record;
+        this.cts_user_canister = CTSUserCanister((new_user_success['user_canister_id'] as PrincipalReference).principal!, this);
     }
 
 
-
-
-
-
-
+    // ------------------
     
-    Future<Exception?> call_new_user() async {
-        //call and call till the user_canister.
-        // create this.cts_user = CTSUser
-        late Variant new_user_sponse;
-        try {
-            new_user_sponse = c_backwards(
-                await cts.call(
-                    calltype: CallType.call,
-                    method_name: 'new_user',
-                    put_bytes: c_forwards([]),
-                    caller: this.caller,
-                    legations: this.legations
-                )
-            )[0] as Variant;
-        } catch(e) {
-            return Exception('call new_user error: ${e}');
+    // try catch when calling this it can throw
+    Future<UserBurnIcpMintCyclesSuccess> call_user_burn_icp_mint_cycles(IcpTokens burn_icp) async {
+        Uint8List sponse_bytes = await call(
+            cts,
+            calltype: CallType.call,
+            method_name: 'user_burn_icp_mint_cycles',
+            put_bytes: c_forwards([
+                Record.oftheMap({
+                    'burn_icp': burn_icp
+                })
+            ])
+        );
+        Variant sponse = c_backwards(sponse)[0] as Variant;
+        if (sponse.containsKey(Ok)) {
+            return await _handle_user_burn_icp_mint_cycles_ok(sponse[Ok]);
+        } else if (sponse.containsKey(Err)) {
+            return await _handle_user_burn_icp_mint_cycles_err(sponse[Err]);
+        } else {
+            throw Exception('unknown user_burn_icp_mint_cycles sponse.');
         }
-        
-        if (new_user_sponse.containsKey('Ok') && new_user_sponse['Ok'] is Record) {
-            Record new_user_success_data = new_user_sponse['Ok'] as Record;
-            if (
-                new_user_success_data.containsKey('user_canister') 
-                && new_user_success_data['user_canister'] is PrincipalReference 
-                && (new_user_success_data['user_canister'] as PrincipalReference).isOpaque == false
-            ) {
-                this.cts_user_canister = CTSUserCanister((new_user_success_data['user_canister'] as PrincipalReference).principal!, this);
-                // fresh cycles balance and icp balance
-            }
-        } else if (new_user_sponse.containsKey('Err')) {
-            Variant new_user_error = new_user_sponse['Err'] as Variant;
-            if (new_user_error.containsKey('MidCallError')) {
-                print(new_user_error['MidCallError']);
-                await this.call_new_user();
-            } else {
-                if (new_user_error.containsKey('FoundUserCanister')) { 
-                    this.cts_user_canister = CTSUserCanister((new_user_error['FoundUserCanister'] as PrincipalReference).principal!, this);
-                } else {
-                    return Exception('new_user_error: ${new_user_error}');
+    }
+    
+    Future<UserBurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_ok(CandidType ok) async {
+        return UserBurnIcpMintCyclesSuccess.oftheRecord(ok);
+    }
+
+    Future<UserBurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_err(CandidType err) async {
+        Variant user_burn_icp_mint_cycles_error = err as Variant;
+        if (user_burn_icp_mint_cycles_error.containsKey('MidCallError')) {
+            print('user_burn_icp_mint_cycles mid-call-error: ${user_burn_icp_mint_cycles_error['MidCallError']}');
+            return await call_complete_user_burn_icp_mint_cycles();    
+        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCallMustCallComplete')) {
+            () async { 
+                try{
+                    UserBurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
+                    window.alert('user_burn_icp_mint_cycles call success: ${s}');
+                } catch(e) {
+                    window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
+                }
+            }.then((){});
+            throw Exception('user is in the middle of a different user_burn_icp_mint_cycles call. completing that now in the background.');
+        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfANewUserCall')) {
+            () async { 
+                try{
+                    await call_complete_new_user();
+                    window.alert('new_user call success. fresh the page.');
+                } catch(e) {
+                    window.alert('complete_new_user call error: ${e}');
+                }
+            }.then((){});
+            throw Exception('user is in the middle of a new_user call. completing that now in the background.');
+        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
+            () async { 
+                try{
+                    BigInt icp_block_height = await call_complete_user_transfer_icp();
+                    window.alert('user_transfer_icp call success. block_height: ${icp_block_height}');
+                } catch(e) {
+                    window.alert('complete_user_transfer_icp call error: ${e}');
+                }
+            }.then((){});
+            throw Exception('user is in the middle of a user_transfer_icp call. completing that now in the background.');
+        } else if (user_burn_icp_mint_cycles_error.containsKey('MinimumUserBurnIcpMintCycles')) {
+            IcpTokens t = IcpTokens.oftheRecord((user_burn_icp_mint_cycles_error['MinimumUserBurnIcpMintCycles'] as Record)['minimum_user_burn_icp_mint_cycles']);
+            throw Exception('MinimumUserBurnIcpMintCycles: $t');
+        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIcpBalanceTooLow')) {
+            Record uibtlr = user_burn_icp_mint_cycles_error['UserIcpBalanceTooLow'] as Record;
+            throw Exception('user icp balance is too low for this call.\nuser icp balance: ${IcpTokens.oftheRecord(uibtlr['user_icp_balance'])}\nicp_ledger_transfer_fee: ${IcpTokens.oftheRecord(uibtlr['nicp_ledger_transfer_fee'])}');
+        } else {
+            String user_burn_icp_mint_cycles_error_type = 'unknown error: ${user_burn_icp_mint_cycles_error.keys.first}';
+            for (String possible_error_variant in [
+                'UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall',
+                'IcpCheckBalanceCallError',
+                'FindUserInTheUsersMapCanistersError',
+                'UserCanisterNotFound',
+                'MaxUsersBurnIcpMintCycles',
+                'LedgerTopupCyclesCmcIcpTransferError',   
+            ]) {
+                if (user_burn_icp_mint_cycles_error.containsKey(possible_error_variant)) {
+                    user_burn_icp_mint_cycles_error_type = possible_error_variant;
+                    break;
                 }
             }
-        } else {
-            return Exception('unknown new_user_sponse: ${new_user_sponse}');
+            if (user_burn_icp_mint_cycles_error.values.first is! Null) {
+                user_burn_icp_mint_cycles_error_type += '\n${user_burn_icp_mint_cycles_error.values.first}';
+            }
+            throw Exception('user_burn_icp_mint_cycles error: ${user_burn_icp_mint_cycles_error_type}');
         }
     }
 
@@ -584,67 +629,31 @@ class CTSUserCanister extends Canister {
             this.latest_known_cycles_balance,
             this.latest_known_icp_balance,
     }) : super(user_canister_id) {
-        
-        user_call_f = ({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 5)}) {
-            return super.call(calltype: calltype, method_name: method_name, put_bytes: put_bytes, caller: user.caller, legations: user.legations, timeout_duration: timeout_duration);
-        };
     
     }
     
-    late Future<Uint8List> Function({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration}) user_call_f;
-    
-    Future<Uint8List> user_call({required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 5)}) {
-        return user_call_f(calltype: calltype, method_name: method_name, put_bytes: put_bytes, timeout_duration: timeout_duration);
+    Future<void> fresh_user_cycles_balance() async {        
+        List<CandidType> user_cycles_balance_call_sponse_candids = c_backwards(await this.user.call(
+            calltype: CallType.call,
+            method_name: 'user_cycles_balance',
+            put_bytes: c_forwards([]),
+        ));
+        // check for variant Err . but now there is no Err on the user_cycles_balance method
+        dynamic user_cycles_balance_dyn = ((user_cycles_balance_call_sponse_candids[0] as Variant)['Ok'] as Nat).value;
+        BigInt user_cycles_balance = user_cycles_balance_dyn is BigInt ? user_cycles_balance_dyn : BigInt.from(user_cycles_balance_dyn);
+        this.latest_known_cycles_balance = LatestKnownCyclesBalance(
+            cycles_balance: user_cycles_balance,
+            timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
+        );
     }
     
     
-    Future<Exception?> fresh_user_cycles_balance() async {
-        try {
-            List<CandidType> user_cycles_balance_call_sponse_candids = c_backwards(await this.user_call(
-                calltype: CallType.call,
-                method_name: 'user_cycles_balance',
-                put_bytes: c_forwards([]),
-            ));
-            // check for variant Err . but now there is no Err on the user_cycles_balance method
-            dynamic user_cycles_balance_dyn = ((user_cycles_balance_call_sponse_candids[0] as Variant)['Ok'] as Nat).value;
-            BigInt user_cycles_balance = user_cycles_balance_dyn is BigInt ? user_cycles_balance_dyn : BigInt.from(user_cycles_balance_dyn);
-            this.latest_known_cycles_balance = LatestKnownCyclesBalance(
-                cycles_balance: user_cycles_balance,
-                timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
-            );
-        } catch(e) {
-            return Exception('see user cycles balance call error:\n${e.toString()}');
-        }
-    }
-    
-    Future<Exception?> fresh_user_icp_balance() async {
-        try {
-            List<CandidType> user_icp_balance_call_sponse_candids = c_backwards(await this.user_call(
-                calltype: CallType.call,
-                method_name: 'user_icp_balance',
-                put_bytes: c_forwards([]),
-            ));
-            Variant user_icp_balance_call_sponse = user_icp_balance_call_sponse_candids[0] as Variant;
-            if (user_icp_balance_call_sponse.containsKey('Ok')) {
-                Record icp_tokens = user_icp_balance_call_sponse['Ok'] as Record;
-                dynamic user_icp_balance_e8s_dyn = (icp_tokens['e8s'] as Nat64).value;
-                BigInt user_icp_balance_e8s = user_icp_balance_e8s_dyn is BigInt ? user_icp_balance_e8s_dyn : BigInt.from(user_icp_balance_e8s_dyn);
-                this.latest_known_icp_balance = LatestKnownIcpBalance(
-                    icp_balance_e8s: user_icp_balance_e8s,
-                    timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
-                );
-            } 
-            else if (user_icp_balance_call_sponse.containsKey('Err')) {
-                return Exception('see user icp balance error:\n${user_icp_balance_call_sponse['Err']}');
-            }
-            else {
-                return Exception('see user icp balance sponse unknown \n${user_icp_balance_call_sponse}');
-            }
-        } catch(e) {
-            return Exception('see user icp balance call error:\n${e.toString()}');
-        }
+    // the user must have a user-canister for this method that is why it is on the CTSUserCanister-class
+    Future<void> user_burn_icp_mint_cycles() async {
     
     }
+    
+    
     
     
     
