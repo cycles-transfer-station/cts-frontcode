@@ -34,7 +34,8 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                 notifyListeners();
                 window.alert(e.toString());
             }
-        }.then((){});
+            return;
+        }().then((){});
     }
 
     @override

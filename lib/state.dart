@@ -53,7 +53,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     bool is_loading = true; // state starts loading. in the load_first_state function, the state sets is_loading = false and then completes and the router calls tifyListeners 
     
     
-    LatestKnownXDRICPRate? xdr_icp_rate;
+    XDRICPRate? xdr_icp_rate;
     
     User? user;
         
@@ -126,9 +126,9 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
-        this.xdr_icp_rate = LatestKnownXDRICPRate(
-            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value is BigInt ? certified_xdr_permyriad_per_icp.value : BigInt.from(certified_xdr_permyriad_per_icp.value),
-            timestamp_seconds: certified_timestamp_seconds.value is BigInt ? certified_timestamp_seconds.value : BigInt.from(certified_timestamp_seconds.value) 
+        this.xdr_icp_rate = XDRICPRate(
+            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value!,
+            timestamp_seconds: certified_timestamp_seconds.value! 
         );        
     }
 
@@ -264,9 +264,9 @@ class LatestKnownCyclesBalance {
 
 class IcpTokens extends Record {
     final BigInt e8s;
-    final BigInt timestamp_nanos;
-    IcpTokens({required this.e8s, BigInt? timestamp_nanos}) 
-        : timestamp_nanos==null ? this.timestamp_nanos = get_current_timestamp_nanos() : this.timestamp_nanos = timestamp_nanos, {
+    late final BigInt timestamp_nanos;
+    IcpTokens({required this.e8s, BigInt? opt_timestamp_nanos}) { 
+        this.timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
         super['e8s'] = Nat64(this.e8s);
     }
     String toString() {
@@ -281,7 +281,7 @@ class IcpTokens extends Record {
     static IcpTokens oftheRecord(CandidType icptokensrecord) {
         Nat64 e8s_nat64 = (icptokensrecord as Record)['e8s'] as Nat64; 
         return IcpTokens(
-            e8s: e8s_nat64.value
+            e8s: e8s_nat64.value!
         );
     }
     static IcpTokens ofthedouble(double icp) {
@@ -292,10 +292,10 @@ class IcpTokens extends Record {
 }
 
 
-class LatestKnownXDRICPRate {
+class XDRICPRate {
     BigInt xdr_permyriad_per_icp;
     BigInt timestamp_seconds;
-    LatestKnownXDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
+    XDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
 }
 
 
@@ -305,11 +305,14 @@ class UserBurnIcpMintCyclesSuccess {
     final Cycles mint_cycles_for_the_user;
     final Cycles cts_fee_taken;
     
+    UserBurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
+    
+    
     static UserBurnIcpMintCyclesSuccess oftheRecord(CandidType user_burn_icp_mint_cycles_success_record) {
         Record r = user_burn_icp_mint_cycles_success_record as Record;
         return UserBurnIcpMintCyclesSuccess(
-            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value,
-            cts_fee_taken: (r['cts_fee_taken'] as Nat).value            
+            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value!,
+            cts_fee_taken: (r['cts_fee_taken'] as Nat).value!            
         );
     }
 
@@ -364,7 +367,7 @@ class User {
     
     Future<void> fresh_user_icp_ledger_balance() async {
     
-        icptokens_record = (c_backwards(await common.ledger.call(
+        Record icptokens_record = (c_backwards(await common.ledger.call(
             calltype: CallType.call,
             method_name: 'account_balance',
             put_bytes: c_forwards([
@@ -372,7 +375,7 @@ class User {
                     'account': Blob(this.user_icp_id)
                 })
             ])
-        ))[0] as Record;
+        )))[0] as Record;
         
         this.user_icp_ledger_balance = IcpTokens.oftheRecord(icptokens_record);    
     }
@@ -430,9 +433,9 @@ class User {
             )
         )[0] as Variant;
         if (new_user_sponse.containsKey(Ok)) {
-            return await _handle_new_user_ok(new_user_sponse[Ok]);
+            return await _handle_new_user_ok(new_user_sponse[Ok]!);
         } else if (new_user_sponse.containsKey(Err)) {
-            return await _handle_new_user_err(new_user_sponse[Err]);
+            return await _handle_new_user_err(new_user_sponse[Err]!);
         } else {
             throw Exception('unknown new_user_sponse: ${new_user_sponse}');
         }   
@@ -448,13 +451,13 @@ class User {
             )
         )[0] as Variant;
         if (sponse.containsKey(Ok)) {
-            return await _handle_new_user_ok(sponse[Ok]);
+            return await _handle_new_user_ok(sponse[Ok]!);
         } else if (sponse.containsKey(Err)) {
             Variant complete_new_user_error = sponse[Err] as Variant;
             if (complete_new_user_error.containsKey('UserNotFoundInTheNewUsersMap')) {
                 throw Exception('call complete_new_user error: user is not in the middle of a new_user call.');
             } else if (complete_new_user_error.containsKey('NewUserError')) {
-                return await _handle_new_user_err(complete_new_user_error['NewUserError']);    
+                return await _handle_new_user_err(complete_new_user_error['NewUserError']!);    
             } else {
                 throw Exception('unknown complete_new_user_error: ${complete_new_user_error}');
             }
@@ -472,20 +475,42 @@ class User {
             this.cts_user_canister = CTSUserCanister((new_user_error['FoundUserCanister'] as PrincipalReference).principal!, this);
         } else if (new_user_error.containsKey('UserIcpLedgerBalanceTooLow')) {
             Record user_icp_ledger_balance_too_low_error = new_user_error['UserIcpLedgerBalanceTooLow'] as Record;
-            IcpTokens cts_user_contract_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cts_user_contract_cost_icp']);
-            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']);
-            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']);
-            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cts_user_contract_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*2) );
+            IcpTokens cts_user_contract_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cts_user_contract_cost_icp']!);
+            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
+            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
+            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cts_user_contract_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)) );
             throw Exception('user icp balance is too low.\ncts-user-contract current cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         } else if (new_user_error.containsKey('UserIsInTheMiddleOfANewUserCallMustCallComplete')) {
-            call_complete_new_user().then((e){ if (e!=null) { window.alert('new_user call error: ${e}'); } });
+            ()async{
+                try {
+                    await call_complete_new_user();
+                } catch(e) {
+                    window.alert('complete_new_user call error: ${e}');
+                }
+                return;
+            }().then((){});
             throw Exception('user is in the middle of a different new_user call. completing that now in the background.');
         } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
-            call_complete_user_transfer_icp().then((e){ print(e); });
-            throw Exception('user is in the middle of a user_transfer_icp call.');
+            () async { 
+                try{
+                    BigInt icp_block_height = await call_complete_user_transfer_icp();
+                    window.alert('user_transfer_icp call success. block_height: ${icp_block_height}');
+                } catch(e) {
+                    window.alert('complete_user_transfer_icp call error: ${e}');
+                }
+                return;
+            }().then((){});
+            throw Exception('user is in the middle of a user_transfer_icp call. completing that now in the background.');
         } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall')) {
-            call_complete_user_burn_icp_mint_cycles().then((e){ print(e); });
-            throw Exception('user is in the middle of a user_burn_icp_mint_cycles call.');
+            () async { 
+                try{
+                    UserBurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
+                    window.alert('user_burn_icp_mint_cycles call success: ${s}');
+                } catch(e) {
+                    window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
+                }
+            }().then((){});
+            throw Exception('user is in the middle of a user_burn_icp_mint_cycles call. completing that now in the background.');
         } else {
             String new_user_error_type = 'unknown error: ${new_user_error.keys.first}';
             for (String possible_error_variant in [
@@ -528,14 +553,18 @@ class User {
                 })
             ])
         );
-        Variant sponse = c_backwards(sponse)[0] as Variant;
+        Variant sponse = c_backwards(sponse_bytes)[0] as Variant;
         if (sponse.containsKey(Ok)) {
-            return await _handle_user_burn_icp_mint_cycles_ok(sponse[Ok]);
+            return await _handle_user_burn_icp_mint_cycles_ok(sponse[Ok]!);
         } else if (sponse.containsKey(Err)) {
-            return await _handle_user_burn_icp_mint_cycles_err(sponse[Err]);
+            return await _handle_user_burn_icp_mint_cycles_err(sponse[Err]!);
         } else {
             throw Exception('unknown user_burn_icp_mint_cycles sponse.');
         }
+    }
+    
+    Future<UserBurnIcpMintCyclesSuccess> call_complete_user_burn_icp_mint_cycles() async {
+        throw UnimplementedError();
     }
     
     Future<UserBurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_ok(CandidType ok) async {
@@ -555,7 +584,7 @@ class User {
                 } catch(e) {
                     window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
                 }
-            }.then((){});
+            }().then((){});
             throw Exception('user is in the middle of a different user_burn_icp_mint_cycles call. completing that now in the background.');
         } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfANewUserCall')) {
             () async { 
@@ -565,7 +594,7 @@ class User {
                 } catch(e) {
                     window.alert('complete_new_user call error: ${e}');
                 }
-            }.then((){});
+            }().then((){});
             throw Exception('user is in the middle of a new_user call. completing that now in the background.');
         } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
             () async { 
@@ -575,14 +604,14 @@ class User {
                 } catch(e) {
                     window.alert('complete_user_transfer_icp call error: ${e}');
                 }
-            }.then((){});
+            }().then((){});
             throw Exception('user is in the middle of a user_transfer_icp call. completing that now in the background.');
         } else if (user_burn_icp_mint_cycles_error.containsKey('MinimumUserBurnIcpMintCycles')) {
-            IcpTokens t = IcpTokens.oftheRecord((user_burn_icp_mint_cycles_error['MinimumUserBurnIcpMintCycles'] as Record)['minimum_user_burn_icp_mint_cycles']);
+            IcpTokens t = IcpTokens.oftheRecord((user_burn_icp_mint_cycles_error['MinimumUserBurnIcpMintCycles'] as Record)['minimum_user_burn_icp_mint_cycles']!);
             throw Exception('MinimumUserBurnIcpMintCycles: $t');
         } else if (user_burn_icp_mint_cycles_error.containsKey('UserIcpBalanceTooLow')) {
             Record uibtlr = user_burn_icp_mint_cycles_error['UserIcpBalanceTooLow'] as Record;
-            throw Exception('user icp balance is too low for this call.\nuser icp balance: ${IcpTokens.oftheRecord(uibtlr['user_icp_balance'])}\nicp_ledger_transfer_fee: ${IcpTokens.oftheRecord(uibtlr['nicp_ledger_transfer_fee'])}');
+            throw Exception('user icp balance is too low for this call.\nuser icp balance: ${IcpTokens.oftheRecord(uibtlr['user_icp_balance']!)}\nicp_ledger_transfer_fee: ${IcpTokens.oftheRecord(uibtlr['nicp_ledger_transfer_fee']!)}');
         } else {
             String user_burn_icp_mint_cycles_error_type = 'unknown error: ${user_burn_icp_mint_cycles_error.keys.first}';
             for (String possible_error_variant in [
@@ -613,18 +642,21 @@ class User {
 }
 
 
+// ---------- :checkpoint.
+
 
 
 
 
 class CTSUserCanister extends Canister {
+    User user;
 
     LatestKnownCyclesBalance? latest_known_cycles_balance;
-    LatestKnownIcpBalance? latest_known_icp_balance;
+    IcpTokens? latest_known_icp_balance;
 
     CTSUserCanister(
         Principal user_canister_id,
-        User user,
+        this.user,
         {
             this.latest_known_cycles_balance,
             this.latest_known_icp_balance,

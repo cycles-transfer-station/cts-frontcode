@@ -131,7 +131,6 @@ class WelcomePageWidget extends StatelessWidget {
                         
                         try {
                             await state.loadfirststate();
-                        
                         } catch(e) {
                             window.alert(e.toString());
                             state.loading_text = 'Error: ${e}';
@@ -278,7 +277,7 @@ class WelcomePageWidget extends StatelessWidget {
                                         text:
 '''
 
-\nICP: ${state.user!.user_icp_ledger_balance != null ? state.user!.user_icp_ledger_balance!.icp_balance_string() : 'unknown'}
+\nICP: ${state.user!.user_icp_ledger_balance != null ? state.user!.user_icp_ledger_balance! : 'unknown'}
 '''
                                     ),
                                     WidgetSpan(
