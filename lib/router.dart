@@ -24,18 +24,14 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     CustomState state = CustomState();
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        () async {
-            try {
-                await state.loadfirststate();
-                state.is_loading = false;
-                notifyListeners();
-            } catch(e) {
-                state.loading_text = 'Error: ${e}';
-                notifyListeners();
-                window.alert(e.toString());
-            }
-            return;
-        }().then((){});
+        state.loadfirststate().then((x){
+            state.is_loading = false;
+            notifyListeners();
+        }).catchError((e){
+            state.loading_text = 'Error: ${e}';
+            notifyListeners();
+            window.alert(e.toString());
+        });
     }
 
     @override
@@ -79,7 +75,6 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             };
             
         }
-        
         
         return MainStateBind<CustomState>(
             key: ValueKey<String>('mainstatebind'),

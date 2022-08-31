@@ -22,7 +22,8 @@ import 'package:ic_tools/candid.dart' show
     Variant,
     PrincipalReference,
     PrincipalCandid,
-    Nat8
+    Nat8,
+    Null,
     ;
 
 import 'package:ic_tools/common.dart' as common;
@@ -53,7 +54,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     bool is_loading = true; // state starts loading. in the load_first_state function, the state sets is_loading = false and then completes and the router calls tifyListeners 
     
     
-    XDRICPRate? xdr_icp_rate;
+    XDRICPRateWithATimestamp? xdr_icp_rate;
     
     User? user;
         
@@ -69,26 +70,21 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         }
         
         
-        
         print('get state of the browser storage');
         await this.get_state_of_the_browser_storage();
         
+        print('fresh_xdr_icp_rate');
+        await this.fresh_xdr_icp_rate();
+
+        
         if (this.user != null) {
-                
-            if (this.user!.cts_user_canister == null) {
-                print('find cts user canister');
-                await this.user!.find_cts_user_canister();
-                
-                // if UserNotFound
-                if (this.user!.cts_user_canister == null) {
-                    print('fresh_user_icp_ledger_balance');
-                    await this.user!.fresh_user_icp_ledger_balance();
-                    
-                    print('fresh_xdr_icp_rate');
-                    await this.fresh_xdr_icp_rate();
-                    
-                }
-                
+        
+            print('fresh_user_icp_ledger_balance');
+            await this.user!.fresh_user_icp_ledger_balance();
+            
+            if (this.user!.cycles_bank == null) {
+                print('find_cycles_bank');
+                await this.user!.find_cycles_bank();           
             }
         
             
@@ -126,9 +122,9 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
-        this.xdr_icp_rate = XDRICPRate(
-            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value!,
-            timestamp_seconds: certified_timestamp_seconds.value! 
+        this.xdr_icp_rate = XDRICPRateWithATimestamp(
+            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value,
+            timestamp_seconds: certified_timestamp_seconds.value 
         );        
     }
 
@@ -253,20 +249,12 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 
 
 
-
-
-class LatestKnownCyclesBalance {
-    BigInt cycles_balance;
-    BigInt timestamp_nanos;
-    LatestKnownCyclesBalance({required this.cycles_balance, required this.timestamp_nanos});
-}
+typedef Cycles = BigInt; 
 
 
 class IcpTokens extends Record {
     final BigInt e8s;
-    late final BigInt timestamp_nanos;
-    IcpTokens({required this.e8s, BigInt? opt_timestamp_nanos}) { 
-        this.timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
+    IcpTokens({required this.e8s}) { 
         super['e8s'] = Nat64(this.e8s);
     }
     String toString() {
@@ -277,42 +265,54 @@ class IcpTokens extends Record {
         while (s[s.length - 1] == '0' && s.length > 3/*minimum '0.0'*/) { s = s.substring(0, s.length - 1); }
         return s;   
     }
-    
     static IcpTokens oftheRecord(CandidType icptokensrecord) {
         Nat64 e8s_nat64 = (icptokensrecord as Record)['e8s'] as Nat64; 
         return IcpTokens(
-            e8s: e8s_nat64.value!
+            e8s: e8s_nat64.value
         );
     }
     static IcpTokens ofthedouble(double icp) {
+        if (check_double_decimal_point_places(icp) > 8) {
+            throw Exception('max 8 decimal places for the icp');
+        }
         return IcpTokens(
-            e8s: BigInt.from((icp * 100000000).toInt())
+            e8s: BigInt.parse((icp * 100000000.toDouble()).toString().split('.')[0])
         );
     }
 }
 
 
-class XDRICPRate {
-    BigInt xdr_permyriad_per_icp;
-    BigInt timestamp_seconds;
-    XDRICPRate({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
+class CyclesWithATimestamp {
+    final Cycles cycles;
+    final BigInt timestamp_nanos;
+    CyclesWithATimestamp({required this.cycles, BigInt? opt_timestamp_nanos}) : timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
+}
+
+class IcpTokensWithATimestamp {
+    final IcpTokens icp;
+    final BigInt timestamp_nanos;
+    IcpTokensWithATimestamp({required this.icp, BigInt? opt_timestamp_nanos}) : timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
+}
+
+class XDRICPRateWithATimestamp {
+    final BigInt xdr_permyriad_per_icp;
+    final BigInt timestamp_seconds;
+    XDRICPRateWithATimestamp({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
 }
 
 
-typedef Cycles = BigInt; 
-
-class UserBurnIcpMintCyclesSuccess {
+class BurnIcpMintCyclesSuccess {
     final Cycles mint_cycles_for_the_user;
     final Cycles cts_fee_taken;
     
-    UserBurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
+    BurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
     
     
-    static UserBurnIcpMintCyclesSuccess oftheRecord(CandidType user_burn_icp_mint_cycles_success_record) {
+    static BurnIcpMintCyclesSuccess oftheRecord(CandidType user_burn_icp_mint_cycles_success_record) {
         Record r = user_burn_icp_mint_cycles_success_record as Record;
-        return UserBurnIcpMintCyclesSuccess(
-            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value!,
-            cts_fee_taken: (r['cts_fee_taken'] as Nat).value!            
+        return BurnIcpMintCyclesSuccess(
+            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value,
+            cts_fee_taken: (r['cts_fee_taken'] as Nat).value            
         );
     }
 
@@ -327,27 +327,26 @@ class User {
     final List<Legation> legations;
     
     late final BigInt? expiration_unix_timestamp_nanoseconds;
-    
     late final Uint8List public_key_DER;
     late final Principal principal;
     late final Uint8List user_icp_subaccount_bytes;
     late final Uint8List user_icp_id;
     
     
-    IcpTokens? user_icp_ledger_balance;
-    CTSUserCanister? cts_user_canister;
+    IcpTokensWithATimestamp? user_icp_ledger_balance;
+    CyclesBank? cycles_bank;
     
     User({
         required this.caller,
         required this.legations,
         this.user_icp_ledger_balance,
-        this.cts_user_canister,
+        this.cycles_bank,
     }) {
-        expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
+        this.expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
         this.public_key_DER = legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
         this.principal = Principal.ofthePublicKeyDER(this.public_key_DER);
-        user_icp_subaccount_bytes = User.get_user_icp_subaccount_bytes(this.principal);
-        user_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_icp_subaccount_bytes));
+        this.user_icp_subaccount_bytes = User.get_user_icp_subaccount_bytes(this.principal);
+        this.user_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_icp_subaccount_bytes));
     }
 
     
@@ -377,54 +376,71 @@ class User {
             ])
         )))[0] as Record;
         
-        this.user_icp_ledger_balance = IcpTokens.oftheRecord(icptokens_record);    
+        this.user_icp_ledger_balance = IcpTokensWithATimestamp(
+            icp: IcpTokens.oftheRecord(icptokens_record)
+        );
     }
 
     
-    Future<void> find_cts_user_canister() async {
+    Future<void> find_cycles_bank() async {
 
-        List<CandidType> find_user_canister_cs = c_backwards(await call(
-            cts,
-            calltype: CallType.call,
-            method_name: 'find_user_canister',
-            put_bytes: c_forwards([]),
-        ));
-        Variant find_user_canister_sponse = find_user_canister_cs[0] as Variant;
-        if (find_user_canister_sponse.containsKey(Ok)) {
-            Option opt_user_canister_id = find_user_canister_sponse[Ok] as Option;
+        Variant find_cycles_bank_sponse = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'find_cycles_bank',
+                put_bytes: c_forwards([]),
+            )
+        )[0] as Variant;
+        if (find_cycles_bank_sponse.containsKey(Ok)) {
+            Option opt_user_canister_id = find_cycles_bank_sponse[Ok] as Option;
             if (opt_user_canister_id.value != null) {
-                this.cts_user_canister = CTSUserCanister((opt_user_canister_id.value as PrincipalReference).principal!, this);
+                this.cycles_bank = CyclesBank((opt_user_canister_id.value as PrincipalReference).principal!, this);
             } else {
-                this.cts_user_canister = null;
+                this.cycles_bank = null;
             }
         }
-        else if (find_user_canister_sponse.containsKey(Err)) {
-            Variant find_user_canister_sponse_error = find_user_canister_sponse[Err] as Variant; 
-            if (find_user_canister_sponse_error.containsKey('FindUserInTheUsersMapCanistersError')) {
-                Variant find_user_in_the_users_map_canisters_error = find_user_canister_sponse_error['FindUserInTheUsersMapCanistersError'] as Variant;
-                String alert_dialog_content_string = 'Users-Map-Canisters Call-Fails:';
-                for (Record users_map_canister_call_fail in (find_user_canister_sponse_error['UsersMapCanistersFindUserCallFails'] as Vector).cast_vector<Record>()) {
+        else if (find_cycles_bank_sponse.containsKey(Err)) {
+            Variant find_cycles_bank_sponse_error = find_cycles_bank_sponse[Err] as Variant; 
+            if (find_cycles_bank_sponse_error.containsKey('FindUserInTheCBSMapsError')) {
+                Variant find_user_in_the_users_map_canisters_error = find_cycles_bank_sponse_error['FindUserInTheCBSMapsError'] as Variant;
+                String alert_dialog_content_string = 'Cycles-Banks-Map-Canisters Call-Fails:';
+                for (Record users_map_canister_call_fail in (find_cycles_bank_sponse_error['CBSMapsFindUserCallFails'] as Vector).cast_vector<Record>()) {
                     alert_dialog_content_string = alert_dialog_content_string+' \n${users_map_canister_call_fail[0]}, error: ${users_map_canister_call_fail[1]}';                   
                 }
-                throw Exception('Find CTS-User-Canister Error:\n${alert_dialog_content_string}');  
-            } else if (find_user_canister_sponse_error.containsKey('UserIsInTheNewUsersMap')) {
-                await this.call_complete_new_user();
+                throw Exception('Find Cycles Bank Error:\n${alert_dialog_content_string}');  
+            } else if (find_cycles_bank_sponse_error.containsKey('UserIsInTheMiddleOfAPurchaseCyclesBankCall')) {
+                if (((find_cycles_bank_sponse_error['UserIsInTheMiddleOfAPurchaseCyclesBankCall'] as Record)['must_call_complete'] as Bool).value) {
+                    await complete_purchase_cycles_bank();
+                } else {
+                    await Future.delayed(Duration(seconds: 10));
+                    await find_cycles_bank();
+                }
             } else {
-                throw Exception('Unknown find_user_canister_sponse_error. \n${find_user_canister_sponse_error}');
+                throw Exception('Unknown find_cycles_bank_sponse_error. \n${find_cycles_bank_sponse_error}');
             } 
         } else {
-            throw Exception('Unknown find_user_canister_sponse. \n${find_user_canister_sponse}');
+            throw Exception('Unknown find_cycles_bank_sponse. \n${find_cycles_bank_sponse}');
         }    
 
     }
 
+
+    Future<void> handle_user_is_in_the_middle_of_a_different_call(Variant user_is_in_the_middle_of_a_different_call_variant) async {
+        print(user_is_in_the_middle_of_a_different_call_variant);
+        if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) {
+        
+        } else if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) {
+        
+        } else if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) 
+    }
     
-    Future<void> call_new_user(Principal? opt_referral_user_id) async {
-        Variant new_user_sponse = c_backwards(
+    Future<void> purchase_cycles_bank(Principal? opt_referral_user_id) async {
+        Variant purchase_cycles_bank_sponse = c_backwards(
             await call(
                 cts,
                 calltype: CallType.call,
-                method_name: 'new_user',
+                method_name: 'purchase_cycles_bank',
                 put_bytes: c_forwards([
                     Record.oftheMap({
                         'opt_referral_user_id': Option(value: opt_referral_user_id !=null ? opt_referral_user_id.c : null, value_type: PrincipalReference(isTypeStance:true))
@@ -432,117 +448,93 @@ class User {
                 ])
             )
         )[0] as Variant;
-        if (new_user_sponse.containsKey(Ok)) {
-            return await _handle_new_user_ok(new_user_sponse[Ok]!);
-        } else if (new_user_sponse.containsKey(Err)) {
-            return await _handle_new_user_err(new_user_sponse[Err]!);
+        if (purchase_cycles_bank_sponse.containsKey(Ok)) {
+            return await _handle_purchase_cycles_bank_ok(purchase_cycles_bank_sponse[Ok]!);
+        } else if (purchase_cycles_bank_sponse.containsKey(Err)) {
+            return await _handle_purchase_cycles_bank_err(purchase_cycles_bank_sponse[Err]!);
         } else {
-            throw Exception('unknown new_user_sponse: ${new_user_sponse}');
+            throw Exception('unknown purchase_cycles_bank_sponse: ${purchase_cycles_bank_sponse}');
         }   
     }
 
-    Future<void> call_complete_new_user() async {
+    Future<void> complete_purchase_cycles_bank() async {
         Variant sponse = c_backwards(
             await call(
                 cts,
                 calltype: CallType.call,
-                method_name: 'complete_new_user',
+                method_name: 'complete_purchase_cycles_bank',
                 put_bytes: c_forwards([])
             )
         )[0] as Variant;
         if (sponse.containsKey(Ok)) {
-            return await _handle_new_user_ok(sponse[Ok]!);
+            return await _handle_purchase_cycles_bank_ok(sponse[Ok]!);
         } else if (sponse.containsKey(Err)) {
-            Variant complete_new_user_error = sponse[Err] as Variant;
-            if (complete_new_user_error.containsKey('UserNotFoundInTheNewUsersMap')) {
-                throw Exception('call complete_new_user error: user is not in the middle of a new_user call.');
-            } else if (complete_new_user_error.containsKey('NewUserError')) {
-                return await _handle_new_user_err(complete_new_user_error['NewUserError']!);    
+            Variant complete_purchase_cycles_bank_error = sponse[Err] as Variant;
+            if (complete_purchase_cycles_bank_error.containsKey('UserIsNotInTheMiddleOfAPurchaseCyclesBankCall')) {
+                throw Exception('complete_purchase_cycles_bank error: UserIsNotInTheMiddleOfAPurchaseCyclesBankCall');
+            } else if (complete_purchase_cycles_bank_error.containsKey('PurchaseCyclesBankError')) {
+                return await _handle_purchase_cycles_bank_err(complete_purchase_cycles_bank_error['PurchaseCyclesBankError']!);    
             } else {
-                throw Exception('unknown complete_new_user_error: ${complete_new_user_error}');
+                throw Exception('unknown complete_purchase_cycles_bank_error: ${complete_purchase_cycles_bank_error}');
             }
         } else {
-            throw Exception('unknown complete_new_user_sponse: ${sponse}');
+            throw Exception('unknown complete_purchase_cycles_bank_sponse: ${sponse}');
         }
     }
 
-    Future<void> _handle_new_user_err(CandidType new_user_err_ctype) async {
-        Variant new_user_error = new_user_err_ctype as Variant;
-        if (new_user_error.containsKey('MidCallError')) {
-            print('new_user mid_call_error: ${new_user_error['MidCallError']}');
-            return await this.call_complete_new_user();
-        } else if (new_user_error.containsKey('FoundUserCanister')) { 
-            this.cts_user_canister = CTSUserCanister((new_user_error['FoundUserCanister'] as PrincipalReference).principal!, this);
-        } else if (new_user_error.containsKey('UserIcpLedgerBalanceTooLow')) {
-            Record user_icp_ledger_balance_too_low_error = new_user_error['UserIcpLedgerBalanceTooLow'] as Record;
-            IcpTokens cts_user_contract_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cts_user_contract_cost_icp']!);
+    Future<void> _handle_purchase_cycles_bank_err(CandidType purchase_cycles_bank_err_ctype) async {
+        Variant purchase_cycles_bank_error = purchase_cycles_bank_err_ctype as Variant;
+        if (purchase_cycles_bank_error.containsKey('MidCallError')) {
+            print('purchase_cycles_bank mid_call_error: ${purchase_cycles_bank_error['MidCallError']}');
+            return await this.complete_purchase_cycles_bank();
+        } else if (purchase_cycles_bank_error.containsKey('FoundCyclesBank')) { 
+            this.cycles_bank = CyclesBank((purchase_cycles_bank_error['FoundCyclesBank'] as PrincipalReference).principal!, this);
+        } else if (purchase_cycles_bank_error.containsKey('UserIcpLedgerBalanceTooLow')) {
+            Record user_icp_ledger_balance_too_low_error = purchase_cycles_bank_error['UserIcpLedgerBalanceTooLow'] as Record;
+            IcpTokens cycles_bank_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
             IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
             IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
-            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cts_user_contract_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)) );
-            throw Exception('user icp balance is too low.\ncts-user-contract current cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
-        } else if (new_user_error.containsKey('UserIsInTheMiddleOfANewUserCallMustCallComplete')) {
-            ()async{
-                try {
-                    await call_complete_new_user();
-                } catch(e) {
-                    window.alert('complete_new_user call error: ${e}');
-                }
-                return;
-            }().then((){});
-            throw Exception('user is in the middle of a different new_user call. completing that now in the background.');
-        } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
-            () async { 
-                try{
-                    BigInt icp_block_height = await call_complete_user_transfer_icp();
-                    window.alert('user_transfer_icp call success. block_height: ${icp_block_height}');
-                } catch(e) {
-                    window.alert('complete_user_transfer_icp call error: ${e}');
-                }
-                return;
-            }().then((){});
-            throw Exception('user is in the middle of a user_transfer_icp call. completing that now in the background.');
-        } else if (new_user_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall')) {
-            () async { 
-                try{
-                    UserBurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
-                    window.alert('user_burn_icp_mint_cycles call success: ${s}');
-                } catch(e) {
-                    window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
-                }
-            }().then((){});
-            throw Exception('user is in the middle of a user_burn_icp_mint_cycles call. completing that now in the background.');
+            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
+            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+        } else if (purchase_cycles_bank_error.containsKey('UserIsInTheMiddleOfADifferentCall')) {
+            handle_user_is_in_the_middle_of_a_different_call(purchase_cycles_bank_error['UserIsInTheMiddleOfADifferentCall'] as Variant).then((){
+            
+            }).catchError((e){
+            
+            });
+            throw Exception('user is in the middle of a different call.');
         } else {
-            String new_user_error_type = 'unknown error: ${new_user_error.keys.first}';
+            String purchase_cycles_bank_error_type = 'unknown error: ${purchase_cycles_bank_error.keys.first}';
             for (String possible_error_variant in [
                 'ReferralUserCannotBeTheCaller',
                 'CheckIcpBalanceCallError',
                 'CheckCurrentXdrPerMyriadPerIcpCmcRateError',
-                'UserIsInTheMiddleOfANewUserCall',
-                'MaxNewUsers',
+                'UserIsInTheMiddleOfAPurchaseCyclesBankCall',
+                'CTSIsBusy',
                 'ReferralUserNotFound',
-                'CreateUserCanisterCmcNotifyError',
+                'CreateCyclesBankCanisterCmcNotifyError',
             ]) {
-                if (new_user_error.containsKey(possible_error_variant)) {
-                    new_user_error_type = possible_error_variant;
+                if (purchase_cycles_bank_error.containsKey(possible_error_variant)) {
+                    purchase_cycles_bank_error_type = possible_error_variant;
                 }
             }
-            if (new_user_error.values.first is! Null) {
-                new_user_error_type += '\n${new_user_error.values.first}';
+            if (purchase_cycles_bank_error.values.first is! Null) {
+                purchase_cycles_bank_error_type += '\n${purchase_cycles_bank_error.values.first}';
             }
-            throw Exception('new_user error: ${new_user_error_type}');
+            throw Exception('purchase_cycles_bank error: ${purchase_cycles_bank_error_type}');
         }
     }
 
-    Future<void> _handle_new_user_ok(CandidType new_user_ok_ctype) async {
-        Record new_user_success = new_user_ok_ctype as Record;
-        this.cts_user_canister = CTSUserCanister((new_user_success['user_canister_id'] as PrincipalReference).principal!, this);
+    Future<void> _handle_purchase_cycles_bank_ok(CandidType purchase_cycles_bank_ok_ctype) async {
+        Record purchase_cycles_bank_success = purchase_cycles_bank_ok_ctype as Record;
+        this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as PrincipalReference).principal!, this);
     }
 
 
     // ------------------
     
     // try catch when calling this it can throw
-    Future<UserBurnIcpMintCyclesSuccess> call_user_burn_icp_mint_cycles(IcpTokens burn_icp) async {
+    Future<BurnIcpMintCyclesSuccess> call_user_burn_icp_mint_cycles(IcpTokens burn_icp) async {
         Uint8List sponse_bytes = await call(
             cts,
             calltype: CallType.call,
@@ -563,15 +555,15 @@ class User {
         }
     }
     
-    Future<UserBurnIcpMintCyclesSuccess> call_complete_user_burn_icp_mint_cycles() async {
+    Future<BurnIcpMintCyclesSuccess> call_complete_user_burn_icp_mint_cycles() async {
         throw UnimplementedError();
     }
     
-    Future<UserBurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_ok(CandidType ok) async {
-        return UserBurnIcpMintCyclesSuccess.oftheRecord(ok);
+    Future<BurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_ok(CandidType ok) async {
+        return BurnIcpMintCyclesSuccess.oftheRecord(ok);
     }
 
-    Future<UserBurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_err(CandidType err) async {
+    Future<BurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_err(CandidType err) async {
         Variant user_burn_icp_mint_cycles_error = err as Variant;
         if (user_burn_icp_mint_cycles_error.containsKey('MidCallError')) {
             print('user_burn_icp_mint_cycles mid-call-error: ${user_burn_icp_mint_cycles_error['MidCallError']}');
@@ -579,23 +571,23 @@ class User {
         } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCallMustCallComplete')) {
             () async { 
                 try{
-                    UserBurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
+                    BurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
                     window.alert('user_burn_icp_mint_cycles call success: ${s}');
                 } catch(e) {
                     window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
                 }
             }().then((){});
             throw Exception('user is in the middle of a different user_burn_icp_mint_cycles call. completing that now in the background.');
-        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfANewUserCall')) {
+        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAPurchaseCyclesBankCall')) {
             () async { 
                 try{
-                    await call_complete_new_user();
-                    window.alert('new_user call success. fresh the page.');
+                    await complete_purchase_cycles_bank();
+                    window.alert('purchase_cycles_bank call success. fresh the page.');
                 } catch(e) {
-                    window.alert('complete_new_user call error: ${e}');
+                    window.alert('complete_purchase_cycles_bank call error: ${e}');
                 }
             }().then((){});
-            throw Exception('user is in the middle of a new_user call. completing that now in the background.');
+            throw Exception('user is in the middle of a purchase_cycles_bank call. completing that now in the background.');
         } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
             () async { 
                 try{
@@ -617,7 +609,7 @@ class User {
             for (String possible_error_variant in [
                 'UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall',
                 'IcpCheckBalanceCallError',
-                'FindUserInTheUsersMapCanistersError',
+                'FindUserInTheCBSMapsError',
                 'UserCanisterNotFound',
                 'MaxUsersBurnIcpMintCycles',
                 'LedgerTopupCyclesCmcIcpTransferError',   
@@ -648,13 +640,13 @@ class User {
 
 
 
-class CTSUserCanister extends Canister {
+class CyclesBank extends Canister {
     User user;
 
     LatestKnownCyclesBalance? latest_known_cycles_balance;
     IcpTokens? latest_known_icp_balance;
 
-    CTSUserCanister(
+    CyclesBank(
         Principal user_canister_id,
         this.user,
         {
@@ -680,7 +672,7 @@ class CTSUserCanister extends Canister {
     }
     
     
-    // the user must have a user-canister for this method that is why it is on the CTSUserCanister-class
+    // the user must have a user-canister for this method that is why it is on the CyclesBank-class
     Future<void> user_burn_icp_mint_cycles() async {
     
     }
