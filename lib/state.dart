@@ -23,8 +23,10 @@ import 'package:ic_tools/candid.dart' show
     PrincipalReference,
     PrincipalCandid,
     Nat8,
-    Null,
+    Nat32,
+    Bool
     ;
+import 'package:ic_tools/candid.dart' as candid;
 
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
@@ -79,8 +81,8 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         
         if (this.user != null) {
         
-            print('fresh_user_icp_ledger_balance');
-            await this.user!.fresh_user_icp_ledger_balance();
+            print('fresh_icp_balance');
+            await this.user!.fresh_icp_balance();
             
             if (this.user!.cycles_bank == null) {
                 print('find_cycles_bank');
@@ -307,16 +309,75 @@ class BurnIcpMintCyclesSuccess {
     
     BurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
     
-    
-    static BurnIcpMintCyclesSuccess oftheRecord(CandidType user_burn_icp_mint_cycles_success_record) {
-        Record r = user_burn_icp_mint_cycles_success_record as Record;
+    static BurnIcpMintCyclesSuccess oftheRecord(CandidType burn_icp_mint_cycles_success_record) {
+        Record r = burn_icp_mint_cycles_success_record as Record;
         return BurnIcpMintCyclesSuccess(
             mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value,
             cts_fee_taken: (r['cts_fee_taken'] as Nat).value            
         );
     }
-
+    
+    String toString() {
+        return 'cycles-mint: ${this.mint_cycles_for_the_user}';
+    }
 }
+
+
+class TransferIcpQuest extends Record {
+    final Nat64 memo;
+    final IcpTokens icp;
+    final String to;
+    
+    TransferIcpQuest({
+        required this.memo,
+        required this.icp,
+        required this.to
+    }) {
+        super['memo'] = this.memo;
+        super['icp'] = this.icp;
+        super['to'] = Blob(hexstringasthebytes(this.to));
+    }
+    
+}
+
+class TransferIcpSuccess {
+    final Nat64 block_height;
+
+    TransferIcpSuccess({required this.block_height});
+    
+    static TransferIcpSuccess oftheRecord(CandidType transfer_icp_success_record) {
+        Record r = transfer_icp_success_record as Record;
+        return TransferIcpSuccess(
+            block_height: r['block_height'] as Nat64
+        );
+    }
+    
+    String toString() {
+        return 'block_height: ${this.block_height.value}';
+    }       
+}
+
+
+String call_error_string(Record call_error) {
+    return 'error_code: ${(call_error[0] as Nat32).value}, error_message: ${(call_error[1] as candid.Text).value}'; 
+}
+
+
+
+T match_variant<T>(Variant variant, Map<String, T Function(CandidType)> match_map) {
+    for (String variant_string in match_map.keys) {
+        CandidType? variant_value = variant[variant_string]; 
+        if (variant_value != null) {
+            return match_map[variant_string]!(variant_value);
+        }
+    }
+    throw Exception('unknown variant: ${variant}\nmatch tries: ${match_map.keys}');
+}
+
+
+
+
+
 
 
 
@@ -333,13 +394,13 @@ class User {
     late final Uint8List user_icp_id;
     
     
-    IcpTokensWithATimestamp? user_icp_ledger_balance;
+    IcpTokensWithATimestamp? icp_balance;
     CyclesBank? cycles_bank;
     
     User({
         required this.caller,
         required this.legations,
-        this.user_icp_ledger_balance,
+        this.icp_balance,
         this.cycles_bank,
     }) {
         this.expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
@@ -364,7 +425,7 @@ class User {
     
     
     
-    Future<void> fresh_user_icp_ledger_balance() async {
+    Future<void> fresh_icp_balance() async {
     
         Record icptokens_record = (c_backwards(await common.ledger.call(
             calltype: CallType.call,
@@ -376,11 +437,62 @@ class User {
             ])
         )))[0] as Record;
         
-        this.user_icp_ledger_balance = IcpTokensWithATimestamp(
+        this.icp_balance = IcpTokensWithATimestamp(
             icp: IcpTokens.oftheRecord(icptokens_record)
         );
     }
 
+
+
+    // ---------------------
+    
+
+    
+    
+    
+    // ----------------------
+    
+    
+    
+    Map<String, Never Function(CandidType)> find_user_in_the_cbs_maps_error_match_map = {
+        'CBSMapsFindUserCallFails': (vec) {
+            String error_string = 'Find the user\'s cycles-bank error: \ncycles-banks-maps-canisters call error(s): ';
+            for (Record call_fail in (vec as Vector).cast_vector<Record>()) {
+                error_string = error_string + '\ncbs_map: ${((call_fail[0] as PrincipalReference).principal!).text}, ${call_error_string(call_fail[1] as Record)}';                   
+            }
+            throw Exception(error_string);
+        }
+    };
+    
+    Map<String, Never Function(CandidType)> get ledger_topup_cycles_cmc_icp_transfer_error_match_map => {
+        'IcpTransferCallError': (call_error) {
+            throw Exception('Icp ledger transfer call error:\n${call_error_string(call_error as Record)}');
+        },
+        'IcpTransferError': (icp_transfer_error) {
+            return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
+        }
+    };
+
+    Map<String, Never Function(CandidType)> get icp_transfer_error_match_map => {
+        'BadFee': (expected_fee_record) {
+            throw Exception('Bad Fee set on the transfer. expected_fee: ${IcpTokens.oftheRecord((expected_fee_record as Record)['expected_fee']!)}');
+        },
+        'InsufficientFunds': (balance_record) {
+            IcpTokens current_balance = IcpTokens.oftheRecord((balance_record as Record)['balance']!);
+            this.icp_balance = IcpTokensWithATimestamp(icp: current_balance);
+            throw Exception('Icp balance is too low. current balance: ${current_balance}');
+        },
+        'TxTooOld': (allowed_window_nanos_record) {
+            throw Exception('Icp Transfer created_at_time field is too old');
+        },
+        'TxCreatedInFuture': (n) {
+            throw Exception('Icp Transfer created_at_time field is too far in the future.');
+        },
+        'TxDuplicate': (duplicate_of_record) {
+            throw Exception('The Icp Transfer is a duplicate of the transfer: ${((duplicate_of_record as Record)['duplicate_of'] as Nat64).value}');
+        }
+    };
+    
     
     Future<void> find_cycles_bank() async {
 
@@ -425,18 +537,125 @@ class User {
 
     }
 
-
-    Future<void> handle_user_is_in_the_middle_of_a_different_call(Variant user_is_in_the_middle_of_a_different_call_variant) async {
-        print(user_is_in_the_middle_of_a_different_call_variant);
-        if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) {
-        
-        } else if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) {
-        
-        } else if (user_is_in_the_middle_of_a_different_call_variant.containsKey('')) 
-    }
+    // -----------------------
     
+
+    
+    
+    
+     Map<String, Never Function(CandidType)> get user_is_in_the_middle_of_a_different_call_variant_match_map => {
+        'PurchaseCyclesBankCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_purchase_cycles_bank()
+                .then((x){
+                    window.alert('purchase_cycles_bank is complete.\ncycles_bank: ${this.cycles_bank}');
+                }).catchError((e){
+                    window.alert('purchase_cycles_bank error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different purchase_cycles_bank call.');
+        },
+        'BurnIcpMintCyclesCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_burn_icp_mint_cycles()
+                .then((x){
+                    window.alert('burn_icp_mint_cycles is complete. \ncycles-mint: ${x}');
+                }).catchError((e){
+                    window.alert('burn_icp_mint_cycles error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different burn_icp_mint_cycles call.');
+        },
+        'TransferIcpCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_transfer_icp()
+                .then((x){
+                    window.alert('transfer_icp is complete. icp-transfer-block-height: ${x}');
+                }).catchError((e){
+                    window.alert('transfer_icp error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different transfer_icp call.');
+        },
+    };
+
+
+    // -----------------------------
+
+
+    Map<String, Future<void> Function(CandidType)> get purchase_cycles_bank_error_match_map => {
+        'MidCallError': (mid_call_error) async {
+            print('purchase_cycles_bank mid_call_error: ${mid_call_error}');
+            return await this.complete_purchase_cycles_bank();          
+        },
+        'FoundCyclesBank':(cycles_bank_principal) async {
+            this.cycles_bank = CyclesBank((cycles_bank_principal as PrincipalReference).principal!, this);    
+        },
+        'UserIcpLedgerBalanceTooLow':(user_icp_ledger_balance_too_low_ctype) async {
+            Record user_icp_ledger_balance_too_low_error = user_icp_ledger_balance_too_low_ctype as Record;
+            IcpTokens cycles_bank_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
+            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
+            this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
+            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
+            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
+            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+        }, 
+        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
+            match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map);
+        },
+        'ReferralUserCannotBeTheCaller': (n) async {
+            throw Exception('The referral-user cannot be the caller.');
+        },
+        'CheckIcpBalanceCallError': (call_error_record) async {
+            throw Exception('Error when checking the user\'s icp balance:\n${call_error_string(call_error_record as Record)}');
+        },
+        'CheckCurrentXdrPerMyriadPerIcpCmcRateError': (r) async {
+            print(r);
+            throw Exception('Error when checking the current xdr-icp rate.');
+        },
+        'CTSIsBusy': (n) async {
+            throw Exception('The CTS is busy, try soon.');
+        },
+        'ReferralUserCyclesBankNotFound': (n) async {
+            throw Exception('The CTS did not find the referral-user\'s cycles-bank. A referral-user must have a cycles-bank.');    
+        },
+        'CreateCyclesBankCanisterCmcNotifyError': (cmc_notify_error) async {
+            print(cmc_notify_error);
+            throw Exception('System error when creating a cycles_bank. please file this error:\n${cmc_notify_error}');
+        }
+    };
+    
+    Map<String, Future<void> Function(CandidType)> get purchase_cycles_bank_result_match_map => {
+        Ok: (purchase_cycles_bank_success_ctype) async {
+            Record purchase_cycles_bank_success = purchase_cycles_bank_success_ctype as Record;
+            this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as PrincipalReference).principal!, this);    
+        },
+        Err: (purchase_cycles_bank_error) async {
+            return await match_variant<Future<void>>(purchase_cycles_bank_error as Variant, purchase_cycles_bank_error_match_map);
+        }  
+    };
+
+    Map<String, Future<void> Function(CandidType)> get complete_purchase_cycles_bank_error_match_map => {
+        'UserIsNotInTheMiddleOfAPurchaseCyclesBankCall': (n) async {
+            throw Exception('user is not in the middle of a purchase_cycles_bank call.');
+        },
+        'PurchaseCyclesBankError': (purchase_cycles_bank_error_ctype) async {
+            return await match_variant<Future<void>>(purchase_cycles_bank_error_ctype as Variant, purchase_cycles_bank_error_match_map);
+        }
+    };
+
+    Map<String, Future<void> Function(CandidType)> get complete_purchase_cycles_bank_result_match_map => {
+        Ok: (purchase_cycles_bank_success_ctype) async {
+            return await purchase_cycles_bank_result_match_map[Ok]!(purchase_cycles_bank_success_ctype);    
+        },
+        Err: (complete_purchase_cycles_bank_error) async {
+            return await match_variant<Future<void>>(complete_purchase_cycles_bank_error as Variant, complete_purchase_cycles_bank_error_match_map);
+        }
+    };
+
+
     Future<void> purchase_cycles_bank(Principal? opt_referral_user_id) async {
-        Variant purchase_cycles_bank_sponse = c_backwards(
+        Variant purchase_cycles_bank_result = c_backwards(
             await call(
                 cts,
                 calltype: CallType.call,
@@ -448,17 +667,11 @@ class User {
                 ])
             )
         )[0] as Variant;
-        if (purchase_cycles_bank_sponse.containsKey(Ok)) {
-            return await _handle_purchase_cycles_bank_ok(purchase_cycles_bank_sponse[Ok]!);
-        } else if (purchase_cycles_bank_sponse.containsKey(Err)) {
-            return await _handle_purchase_cycles_bank_err(purchase_cycles_bank_sponse[Err]!);
-        } else {
-            throw Exception('unknown purchase_cycles_bank_sponse: ${purchase_cycles_bank_sponse}');
-        }   
+        return await match_variant<Future<void>>(purchase_cycles_bank_result, purchase_cycles_bank_result_match_map);   
     }
 
     Future<void> complete_purchase_cycles_bank() async {
-        Variant sponse = c_backwards(
+        Variant complete_purchase_cycles_bank_result = c_backwards(
             await call(
                 cts,
                 calltype: CallType.call,
@@ -466,165 +679,203 @@ class User {
                 put_bytes: c_forwards([])
             )
         )[0] as Variant;
-        if (sponse.containsKey(Ok)) {
-            return await _handle_purchase_cycles_bank_ok(sponse[Ok]!);
-        } else if (sponse.containsKey(Err)) {
-            Variant complete_purchase_cycles_bank_error = sponse[Err] as Variant;
-            if (complete_purchase_cycles_bank_error.containsKey('UserIsNotInTheMiddleOfAPurchaseCyclesBankCall')) {
-                throw Exception('complete_purchase_cycles_bank error: UserIsNotInTheMiddleOfAPurchaseCyclesBankCall');
-            } else if (complete_purchase_cycles_bank_error.containsKey('PurchaseCyclesBankError')) {
-                return await _handle_purchase_cycles_bank_err(complete_purchase_cycles_bank_error['PurchaseCyclesBankError']!);    
-            } else {
-                throw Exception('unknown complete_purchase_cycles_bank_error: ${complete_purchase_cycles_bank_error}');
-            }
-        } else {
-            throw Exception('unknown complete_purchase_cycles_bank_sponse: ${sponse}');
-        }
-    }
-
-    Future<void> _handle_purchase_cycles_bank_err(CandidType purchase_cycles_bank_err_ctype) async {
-        Variant purchase_cycles_bank_error = purchase_cycles_bank_err_ctype as Variant;
-        if (purchase_cycles_bank_error.containsKey('MidCallError')) {
-            print('purchase_cycles_bank mid_call_error: ${purchase_cycles_bank_error['MidCallError']}');
-            return await this.complete_purchase_cycles_bank();
-        } else if (purchase_cycles_bank_error.containsKey('FoundCyclesBank')) { 
-            this.cycles_bank = CyclesBank((purchase_cycles_bank_error['FoundCyclesBank'] as PrincipalReference).principal!, this);
-        } else if (purchase_cycles_bank_error.containsKey('UserIcpLedgerBalanceTooLow')) {
-            Record user_icp_ledger_balance_too_low_error = purchase_cycles_bank_error['UserIcpLedgerBalanceTooLow'] as Record;
-            IcpTokens cycles_bank_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
-            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
-            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
-            IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
-            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
-        } else if (purchase_cycles_bank_error.containsKey('UserIsInTheMiddleOfADifferentCall')) {
-            handle_user_is_in_the_middle_of_a_different_call(purchase_cycles_bank_error['UserIsInTheMiddleOfADifferentCall'] as Variant).then((){
-            
-            }).catchError((e){
-            
-            });
-            throw Exception('user is in the middle of a different call.');
-        } else {
-            String purchase_cycles_bank_error_type = 'unknown error: ${purchase_cycles_bank_error.keys.first}';
-            for (String possible_error_variant in [
-                'ReferralUserCannotBeTheCaller',
-                'CheckIcpBalanceCallError',
-                'CheckCurrentXdrPerMyriadPerIcpCmcRateError',
-                'UserIsInTheMiddleOfAPurchaseCyclesBankCall',
-                'CTSIsBusy',
-                'ReferralUserNotFound',
-                'CreateCyclesBankCanisterCmcNotifyError',
-            ]) {
-                if (purchase_cycles_bank_error.containsKey(possible_error_variant)) {
-                    purchase_cycles_bank_error_type = possible_error_variant;
-                }
-            }
-            if (purchase_cycles_bank_error.values.first is! Null) {
-                purchase_cycles_bank_error_type += '\n${purchase_cycles_bank_error.values.first}';
-            }
-            throw Exception('purchase_cycles_bank error: ${purchase_cycles_bank_error_type}');
-        }
-    }
-
-    Future<void> _handle_purchase_cycles_bank_ok(CandidType purchase_cycles_bank_ok_ctype) async {
-        Record purchase_cycles_bank_success = purchase_cycles_bank_ok_ctype as Record;
-        this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as PrincipalReference).principal!, this);
-    }
-
-
-    // ------------------
-    
-    // try catch when calling this it can throw
-    Future<BurnIcpMintCyclesSuccess> call_user_burn_icp_mint_cycles(IcpTokens burn_icp) async {
-        Uint8List sponse_bytes = await call(
-            cts,
-            calltype: CallType.call,
-            method_name: 'user_burn_icp_mint_cycles',
-            put_bytes: c_forwards([
-                Record.oftheMap({
-                    'burn_icp': burn_icp
-                })
-            ])
-        );
-        Variant sponse = c_backwards(sponse_bytes)[0] as Variant;
-        if (sponse.containsKey(Ok)) {
-            return await _handle_user_burn_icp_mint_cycles_ok(sponse[Ok]!);
-        } else if (sponse.containsKey(Err)) {
-            return await _handle_user_burn_icp_mint_cycles_err(sponse[Err]!);
-        } else {
-            throw Exception('unknown user_burn_icp_mint_cycles sponse.');
-        }
+        return await match_variant<Future<void>>(complete_purchase_cycles_bank_result, complete_purchase_cycles_bank_result_match_map);
     }
     
-    Future<BurnIcpMintCyclesSuccess> call_complete_user_burn_icp_mint_cycles() async {
-        throw UnimplementedError();
+
+
+    // -----------------------------
+    
+    
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_result_match_map => {
+        Ok: (burn_icp_mint_cycles_success) async {
+            return BurnIcpMintCyclesSuccess.oftheRecord(burn_icp_mint_cycles_success);
+        },
+        Err: (burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_result_match_map => {
+        Ok: (burn_icp_mint_cycles_success) async {
+            return await burn_icp_mint_cycles_result_match_map[Ok]!(burn_icp_mint_cycles_success);
+        },
+        Err: (complete_burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_error as Variant, complete_burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_error_match_map => {
+        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
+            return match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
+        },
+        'MinimumBurnIcpMintCycles': (minimum_burn_icp_mint_cycles_record) async {
+            throw Exception('The minimum amount of icp that you can use to mint cycles is: ${IcpTokens.oftheRecord((minimum_burn_icp_mint_cycles_record as Record)['minimum_burn_icp_mint_cycles']!)}');
+        },
+        'FindUserInTheCBSMapsError':(find_user_in_the_cbs_maps_error) async {
+            return match_variant<Never>(find_user_in_the_cbs_maps_error as Variant, find_user_in_the_cbs_maps_error_match_map);
+        },
+        'CyclesBankNotFound': (n) async {
+            throw Exception('User cycles-bank not found. The user must have a cycles-bank to mint cycles.');
+        },
+        'CTSIsBusy': (n) async {
+            throw Exception('The CTS is busy, try soon.');
+        },
+        'LedgerTopupCyclesCmcIcpTransferError': (ledger_topup_cycles_cmc_icp_transfer_error) async {
+            return match_variant<Never>(ledger_topup_cycles_cmc_icp_transfer_error as Variant, ledger_topup_cycles_cmc_icp_transfer_error_match_map);
+        },
+        'MidCallError':(burn_icp_mint_cycles_mid_call_error) async {
+            print('burn_icp_mint_cycles_mid_call_error: ${burn_icp_mint_cycles_mid_call_error}');
+            return await complete_burn_icp_mint_cycles();
+        }
+    };
+
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_error_match_map => {
+        'UserIsNotInTheMiddleOfABurnIcpMintCyclesCall': (n) async {
+            throw Exception('user is not in the middle of a burn_icp_mint_cycles call.');
+        },
+        'BurnIcpMintCyclesError': (burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    
+    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(IcpTokens burn_icp) async {
+        if (this.cycles_bank == null) {
+            throw Exception('The user must have a cycles-bank to mint cycles.');
+        }
+        Variant burn_icp_mint_cycles_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'burn_icp_mint_cycles',
+                put_bytes: c_forwards([
+                    Record.oftheMap({
+                        'burn_icp': burn_icp
+                    })
+                ])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_result, burn_icp_mint_cycles_result_match_map);
     }
     
-    Future<BurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_ok(CandidType ok) async {
-        return BurnIcpMintCyclesSuccess.oftheRecord(ok);
+    Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
+        Variant complete_burn_icp_mint_cycles_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'complete_burn_icp_mint_cycles',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_result, complete_burn_icp_mint_cycles_result_match_map);
     }
 
-    Future<BurnIcpMintCyclesSuccess> _handle_user_burn_icp_mint_cycles_err(CandidType err) async {
-        Variant user_burn_icp_mint_cycles_error = err as Variant;
-        if (user_burn_icp_mint_cycles_error.containsKey('MidCallError')) {
-            print('user_burn_icp_mint_cycles mid-call-error: ${user_burn_icp_mint_cycles_error['MidCallError']}');
-            return await call_complete_user_burn_icp_mint_cycles();    
-        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserBurnIcpMintCyclesCallMustCallComplete')) {
-            () async { 
-                try{
-                    BurnIcpMintCyclesSuccess s = await call_complete_user_burn_icp_mint_cycles();
-                    window.alert('user_burn_icp_mint_cycles call success: ${s}');
-                } catch(e) {
-                    window.alert('complete_user_burn_icp_mint_cycles call error: ${e}');
-                }
-            }().then((){});
-            throw Exception('user is in the middle of a different user_burn_icp_mint_cycles call. completing that now in the background.');
-        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAPurchaseCyclesBankCall')) {
-            () async { 
-                try{
-                    await complete_purchase_cycles_bank();
-                    window.alert('purchase_cycles_bank call success. fresh the page.');
-                } catch(e) {
-                    window.alert('complete_purchase_cycles_bank call error: ${e}');
-                }
-            }().then((){});
-            throw Exception('user is in the middle of a purchase_cycles_bank call. completing that now in the background.');
-        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIsInTheMiddleOfAUserTransferIcpCall')) {
-            () async { 
-                try{
-                    BigInt icp_block_height = await call_complete_user_transfer_icp();
-                    window.alert('user_transfer_icp call success. block_height: ${icp_block_height}');
-                } catch(e) {
-                    window.alert('complete_user_transfer_icp call error: ${e}');
-                }
-            }().then((){});
-            throw Exception('user is in the middle of a user_transfer_icp call. completing that now in the background.');
-        } else if (user_burn_icp_mint_cycles_error.containsKey('MinimumUserBurnIcpMintCycles')) {
-            IcpTokens t = IcpTokens.oftheRecord((user_burn_icp_mint_cycles_error['MinimumUserBurnIcpMintCycles'] as Record)['minimum_user_burn_icp_mint_cycles']!);
-            throw Exception('MinimumUserBurnIcpMintCycles: $t');
-        } else if (user_burn_icp_mint_cycles_error.containsKey('UserIcpBalanceTooLow')) {
-            Record uibtlr = user_burn_icp_mint_cycles_error['UserIcpBalanceTooLow'] as Record;
-            throw Exception('user icp balance is too low for this call.\nuser icp balance: ${IcpTokens.oftheRecord(uibtlr['user_icp_balance']!)}\nicp_ledger_transfer_fee: ${IcpTokens.oftheRecord(uibtlr['nicp_ledger_transfer_fee']!)}');
-        } else {
-            String user_burn_icp_mint_cycles_error_type = 'unknown error: ${user_burn_icp_mint_cycles_error.keys.first}';
-            for (String possible_error_variant in [
-                'UserIsInTheMiddleOfAUserBurnIcpMintCyclesCall',
-                'IcpCheckBalanceCallError',
-                'FindUserInTheCBSMapsError',
-                'UserCanisterNotFound',
-                'MaxUsersBurnIcpMintCycles',
-                'LedgerTopupCyclesCmcIcpTransferError',   
-            ]) {
-                if (user_burn_icp_mint_cycles_error.containsKey(possible_error_variant)) {
-                    user_burn_icp_mint_cycles_error_type = possible_error_variant;
-                    break;
-                }
-            }
-            if (user_burn_icp_mint_cycles_error.values.first is! Null) {
-                user_burn_icp_mint_cycles_error_type += '\n${user_burn_icp_mint_cycles_error.values.first}';
-            }
-            throw Exception('user_burn_icp_mint_cycles error: ${user_burn_icp_mint_cycles_error_type}');
+
+
+
+    // ----------------------
+    
+    
+    
+    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get transfer_icp_result_match_map => {
+        Ok: (transfer_icp_success) async {
+            return TransferIcpSuccess.oftheRecord(transfer_icp_success);
+        },
+        Err: (transfer_icp_error) async {
+            return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_error as Variant, transfer_icp_error_match_map);
         }
+    };
+    
+    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get complete_transfer_icp_result_match_map => {
+        Ok: (transfer_icp_success) async {
+            return await transfer_icp_result_match_map[Ok]!(transfer_icp_success);
+        },
+        Err: (complete_transfer_icp_error) async {
+            return await match_variant<Future<TransferIcpSuccess>>(complete_transfer_icp_error as Variant, complete_transfer_icp_error_match_map);
+        }
+    };
+    
+    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get transfer_icp_error_match_map => {
+        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call) async {
+            return match_variant<Never>(user_is_in_the_middle_of_a_different_call as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
+        },
+        'CheckIcpBalanceCallError': (call_error) async {
+            throw Exception('Error when checking the user icp balance on the ledger.\n${call_error_string(call_error as Record)}');
+        },
+        'CTSIsBusy': (n) async {
+            throw Exception('The CTS is busy, try soon.');
+        },
+        'CheckCurrentXdrPerMyriadPerIcpCmcRateError': (check_current_xdr_icp_cmc_rate_error) async {
+            print('check_current_xdr_icp_cmc_rate_error: ${check_current_xdr_icp_cmc_rate_error}');
+            throw Exception('Error when checking the current xdr-icp rate.');
+        },
+        'MaxTransfer': (max_transfer_record) async {
+            throw Exception('The max transfer amount is: ${(max_transfer_record as Record)['max_transfer']}');
+        },
+        'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
+            Record r = user_icp_ledger_balance_too_low_record as Record;
+            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
+            this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
+            IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
+            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(r['icp_ledger_transfer_fee']!);
+            IcpTokens sum_of_the_fees = IcpTokens(e8s: ( icp_ledger_transfer_fee.e8s * BigInt.from(2) ) + cts_transfer_icp_fee.e8s);
+            throw Exception('User icp balance is too low. \nCurrent icp balance: ${user_icp_ledger_balance}\nsum of the icp-ledger-fees and CTS-fees for this transfer: ${sum_of_the_fees}');
+        },
+        'IcpTransferCallError': (call_error) async {
+            throw Exception('Icp ledger transfer call error:\n${call_error_string(call_error as Record)}');
+        },
+        'IcpTransferError': (icp_transfer_error) async {
+            return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
+        },
+        'MidCallError': (transfer_icp_mid_call_error) async {
+            print('transfer_icp_mid_call_error: ${transfer_icp_mid_call_error}');
+            return await complete_transfer_icp();
+        }
+    };
+
+    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get complete_transfer_icp_error_match_map => {
+        'UserIsNotInTheMiddleOfATransferIcpCall': (n) async {
+            throw Exception('user is not in the middle of a transfer_icp call.');
+        },
+        'TransferIcpError': (transfer_icp_error) async {
+            return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_error as Variant, transfer_icp_error_match_map);
+        }  
+    };
+
+    Future<TransferIcpSuccess> transfer_icp(TransferIcpQuest transfer_icp_quest) async {
+        await this.fresh_icp_balance();
+        IcpTokensWithATimestamp? icp_balance = this.icp_balance;
+        if (icp_balance != null) {
+            if (icp_balance.icp.e8s < transfer_icp_quest.icp.e8s) {
+                throw Exception('user icp balance is too low. current balance: ${icp_balance.icp}');
+            }
+        }
+        Variant transfer_icp_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'transfer_icp',
+                put_bytes: c_forwards([transfer_icp_quest])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_result, transfer_icp_result_match_map);
     }
+    
+    Future<TransferIcpSuccess> complete_transfer_icp() async {
+        Variant complete_transfer_icp_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'complete_transfer_icp',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<TransferIcpSuccess>>(complete_transfer_icp_result, complete_transfer_icp_result_match_map);
+    }
+
+
+    // ------------------------------
 
 
 
@@ -643,39 +894,24 @@ class User {
 class CyclesBank extends Canister {
     User user;
 
-    LatestKnownCyclesBalance? latest_known_cycles_balance;
-    IcpTokens? latest_known_icp_balance;
+    CyclesWithATimestamp? cycles_balance;
 
     CyclesBank(
         Principal user_canister_id,
         this.user,
         {
-            this.latest_known_cycles_balance,
-            this.latest_known_icp_balance,
-    }) : super(user_canister_id) {
+            this.cycles_balance,
+        }
+    ) : super(user_canister_id) {
     
     }
     
     Future<void> fresh_user_cycles_balance() async {        
-        List<CandidType> user_cycles_balance_call_sponse_candids = c_backwards(await this.user.call(
-            calltype: CallType.call,
-            method_name: 'user_cycles_balance',
-            put_bytes: c_forwards([]),
-        ));
-        // check for variant Err . but now there is no Err on the user_cycles_balance method
-        dynamic user_cycles_balance_dyn = ((user_cycles_balance_call_sponse_candids[0] as Variant)['Ok'] as Nat).value;
-        BigInt user_cycles_balance = user_cycles_balance_dyn is BigInt ? user_cycles_balance_dyn : BigInt.from(user_cycles_balance_dyn);
-        this.latest_known_cycles_balance = LatestKnownCyclesBalance(
-            cycles_balance: user_cycles_balance,
-            timestamp_nanos: get_current_time_nanoseconds() // take of the ic-sponse-certificate [?]
-        );
+        
     }
     
     
-    // the user must have a user-canister for this method that is why it is on the CyclesBank-class
-    Future<void> user_burn_icp_mint_cycles() async {
-    
-    }
+   
     
     
     
@@ -694,9 +930,8 @@ class CyclesBank extends Canister {
 
 
 
+// ------------------------------------------------------------
 
-
-//'cts_user_subtlecrypto_caller'
 
 class IndexDB {
     

@@ -31,6 +31,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             state.loading_text = 'Error: ${e}';
             notifyListeners();
             window.alert(e.toString());
+            //throw e; // for the debugging,
         });
     }
 

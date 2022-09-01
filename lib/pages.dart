@@ -258,7 +258,7 @@ class WelcomePageWidget extends StatelessWidget {
                 ]
             );
             
-            if (state.user!.cts_user_canister == null) {
+            if (state.user!.cycles_bank == null) {
                 
                 column_children.add(
                     Padding(
@@ -277,13 +277,13 @@ class WelcomePageWidget extends StatelessWidget {
                                         text:
 '''
 
-\nICP: ${state.user!.user_icp_ledger_balance != null ? state.user!.user_icp_ledger_balance! : 'unknown'}
+\nICP: ${state.user!.icp_balance != null ? state.user!.icp_balance! : 'unknown'}
 '''
                                     ),
                                     WidgetSpan(
                                         child: SelectableText(
 '''                                        
-timestamp: ${state.user!.user_icp_ledger_balance != null ? (state.user!.user_icp_ledger_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
+timestamp: ${state.user!.icp_balance != null ? (state.user!.icp_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
 '''                                     
                                             ,
                                             style: TextStyle(fontSize:9)
@@ -307,7 +307,7 @@ timestamp: ${state.user!.user_icp_ledger_balance != null ? (state.user!.user_icp
                                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                 
                                 try {
-                                    await state.user!.fresh_user_icp_ledger_balance();
+                                    await state.user!.fresh_icp_balance();
                                 } catch(e) {
                                     window.alert('Error when freshing the user icp balance: ${e}');
                                 }
@@ -358,11 +358,11 @@ A CTS-USER-CONTRACT gives the purchaser a
                             
                             BigInt current_membership_start_cost_icp_e8s = await state.get_current_cts_user_membership_start_cost_icp_e8s();
                             
-                            if (state.user!.user_icp_ledger_balance == null || state.user!.user_icp_ledger_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
+                            if (state.user!.icp_balance == null || state.user!.icp_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
                                 state.loading_text = 're-freshing user icp balance ...';
                                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                 
-                                await state.user!.fresh_user_icp_ledger_balance();
+                                await state.user!.fresh_icp_balance();
                             
                             }
                             
@@ -371,7 +371,7 @@ A CTS-USER-CONTRACT gives the purchaser a
                 );
             }
             
-            else /*if (state.user!.cts_user_canister != null) */{
+            else /*if (state.user!.cycles_bank != null) */{
             
             
             
