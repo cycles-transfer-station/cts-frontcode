@@ -1,8 +1,7 @@
 import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:html' show window, CryptoKey, Event;
-import 'dart:indexed_db';
-import 'dart:js';
+import 'dart:js_util';
 
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
@@ -22,7 +21,8 @@ import 'package:ic_tools/candid.dart' show
     Variant,
     Nat8,
     Nat32,
-    Bool
+    Bool,
+    match_variant
     ;
 import 'package:ic_tools/candid.dart' as candid;
 
@@ -35,15 +35,29 @@ import 'package:tuple/tuple.dart';
 
 import 'indexdb.dart';
 import 'urls.dart';
-import 'cts.dart';
 import 'cycles_market.dart';
 import 'user.dart';
 import 'cycles_bank.dart';
-
+import 'icp_ledger.dart';
 
 
 const String Ok  = 'Ok';
 const String Err = 'Err';
+
+
+//final Canister cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai'));
+
+
+
+/*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
+
+final Canister cycles_market_canister = Canister(Principal(''/*put the id here*/));
+
+void main() {
+    if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
+        print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
+    }
+}
 
 
 
@@ -60,7 +74,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     XDRICPRateWithATimestamp? xdr_icp_rate;
     
-    CyclesMarket cycles_market = CyclesMarket(cycles_market.principal);
+    CyclesMarket cycles_market = CyclesMarket();
     
     User? user;
         
@@ -258,34 +272,6 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 typedef Cycles = BigInt; 
 
 
-class IcpTokens extends Record {
-    final BigInt e8s;
-    IcpTokens({required this.e8s}) { 
-        super['e8s'] = Nat64(this.e8s);
-    }
-    String toString() {
-        String s = this.e8s.toRadixString(10);
-        while (s.length < 9) { s = '0$s'; }
-        int split_i = s.length - 8;
-        s = '${s.substring(0, split_i)}.${s.substring(split_i)}';
-        while (s[s.length - 1] == '0' && s.length > 3/*minimum '0.0'*/) { s = s.substring(0, s.length - 1); }
-        return s;   
-    }
-    static IcpTokens oftheRecord(CandidType icptokensrecord) {
-        Nat64 e8s_nat64 = (icptokensrecord as Record)['e8s'] as Nat64; 
-        return IcpTokens(
-            e8s: e8s_nat64.value
-        );
-    }
-    static IcpTokens ofthedouble(double icp) {
-        if (check_double_decimal_point_places(icp) > 8) {
-            throw Exception('max 8 decimal places for the icp');
-        }
-        return IcpTokens(
-            e8s: BigInt.parse((icp * 100000000.toDouble()).toString().split('.')[0])
-        );
-    }
-}
 
 
 class CyclesWithATimestamp {
@@ -320,7 +306,7 @@ class CallError {
     static CallError oftheRecord(Record r) {
         return CallError(
             error_code: (r[0] as Nat32).value,
-            errror_message: (r[1] as candid.Text).value
+            error_message: (r[1] as candid.Text).value
         );
     }
     

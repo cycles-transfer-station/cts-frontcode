@@ -1,7 +1,15 @@
+import 'dart:typed_data';
+import 'dart:html';
 
+import 'package:ic_tools/ic_tools.dart';
+import 'package:ic_tools/candid.dart';
+import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/common.dart';
+import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
-
-
+import 'icp_ledger.dart';
+import 'cycles_bank.dart';
+import 'state.dart';
 
 class User {
 
@@ -12,10 +20,10 @@ class User {
     late final Uint8List public_key_DER;
     late final Principal principal;
     late final Uint8List user_icp_subaccount_bytes;
-    late final Uint8List user_icp_id;
-    
+    late final String user_icp_id;
     
     IcpTokensWithATimestamp? icp_balance;
+    List<IcpTransfer> icp_transfers = [];
     CyclesBank? cycles_bank;
     
     User({
@@ -28,7 +36,7 @@ class User {
         this.public_key_DER = legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
         this.principal = Principal.ofthePublicKeyDER(this.public_key_DER);
         this.user_icp_subaccount_bytes = User.get_user_icp_subaccount_bytes(this.principal);
-        this.user_icp_id = hexstringasthebytes(cts.principal.icp_id(subaccount_bytes: user_icp_subaccount_bytes));
+        this.user_icp_id = icp_id(cts.principal, subaccount_bytes: user_icp_subaccount_bytes);
     }
 
     
@@ -48,12 +56,12 @@ class User {
     
     Future<void> fresh_icp_balance() async {
     
-        Record icptokens_record = (c_backwards(await common.ledger.call(
+        Record icptokens_record = (c_backwards(await ledger.call(
             calltype: CallType.call,
             method_name: 'account_balance',
             put_bytes: c_forwards([
                 Record.oftheMap({
-                    'account': Blob(this.user_icp_id)
+                    'account': Blob(hexstringasthebytes(this.user_icp_id))
                 })
             ])
         )))[0] as Record;
@@ -63,6 +71,15 @@ class User {
         );
     }
 
+    Future<void> fresh_icp_transfers() async {
+        this.icp_transfers.addAll(
+            await get_icp_transfers(
+                this.user_icp_id, 
+                already_have: this.icp_transfers.length
+            )
+        );
+    }
+        
 
 
     // ---------------------

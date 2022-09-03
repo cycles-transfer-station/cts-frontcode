@@ -1,9 +1,17 @@
 
 
 
+import 'dart:typed_data';
 
+import 'package:ic_tools/ic_tools.dart';
+import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/candid.dart';
+import 'package:ic_tools/common.dart' as common;
 
+import 'user.dart';
+import 'state.dart';
 
+import 'icp_ledger.dart';
 
 class CyclesBank extends Canister {
     User user;
@@ -98,7 +106,7 @@ class CyclesTransferOut {
             cycles_refunded: cycles_refunded_nat != null ? cycles_refunded_nat.value : null,    
             cycles_transfer_memo: CyclesTransferMemo.oftheVariant(r['cycles_transfer_memo'] as Variant),    
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,    
-            opt_cycles_transfer_call_error: opt_cycles_transfer_call_error != null ? CallError.oftheRecord(opt_cycles_transfer_call_error) : null;     
+            opt_cycles_transfer_call_error: opt_cycles_transfer_call_error != null ? CallError.oftheRecord(opt_cycles_transfer_call_error) : null,
             fee_paid: (r['fee_paid'] as Nat64).value
         );
     }
@@ -180,7 +188,7 @@ class CMCyclesPositionPurchase {
         required this.id,
         required this.cycles,
         required this.purchase_position_fee,
-        required this.timestamp_nanos: u128,
+        required this.timestamp_nanos,
     }); 
     
     static CMCyclesPositionPurchase oftheRecord(Record r) {
@@ -255,12 +263,23 @@ class CMIcpTransferOut{
 // ----------------------------
 
 
-#[derive(CandidType, Deserialize, Clone)]
-pub struct UserTransferCyclesQuest {
-    for_the_canister: Principal,
-    cycles: Cycles,
-    cycles_transfer_memo: CyclesTransferMemo
+class UserTransferCyclesQuest extends Record {
+    final Principal for_the_canister;
+    final Cycles cycles;
+    final CyclesTransferMemo cycles_transfer_memo;
+    
+    UserTransferCyclesQuest({
+        required this.for_the_canister,
+        required this.cycles,
+        required this.cycles_transfer_memo,
+    }) {
+        this['for_the_canister'] = this.for_the_canister;
+        this['cycles'] = Nat(this.cycles);
+        this['cycles_transfer_memo'] = this.cycles_transfer_memo;
+    }
 }
+
+/*
 
 #[derive(CandidType, Deserialize)]
 pub enum UserTransferCyclesError {
@@ -479,4 +498,4 @@ pub enum UserCMTransferIcpBalanceError {
     }
 
 
-
+*/

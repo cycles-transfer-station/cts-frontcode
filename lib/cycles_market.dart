@@ -6,15 +6,15 @@
 
 
 
-class CyclesMarket extends Canister {
-    
-    List<CyclesPosition> = cycles_positions;
-    List<IcpPosition> = icp_positions;
+class CyclesMarket {
+    /*
+    List<CyclesPosition> cycles_positions;
+    List<IcpPosition> icp_positions;
     List<CyclesPositionPurchase> cycles_positions_purchases;
-    List<IcpPositionPurchase> = icp_positions_purchases;
+    List<IcpPositionPurchase> icp_positions_purchases;
+    */
     
-    
-    CyclesMarket(super.principal);
+    CyclesMarket();
     
     
     Future<void> download_cycles_positions(int chunk_i) async {
@@ -37,7 +37,7 @@ class CyclesMarket extends Canister {
 }
 
 
-
+/*
 
 #[derive(CandidType, Deserialize)]
 struct CyclesPosition {
@@ -58,3 +58,5 @@ struct IcpPosition {
     xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
     timestamp_nanos: u128,
 }
+
+*/

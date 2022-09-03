@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:html';
 import 'dart:js' as js;
+import 'dart:js_util';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -13,13 +14,12 @@ import 'package:ic_tools/common_web.dart';
 
 import 'package:tuple/tuple.dart';
 
-import './ii_jslib.dart';
+import 'ii_jslib.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
-import './cts.dart';
 import 'widgets.dart';
-
+import 'user.dart';
 
 
 
@@ -245,7 +245,7 @@ class WelcomePageWidget extends StatelessWidget {
                     Padding(
                         padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
                         child: Container(
-                            child: SelectableText('USER ID: ${state.user!.principal.text}')
+                            child: Text('USER ID: ${state.user!.principal.text}')
                         )
                     ),
                     Divider(
@@ -271,7 +271,7 @@ class WelcomePageWidget extends StatelessWidget {
                                         text: 'USER ICP ID: '
                                     ),
                                     WidgetSpan(
-                                        child: SelectableText(bytesasahexstring(state.user!.user_icp_id), style: TextStyle(fontSize: 11)),
+                                        child: Text(state.user!.user_icp_id, style: TextStyle(fontSize: 11)),
                                     ),
                                     TextSpan(
                                         text:
@@ -281,7 +281,7 @@ class WelcomePageWidget extends StatelessWidget {
 '''
                                     ),
                                     WidgetSpan(
-                                        child: SelectableText(
+                                        child: Text(
 '''                                        
 timestamp: ${state.user!.icp_balance != null ? (state.user!.icp_balance!.timestamp_nanos / BigInt.from(1000000000)).toInt() : 'unknown'}
 '''                                     
@@ -381,76 +381,78 @@ A CTS-USER-CONTRACT gives the purchaser a
         
         
         
-        return Scaffold(
-            appBar: AppBar(
-                title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
-            ),
-            drawer: Drawer(
-                child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                        DrawerHeader(
-                            child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: null)) : SelectableText('USER ID: ${state.user!.principal.text}')
-                
-                        ),
-                        ListTile(
-                            title: const Text('USER-TRANSFER-ICP'),
-                            onTap: () {
-                              // Update the state of the app.
-                              // ...
-                              Navigator.pop(context);
-                            },
-                        ),
-                        ListTile(
-                            title: const Text('CYCLES-BANK'),
-                            onTap: () {
-                              // Update the state of the app.
-                              // ...
-                            },
-                        ),
-                        ListTile(
-                            title: const Text('CYCLES-MARKET'),
-                            onTap: () {
-                              // Update the state of the app.
-                              // ...
-                              Navigator.pop(context);
-                            },
-                        ),
-                        AboutListTile(
-                        
-                        )
-                    ]
-                )
-            ),
-            body: Column(                
-                children: column_children,
-                crossAxisAlignment: CrossAxisAlignment.center 
-            ), 
-            bottomNavigationBar: BottomAppBar(
-                color: Colors.blue,
-                child: IconTheme(
-                    data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-                    child: Row(
-                        children: <Widget>[
-                            IconButton(
-                                tooltip: 'Open navigation menu',
-                                icon: const Icon(Icons.menu),
-                                onPressed: () {},
+        return SelectionArea(
+            child: Scaffold(
+                appBar: AppBar(
+                    title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
+                ),
+                drawer: Drawer(
+                    child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                            DrawerHeader(
+                                child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: null)) : Text('USER ID: ${state.user!.principal.text}')
+                    
                             ),
-                            if (true) const Spacer(),
-                            IconButton(
-                                tooltip: 'Search',
-                                icon: const Icon(Icons.search),
-                                onPressed: () {},
+                            ListTile(
+                                title: const Text('USER-TRANSFER-ICP'),
+                                onTap: () {
+                                  // Update the state of the app.
+                                  // ...
+                                  Navigator.pop(context);
+                                },
                             ),
-                            IconButton(
-                                tooltip: 'Favorite',
-                                icon: const Icon(Icons.favorite),
-                                onPressed: () {},
+                            ListTile(
+                                title: const Text('CYCLES-BANK'),
+                                onTap: () {
+                                  // Update the state of the app.
+                                  // ...
+                                },
                             ),
+                            ListTile(
+                                title: const Text('CYCLES-MARKET'),
+                                onTap: () {
+                                  // Update the state of the app.
+                                  // ...
+                                  Navigator.pop(context);
+                                },
+                            ),
+                            AboutListTile(
+                            
+                            )
                         ]
-                    ) 
-                )       
+                    )
+                ),
+                body: Column(                
+                    children: column_children,
+                    crossAxisAlignment: CrossAxisAlignment.center 
+                ), 
+                bottomNavigationBar: BottomAppBar(
+                    color: Colors.blue,
+                    child: IconTheme(
+                        data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+                        child: Row(
+                            children: <Widget>[
+                                IconButton(
+                                    tooltip: 'Open navigation menu',
+                                    icon: const Icon(Icons.menu),
+                                    onPressed: () {},
+                                ),
+                                if (true) const Spacer(),
+                                IconButton(
+                                    tooltip: 'Search',
+                                    icon: const Icon(Icons.search),
+                                    onPressed: () {},
+                                ),
+                                IconButton(
+                                    tooltip: 'Favorite',
+                                    icon: const Icon(Icons.favorite),
+                                    onPressed: () {},
+                                ),
+                            ]
+                        ) 
+                    )       
+                )
             )
         );
     }
