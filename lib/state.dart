@@ -51,7 +51,7 @@ const String Err = 'Err';
 
 /*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
 
-final Canister cycles_market_canister = Canister(Principal(''/*put the id here*/));
+final Canister cycles_market = Canister(Principal(''/*put the id here*/));
 
 void main() {
     if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
@@ -74,7 +74,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     XDRICPRateWithATimestamp? xdr_icp_rate;
     
-    CyclesMarket cycles_market = CyclesMarket();
+    CyclesMarketData cycles_market_data = CyclesMarketData();
     
     User? user;
         
@@ -371,7 +371,7 @@ Future<Iterable<T>> cts_download_mechanism<T>({
     int start_chunk = (len_so_far / chunk_size).toDouble().floor();
     int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
     for (int i=start_chunk; i<total_chunks; i++) {
-        Vector<Record> records = c_backwards(
+        Option<Vector<Record>> opt_records = c_backwards(
             await canister.call(
                 caller: caller,
                 legations: legations,
@@ -379,12 +379,13 @@ Future<Iterable<T>> cts_download_mechanism<T>({
                 calltype: CallType.query,
                 put_bytes: c_forwards([Nat(BigInt.from(i))])
             )
-        )[0] as Vector<Record>;
-        
-        list.addAll(
-            records.sublist(i==start_chunk ? start_chunk_position : 0)
-                .map<T>((Record r)=>function(r))
-        );        
+        )[0] as Option<Vector<Record>>;
+        Vector<Record>? records = opt_records.value;
+        if (records != null) {
+            list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
+        } else {
+            break;
+        }        
     }
     return list;
 }
