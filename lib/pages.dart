@@ -381,8 +381,8 @@ A CTS-USER-CONTRACT gives the purchaser a
         
         
         
-        return SelectionArea(
-            child: Scaffold(
+        return /*SelectionArea(
+            child: */Scaffold(
                 appBar: AppBar(
                     title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
                 ),
@@ -454,7 +454,7 @@ A CTS-USER-CONTRACT gives the purchaser a
                     )       
                 )
             )
-        );
+        /*)*/;
     }
 }
 

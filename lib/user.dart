@@ -449,16 +449,14 @@ class User {
             throw Exception('Error when checking the current xdr-icp rate.');
         },
         'MaxTransfer': (max_transfer_record) async {
-            throw Exception('The max transfer amount is: ${(max_transfer_record as Record)['max_transfer']}');
+            throw Exception('The amount overflows. icp-amount + icp-fee*2 + the current cts-transfer-icp-fee: ${(max_transfer_record as Record)['cts_transfer_icp_fee']},  must be less than ${BigInt.from(2).pow(64)-BigInt.from(1)}');
         },
         'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
             Record r = user_icp_ledger_balance_too_low_record as Record;
             IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
-            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(r['icp_ledger_transfer_fee']!);
-            IcpTokens sum_of_the_fees = IcpTokens(e8s: ( icp_ledger_transfer_fee.e8s * BigInt.from(2) ) + cts_transfer_icp_fee.e8s);
-            throw Exception('User icp balance is too low. \nCurrent icp balance: ${user_icp_ledger_balance}\nsum of the icp-ledger-fees and CTS-fees for this transfer: ${sum_of_the_fees}');
+            throw Exception('User icp balance is too low. \nuser icp balance: ${user_icp_ledger_balance}\nCTS-fee for this transfer: ${cts_transfer_icp_fee}\nicp-ledger-fees: 0.0002');
         },
         'IcpTransferCallError': (call_error) async {
             throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
@@ -544,15 +542,18 @@ class BurnIcpMintCyclesSuccess {
 class TransferIcpQuest extends Record {
     final Nat64 memo;
     final IcpTokens icp;
+    final IcpTokens icp_fee;
     final String to;
     
     TransferIcpQuest({
         required this.memo,
         required this.icp,
+        required this.icp_fee,
         required this.to
     }) {
         super['memo'] = this.memo;
         super['icp'] = this.icp;
+        super['icp_fee'] = this.icp_fee;
         super['to'] = Blob(hexstringasthebytes(this.to));
     }
     

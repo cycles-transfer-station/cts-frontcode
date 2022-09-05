@@ -16,37 +16,184 @@ import 'icp_ledger.dart';
 class CyclesBank extends Canister {
     User user;
 
-    CyclesWithATimestamp? cycles_balance;
-
+    CyclesBankMetrics? metrics;
+    
+    List<CyclesTransferIn> cycles_transfers_in = [];
+    List<CyclesTransferOut> cycles_transfers_out = [];
+    
+    List<CMCyclesPosition> cm_cycles_positions = [];
+    List<CMIcpPosition> cm_icp_positions = [];
+    List<CMCyclesPositionPurchase> cm_cycles_positions_purchases = [];
+    List<CMIcpPositionPurchase> cm_icp_positions_purchases = [];
+    List<CMIcpTransferOut> cm_icp_transfers_out = [];
+    
     CyclesBank(
         super.principal,
         this.user,
-        {
-            this.cycles_balance,
-        }
-    ) {
+    );
     
+    Future<void> fresh_metrics() async {
+        Record metrics_record = c_backwards(
+            await this.user.call(
+                this,
+                method_name: 'metrics',
+                calltype: CallType.call,
+                put_bytes: c_forwards([])
+            )
+        )[0] as Record;
+        this.metrics = CyclesBankMetrics.oftheRecord(metrics_record);
     }
-    
-    Future<void> fresh_user_cycles_balance() async {        
-        
-    }
-    
-    
-   
-    
-    
-    
-    
-    
-    
-    
 
+    Future<void> fresh_cycles_transfers_in() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        
+        int total_chunks = (this.metrics!.cycles_transfers_in_len / this.metrics!.download_cycles_transfers_in_chunk_size).toDouble().ceil();
+        int start_chunk = (BigInt.from(this.cycles_transfers_in.length) / this.metrics!.download_cycles_transfers_in_chunk_size).toDouble().floor();
+        int start_chunk_position = this.cycles_transfers_in.length >= this.metrics!.download_cycles_transfers_in_chunk_size.toInt() ? (this.cycles_transfers_in.length % this.metrics!.download_cycles_transfers_in_chunk_size.toInt()) : this.cycles_transfers_in.length;
+        for (int i=start_chunk; i<total_chunks; i++) {
+    
+            Vector<Record> cycles_transfers_in_records = c_backwards(
+                await user.call(
+                    this,
+                    calltype: CallType.call,
+                    method_name: 'download_cycles_transfers_in',
+                    put_bytes: c_forwards([Nat(BigInt.from(i))])
+                )
+            )[0] as Vector<Record>;
+            
+            this.cycles_transfers_in.addAll(
+                cycles_transfers_in_records.sublist(i==start_chunk ? start_chunk_position : 0)
+                    .map<CyclesTransferIn>((Record cti_r)=>CyclesTransferIn.oftheRecord(cti_r))
+            );
+            //for(int ii= i==start_chunk ? start_chunk_position : 0; ii< cycles_transfers_in_records.length; ii++) {}
+        
+        }
+    }
+   
+    Future<void> fresh_cycles_transfers_out() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
     
     
     
     
+    
+    Future<void> fresh_cm_cycles_positions() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
+    
+    Future<void> fresh_cm_icp_positions() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
+    
+    Future<void> fresh_cm_cycles_positions_purchases() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
+    
+    Future<void> fresh_cm_icp_positions_purchases() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
+    
+    Future<void> fresh_cm_icp_transfers_out() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        //Vector<Record> 
+    }
 }
+
+
+
+
+
+
+
+typedef CTSFuel = Cycles;
+
+
+class CyclesBankMetrics {
+    Cycles cycles_balance;
+    CTSFuel user_canister_ctsfuel_balance;
+    BigInt storage_size_mib;
+    BigInt lifetime_termination_timestamp_seconds;
+    Vector<Principal> cycles_transferrer_canisters;
+    Principal user_id;
+    BigInt user_canister_creation_timestamp_nanos;
+    BigInt storage_usage;
+    BigInt cycles_transfers_id_counter;
+    BigInt cycles_transfers_in_len;
+    BigInt cycles_transfers_out_len;
+    BigInt download_cycles_transfers_in_chunk_size;
+    BigInt download_cycles_transfers_out_chunk_size;
+    BigInt cm_cycles_positions_len;
+    BigInt cm_icp_positions_len;
+    BigInt cm_cycles_positions_purchases_len;
+    BigInt cm_icp_positions_purchases_len;
+    BigInt cm_icp_transfers_out_len;
+    BigInt download_cm_cycles_positions_chunk_size;
+    BigInt download_cm_icp_positions_chunk_size;
+    BigInt download_cm_cycles_positions_purchases_chunk_size;
+    BigInt download_cm_icp_positions_purchases_chunk_size;
+    BigInt download_cm_icp_transfers_out_chunk_size;
+    CyclesBankMetrics._({
+        required this.cycles_balance,
+        required this.user_canister_ctsfuel_balance,
+        required this.storage_size_mib,
+        required this.lifetime_termination_timestamp_seconds,
+        required this.cycles_transferrer_canisters,
+        required this.user_id,
+        required this.user_canister_creation_timestamp_nanos,
+        required this.storage_usage,
+        required this.cycles_transfers_id_counter,
+        required this.cycles_transfers_in_len,
+        required this.cycles_transfers_out_len,
+        required this.download_cycles_transfers_in_chunk_size,
+        required this.download_cycles_transfers_out_chunk_size,
+        required this.cm_cycles_positions_len,
+        required this.cm_icp_positions_len,
+        required this.cm_cycles_positions_purchases_len,
+        required this.cm_icp_positions_purchases_len,
+        required this.cm_icp_transfers_out_len,
+        required this.download_cm_cycles_positions_chunk_size,
+        required this.download_cm_icp_positions_chunk_size,
+        required this.download_cm_cycles_positions_purchases_chunk_size,
+        required this.download_cm_icp_positions_purchases_chunk_size,
+        required this.download_cm_icp_transfers_out_chunk_size
+    });
+    static CyclesBankMetrics oftheRecord(Record r) {
+        return CyclesBankMetrics._(
+            cycles_balance: (r['cycles_balance'] as Nat).value,
+            user_canister_ctsfuel_balance: (r['user_canister_ctsfuel_balance'] as Nat).value,
+            storage_size_mib: (r['storage_size_mib'] as Nat).value,
+            lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
+            cycles_transferrer_canisters: (r['cycles_transferrer_canisters'] as Vector<Principal>), 
+            user_id: (r['user_id'] as Principal),
+            user_canister_creation_timestamp_nanos: (r['user_canister_creation_timestamp_nanos'] as Nat).value,
+            storage_usage: (r['storage_usage'] as Nat).value,
+            cycles_transfers_id_counter: (r['cycles_transfers_id_counter'] as Nat).value,
+            cycles_transfers_in_len: (r['cycles_transfers_in_len'] as Nat).value,
+            cycles_transfers_out_len: (r['cycles_transfers_out_len'] as Nat).value,
+            download_cycles_transfers_in_chunk_size: (r['download_cycles_transfers_in_chunk_size'] as Nat).value,
+            download_cycles_transfers_out_chunk_size: (r['download_cycles_transfers_out_chunk_size'] as Nat).value,
+            cm_cycles_positions_len: (r['cm_cycles_positions_len'] as Nat).value,
+            cm_icp_positions_len: (r['cm_icp_positions_len'] as Nat).value,
+            cm_cycles_positions_purchases_len: (r['cm_cycles_positions_purchases_len'] as Nat).value,
+            cm_icp_positions_purchases_len: (r['cm_icp_positions_purchases_len'] as Nat).value,
+            cm_icp_transfers_out_len: (r['cm_icp_transfers_out_len'] as Nat).value,
+            download_cm_cycles_positions_chunk_size: (r['download_cm_cycles_positions_chunk_size'] as Nat).value,
+            download_cm_icp_positions_chunk_size: (r['download_cm_icp_positions_chunk_size'] as Nat).value,
+            download_cm_cycles_positions_purchases_chunk_size: (r['download_cm_cycles_positions_purchases_chunk_size'] as Nat).value,
+            download_cm_icp_positions_purchases_chunk_size: (r['download_cm_icp_positions_purchases_chunk_size'] as Nat).value,
+            download_cm_icp_transfers_out_chunk_size: (r['download_cm_icp_transfers_out_chunk_size'] as Nat).value
+        );
+    }
+}
+
+
+
 
 class CyclesTransferIn {
     final BigInt id;

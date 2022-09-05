@@ -14,14 +14,14 @@ class Loading extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
         String loading_text = opt_loading_text != null ? opt_loading_text! : MainStateBind.get_state<CustomState>(context).loading_text;    
-        return SelectionArea(
-            child: Scaffold(
+        return /*SelectionArea(
+            child: */Scaffold(
                 body: Padding(
                     padding: EdgeInsets.all(17.0),
                     child: Text(loading_text)
                 )
             )
-        );
+        /*)*/;
     }
 }
 
