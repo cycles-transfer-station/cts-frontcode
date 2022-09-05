@@ -43,36 +43,40 @@ class CyclesBank extends Canister {
         )[0] as Record;
         this.metrics = CyclesBankMetrics.oftheRecord(metrics_record);
     }
+    
+    
 
     Future<void> fresh_cycles_transfers_in() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         
-        int total_chunks = (this.metrics!.cycles_transfers_in_len / this.metrics!.download_cycles_transfers_in_chunk_size).toDouble().ceil();
-        int start_chunk = (BigInt.from(this.cycles_transfers_in.length) / this.metrics!.download_cycles_transfers_in_chunk_size).toDouble().floor();
-        int start_chunk_position = this.cycles_transfers_in.length >= this.metrics!.download_cycles_transfers_in_chunk_size.toInt() ? (this.cycles_transfers_in.length % this.metrics!.download_cycles_transfers_in_chunk_size.toInt()) : this.cycles_transfers_in.length;
-        for (int i=start_chunk; i<total_chunks; i++) {
-    
-            Vector<Record> cycles_transfers_in_records = c_backwards(
-                await user.call(
-                    this,
-                    calltype: CallType.call,
-                    method_name: 'download_cycles_transfers_in',
-                    put_bytes: c_forwards([Nat(BigInt.from(i))])
-                )
-            )[0] as Vector<Record>;
-            
-            this.cycles_transfers_in.addAll(
-                cycles_transfers_in_records.sublist(i==start_chunk ? start_chunk_position : 0)
-                    .map<CyclesTransferIn>((Record cti_r)=>CyclesTransferIn.oftheRecord(cti_r))
-            );
-            //for(int ii= i==start_chunk ? start_chunk_position : 0; ii< cycles_transfers_in_records.length; ii++) {}
-        
-        }
+        this.cycles_transfers_in.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cycles_transfers_in_chunk_size.toInt(), 
+                len_so_far: this.cycles_transfers_in.length,
+                len: this.metrics!.cycles_transfers_in_len.toInt(),
+                download_method_name: 'download_cycles_transfers_in', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CyclesTransferIn.oftheRecord,
+            )
+        );
     }
    
     Future<void> fresh_cycles_transfers_out() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cycles_transfers_out.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cycles_transfers_out_chunk_size.toInt(), 
+                len_so_far: this.cycles_transfers_out.length,
+                len: this.metrics!.cycles_transfers_out_len.toInt(),
+                download_method_name: 'download_cycles_transfers_out', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CyclesTransferOut.oftheRecord,
+            )
+        ); 
     }
     
     
@@ -81,27 +85,82 @@ class CyclesBank extends Canister {
     
     Future<void> fresh_cm_cycles_positions() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cm_cycles_positions.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cm_cycles_positions_chunk_size.toInt(), 
+                len_so_far: this.cm_cycles_positions.length,
+                len: this.metrics!.cm_cycles_positions_len.toInt(),
+                download_method_name: 'download_cm_cycles_positions', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CMCyclesPosition.oftheRecord,
+            )
+        ); 
     }
     
     Future<void> fresh_cm_icp_positions() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cm_icp_positions.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cm_icp_positions_chunk_size.toInt(), 
+                len_so_far: this.cm_icp_positions.length,
+                len: this.metrics!.cm_icp_positions_len.toInt(),
+                download_method_name: 'download_cm_icp_positions', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CMIcpPosition.oftheRecord,
+            )
+        );  
     }
     
     Future<void> fresh_cm_cycles_positions_purchases() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cm_cycles_positions_purchases.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cm_cycles_positions_purchases_chunk_size.toInt(), 
+                len_so_far: this.cm_cycles_positions_purchases.length,
+                len: this.metrics!.cm_cycles_positions_purchases_len.toInt(),
+                download_method_name: 'download_cm_cycles_positions_purchases', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CMCyclesPositionPurchase.oftheRecord,
+            )
+        );
     }
     
     Future<void> fresh_cm_icp_positions_purchases() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cm_icp_positions_purchases.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cm_icp_positions_purchases_chunk_size.toInt(), 
+                len_so_far: this.cm_icp_positions_purchases.length,
+                len: this.metrics!.cm_icp_positions_purchases_len.toInt(),
+                download_method_name: 'download_cm_icp_positions_purchases', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CMIcpPositionPurchase.oftheRecord,
+            )
+        ); 
     }
     
     Future<void> fresh_cm_icp_transfers_out() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
-        //Vector<Record> 
+        this.cm_icp_transfers_out.addAll(
+            await cts_download_mechanism(
+                chunk_size: this.metrics!.download_cm_icp_transfers_out_chunk_size.toInt(), 
+                len_so_far: this.cm_icp_transfers_out.length,
+                len: this.metrics!.cm_icp_transfers_out_len.toInt(),
+                download_method_name: 'download_cm_icp_transfers_out', 
+                caller: user.caller,
+                legations: user.legations,
+                canister: this,
+                function: CMIcpTransferOut.oftheRecord,
+            )
+        ); 
     }
 }
 

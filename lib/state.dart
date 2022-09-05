@@ -356,7 +356,38 @@ class CyclesTransferMemo extends Variant {
 
 
 
-
+Future<Iterable<T>> cts_download_mechanism<T>({
+    required int chunk_size, 
+    required int len_so_far,
+    required int len,
+    required String download_method_name,  
+    Caller? caller,
+    List<Legation> legations = const [],
+    required Canister canister,
+    required T Function(Record) function,
+}) async {
+    List<T> list = [];
+    int total_chunks = (len / chunk_size).toDouble().ceil();
+    int start_chunk = (len_so_far / chunk_size).toDouble().floor();
+    int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
+    for (int i=start_chunk; i<total_chunks; i++) {
+        Vector<Record> records = c_backwards(
+            await canister.call(
+                caller: caller,
+                legations: legations,
+                method_name: download_method_name,
+                calltype: CallType.query,
+                put_bytes: c_forwards([Nat(BigInt.from(i))])
+            )
+        )[0] as Vector<Record>;
+        
+        list.addAll(
+            records.sublist(i==start_chunk ? start_chunk_position : 0)
+                .map<T>((Record r)=>function(r))
+        );        
+    }
+    return list;
+}
 
 
 
