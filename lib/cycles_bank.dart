@@ -50,7 +50,7 @@ class CyclesBank extends Canister {
         if (this.metrics == null) { await this.fresh_metrics(); }
         
         this.cycles_transfers_in.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_in_chunk_size.toInt(), 
                 len_so_far: this.cycles_transfers_in.length,
                 len: this.metrics!.cycles_transfers_in_len.toInt(),
@@ -66,7 +66,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cycles_transfers_out() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cycles_transfers_out.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_out_chunk_size.toInt(), 
                 len_so_far: this.cycles_transfers_out.length,
                 len: this.metrics!.cycles_transfers_out_len.toInt(),
@@ -86,7 +86,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_cycles_positions() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cm_cycles_positions.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_cycles_positions_chunk_size.toInt(), 
                 len_so_far: this.cm_cycles_positions.length,
                 len: this.metrics!.cm_cycles_positions_len.toInt(),
@@ -102,7 +102,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_icp_positions() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cm_icp_positions.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_positions_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_positions.length,
                 len: this.metrics!.cm_icp_positions_len.toInt(),
@@ -118,7 +118,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_cycles_positions_purchases() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cm_cycles_positions_purchases.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_cycles_positions_purchases_chunk_size.toInt(), 
                 len_so_far: this.cm_cycles_positions_purchases.length,
                 len: this.metrics!.cm_cycles_positions_purchases_len.toInt(),
@@ -134,7 +134,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_icp_positions_purchases() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cm_icp_positions_purchases.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_positions_purchases_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_positions_purchases.length,
                 len: this.metrics!.cm_icp_positions_purchases_len.toInt(),
@@ -150,7 +150,7 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_icp_transfers_out() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         this.cm_icp_transfers_out.addAll(
-            await cts_download_mechanism(
+            await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_transfers_out_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_transfers_out.length,
                 len: this.metrics!.cm_icp_transfers_out_len.toInt(),
@@ -162,6 +162,67 @@ class CyclesBank extends Canister {
             )
         ); 
     }
+    
+    //Future<void> delete_ functionality coming soon
+    
+    Future<BigInt/*cycles_transfer_id*/> transfer_cycles(UserTransferCyclesQuest q) async {
+        if (q.for_the_canister.bytes.length >= 29) {
+            throw Exception('Transfer cycles between canisters. Make sure that these cycles are for a canister.');
+        }
+        Variant transfer_cycles_sponse = c_backwards(
+            await this.user.call(
+                this,
+                method_name: 'transfer_cycles',
+                put_bytes: c_forwards([q]),
+                calltype: CallType.call,
+            )
+        )[0] as Variant;
+        return match_variant<BigInt>(transfer_cycles_sponse, {
+            Ok: (cycles_transfer_id_nat_ctype) {
+                return (cycles_transfer_id_nat_ctype as Nat).value;
+            },
+            Err: (transfer_cycles_error) {
+                match_variant<Never>(transfer_cycles_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel in the cycles-bank is too low. Put CTSFuel into the cycles-bank.');
+                    },
+                    'MemoryIsFull': (nul) {
+                        throw Exception('The cycles-bank memory is full. Grow the memory-size of the cycles-bank or delete some data.');
+                    },
+                    'InvalidCyclesTransferMemoSize': (max_size_bytes_record) {
+                        throw Exception('This cycles-bank supports sending a cycles-transfer-memo of a max ${((max_size_bytes_record as Record)['max_size_bytes'] as Nat).value} bytes.');
+                    },
+                    'InvalidTransferCyclesAmount': (minimum_user_transfer_cycles_record) {
+                        throw Exception('The minimum cycles that can be sent through this cycles-bank is: ${Cycles.oftheNat((minimum_user_transfer_cycles_record as Record)['minimum_user_transfer_cycles'] as Nat)}');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance'] as Nat);
+                        throw Exception('The cycles-balance in the cycles-bank is too low to transfer these cycles. \ncycles_balance: ${Cycles.oftheNat(r['cycles_balance'] as Nat)}\ntransfer cycles fee: ${Cycles.oftheNat(r['cycles_transferrer_transfer_cycles_fee'] as Nat)}');
+                    },
+                    'CyclesTransferrerTransferCyclesError': (cycles_transferrer_transfer_cycles_error) {
+                        match_variant<Never>(cycles_transferrer_transfer_cycles_error as Variant, {
+                            'MsgCyclesTooLow': (transfer_cycles_fee_record) {
+                                throw Exception('Please file this error:\nCyclesTransferrerTransferCyclesError MsgCyclesTooLow transfer_cycles_fee: ${Cycles.oftheNat((transfer_cycles_fee_record as Record)['transfer_cycles_fee'] as Nat)}');
+                            },
+                            'MaxOngoingCyclesTransfers': (nul) {
+                                throw Exception('The cycles_transferrer is busy, try soon.');
+                            },
+                            'CyclesTransferQuestCandidCodeError': (text) {
+                                throw Exception('Please file this error: \nCyclesTransferrerTransferCyclesError CyclesTransferQuestCandidCodeError \n${(text as Text).value}');
+                            }                           
+                        });
+                    },
+                    'CyclesTransferrerTransferCyclesCallError': (call_error_record){
+                        throw Exception('Error of the transfer_cycles-call of the cycles_transferrer: \n${CallError.oftheRecord(call_error_record as Record)}');
+                    }
+                });
+            }
+        });
+    }
+    
+    
+    
 }
 
 
@@ -171,6 +232,45 @@ class CyclesBank extends Canister {
 
 
 typedef CTSFuel = Cycles;
+
+
+
+Future<Iterable<T>> cycles_bank_download_mechanism<T>({
+    required int chunk_size, 
+    required int len_so_far,
+    required int len,
+    required String download_method_name,  
+    Caller? caller,
+    List<Legation> legations = const [],
+    required Canister canister,
+    required T Function(Record) function,
+}) async {
+    List<T> list = [];
+    int total_chunks = (len / chunk_size).toDouble().ceil();
+    int start_chunk = (len_so_far / chunk_size).toDouble().floor();
+    int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
+    for (int i=start_chunk; i<total_chunks; i++) {
+        Option<Vector<Record>> opt_records = c_backwards(
+            await canister.call(
+                caller: caller,
+                legations: legations,
+                method_name: download_method_name,
+                calltype: CallType.query,
+                put_bytes: c_forwards([Nat(BigInt.from(i))])
+            )
+        )[0] as Option<Vector<Record>>;
+        Vector<Record>? records = opt_records.value;
+        if (records != null) {
+            list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
+        } else {
+            break;
+        }        
+    }
+    return list;
+}
+
+
+
 
 
 class CyclesBankMetrics {
@@ -224,8 +324,8 @@ class CyclesBankMetrics {
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
-            cycles_balance: (r['cycles_balance'] as Nat).value,
-            user_canister_ctsfuel_balance: (r['user_canister_ctsfuel_balance'] as Nat).value,
+            cycles_balance: Cycles.oftheNat(r['cycles_balance'] as Nat),
+            user_canister_ctsfuel_balance: CTSFuel.oftheNat(r['user_canister_ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,
             lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
             cycles_transferrer_canisters: (r['cycles_transferrer_canisters'] as Vector<Principal>), 
@@ -273,7 +373,7 @@ class CyclesTransferIn {
         return CyclesTransferIn._(
             id: (r['id'] as Nat).value,
             by_the_canister: r['by_the_canister'] as Principal,
-            cycles: (r['cycles'] as Nat).value,
+            cycles: Cycles.oftheNat(r['cycles'] as Nat),
             cycles_transfer_memo: CyclesTransferMemo.oftheVariant(r['cycles_transfer_memo'] as Variant),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
         );
@@ -284,7 +384,7 @@ class CyclesTransferIn {
 class CyclesTransferOut {
     final BigInt id;
     final Principal for_the_canister;
-    final BigInt cycles_sent;
+    final Cycles cycles_sent;
     final Cycles? cycles_refunded;   // option cause this field is only filled in the callback and that might not come back because of the callee holding-back the callback cross-upgrades. // if/when a user deletes some CyclesTransferPurchaseLogs, let the user set a special flag to delete the still-not-come-back-user_transfer_cycles by default unset.
     final CyclesTransferMemo cycles_transfer_memo;                           
     final BigInt timestamp_nanos; // time sent
@@ -308,12 +408,12 @@ class CyclesTransferOut {
         return CyclesTransferOut._(
             id: (r['id'] as Nat).value,    
             for_the_canister: r['for_the_canister'] as Principal,    
-            cycles_sent: (r['cycles_sent'] as Nat).value,    
-            cycles_refunded: cycles_refunded_nat != null ? cycles_refunded_nat.value : null,    
+            cycles_sent: Cycles.oftheNat(r['cycles_sent'] as Nat),    
+            cycles_refunded: cycles_refunded_nat != null ? Cycles.oftheNat(cycles_refunded_nat) : null,    
             cycles_transfer_memo: CyclesTransferMemo.oftheVariant(r['cycles_transfer_memo'] as Variant),    
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,    
             opt_cycles_transfer_call_error: opt_cycles_transfer_call_error != null ? CallError.oftheRecord(opt_cycles_transfer_call_error) : null,
-            fee_paid: (r['fee_paid'] as Nat64).value
+            fee_paid: Cycles.oftheNat(r['fee_paid'] as Nat64)
         );
     }
 }
@@ -323,8 +423,8 @@ class CMCyclesPosition {
     final BigInt id;   
     final Cycles cycles;
     final Cycles minimum_purchase;
-    final BigInt xdr_permyriad_per_icp_rate;
-    final BigInt create_position_fee;
+    final XDRICPRate xdr_permyriad_per_icp_rate;
+    final Cycles create_position_fee;
     final BigInt timestamp_nanos; 
     
     CMCyclesPosition._({
@@ -339,10 +439,10 @@ class CMCyclesPosition {
     static CMCyclesPosition oftheRecord(Record r) {
         return CMCyclesPosition._(
             id: (r['id'] as Nat).value,
-            cycles: (r['cycles'] as Nat).value,
-            minimum_purchase: (r['minimum_purchase'] as Nat).value,
-            xdr_permyriad_per_icp_rate: (r['xdr_permyriad_per_icp_rate'] as Nat64).value,
-            create_position_fee: (r['create_position_fee'] as Nat64).value,
+            cycles: Cycles.oftheNat(r['cycles'] as Nat),
+            minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
+            create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
         );
     }
@@ -353,8 +453,8 @@ class CMIcpPosition {
     final BigInt id;   
     final IcpTokens icp;
     final IcpTokens minimum_purchase;
-    final BigInt xdr_permyriad_per_icp_rate;
-    final BigInt create_position_fee;
+    final XDRICPRate xdr_permyriad_per_icp_rate;
+    final Cycles create_position_fee;
     final BigInt timestamp_nanos;
 
     CMIcpPosition._({
@@ -371,8 +471,8 @@ class CMIcpPosition {
             id: (r['id'] as Nat).value,   
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
             minimum_purchase: IcpTokens.oftheRecord(r['minimum_purchase'] as Record),
-            xdr_permyriad_per_icp_rate: (r['xdr_permyriad_per_icp_rate'] as Nat64).value,
-            create_position_fee: (r['create_position_fee'] as Nat64).value,
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
+            create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -382,10 +482,10 @@ class CMIcpPosition {
 
 class CMCyclesPositionPurchase {
     final BigInt cycles_position_id;
-    final BigInt cycles_position_xdr_permyriad_per_icp_rate;
+    final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
     final BigInt id;
     final Cycles cycles;
-    final BigInt purchase_position_fee;
+    final Cycles purchase_position_fee;
     final BigInt timestamp_nanos;
     
     CMCyclesPositionPurchase._({
@@ -400,10 +500,10 @@ class CMCyclesPositionPurchase {
     static CMCyclesPositionPurchase oftheRecord(Record r) {
         return CMCyclesPositionPurchase._(
             cycles_position_id: (r['cycles_position_id'] as Nat).value,
-            cycles_position_xdr_permyriad_per_icp_rate: (r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64).value,
+            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
-            cycles: (r['cycles'] as Nat).value,
-            purchase_position_fee: (r['purchase_position_fee'] as Nat64).value,
+            cycles: Cycles.oftheNat(r['cycles'] as Nat),
+            purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,        
         );
     } 
@@ -411,10 +511,10 @@ class CMCyclesPositionPurchase {
 
 class CMIcpPositionPurchase{
     final BigInt icp_position_id;
-    final BigInt icp_position_xdr_permyriad_per_icp_rate;
+    final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
     final BigInt id;
     final IcpTokens icp;
-    final BigInt purchase_position_fee;
+    final Cycles purchase_position_fee;
     final BigInt timestamp_nanos;
     
     CMIcpPositionPurchase._({
@@ -429,10 +529,10 @@ class CMIcpPositionPurchase{
     static CMIcpPositionPurchase oftheRecord(Record r) {
         return CMIcpPositionPurchase._(
             icp_position_id: (r['icp_position_id'] as Nat).value,
-            icp_position_xdr_permyriad_per_icp_rate: (r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64).value,
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
-            purchase_position_fee: (r['purchase_position_fee'] as Nat64).value,
+            purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value    
         );
     } 
@@ -444,7 +544,7 @@ class CMIcpTransferOut{
     final String to;
     final BigInt block_height;
     final BigInt timestamp_nanos;
-    final BigInt transfer_icp_balance_fee;
+    final Cycles transfer_icp_balance_fee;
     CMIcpTransferOut._({
         required this.icp,
         required this.icp_fee,
@@ -460,7 +560,7 @@ class CMIcpTransferOut{
             to: bytesasahexstring((r['to'] as Blob).bytes),
             block_height: (r['block_height'] as Nat).value,
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
-            transfer_icp_balance_fee: (r['transfer_icp_balance_fee'] as Nat64).value
+            transfer_icp_balance_fee: Cycles(cycles: (r['transfer_icp_balance_fee'] as Nat64).value)
         );
     } 
 }
@@ -480,7 +580,7 @@ class UserTransferCyclesQuest extends Record {
         required this.cycles_transfer_memo,
     }) {
         this['for_the_canister'] = this.for_the_canister;
-        this['cycles'] = Nat(this.cycles);
+        this['cycles'] = this.cycles;
         this['cycles_transfer_memo'] = this.cycles_transfer_memo;
     }
 }

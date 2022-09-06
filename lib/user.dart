@@ -528,8 +528,8 @@ class BurnIcpMintCyclesSuccess {
     static BurnIcpMintCyclesSuccess oftheRecord(CandidType burn_icp_mint_cycles_success_record) {
         Record r = burn_icp_mint_cycles_success_record as Record;
         return BurnIcpMintCyclesSuccess(
-            mint_cycles_for_the_user: (r['mint_cycles_for_the_user'] as Nat).value,
-            cts_fee_taken: (r['cts_fee_taken'] as Nat).value            
+            mint_cycles_for_the_user: Cycles.oftheNat(r['mint_cycles_for_the_user'] as Nat),
+            cts_fee_taken: Cycles.oftheNat(r['cts_fee_taken'] as Nat)            
         );
     }
     

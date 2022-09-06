@@ -143,7 +143,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
         this.xdr_icp_rate = XDRICPRateWithATimestamp(
-            xdr_permyriad_per_icp: certified_xdr_permyriad_per_icp.value,
+            xdr_icp_rate: XDRICPRate.oftheNat64(certified_xdr_permyriad_per_icp),
             timestamp_seconds: certified_timestamp_seconds.value 
         );        
     }
@@ -269,13 +269,27 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 
 
 
-typedef Cycles = BigInt; 
+class Cycles extends Nat {
+    BigInt get cycles => super.value;
+    
+    String toString() {
+        return '${this.cycles/BigInt.parse('1000000000000', radix: 10)}Tcycles';
+    }
+    
+    Cycles({required BigInt cycles}) : super(cycles);
+    
+    static oftheNat(CandidType nat) {
+        return Cycles(
+            cycles: (nat as Nat).value
+        );
+    }
+} 
 
 
 
 
 class CyclesWithATimestamp {
-    final Cycles cycles;
+    final BigInt cycles;
     final BigInt timestamp_nanos;
     CyclesWithATimestamp({required this.cycles, BigInt? opt_timestamp_nanos}) : timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
 }
@@ -287,13 +301,25 @@ class IcpTokensWithATimestamp {
 }
 
 class XDRICPRateWithATimestamp {
-    final BigInt xdr_permyriad_per_icp;
+    final XDRICPRate xdr_icp_rate;
     final BigInt timestamp_seconds;
-    XDRICPRateWithATimestamp({required this.xdr_permyriad_per_icp, required this.timestamp_seconds});
+    XDRICPRateWithATimestamp({required this.xdr_icp_rate, required this.timestamp_seconds});
 }
 
 
 
+class XDRICPRate {
+    final BigInt xdr_permyriad_per_icp;
+    XDRICPRate({required this.xdr_permyriad_per_icp});
+    static oftheNat64(CandidType nat64) {
+        return XDRICPRate(
+            xdr_permyriad_per_icp: (nat64 as Nat64).value
+        );
+    }
+    String toString() {
+        return '${this.xdr_permyriad_per_icp/BigInt.from(10000)}';
+    }
+}
 
 
 
@@ -354,41 +380,6 @@ class CyclesTransferMemo extends Variant {
 
 
 
-
-
-Future<Iterable<T>> cts_download_mechanism<T>({
-    required int chunk_size, 
-    required int len_so_far,
-    required int len,
-    required String download_method_name,  
-    Caller? caller,
-    List<Legation> legations = const [],
-    required Canister canister,
-    required T Function(Record) function,
-}) async {
-    List<T> list = [];
-    int total_chunks = (len / chunk_size).toDouble().ceil();
-    int start_chunk = (len_so_far / chunk_size).toDouble().floor();
-    int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
-    for (int i=start_chunk; i<total_chunks; i++) {
-        Option<Vector<Record>> opt_records = c_backwards(
-            await canister.call(
-                caller: caller,
-                legations: legations,
-                method_name: download_method_name,
-                calltype: CallType.query,
-                put_bytes: c_forwards([Nat(BigInt.from(i))])
-            )
-        )[0] as Option<Vector<Record>>;
-        Vector<Record>? records = opt_records.value;
-        if (records != null) {
-            list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
-        } else {
-            break;
-        }        
-    }
-    return list;
-}
 
 
 
