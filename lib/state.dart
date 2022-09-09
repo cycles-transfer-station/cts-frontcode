@@ -266,7 +266,13 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 
 
 
-
+Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
+    List<int> bytes = []; // an icp subaccount is 32 bytes
+    bytes.add(principal.bytes.length);
+    bytes.addAll(principal.bytes);
+    while (bytes.length < 32) { bytes.add(0); }
+    return Uint8List.fromList(bytes);
+}
 
 
 class Cycles extends Nat {
@@ -308,9 +314,9 @@ class XDRICPRateWithATimestamp {
 
 
 
-class XDRICPRate {
+class XDRICPRate extends Nat64 {
     final BigInt xdr_permyriad_per_icp;
-    XDRICPRate({required this.xdr_permyriad_per_icp});
+    XDRICPRate({required this.xdr_permyriad_per_icp}): super(xdr_permyriad_per_icp);
     static oftheNat64(CandidType nat64) {
         return XDRICPRate(
             xdr_permyriad_per_icp: (nat64 as Nat64).value

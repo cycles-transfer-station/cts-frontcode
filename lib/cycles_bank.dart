@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/candid.dart';
-import 'package:ic_tools/common.dart' as common;
+import 'package:ic_tools/common.dart';
 
 import 'user.dart';
 import 'state.dart';
@@ -32,7 +32,7 @@ class CyclesBank extends Canister {
     CyclesBank(
         super.principal,
         this.user,
-    ): cm_icp_id = icp_id(cycles_market.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(this.principal));
+    ): cm_icp_id = icp_id(cycles_market.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(principal));
     
     Future<void> fresh_metrics() async {
         Record metrics_record = c_backwards(
@@ -273,7 +273,7 @@ class CyclesBank extends Canister {
         if (q.minimum_purchase.cycles > q.cycles.cycles) {
             throw Exception('The minimum-purchase of the position must be equal or less than the position.');
         }
-        Variant result = c_backwards(
+        Variant sponse = c_backwards(
             await user.call(
                 this,
                 method_name: 'cm_create_cycles_position',
@@ -283,7 +283,7 @@ class CyclesBank extends Canister {
         )[0] as Variant;
         CreateCyclesPositionSuccess create_cycles_position_success = match_variant<CreateCyclesPositionSuccess>(sponse, {
             Ok: (create_cycles_position_success) {
-                return CreateCyclesPositiosSuccess.oftheRecord(create_cycles_position_success as Record);
+                return CreateCyclesPositionSuccess.oftheRecord(create_cycles_position_success as Record);
             },
             Err: (create_cycles_position_error) {
                 match_variant<Never>(create_cycles_position_error as Variant, {
@@ -295,7 +295,8 @@ class CyclesBank extends Canister {
                     },
                     'CyclesBalanceTooLow': (r_ctype) {
                         Record r = r_ctype as Record;
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance'])}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee'])}');
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee']!)}');
                     },
                     'CyclesMarketCreateCyclesPositionCallError': (call_error_record) {
                         throw Exception('cycles-market create_cycles_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');    
@@ -306,17 +307,17 @@ class CyclesBank extends Canister {
                                 throw Exception('The minimum-purchase of the position must be equal or less than the position.');
                             },
                             'MsgCyclesTooLow': (fee_record) {
-                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee'])}');
+                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee']!)}');
                             },
-                            'CyclesMarketIsBusy': () {
+                            'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
-                            'CyclesMarketIsFull': () {
+                            'CyclesMarketIsFull': (nul) {
                                 throw Exception('File this: The cycles-market is full.');
                             },
                             'CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump': (r_ctype) {
                                 Record r = r_ctype as Record;
-                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate(xdr_permyriad_per_icp: (r['minimum_rate_for_a_bump'] as Nat64).value)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump'])} then you can bump the most expensive cycles-position and take its place.');
+                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate.oftheNat64(r['minimum_rate_for_a_bump'] as Nat64)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
                             },
                             'MinimumCyclesPosition': (cycles_nat) {
                                 throw Exception('The minimum cycles for a cycles-position is: ${Cycles.oftheNat(cycles_nat)}');
@@ -336,10 +337,83 @@ class CyclesBank extends Canister {
             throw Exception('The minimum-purchase of the position must be equal or less than the position.');
         }
         await this.fresh_cm_icp_balance();
-        if (this.cm_icp_balance! < q.icp + (q.icp/q.minimum_purchase).floor() * ICP_LEDGER_TRANSFER_FEE) {
-            throw Exception('Cycles-market icp-balance is too low. \nicp-balance: ${this.cm_icp_balance!}\n');
+        if (this.cm_icp_balance! < q.icp + q.icp ~/ q.minimum_purchase * ICP_LEDGER_TRANSFER_FEE) {
+            throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low. The icp-balance must be enough to cover the icp-position + icp-position ~/ icp-position-minimum_purchase * ICP_LEDGER_TRANSFER_FEE[${ICP_LEDGER_TRANSFER_FEE}]\nicp-balance: ${this.cm_icp_balance!}\n');
         }
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'cm_create_icp_position',
+                calltype: CallType.call,
+                put_bytes: c_forwards([q])
+            )
+        )[0] as Variant;
+        CreateIcpPositionSuccess create_icp_position_success = match_variant<CreateIcpPositionSuccess>(sponse, {
+            Ok: (ok_record) {
+                return CreateIcpPositionSuccess.oftheRecord(ok_record as Record);
+            },
+            Err: (user_cm_create_icp_position_error) {
+                return match_variant<Never>(user_cm_create_icp_position_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
+                    },
+                    'MemoryIsFull': (nul) {
+                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee']!)}');
+                    },
+                    'CyclesMarketCreateIcpPositionCallError': (call_error_record) {
+                        throw Exception('cycles-market create_icp_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');    
+                    },
+                    'CyclesMarketCreateIcpPositionError': (cycles_market_create_icp_position_error) {
+                        return match_variant<Never>(cycles_market_create_icp_position_error as Variant, {
+                            'MinimumPurchaseMustBeEqualOrLessThanTheIcpPosition': (nul) {
+                                throw Exception('The minimum-purchase of the position must be equal or less than the position.');
+                            },
+                            'MsgCyclesTooLow': (fee_record) {
+                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee']!)}');
+                            },
+                            'CyclesMarketIsFull': (nul) {
+                                throw Exception('File this: The cycles-market is full.');
+                            },
+                            'CyclesMarketIsBusy': (nul) {
+                                throw Exception('The cycles-market is busy. try soon.');
+                            },
+                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul) {
+                                throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
+                            },
+                            'CheckUserCyclesMarketIcpLedgerBalanceError':(call_error_record) {
+                                throw Exception('Error calling the icp-ledger for the cycles-bank\'s cycles-market-icp-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
+                            },
+                            'UserIcpBalanceTooLow': (user_icp_balance_record) {
+                                this.cm_icp_balance = IcpTokens.oftheRecord((user_icp_balance_record as Record)['user_icp_balance']!);
+                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low. The icp-balance must be enough to cover the icp-position + icp-position ~/ icp-position-minimum_purchase * ICP_LEDGER_TRANSFER_FEE[${ICP_LEDGER_TRANSFER_FEE}]\nicp-balance: ${this.cm_icp_balance!}\n');
+                            },
+                            'CyclesMarketIsFull_MaximumRateAndMinimumIcpPositionForABump': (r_ctype) {
+                                Record r = r_ctype as Record;
+                                throw Exception('The cycles-market icp-positions are full. If you create an icp-position with a maximum xdr-icp-rate: ${XDRICPRate.oftheNat64(r['maximum_rate_for_a_bump']!)} and with a minimum icp-position: ${IcpTokens.oftheRecord(r['minimum_icp_position_for_a_bump']!)} then you will bump the most expensive icp-position and take its place.');
+                            },
+                            'MinimumIcpPosition': (icptokens_record) {
+                                throw Exception('The minimum icp for an icp-position is: ${IcpTokens.oftheRecord(icptokens_record as Record)}');
+                            },
+                        });
+                    }
+                });
+            }
+        });        
+        this.metrics!.cm_icp_positions_len = this.metrics!.cm_icp_positions_len + BigInt.from(1);
+        await this.fresh_cm_icp_positions();
+        return create_icp_position_success;    
     }
+    
+    /*
+    Future<PurchaseCyclesPositionSuccess> cm_purchase_cycles_position(UserCMPurchaseCyclesPositionQuest q) async {
+        throw Unimplemented();
+    }
+    */
     
     
     
@@ -683,7 +757,7 @@ class CreateCyclesPositionQuest extends Record {
         required this.minimum_purchase,
         required this.xdr_icp_rate
     }) {
-        this['cycles']= this.Cycles;
+        this['cycles']= this.cycles;
         this['minimum_purchase']= this.minimum_purchase;
         this['xdr_permyriad_per_icp_rate']= this.xdr_icp_rate;
     }
@@ -692,85 +766,53 @@ class CreateCyclesPositionQuest extends Record {
 
 
 class CreateCyclesPositionSuccess {
-
+    final BigInt position_id;
+    CreateCyclesPositionSuccess({
+        required this.position_id
+    });
     static CreateCyclesPositionSuccess oftheRecord(Record r) {
         return CreateCyclesPositionSuccess(
-        
+            position_id: (r['position_id'] as Nat).value
         );
-        
     }
 }
+
+
+
+class CreateIcpPositionQuest extends Record {
+    final IcpTokens icp;
+    final IcpTokens minimum_purchase;
+    final XDRICPRate xdr_icp_rate;
+    CreateIcpPositionQuest({
+        required this.icp,
+        required this.minimum_purchase,
+        required this.xdr_icp_rate
+    }) {
+        this['icp']= this.icp;
+        this['minimum_purchase']= this.minimum_purchase;
+        this['xdr_permyriad_per_icp_rate']= this.xdr_icp_rate;
+    }
+}
+
+
+class CreateIcpPositionSuccess {
+    final BigInt position_id;
+    CreateIcpPositionSuccess({
+        required this.position_id
+    });
+    static CreateIcpPositionSuccess oftheRecord(Record r) {
+        return CreateIcpPositionSuccess(
+            position_id: (r['position_id'] as Nat).value
+        );
+    }
+}
+
 
 /*
 
 // --------------------
 
-
-
-#[derive(CandidType, Deserialize)]
-pub enum UserCMCreateCyclesPositionError {
-    CTSFuelTooLow,
-    MemoryIsFull,
-    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_create_position_fee: Cycles },
-    CyclesMarketCreateCyclesPositionCallError((u32, String)),
-    CyclesMarketCreateCyclesPositionError(cycles_market::CreateCyclesPositionError)
-}
-
-#[derive(CandidType, Deserialize)]
-    pub enum CreateCyclesPositionError{
-        MinimumPurchaseMustBeEqualOrLessThanTheCyclesPosition,
-        MsgCyclesTooLow{ create_position_fee: Cycles },
-        CyclesMarketIsBusy,
-        CyclesMarketIsFull,
-        CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump{ minimum_rate_for_a_bump: XdrPerMyriadPerIcp, minimum_cycles_position_for_a_bump: Cycles },
-        MinimumCyclesPosition(Cycles)   
-    }
-
-#[derive(CandidType, Deserialize)]
-    pub struct CreateCyclesPositionSuccess {
-        pub position_id: PositionId,
-    }
-
-
-
-
-
-#[derive(CandidType, Deserialize)]
-    pub struct CreateIcpPositionQuest {
-        pub icp: IcpTokens,
-        pub minimum_purchase: IcpTokens,
-        pub xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
-    }
     
-    
-    
-#[derive(CandidType, Deserialize)]
-pub enum UserCMCreateIcpPositionError {
-    CTSFuelTooLow,
-    MemoryIsFull,
-    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_create_position_fee: Cycles },
-    CyclesMarketCreateIcpPositionCallError((u32, String)),
-    CyclesMarketCreateIcpPositionError(cycles_market::CreateIcpPositionError)
-}
-
-    #[derive(CandidType, Deserialize)]
-    pub enum CreateIcpPositionError {
-        MinimumPurchaseMustBeEqualOrLessThanTheIcpPosition,
-        MsgCyclesTooLow{ create_position_fee: Cycles },
-        CyclesMarketIsFull,
-        CyclesMarketIsBusy,
-        CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall,
-        CheckUserCyclesMarketIcpLedgerBalanceError((u32, String)),
-        UserIcpBalanceTooLow{ user_icp_balance: IcpTokens },
-        CyclesMarketIsFull_MaximumRateAndMinimumIcpPositionForABump{ maximum_rate_for_a_bump: XdrPerMyriadPerIcp, minimum_icp_position_for_a_bump: IcpTokens },
-        MinimumIcpPosition(IcpTokens),
-    }
-
-    #[derive(CandidType, Deserialize)]
-    pub struct CreateIcpPositionSuccess {
-        pub position_id: PositionId
-    }
-
 
 #[derive(CandidType, Deserialize)]
 pub struct UserCMPurchaseCyclesPositionQuest {

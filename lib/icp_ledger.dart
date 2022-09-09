@@ -150,7 +150,7 @@ class IcpTokens extends Record {
             e8s: e8s_nat64.value
         );
     }
-    static IcpTokens ofthedouble(double icp) {
+    static IcpTokens oftheDouble(double icp) {
         if (check_double_decimal_point_places(icp) > 8) {
             throw Exception('max 8 decimal places for the icp');
         }
@@ -158,7 +158,34 @@ class IcpTokens extends Record {
             e8s: BigInt.parse((icp * 100000000.toDouble()).toString().split('.')[0])
         );
     }
+    
+    IcpTokens operator + (IcpTokens t) {
+        return IcpTokens(e8s: this.e8s + t.e8s);
+    }    
+    IcpTokens operator - (IcpTokens t) {
+        return IcpTokens(e8s: this.e8s - t.e8s);
+    } 
+    IcpTokens operator * (IcpTokens t) {
+        return IcpTokens(e8s: this.e8s * t.e8s);
+    } 
+    IcpTokens operator ~/ (IcpTokens t) {
+        return IcpTokens(e8s: this.e8s ~/ t.e8s);
+    } 
+    bool operator > (IcpTokens t) {
+        return this.e8s > t.e8s;
+    } 
+    bool operator < (IcpTokens t) {
+        return this.e8s < t.e8s;
+    } 
+    bool operator >= (IcpTokens t) {
+        return this.e8s >= t.e8s;
+    } 
+    bool operator <= (IcpTokens t) {
+        return this.e8s <= t.e8s;
+    } 
+    
+
 }
 
-
+final IcpTokens ICP_LEDGER_TRANSFER_FEE = IcpTokens.oftheDouble(0.0001);
 
