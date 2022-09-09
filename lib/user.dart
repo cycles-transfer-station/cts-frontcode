@@ -35,18 +35,10 @@ class User {
         this.expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
         this.public_key_DER = legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
         this.principal = Principal.ofthePublicKeyDER(this.public_key_DER);
-        this.user_icp_subaccount_bytes = User.get_user_icp_subaccount_bytes(this.principal);
+        this.user_icp_subaccount_bytes = principal_as_an_icpsubaccountbytes(this.principal);
         this.user_icp_id = icp_id(cts.principal, subaccount_bytes: user_icp_subaccount_bytes);
     }
 
-    
-    static Uint8List get_user_icp_subaccount_bytes(Principal user_principal) { 
-        List<int> user_subaccount_bytes = [ user_principal.bytes.length, ...user_principal.bytes ];
-        while (user_subaccount_bytes.length < 32) { user_subaccount_bytes.add(0); }
-        if (user_subaccount_bytes.length != 32) { throw Exception('wrong user subaccount length'); }
-        return Uint8List.fromList(user_subaccount_bytes);
-    }
-    
         
     Future<Uint8List> call(Canister canister, {required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 10)}) {
         return canister.call(caller:this.caller, legations:this.legations, calltype:calltype, method_name:method_name, put_bytes:put_bytes, timeout_duration:timeout_duration);

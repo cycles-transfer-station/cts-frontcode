@@ -21,6 +21,8 @@ class CyclesBank extends Canister {
     List<CyclesTransferIn> cycles_transfers_in = [];
     List<CyclesTransferOut> cycles_transfers_out = [];
     
+    final String cm_icp_id; 
+    IcpTokens? cm_icp_balance;
     List<CMCyclesPosition> cm_cycles_positions = [];
     List<CMIcpPosition> cm_icp_positions = [];
     List<CMCyclesPositionPurchase> cm_cycles_positions_purchases = [];
@@ -30,7 +32,7 @@ class CyclesBank extends Canister {
     CyclesBank(
         super.principal,
         this.user,
-    );
+    ): cm_icp_id = icp_id(cycles_market.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(this.principal));
     
     Future<void> fresh_metrics() async {
         Record metrics_record = c_backwards(
@@ -44,20 +46,49 @@ class CyclesBank extends Canister {
         this.metrics = CyclesBankMetrics.oftheRecord(metrics_record);
     }
     
-    
+
+    Future<Iterable<T>> cycles_bank_download_mechanism<T>({
+        required int chunk_size, 
+        required int len_so_far,
+        required int len,
+        required String download_method_name,  
+        required T Function(Record) function,
+    }) async {
+        List<T> list = [];
+        int total_chunks = (len / chunk_size).toDouble().ceil();
+        int start_chunk = (len_so_far / chunk_size).toDouble().floor();
+        int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
+        for (int i=start_chunk; i<total_chunks; i++) {
+            Option<Vector<Record>> opt_records = c_backwards(
+                await this.user.call(
+                    this,
+                    method_name: download_method_name,
+                    calltype: CallType.query,
+                    put_bytes: c_forwards([Nat(BigInt.from(i))])
+                )
+            )[0] as Option<Vector<Record>>;
+            Vector<Record>? records = opt_records.value;
+            if (records != null) {
+                list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
+            } else {
+                break;
+            }        
+        }
+        return list;
+    }
+
+
+
 
     Future<void> fresh_cycles_transfers_in() async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        
+        await this.fresh_metrics();
+
         this.cycles_transfers_in.addAll(
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_in_chunk_size.toInt(), 
                 len_so_far: this.cycles_transfers_in.length,
                 len: this.metrics!.cycles_transfers_in_len.toInt(),
                 download_method_name: 'download_cycles_transfers_in', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CyclesTransferIn.oftheRecord,
             )
         );
@@ -71,16 +102,45 @@ class CyclesBank extends Canister {
                 len_so_far: this.cycles_transfers_out.length,
                 len: this.metrics!.cycles_transfers_out_len.toInt(),
                 download_method_name: 'download_cycles_transfers_out', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CyclesTransferOut.oftheRecord,
             )
         ); 
     }
     
     
-    
+    Future<IcpTokens> cm_see_icp_lock() async {
+        Variant sponse = c_backwards(
+            await this.user.call(
+                this,
+                calltype: CallType.call,
+                method_name: 'cm_see_icp_lock',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        IcpTokens icp_lock = match_variant<IcpTokens>(sponse, {
+            Ok: (icp_tokens_record) {
+                return IcpTokens.oftheRecord(icp_tokens_record as Record);
+            },
+            Err: (cm_see_icp_lock_error) {
+                return match_variant<Never>(cm_see_icp_lock_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low in this cycles-bank. topup the CTSFuel.');
+                    },
+                    'CyclesMarketSeeIcpLockCallError':(call_error_record) {
+                        throw Exception('Call error when calling see_icp_lock method on the cycles-market: ${CallError.oftheRecord(call_error_record as Record)}');
+                    }
+                });
+            }
+        });      
+        return icp_lock;
+    }
+    Future<void> fresh_cm_icp_balance() async {
+        // check icp ledger balance of the cycles-bank cycles-market-[ac]count
+        // check the icp_lock in the cycles-market
+        IcpTokens icp_ledger_balance = IcpTokens.oftheDouble(await check_icp_balance(this.cm_icp_id));
+        IcpTokens icp_in_the_lock = await this.cm_see_icp_lock(); 
+        this.cm_icp_balance = icp_ledger_balance - icp_in_the_lock;
+    }
     
     
     Future<void> fresh_cm_cycles_positions() async {
@@ -91,9 +151,6 @@ class CyclesBank extends Canister {
                 len_so_far: this.cm_cycles_positions.length,
                 len: this.metrics!.cm_cycles_positions_len.toInt(),
                 download_method_name: 'download_cm_cycles_positions', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CMCyclesPosition.oftheRecord,
             )
         ); 
@@ -107,9 +164,6 @@ class CyclesBank extends Canister {
                 len_so_far: this.cm_icp_positions.length,
                 len: this.metrics!.cm_icp_positions_len.toInt(),
                 download_method_name: 'download_cm_icp_positions', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CMIcpPosition.oftheRecord,
             )
         );  
@@ -123,9 +177,6 @@ class CyclesBank extends Canister {
                 len_so_far: this.cm_cycles_positions_purchases.length,
                 len: this.metrics!.cm_cycles_positions_purchases_len.toInt(),
                 download_method_name: 'download_cm_cycles_positions_purchases', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CMCyclesPositionPurchase.oftheRecord,
             )
         );
@@ -139,9 +190,6 @@ class CyclesBank extends Canister {
                 len_so_far: this.cm_icp_positions_purchases.length,
                 len: this.metrics!.cm_icp_positions_purchases_len.toInt(),
                 download_method_name: 'download_cm_icp_positions_purchases', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CMIcpPositionPurchase.oftheRecord,
             )
         ); 
@@ -155,9 +203,6 @@ class CyclesBank extends Canister {
                 len_so_far: this.cm_icp_transfers_out.length,
                 len: this.metrics!.cm_icp_transfers_out_len.toInt(),
                 download_method_name: 'download_cm_icp_transfers_out', 
-                caller: user.caller,
-                legations: user.legations,
-                canister: this,
                 function: CMIcpTransferOut.oftheRecord,
             )
         ); 
@@ -177,7 +222,7 @@ class CyclesBank extends Canister {
                 calltype: CallType.call,
             )
         )[0] as Variant;
-        return match_variant<BigInt>(transfer_cycles_sponse, {
+        BigInt cycles_transfer_out_id = match_variant<BigInt>(transfer_cycles_sponse, {
             Ok: (cycles_transfer_id_nat_ctype) {
                 return (cycles_transfer_id_nat_ctype as Nat).value;
             },
@@ -219,6 +264,81 @@ class CyclesBank extends Canister {
                 });
             }
         });
+        this.metrics!.cycles_transfers_out_len = this.metrics!.cycles_transfers_out_len + BigInt.from(1);
+        await this.fresh_cycles_transfers_out();
+        return cycles_transfer_out_id;
+    }
+    
+    Future<CreateCyclesPositionSuccess> cm_create_cycles_position(CreateCyclesPositionQuest q) async {
+        if (q.minimum_purchase.cycles > q.cycles.cycles) {
+            throw Exception('The minimum-purchase of the position must be equal or less than the position.');
+        }
+        Variant result = c_backwards(
+            await user.call(
+                this,
+                method_name: 'cm_create_cycles_position',
+                put_bytes: c_forwards([q]),
+                calltype: CallType.call
+            )
+        )[0] as Variant;
+        CreateCyclesPositionSuccess create_cycles_position_success = match_variant<CreateCyclesPositionSuccess>(sponse, {
+            Ok: (create_cycles_position_success) {
+                return CreateCyclesPositiosSuccess.oftheRecord(create_cycles_position_success as Record);
+            },
+            Err: (create_cycles_position_error) {
+                match_variant<Never>(create_cycles_position_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
+                    },
+                    'MemoryIsFull': (nul) {
+                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance'])}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee'])}');
+                    },
+                    'CyclesMarketCreateCyclesPositionCallError': (call_error_record) {
+                        throw Exception('cycles-market create_cycles_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');    
+                    },
+                    'CyclesMarketCreateCyclesPositionError': (cycles_market_create_cycles_position_error) {
+                        match_variant<Never>(cycles_market_create_cycles_position_error as Variant, {
+                            'MinimumPurchaseMustBeEqualOrLessThanTheCyclesPosition': (nul) {
+                                throw Exception('The minimum-purchase of the position must be equal or less than the position.');
+                            },
+                            'MsgCyclesTooLow': (fee_record) {
+                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee'])}');
+                            },
+                            'CyclesMarketIsBusy': () {
+                                throw Exception('The cycles-market is busy. try soon.');
+                            },
+                            'CyclesMarketIsFull': () {
+                                throw Exception('File this: The cycles-market is full.');
+                            },
+                            'CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump': (r_ctype) {
+                                Record r = r_ctype as Record;
+                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate(xdr_permyriad_per_icp: (r['minimum_rate_for_a_bump'] as Nat64).value)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump'])} then you can bump the most expensive cycles-position and take its place.');
+                            },
+                            'MinimumCyclesPosition': (cycles_nat) {
+                                throw Exception('The minimum cycles for a cycles-position is: ${Cycles.oftheNat(cycles_nat)}');
+                            }
+                        });
+                    }
+                });           
+            }
+        });   
+        this.metrics!.cm_cycles_positions_len = this.metrics!.cm_cycles_positions_len + BigInt.from(1);
+        await this.fresh_cm_cycles_positions();
+        return create_cycles_position_success;
+    }
+    
+    Future<CreateIcpPositionSuccess> cm_create_icp_position(CreateIcpPositionQuest q) async {
+        if (q.minimum_purchase > q.icp) {
+            throw Exception('The minimum-purchase of the position must be equal or less than the position.');
+        }
+        await this.fresh_cm_icp_balance();
+        if (this.cm_icp_balance! < q.icp + (q.icp/q.minimum_purchase).floor() * ICP_LEDGER_TRANSFER_FEE) {
+            throw Exception('Cycles-market icp-balance is too low. \nicp-balance: ${this.cm_icp_balance!}\n');
+        }
     }
     
     
@@ -234,40 +354,6 @@ class CyclesBank extends Canister {
 typedef CTSFuel = Cycles;
 
 
-
-Future<Iterable<T>> cycles_bank_download_mechanism<T>({
-    required int chunk_size, 
-    required int len_so_far,
-    required int len,
-    required String download_method_name,  
-    Caller? caller,
-    List<Legation> legations = const [],
-    required Canister canister,
-    required T Function(Record) function,
-}) async {
-    List<T> list = [];
-    int total_chunks = (len / chunk_size).toDouble().ceil();
-    int start_chunk = (len_so_far / chunk_size).toDouble().floor();
-    int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
-    for (int i=start_chunk; i<total_chunks; i++) {
-        Option<Vector<Record>> opt_records = c_backwards(
-            await canister.call(
-                caller: caller,
-                legations: legations,
-                method_name: download_method_name,
-                calltype: CallType.query,
-                put_bytes: c_forwards([Nat(BigInt.from(i))])
-            )
-        )[0] as Option<Vector<Record>>;
-        Vector<Record>? records = opt_records.value;
-        if (records != null) {
-            list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
-        } else {
-            break;
-        }        
-    }
-    return list;
-}
 
 
 
@@ -585,29 +671,40 @@ class UserTransferCyclesQuest extends Record {
     }
 }
 
-/*
 
-#[derive(CandidType, Deserialize)]
-pub enum UserTransferCyclesError {
-    CTSFuelTooLow,
-    MemoryIsFull,
-    InvalidCyclesTransferMemoSize{max_size_bytes: u128},
-    InvalidTransferCyclesAmount{ minimum_user_transfer_cycles: Cycles },
-    CyclesBalanceTooLow { cycles_balance: Cycles, cycles_transferrer_transfer_cycles_fee: Cycles },
-    CyclesTransferrerTransferCyclesError(cycles_transferrer::TransferCyclesError),
-    CyclesTransferrerTransferCyclesCallError((u32, String))
+
+
+class CreateCyclesPositionQuest extends Record {
+    final Cycles cycles;
+    final Cycles minimum_purchase;
+    final XDRICPRate xdr_icp_rate;
+    CreateCyclesPositionQuest({
+        required this.cycles,
+        required this.minimum_purchase,
+        required this.xdr_icp_rate
+    }) {
+        this['cycles']= this.Cycles;
+        this['minimum_purchase']= this.minimum_purchase;
+        this['xdr_permyriad_per_icp_rate']= this.xdr_icp_rate;
+    }
+
 }
 
 
-// --------------------
+class CreateCyclesPositionSuccess {
 
- #[derive(CandidType, Deserialize)]
-    pub struct CreateCyclesPositionQuest {
-        pub cycles: Cycles,
-        pub minimum_purchase: Cycles,
-        pub xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
+    static CreateCyclesPositionSuccess oftheRecord(Record r) {
+        return CreateCyclesPositionSuccess(
+        
+        );
         
     }
+}
+
+/*
+
+// --------------------
+
 
 
 #[derive(CandidType, Deserialize)]
