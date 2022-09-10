@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:math';
 
+import 'package:http/http.dart' as http;
     
 import 'package:ic_tools/ic_tools.dart' show Principal;
 import 'package:ic_tools/common.dart' show PrincipalIcpId, governance;
@@ -138,8 +139,8 @@ class IcpTokens extends Record {
     }
     String toString() {
         String s = this.e8s.toRadixString(10);
-        while (s.length < 9) { s = '0$s'; }
-        int split_i = s.length - 8;
+        while (s.length < IcpTokens.DECIMAL_PLACES + 1) { s = '0$s'; }
+        int split_i = s.length - IcpTokens.DECIMAL_PLACES;
         s = '${s.substring(0, split_i)}.${s.substring(split_i)}';
         while (s[s.length - 1] == '0' && s.length > 3/*minimum '0.0'*/) { s = s.substring(0, s.length - 1); }
         return s;   
@@ -151,13 +152,15 @@ class IcpTokens extends Record {
         );
     }
     static IcpTokens oftheDouble(double icp) {
-        if (check_double_decimal_point_places(icp) > 8) {
-            throw Exception('max 8 decimal places for the icp');
+        if (check_double_decimal_point_places(icp) > IcpTokens.DECIMAL_PLACES) {
+            throw Exception('max ${IcpTokens.DECIMAL_PLACES} decimal places for the icp');
         }
         return IcpTokens(
-            e8s: BigInt.parse((icp * 100000000.toDouble()).toString().split('.')[0])
+            e8s: BigInt.parse((icp * IcpTokens.DIVIDABLE_BY.toDouble()).toString().split('.')[0])
         );
     }
+    static int DECIMAL_PLACES = 8;    
+    static BigInt DIVIDABLE_BY = BigInt.from(pow(10, IcpTokens.DECIMAL_PLACES));
     
     IcpTokens operator + (IcpTokens t) {
         return IcpTokens(e8s: this.e8s + t.e8s);

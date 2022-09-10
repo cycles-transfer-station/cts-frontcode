@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:html' show window, CryptoKey, Event;
 import 'dart:js_util';
+
 
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
@@ -284,12 +286,80 @@ class Cycles extends Nat {
     
     Cycles({required BigInt cycles}) : super(cycles);
     
-    static oftheNat(CandidType nat) {
+    static Cycles oftheNat(CandidType nat) {
         return Cycles(
             cycles: (nat as Nat).value
         );
     }
+    
+    static BigInt T_CYCLES_DIVIDABLE_BY = BigInt.from(pow(10, Cycles.T_CYCLES_DECIMAL_PLACES));
+    static int T_CYCLES_DECIMAL_PLACES = 12;    
+    static Cycles oftheTCyclesDouble(double tcycles) {
+        if (check_double_decimal_point_places(tcycles) > T_CYCLES_DECIMAL_PLACES) {
+            throw Exception('max ${T_CYCLES_DECIMAL_PLACES} decimal places for the TCycles');
+        }
+        return Cycles(cycles: BigInt.parse((tcycles * T_CYCLES_DIVIDABLE_BY.toDouble()).toString().split('.')[0]));
+    }
+    
+    Cycles operator + (Cycles t) {
+        return Cycles(cycles: this.cycles + t.cycles);
+    }    
+    Cycles operator - (Cycles t) {
+        return Cycles(cycles: this.cycles - t.cycles);
+    } 
+    Cycles operator * (Cycles t) {
+        return Cycles(cycles: this.cycles * t.cycles);
+    } 
+    Cycles operator ~/ (Cycles t) {
+        return Cycles(cycles: this.cycles ~/ t.cycles);
+    } 
+    bool operator > (Cycles t) {
+        return this.cycles > t.cycles;
+    } 
+    bool operator < (Cycles t) {
+        return this.cycles < t.cycles;
+    } 
+    bool operator >= (Cycles t) {
+        return this.cycles >= t.cycles;
+    } 
+    bool operator <= (Cycles t) {
+        return this.cycles <= t.cycles;
+    } 
+    
 } 
+
+
+
+
+
+final BigInt CYCLES_PER_XDR = BigInt.parse(Cycles.T_CYCLES_DIVIDABLE_BY, radix: 10);
+
+Cycles icptokens_to_cycles(IcpTokens icpts, XDRICPRate xdr_icp_rate) {
+    return Cycles(cycles: 
+        icpts.e8s 
+        * xdr_icp_rate.xdr_permyriad_per_icp 
+        * CYCLES_PER_XDR 
+        ~/ (IcpTokens.DIVIDABLE_BY * XDRICPRate.DIVIDABLE_BY)
+    );
+    
+}
+
+IcpTokens cycles_to_icptokens(Cycles cycles, XDRICPRate xdr_icp_rate) {
+    return IcpTokens(e8s:
+        cycles.cycles
+        * (IcpTokens.DIVIDABLE_BY * XDRICPRate.DIVIDABLE_BY)
+        ~/ CYCLES_PER_XDR
+        ~/ xdr_icp_rate.xdr_permyriad_per_icp    
+    );
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -315,16 +385,18 @@ class XDRICPRateWithATimestamp {
 
 
 class XDRICPRate extends Nat64 {
-    final BigInt xdr_permyriad_per_icp;
-    XDRICPRate({required this.xdr_permyriad_per_icp}): super(xdr_permyriad_per_icp);
+    BigInt get xdr_permyriad_per_icp => super.value;
+    XDRICPRate({required BigInt xdr_permyriad_per_icp}): super(xdr_permyriad_per_icp);
     static oftheNat64(CandidType nat64) {
         return XDRICPRate(
             xdr_permyriad_per_icp: (nat64 as Nat64).value
         );
     }
     String toString() {
-        return '${this.xdr_permyriad_per_icp/BigInt.from(10000)}';
+        return '${this.xdr_permyriad_per_icp/XDRICPRate.DIVIDABLE_BY}';
     }
+    
+    static BigInt DIVIDABLE_BY = BigInt.from(10000);
 }
 
 

@@ -10,7 +10,7 @@ import 'package:ic_tools/common.dart';
 
 import 'user.dart';
 import 'state.dart';
-
+import 'cycles_market.dart';
 import 'icp_ledger.dart';
 
 class CyclesBank extends Canister {
@@ -409,11 +409,94 @@ class CyclesBank extends Canister {
         return create_icp_position_success;    
     }
     
-    /*
-    Future<PurchaseCyclesPositionSuccess> cm_purchase_cycles_position(UserCMPurchaseCyclesPositionQuest q) async {
-        throw Unimplemented();
+    
+    Future<PurchaseCyclesPositionSuccess> cm_purchase_cycles_position(CyclesPosition cycles_position, Cycles purchase_cycles) async {
+        if (cycles_position.minimum_purchase > purchase_cycles) {
+            throw Exception('The minimum-purchase of this cycles-position is ${cycles_position.minimum_purchase}');
+        }
+        if (cycles_position.cycles < purchase_cycles) {
+            throw Exception('This cycles-position: ${cycles_position.id} has ${cycles_position.cycles} for the sale.');
+        }
+        await fresh_cm_icp_balance();
+        IcpTokens cycles_position_purchase_cycles_icp_cost = cycles_to_icptokens(purchase_cycles, cycles_position.xdr_permyriad_per_icp_rate); 
+        if (this.cm_icp_balance! < cycles_position_purchase_cycles_icp_cost + ICP_LEDGER_TRANSFER_FEE) {
+            throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for the purchase. \ncycles-bank\'s cycles-market-icp-balance: ${this.cm_icp_balance!}\npurchase_cycles: ${purchase_cycles}\nicp-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_icp_cost}, icp-ledger-transfer-fee: ${ICP_LEDGER_TRANSFER_FEE}');
+        }
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'cm_purchase_cycles_position',
+                calltype: CallType.call,
+                put_bytes: c_forwards([
+                    CyclesBankCMPurchaseCyclesPositionQuest(
+                        cycles_market_purchase_cycles_position_quest: CyclesMarketPurchaseCyclesPositionQuest(
+                            cycles_position_id: cycles_position.id,
+                            cycles: purchase_cycles,
+                        ),
+                        cycles_position_xdr_permyriad_per_icp_rate: cycles_position.xdr_permyriad_per_icp_rate,
+                    )
+                ])
+            )
+        ).first as Variant;
+        PurchaseCyclesPositionSuccess purchase_cycles_position_success = match_variant<PurchaseCyclesPositionSuccess>(sponse, {
+            Ok: (ok) {
+                return PurchaseCyclesPositionSuccess.oftheRecord(ok as Record);
+            }, 
+            Err: (purchase_cycles_position_error) {
+                return match_variant<Never>(purchase_cycles_position_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
+                    },
+                    'MemoryIsFull': (nul) {
+                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}');
+                    },
+                    'CyclesMarketPurchaseCyclesPositionCallError': (call_error_record) {
+                        throw Exception('cycles-market purchase_cycles_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');                    
+                    },
+                    'CyclesMarketPurchaseCyclesPositionError': (cycles_market_purchase_cycles_position_error) {
+                        return match_variant<Never>(cycles_market_purchase_cycles_position_error as Variant, {
+                            'MsgCyclesTooLow': (fee_record) {
+                                throw Exception('File this error: \nMsgCyclesTooLow purchase_position_fee: ${Cycles.oftheNat((fee_record as Record)['purchase_position_fee']!)}');
+                            },
+                            'CyclesMarketIsBusy': (nul) {
+                                throw Exception('The cycles-market is busy. try soon.');
+                            },
+                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul) {
+                                throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
+                            },
+                            'CheckUserCyclesMarketIcpLedgerBalanceError': (call_error_record) {
+                                throw Exception('Error calling the icp-ledger for the cycles-bank\'s cycles-market-icp-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
+                            },
+                            'UserIcpBalanceTooLow': (user_icp_balance_record) {
+                                this.cm_icp_balance = IcpTokens.oftheRecord((user_icp_balance_record as Record)['user_icp_balance']!);
+                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for the purchase. \ncycles-bank\'s cycles-market-icp-balance: ${this.cm_icp_balance!}\npurchase_cycles: ${purchase_cycles}\nicp-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_icp_cost}, icp-ledger-transfer-fee: ${ICP_LEDGER_TRANSFER_FEE}');
+                            },
+                            'CyclesPositionNotFound':(nul) {
+                                throw Exception('The cycles-position is not found. perhaps it has already been purchased.');
+                            },
+                            'CyclesPositionCyclesIsLessThanThePurchaseQuest': (cycles_position_cycles_record) {
+                                // update the cycles-position-cycles
+                                
+                                throw Exception('This cycles-position: ${cycles_position.id} has ${Cycles.oftheNat((cycles_position_cycles_record as Record)['cycles_position_cycles']! as Nat)} for the sale.\n perhaps some cycles of the cycles-position was purchased.');
+                            },
+                            'CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest': (cycles_position_minimum_purchase_record) {
+                                throw Exception('File this error: \nThe minimum-purchase of this cycles-position is ${Cycles.oftheNat((cycles_position_minimum_purchase_record as Record)['cycles_position_minimum_purchase']!)}');
+                            }                               
+                        });
+                    }
+                });
+            }
+        });
+        this.metrics!.cm_cycles_positions_purchases_len = this.metrics!.cm_cycles_positions_purchases_len + BigInt.from(1);
+        await this.fresh_cm_cycles_positions_purchases();
+        return purchase_cycles_position_success;
     }
-    */
+    
     
     
     
@@ -808,49 +891,50 @@ class CreateIcpPositionSuccess {
 }
 
 
+class CyclesBankCMPurchaseCyclesPositionQuest extends Record {
+    final CyclesMarketPurchaseCyclesPositionQuest cycles_market_purchase_cycles_position_quest;
+    final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;                                              // for the cycles-bank-log
+    CyclesBankCMPurchaseCyclesPositionQuest({
+        required this.cycles_market_purchase_cycles_position_quest,
+        required this.cycles_position_xdr_permyriad_per_icp_rate,
+    }) {
+        this['cycles_market_purchase_cycles_position_quest'] = this.cycles_market_purchase_cycles_position_quest;
+        this['cycles_position_xdr_permyriad_per_icp_rate'] = this.cycles_position_xdr_permyriad_per_icp_rate;
+    }
+}
+
+class CyclesMarketPurchaseCyclesPositionQuest extends Record {
+    final BigInt cycles_position_id;
+    final Cycles cycles;
+    CyclesMarketPurchaseCyclesPositionQuest({
+        required this.cycles_position_id,
+        required this.cycles,
+    }) {
+        this['cycles_position_id'] = Nat(this.cycles_position_id);
+        this['cycles'] = this.cycles;
+    }
+}
+
+
+class PurchaseCyclesPositionSuccess {
+    final BigInt purchase_id;
+    PurchaseCyclesPositionSuccess._({
+        required this.purchase_id
+    });
+    static PurchaseCyclesPositionSuccess oftheRecord(Record r) {
+        return PurchaseCyclesPositionSuccess._(
+            purchase_id: (r['purchase_id'] as Nat).value
+        );
+    }
+}
+
+
+
+
 /*
 
 // --------------------
 
-    
-
-#[derive(CandidType, Deserialize)]
-pub struct UserCMPurchaseCyclesPositionQuest {
-    cycles_market_purchase_cycles_position_quest: cycles_market::PurchaseCyclesPositionQuest,
-    cycles_position_xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp // for the user_canister-log
-}
-#[derive(CandidType, Deserialize)]
-    pub struct PurchaseCyclesPositionQuest {
-        pub cycles_position_id: PositionId,
-        pub cycles: Cycles
-    }
-
-#[derive(CandidType, Deserialize)]
-pub enum UserCMPurchaseCyclesPositionError {
-    CTSFuelTooLow,
-    MemoryIsFull,
-    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_purchase_position_fee: Cycles },
-    CyclesMarketPurchaseCyclesPositionCallError((u32, String)),
-    CyclesMarketPurchaseCyclesPositionError(cycles_market::PurchaseCyclesPositionError)
-}
-
-
-    #[derive(CandidType, Deserialize)]
-    pub enum PurchaseCyclesPositionError {
-        MsgCyclesTooLow{ purchase_position_fee: Cycles },
-        CyclesMarketIsBusy,
-        CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall,
-        CheckUserCyclesMarketIcpLedgerBalanceError((u32, String)),
-        UserIcpBalanceTooLow{ user_icp_balance: IcpTokens },
-        CyclesPositionNotFound,
-        CyclesPositionCyclesIsLessThanThePurchaseQuest{ cycles_position_cycles: Cycles },
-        CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest{ cycles_position_minimum_purchase: Cycles },
-    }
-
-    #[derive(CandidType, Deserialize)]
-    pub struct PurchaseCyclesPositionSuccess {
-        pub purchase_id: PurchaseId,
-    }
 
 
 
