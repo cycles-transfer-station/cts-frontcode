@@ -2,6 +2,8 @@
 
 
 import 'state.dart';
+import 'icp_ledger.dart';
+
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 
@@ -100,9 +102,29 @@ class CyclesPosition {
 }
 
 class IcpPosition {
-
+    final BigInt id;   
+    final Principal positor;
+    final IcpTokens icp;
+    final IcpTokens minimum_purchase;
+    final XDRICPRate xdr_permyriad_per_icp_rate;
+    final BigInt timestamp_nanos;
+    IcpPosition._({
+        required this.id,
+        required this.positor,
+        required this.icp,
+        required this.minimum_purchase,
+        required this.xdr_permyriad_per_icp_rate,
+        required this.timestamp_nanos
+    });
     static IcpPosition oftheRecord(Record r) {
-        throw UnimplementedError();
+        return IcpPosition._(
+            id: (r['id'] as Nat).value,
+            positor: r['positor'] as Principal,
+            icp: IcpTokens.oftheRecord(r['icp'] as Record),
+            minimum_purchase: IcpTokens.oftheRecord(r['minimum_purchase'] as Record),
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64), 
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value
+        );
     }
 }
 class CyclesPositionPurchase {
@@ -149,57 +171,46 @@ class CyclesPositionPurchase {
 
 
 class IcpPositionPurchase {
-
+    final BigInt icp_position_id;
+    final Principal icp_position_positor;
+    final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
+    final BigInt id;
+    final Principal purchaser;
+    final IcpTokens icp;
+    final BigInt timestamp_nanos;
+    final bool cycles_payout_lock;
+    final bool icp_payout_lock;
+    final Record cycles_payout_data;
+    final bool icp_payout;
+    IcpPositionPurchase._({
+        required this.icp_position_id,
+        required this.icp_position_positor,
+        required this.icp_position_xdr_permyriad_per_icp_rate,
+        required this.id,
+        required this.purchaser,
+        required this.icp,
+        required this.timestamp_nanos,
+        required this.cycles_payout_lock,
+        required this.icp_payout_lock,
+        required this.cycles_payout_data,
+        required this.icp_payout,
+    });
     static IcpPositionPurchase oftheRecord(Record r) {
-        throw UnimplementedError();
+        return IcpPositionPurchase._(
+            icp_position_id: (r['icp_position_id'] as Nat).value,
+            icp_position_positor: (r['icp_position_positor'] as Principal),
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            id: (r['id'] as Nat).value,
+            purchaser: r['purchaser'] as Principal,
+            icp: IcpTokens.oftheRecord(r['icp'] as Record),
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cycles_payout_lock: (r['cycles_payout_lock'] as Bool).value,
+            icp_payout_lock: (r['icp_payout_lock'] as Bool).value,
+            cycles_payout_data: (r['cycles_payout_data'] as Record),
+            icp_payout: (r['icp_payout'] as Bool).value,
+        );
     }
 }
 
 
-/*
 
-
-#[derive(CandidType, Deserialize)]
-struct IcpPosition {
-    id: PositionId,   
-    positor: Principal,
-    icp: IcpTokens,
-    minimum_purchase: IcpTokens,
-    xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
-    timestamp_nanos: u128,
-}
-
-
-#[derive(CandidType, Deserialize)]
-struct CyclesPositionPurchase {
-    cycles_position_id: PositionId,
-    cycles_position_positor: Principal,
-    cycles_position_xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
-    id: PurchaseId,
-    purchaser: Principal,
-    cycles: Cycles,
-    timestamp_nanos: u128,
-    cycles_payout_lock: bool,
-    icp_payout_lock: bool,
-    cycles_payout_data: CyclesPayoutData,
-    icp_payout: bool
-}
-
-#[derive(CandidType, Deserialize)]
-struct IcpPositionPurchase {
-    icp_position_id: PositionId,
-    icp_position_positor: Principal,
-    icp_position_xdr_permyriad_per_icp_rate: XdrPerMyriadPerIcp,
-    id: PurchaseId,
-    purchaser: Principal,
-    icp: IcpTokens,
-    timestamp_nanos: u128,
-    cycles_payout_lock: bool,
-    icp_payout_lock: bool,
-    cycles_payout_data: CyclesPayoutData,
-    icp_payout: bool
-}
-
-
-
-*/

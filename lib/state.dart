@@ -332,7 +332,7 @@ class Cycles extends Nat {
 
 
 
-final BigInt CYCLES_PER_XDR = BigInt.parse(Cycles.T_CYCLES_DIVIDABLE_BY, radix: 10);
+final BigInt CYCLES_PER_XDR = Cycles.T_CYCLES_DIVIDABLE_BY;
 
 Cycles icptokens_to_cycles(IcpTokens icpts, XDRICPRate xdr_icp_rate) {
     return Cycles(cycles: 
