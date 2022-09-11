@@ -569,8 +569,89 @@ class CyclesBank extends Canister {
     }
     
     
-    
-    
+    Future<void> cm_void_position(BigInt position_id) async {
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'cm_void_position',
+                calltype: CallType.call,
+                put_bytes: c_forwards([
+                    CyclesMarketVoidPositionQuest(
+                        position_id: position_id
+                    )
+                ])
+            )
+        ).first as Variant;
+        return match_variant<void>(sponse, {
+            Ok: (ok) {
+                
+            },
+            Err: (void_position_error) {
+                match_variant<Never>(void_position_error as Variant, {
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
+                    },
+                    'CyclesMarketVoidPositionCallError': (call_error_record) {
+                        throw Exception('cycles-market void_position call_error:\n${CallError.oftheRecord(call_error_record as Record)}');
+                    },
+                    'CyclesMarketVoidPositionError': (cycles_market_void_position_error) {
+                        match_variant<Never>(cycles_market_void_position_error as Variant, {
+                            'WrongCaller': (nul) {
+                                throw Exception('File this error: WrongCaller');
+                            },
+                            'CyclesMarketIsBusy': (nul) {
+                                throw Exception('The cycles-market is busy. try soon.');
+                            },
+                            'PositionNotFound': (nul) {
+                                throw Exception('The position is not found. Perhaps it has been purchased.');
+                            },
+                        });
+                    }                    
+                });
+            }
+        });
+    }
+
+    Future<BigInt/*block_height*/> cm_transfer_icp_balance(CyclesMarketTransferIcpBalanceQuest q) async {
+        Variant sponse = c_backwards(
+            user.call(
+                this,
+                method_name: 'cm_transfer_icp_balance',
+                calltype: CallType.call,
+                put_bytes: c_forwards([q])
+            )
+        ).first as Variant;
+        BigInt block_height = match_variant<BigInt>(sponse, {
+            Ok: (block_height_nat64) {
+                return (block_height as Nat64).value;
+            },
+            Err: (transfer_icp_balance_error) {
+                return match_variant<Never>(transfer_icp_balance_error as Variant, {
+                    CTSFuelTooLow,
+                    MemoryIsFull,
+                    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_transfer_icp_balance_fee: Cycles },
+                    CyclesMarketTransferIcpBalanceCallError((u32, String)),
+                    'CyclesMarketTransferIcpBalanceError': (cycles_market_transfer_icp_balance_error)
+                
+                    #[derive(CandidType, Deserialize)]
+                    pub enum TransferIcpBalanceError {
+                        MsgCyclesTooLow{ transfer_icp_balance_fee: Cycles },
+                        CyclesMarketIsBusy,
+                        CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall,
+                        CheckUserCyclesMarketIcpLedgerBalanceCallError((u32, String)),
+                        UserIcpBalanceTooLow{ user_icp_balance: IcpTokens },
+                        IcpTransferCallError((u32, String)),
+                        IcpTransferError(IcpTransferError)
+                    }
+                
+                
+                
+                });
+            }
+        });
+    }
+
+
     
     
 }
@@ -1043,56 +1124,30 @@ class PurchaseIcpPositionSuccess {
 
 
 
-/*
-
-#[derive(CandidType, Deserialize)]
-    pub struct VoidPositionQuest {
-        pub position_id: PositionId
+class CyclesMarketVoidPositionQuest extends Record {
+    BigInt position_id;
+    CyclesMarketVoidPositionQuest({
+        required this.position_id
+    }) {
+        this['position_id'] = Nat(this.position_id);
     }
-    
-#[derive(CandidType, Deserialize)]
-pub enum UserCMVoidPositionError {
-    CTSFuelTooLow,
-    CyclesMarketVoidPositionCallError((u32, String)),
-    CyclesMarketVoidPositionError(cycles_market::VoidPositionError)
 }
 
-    #[derive(CandidType, Deserialize)]
-    pub enum VoidPositionError {
-        WrongCaller,
-        CyclesMarketIsBusy,
-        PositionNotFound,
+
+
+class CyclesMarketTransferIcpBalanceQuest extends Record {
+    final IcpTokens icp;
+    final IcpTokens icp_fee;
+    final String to;
+    CyclesMarketTransferIcpBalanceQuest({
+        required this.icp,
+        required this.icp_fee,
+        required this.to
+    }) {
+        this['icp'] = this.icp;
+        this['icp_fee'] = this.icp_fee;
+        this['to'] = Blob(hexstringasthebytes(this.to));
     }
-
-
-
-
-#[derive(CandidType, Deserialize)]
-    pub struct TransferIcpBalanceQuest {
-        pub icp: IcpTokens,
-        pub icp_fee: IcpTokens,
-        pub to: IcpId
-    }
-    
-    
-#[derive(CandidType, Deserialize)]
-pub enum UserCMTransferIcpBalanceError {
-    CTSFuelTooLow,
-    MemoryIsFull,
-    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_transfer_icp_balance_fee: Cycles },
-    CyclesMarketTransferIcpBalanceCallError((u32, String)),
-    CyclesMarketTransferIcpBalanceError(cycles_market::TransferIcpBalanceError)
 }
-    #[derive(CandidType, Deserialize)]
-    pub enum TransferIcpBalanceError {
-        MsgCyclesTooLow{ transfer_icp_balance_fee: Cycles },
-        CyclesMarketIsBusy,
-        CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall,
-        CheckUserCyclesMarketIcpLedgerBalanceCallError((u32, String)),
-        UserIcpBalanceTooLow{ user_icp_balance: IcpTokens },
-        IcpTransferCallError((u32, String)),
-        IcpTransferError(IcpTransferError)
-    }
 
 
-*/
