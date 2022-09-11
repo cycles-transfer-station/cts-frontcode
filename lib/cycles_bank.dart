@@ -614,7 +614,7 @@ class CyclesBank extends Canister {
 
     Future<BigInt/*block_height*/> cm_transfer_icp_balance(CyclesMarketTransferIcpBalanceQuest q) async {
         Variant sponse = c_backwards(
-            user.call(
+            await user.call(
                 this,
                 method_name: 'cm_transfer_icp_balance',
                 calltype: CallType.call,
@@ -623,32 +623,56 @@ class CyclesBank extends Canister {
         ).first as Variant;
         BigInt block_height = match_variant<BigInt>(sponse, {
             Ok: (block_height_nat64) {
-                return (block_height as Nat64).value;
+                return (block_height_nat64 as Nat64).value;
             },
             Err: (transfer_icp_balance_error) {
                 return match_variant<Never>(transfer_icp_balance_error as Variant, {
-                    CTSFuelTooLow,
-                    MemoryIsFull,
-                    CyclesBalanceTooLow{ cycles_balance: Cycles, cycles_market_transfer_icp_balance_fee: Cycles },
-                    CyclesMarketTransferIcpBalanceCallError((u32, String)),
-                    'CyclesMarketTransferIcpBalanceError': (cycles_market_transfer_icp_balance_error)
-                
-                    #[derive(CandidType, Deserialize)]
-                    pub enum TransferIcpBalanceError {
-                        MsgCyclesTooLow{ transfer_icp_balance_fee: Cycles },
-                        CyclesMarketIsBusy,
-                        CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall,
-                        CheckUserCyclesMarketIcpLedgerBalanceCallError((u32, String)),
-                        UserIcpBalanceTooLow{ user_icp_balance: IcpTokens },
-                        IcpTransferCallError((u32, String)),
-                        IcpTransferError(IcpTransferError)
-                    }
-                
-                
-                
+                    'CTSFuelTooLow': (nul) {
+                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
+                    },
+                    'MemoryIsFull': (nul) {
+                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype){
+                        Record r = r_ctype as Record;
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance'] as Nat);
+                        throw Exception('The cycles-balance is too low on this cycles-bank.\ncycles_balance: ${Cycles.oftheNat(r['cycles_balance'] as Nat)}\ncycles_market_transfer_icp_balance_fee: ${Cycles.oftheNat(r['cycles_market_transfer_icp_balance_fee']!)}');
+                    },
+                    'CyclesMarketTransferIcpBalanceCallError': (call_error_record) {
+                        throw Exception('cycles_market transfer_icp_balance call_error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                    },
+                    'CyclesMarketTransferIcpBalanceError': (cycles_market_transfer_icp_balance_error) {
+                        return match_variant<Never>(cycles_market_transfer_icp_balance_error as Variant, {
+                            'MsgCyclesTooLow': (r){
+                                throw Exception('File this error: MsgCyclesTooLow \n${r}');
+                            },
+                            'CyclesMarketIsBusy': (nul) {
+                                throw Exception('The cycles-market is busy. try soon.');
+                            },
+                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul){
+                                throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');
+                            },
+                            'CheckUserCyclesMarketIcpLedgerBalanceCallError': (call_error_record) {
+                                throw Exception('Icp-ledger balance call error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                            },
+                            'UserIcpBalanceTooLow': (r) {
+                                this.cm_icp_balance = IcpTokens.oftheRecord((r as Record)['user_icp_balance']!);
+                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for this transfer.\nicp_balance: ${this.cm_icp_balance}');
+                            },
+                            'IcpTransferCallError':(call_error_record) {
+                                throw Exception('Icp-ledger transfer call error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                            },
+                            'IcpTransferError': (icp_transfer_error){
+                                return match_variant<Never>(icp_transfer_error as Variant, this.user.icp_transfer_error_match_map);
+                            }
+                        });
+                    }                
                 });
             }
         });
+        this.metrics!.cm_icp_transfers_out_len = this.metrics!.cm_icp_transfers_out_len + BigInt.from(1);
+        await this.fresh_cm_icp_transfers_out();
+        return block_height;
     }
 
 
