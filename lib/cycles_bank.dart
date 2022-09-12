@@ -675,12 +675,102 @@ class CyclesBank extends Canister {
         return block_height;
     }
 
+    
+    Future<void> cycles_balance_for_the_ctsfuel(Cycles cycles_for_the_ctsfuel) async {
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'cycles_balance_for_the_ctsfuel',
+                put_bytes: c_forwards([cycles_for_the_ctsfuel]),
+                calltype: CallType.call
+            )
+        ).first as Variant;
+        match_variant<void>(sponse, {
+            Ok:(nul) {
+                
+            },
+            Err:(cycles_balance_for_the_ctsfuel_balance_error) {
+                match_variant<Never>(cycles_balance_for_the_ctsfuel_balance_error as Variant, {
+                    'CyclesBalanceTooLow': (cycles_balance_record) { 
+                        this.metrics!.cycles_balance = Cycles.oftheNat((cycles_balance_record as Record)['cycles_balance']!);
+                        throw Exception('The cycles_balance is too low.');
+                    }
+                });
+            }
+        });    
+    }
+
+
+    Future<BigInt/*new-lifetime-termination-timestamp-seconds*/> lengthen_lifetime(LengthenLifetimeQuest q) async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'lengthen_lifetime',
+                calltype: CallType.call,
+                put_bytes: c_forwards([q])
+            )
+        ).first as Variant;
+        BigInt new_lifetime_termination_timestamp_seconds = match_variant<BigInt>(sponse, {
+            Ok: (ok) {
+                return (ok as Nat).value;
+            },
+            Err: (lengthen_lifetime_error) {
+                return match_variant<Never>(lengthen_lifetime_error as Variant, {
+                    'MinimumSetLifetimeTerminationTimestampSeconds': (nat) {
+                        throw Exception('The minimum days that this lifetime of this cycles-bank can lengthen is ${((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24}');
+                    },
+                    'CyclesBalanceTooLow': (r_ctype){
+                        Record r = r_ctype as Record;
+                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
+                        throw Exception('The cycles_balance in the cycles-bank is too low.\ncost to lengthen the lifetime for ${ (q.set_lifetime_termination_timestamp_seconds - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24 }-days: ${Cycles.oftheNat(r['lengthen_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
+                    },
+                    'CBSMCallError': (call_error_record) {
+                        throw Exception('cbsm call error: ${CallError.oftheRecord(call_error_record as Record)}');
+                    }   
+                });
+            }
+        });
+        this.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
+        return new_lifetime_termination_timestamp_seconds;
+    }
+
+    
+    
+    Future<void> change_storage_size(ChangeStorageSizeQuest q) async {
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'change_storage_size',
+                calltype: CallType.call,
+                put_bytes: c_forwards([q])
+            )
+        ).first as Variant;
+        match_variant<void>(sponse, {
+            Ok: (n){
+                
+            },
+            Err: (change_storage_size_error){
+                match_variant<Never>(change_storage_size_error as Variant, {
+                    'NewStorageSizeMibTooLow':(r_c){
+                        throw Exception('The minimum new storage size is: ${((r_c as Record)['minimum_new_storage_size_mib'] as Nat).value} MiB');
+                    },
+                    'CyclesBalanceTooLow': (r_c){
+                        this.metrics!.cycles_balance = Cycles.oftheNat((r_c as Record)['cycles_balance']!);
+                        throw Exception('The cycles_balance is too low. \nstorage change cycles-cost: ${Cycles.oftheNat((r_c as Record)['new_storage_size_mib_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
+                    },
+                    'ManagementCanisterUpdateSettingsCallError':(call_error_record){
+                        throw Exception('management-canister call error: ${CallError.oftheRecord(call_error_record as Record)}');
+                    }
+                });    
+            }
+        });
+        this.metrics!.storage_size_mib = q.new_storage_size_mib;
+    }
 
     
     
 }
-
-
 
 
 
@@ -840,6 +930,44 @@ class CyclesTransferOut {
 }
 
 
+class UserTransferCyclesQuest extends Record {
+    final Principal for_the_canister;
+    final Cycles cycles;
+    final CyclesTransferMemo cycles_transfer_memo;
+    
+    UserTransferCyclesQuest({
+        required this.for_the_canister,
+        required this.cycles,
+        required this.cycles_transfer_memo,
+    }) {
+        this['for_the_canister'] = this.for_the_canister;
+        this['cycles'] = this.cycles;
+        this['cycles_transfer_memo'] = this.cycles_transfer_memo;
+    }
+}
+
+
+
+
+    
+class LengthenLifetimeQuest extends Record {
+    final BigInt set_lifetime_termination_timestamp_seconds;
+    LengthenLifetimeQuest({required this.set_lifetime_termination_timestamp_seconds}) {
+        this['set_lifetime_termination_timestamp_seconds'] = Nat(this.set_lifetime_termination_timestamp_seconds);
+    }
+}
+
+
+class ChangeStorageSizeQuest extends Record {
+    final BigInt new_storage_size_mib;
+    ChangeStorageSizeQuest({required this.new_storage_size_mib}) {
+        this['new_storage_size_mib'] = Nat(this.new_storage_size_mib);
+    }
+}
+
+
+
+
 class CMCyclesPosition {
     final BigInt id;   
     final Cycles cycles;
@@ -987,24 +1115,6 @@ class CMIcpTransferOut{
 }
 
 
-// ----------------------------
-
-
-class UserTransferCyclesQuest extends Record {
-    final Principal for_the_canister;
-    final Cycles cycles;
-    final CyclesTransferMemo cycles_transfer_memo;
-    
-    UserTransferCyclesQuest({
-        required this.for_the_canister,
-        required this.cycles,
-        required this.cycles_transfer_memo,
-    }) {
-        this['for_the_canister'] = this.for_the_canister;
-        this['cycles'] = this.cycles;
-        this['cycles_transfer_memo'] = this.cycles_transfer_memo;
-    }
-}
 
 
 
