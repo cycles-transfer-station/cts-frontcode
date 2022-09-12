@@ -698,6 +698,7 @@ class CyclesBank extends Canister {
                 });
             }
         });    
+        await this.fresh_metrics();
     }
 
 
@@ -718,7 +719,7 @@ class CyclesBank extends Canister {
             Err: (lengthen_lifetime_error) {
                 return match_variant<Never>(lengthen_lifetime_error as Variant, {
                     'MinimumSetLifetimeTerminationTimestampSeconds': (nat) {
-                        throw Exception('The minimum days that this lifetime of this cycles-bank can lengthen is ${((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24}');
+                        throw Exception('The minimum days that the lifetime of this cycles-bank can lengthen is ${((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24}');
                     },
                     'CyclesBalanceTooLow': (r_ctype){
                         Record r = r_ctype as Record;
@@ -731,7 +732,7 @@ class CyclesBank extends Canister {
                 });
             }
         });
-        this.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
+        await this.fresh_metrics();
         return new_lifetime_termination_timestamp_seconds;
     }
 
@@ -765,7 +766,7 @@ class CyclesBank extends Canister {
                 });    
             }
         });
-        this.metrics!.storage_size_mib = q.new_storage_size_mib;
+        await this.fresh_metrics();
     }
 
     
