@@ -28,6 +28,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             state.is_loading = false;
             notifyListeners();
         }).catchError((e){
+            state.is_loading = false;/*TAKE THIS LINE OUT WHEN SET FOR THE GO.*/
             state.loading_text = 'Error: ${e}';
             notifyListeners();
             window.alert(e.toString());

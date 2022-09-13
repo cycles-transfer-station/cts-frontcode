@@ -100,7 +100,25 @@ class WelcomePageWidget extends StatelessWidget {
     
     
     
-        List<Widget> column_children = [];
+        List<Widget> column_children = [
+            Padding(
+                padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 17.0),
+                child: Container(
+                    child: Text('Purchase, transfer, and trade the native stable-currency on the world-computer: CYCLES.')
+                )
+            ),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 37.0),
+                child: Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+                    indent: 34.0,
+                    endIndent: 34.0,
+                    //color: 
+                ),
+            )
+        
+        ];
         
         
         
@@ -248,16 +266,11 @@ class WelcomePageWidget extends StatelessWidget {
                             child: Text('USER ID: ${state.user!.principal.text}')
                         )
                     ),
-                    Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 17.0,
-                        endIndent: 17.0,
-                        //color: 
-                    )
                 ]
             );
+
             
+            /*
             if (state.user!.cycles_bank == null) {
                 
                 column_children.add(
@@ -277,7 +290,7 @@ class WelcomePageWidget extends StatelessWidget {
                                         text:
 '''
 
-\nICP: ${state.user!.icp_balance != null ? state.user!.icp_balance! : 'unknown'}
+\nICP: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}
 '''
                                     ),
                                     WidgetSpan(
@@ -376,15 +389,17 @@ A CTS-USER-CONTRACT gives the purchaser a
             
             
             }
-            
+            */
         }
         
         
         
         return /*SelectionArea(
             child: */Scaffold(
+                key: state.scaffold_key,
                 appBar: AppBar(
                     title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
+                    automaticallyImplyLeading: false,
                 ),
                 drawer: Drawer(
                     child: ListView(
@@ -395,7 +410,7 @@ A CTS-USER-CONTRACT gives the purchaser a
                     
                             ),
                             ListTile(
-                                title: const Text('USER-TRANSFER-ICP'),
+                                title: const Text('TRANSFER-ICP'),
                                 onTap: () {
                                   // Update the state of the app.
                                   // ...
@@ -425,18 +440,21 @@ A CTS-USER-CONTRACT gives the purchaser a
                 ),
                 body: Column(                
                     children: column_children,
-                    crossAxisAlignment: CrossAxisAlignment.center 
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center
                 ), 
                 bottomNavigationBar: BottomAppBar(
-                    color: Colors.blue,
+                    //color: Colors.blue,
                     child: IconTheme(
                         data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
                         child: Row(
                             children: <Widget>[
                                 IconButton(
-                                    tooltip: 'Open navigation menu',
+                                    tooltip: 'Navigation',
                                     icon: const Icon(Icons.menu),
-                                    onPressed: () {},
+                                    onPressed: () {
+                                        state.scaffold_key.currentState!.openDrawer();
+                                    },
                                 ),
                                 if (true) const Spacer(),
                                 IconButton(
