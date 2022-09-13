@@ -97,9 +97,114 @@ class WelcomePageWidget extends StatelessWidget {
     
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    
-    
-    
+        state.context = context;
+        
+        
+        GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
+        
+        return /*SelectionArea(
+            child: */Scaffold(
+                    key: scaffold_key,
+                    appBar: AppBar(
+                        title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
+                        automaticallyImplyLeading: false,
+                    ),
+                    drawer: Drawer(
+                        child: ListView(
+                            padding: EdgeInsets.zero,
+                            children: [
+                                DrawerHeader(
+                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: null)) : Text('USER ID: ${state.user!.principal.text}')
+                        
+                                ),
+                                ListTile(
+                                    title: const Text('HOME'),
+                                    onTap: () {
+                                        state.current_url = CustomUrl('welcome');
+                                        Navigator.pop(context);
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    },
+                                ),
+                                ListTile(
+                                    title: const Text('TRANSFER-ICP'),
+                                    onTap: () {
+                                        state.current_url = CustomUrl('transfer_icp');
+                                        Navigator.pop(context);
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    },
+                                ),
+                                ListTile(
+                                    title: const Text('CYCLES-BANK'),
+                                    onTap: () {
+                                        state.current_url = CustomUrl('cycles_bank');
+                                        Navigator.pop(context);
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    },
+                                ),
+                                ListTile(
+                                    title: const Text('CYCLES-MARKET'),
+                                    onTap: () {
+                                        state.current_url = CustomUrl('cycles_market');
+                                        Navigator.pop(context);
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    },
+                                ),
+                                AboutListTile(
+                                    applicationVersion: '0.1.0',
+                                )
+                            ]
+                        )
+                    ),
+                    body: state.current_url.main_page_scaffold_body(), 
+                    bottomNavigationBar: BottomAppBar(
+                        //color: Colors.blue,
+                        child: IconTheme(
+                            data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+                            child: Row(
+                                children: <Widget>[
+                                    IconButton(
+                                        tooltip: 'Navigation',
+                                        icon: const Icon(Icons.menu),
+                                        onPressed: () {
+                                            scaffold_key.currentState!.openDrawer();
+                                        },
+                                    ),
+                                    if (true) const Spacer(),
+                                    IconButton(
+                                        tooltip: 'Search',
+                                        icon: const Icon(Icons.search),
+                                        onPressed: () {},
+                                    ),
+                                    IconButton(
+                                        tooltip: 'Favorite',
+                                        icon: const Icon(Icons.favorite),
+                                        onPressed: () {},
+                                    ),
+                                ]
+                            ) 
+                        )       
+                    )
+                
+            )
+        /*)*/;
+    }
+}
+
+
+
+
+
+
+class WelcomeScaffoldBody extends StatelessWidget {
+    WelcomeScaffoldBody({Key? key}) : super(key: key);
+    static WelcomeScaffoldBody create({Key? key}) => WelcomeScaffoldBody(key: key);
+    @override
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+        
         List<Widget> column_children = [
             Padding(
                 padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 17.0),
@@ -122,7 +227,6 @@ class WelcomePageWidget extends StatelessWidget {
         
         
         
-        
         if (state.user == null) {
             column_children.add(
                 OutlineButton(
@@ -132,11 +236,7 @@ class WelcomePageWidget extends StatelessWidget {
                         state.is_loading = true;
                         state.loading_text = 'loading test';
                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                
-                        //CallerEd25519 user_caller = CallerEd25519(
-                        //    public_key: Uint8List.fromList([250,16,64,7,35,238,104,233,191,156,14,131,25,180,140,149,150,121,196,140,182,57,254,239,218,137,24,25,234,238,215,92]),
-                        //    private_key: Uint8List.fromList([120,47,130,3,239,149,252,232,58,208,103,95,175,172,68,18,37,40,191,193,201,190,159,142,27,192,137,3,34,176,2,146])
-                        //);
+                        
                         
                         SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
                         
@@ -150,7 +250,21 @@ class WelcomePageWidget extends StatelessWidget {
                         try {
                             await state.loadfirststate();
                         } catch(e) {
-                            window.alert(e.toString());
+                            await showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('Error:'),
+                                        content: Text('$e'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            );
                             state.loading_text = 'Error: ${e}';
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
                             return;
@@ -228,7 +342,21 @@ class WelcomePageWidget extends StatelessWidget {
                                     } catch(e) {
                                         state.loading_text = 'Error: ${e}';
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
-                                        window.alert(e.toString());
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error:'),
+                                                    content: Text('$e'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );
                                         return;
                                     }
                                     
@@ -238,9 +366,23 @@ class WelcomePageWidget extends StatelessWidget {
                                 
                                 if (message_event.data['kind'] == 'authorize-client-failure') {
                                     print('authorize-client-failure:\n${message_event.data['text']}');
-                                    window.alert('authorize-client-failure:\n${message_event.data['text']}');
                                     state.loading_text = 'Error: authorize-client-failure:\n${message_event.data['text']}';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error: ii-authorize-client-failure:'),
+                                                content: Text('${message_event.data['text']}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
                                     return;
                                 }
                             }
@@ -269,8 +411,47 @@ class WelcomePageWidget extends StatelessWidget {
                 ]
             );
 
-            
-            /*
+        }
+        
+        return Column(                
+            children: column_children,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center
+        );
+    
+    }
+
+}
+
+
+class TransferIcpScaffoldBody extends StatelessWidget {
+    TransferIcpScaffoldBody({Key? key}) : super(key: key);
+    static TransferIcpScaffoldBody create({Key? key}) => TransferIcpScaffoldBody(key: key);
+    
+    @override
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+    
+        return Text('transfer icp');
+        
+    }
+}
+
+class CyclesBankScaffoldBody extends StatelessWidget {
+    CyclesBankScaffoldBody({Key? key}) : super(key: key);
+    static CyclesBankScaffoldBody create({Key? key}) => CyclesBankScaffoldBody(key: key);
+    
+    @override
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+    
+/*
             if (state.user!.cycles_bank == null) {
                 
                 column_children.add(
@@ -322,7 +503,21 @@ timestamp: ${state.user!.icp_balance != null ? (state.user!.icp_balance!.timesta
                                 try {
                                     await state.user!.fresh_icp_balance();
                                 } catch(e) {
-                                    window.alert('Error when freshing the user icp balance: ${e}');
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when checking the user icp balance:'),
+                                                content: Text('${e}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
                                 }
                                 
                                 state.is_loading = false;
@@ -389,107 +584,29 @@ A CTS-USER-CONTRACT gives the purchaser a
             
             
             }
-            */
-        }
-        
-        
-        
-        return /*SelectionArea(
-            child: */Scaffold(
-                key: state.scaffold_key,
-                appBar: AppBar(
-                    title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
-                    automaticallyImplyLeading: false,
-                ),
-                drawer: Drawer(
-                    child: ListView(
-                        padding: EdgeInsets.zero,
-                        children: [
-                            DrawerHeader(
-                                child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: null)) : Text('USER ID: ${state.user!.principal.text}')
-                    
-                            ),
-                            ListTile(
-                                title: const Text('TRANSFER-ICP'),
-                                onTap: () {
-                                  // Update the state of the app.
-                                  // ...
-                                  Navigator.pop(context);
-                                },
-                            ),
-                            ListTile(
-                                title: const Text('CYCLES-BANK'),
-                                onTap: () {
-                                  // Update the state of the app.
-                                  // ...
-                                },
-                            ),
-                            ListTile(
-                                title: const Text('CYCLES-MARKET'),
-                                onTap: () {
-                                  // Update the state of the app.
-                                  // ...
-                                  Navigator.pop(context);
-                                },
-                            ),
-                            AboutListTile(
-                            
-                            )
-                        ]
-                    )
-                ),
-                body: Column(                
-                    children: column_children,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center
-                ), 
-                bottomNavigationBar: BottomAppBar(
-                    //color: Colors.blue,
-                    child: IconTheme(
-                        data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-                        child: Row(
-                            children: <Widget>[
-                                IconButton(
-                                    tooltip: 'Navigation',
-                                    icon: const Icon(Icons.menu),
-                                    onPressed: () {
-                                        state.scaffold_key.currentState!.openDrawer();
-                                    },
-                                ),
-                                if (true) const Spacer(),
-                                IconButton(
-                                    tooltip: 'Search',
-                                    icon: const Icon(Icons.search),
-                                    onPressed: () {},
-                                ),
-                                IconButton(
-                                    tooltip: 'Favorite',
-                                    icon: const Icon(Icons.favorite),
-                                    onPressed: () {},
-                                ),
-                            ]
-                        ) 
-                    )       
-                )
-            )
-        /*)*/;
+*/
+        return Text('cycles-bank');        
+
     }
 }
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+class CyclesMarketScaffoldBody extends StatelessWidget {
+    CyclesMarketScaffoldBody({Key? key}) : super(key: key);
+    static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
+    
+    @override
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+    
+        return Text('cycles-market');
+        
+    }
+}
 
 
 

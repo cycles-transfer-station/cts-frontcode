@@ -16,7 +16,24 @@ final Map<String, Map> urlmap = {
     'welcome': {
         'path': '/',
         'page': WelcomePage.create,
+        'main_page_scaffold_body': WelcomeScaffoldBody.create
     },
+    'transfer_icp': {
+        'path': '/transfer-icp',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': TransferIcpScaffoldBody.create
+    },
+    'cycles_bank': {
+        'path': '/cycles-bank',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': CyclesBankScaffoldBody.create
+    },
+    'cycles_market': {
+        'path': '/cycles-market',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': CyclesMarketScaffoldBody.create
+    },
+    
     'welcome__buy_wallet': {
         'path': '/buy-wallet',
         'page': BuyWalletPage.create,
@@ -37,6 +54,15 @@ class CustomUrl {
     }
 
     Page get_page() => urlmap[this.name]!['page']!(key: ValueKey<String>(this.string));
+
+    Widget? main_page_scaffold_body() {
+        Widget Function() f = urlmap[this.name]!['main_page_scaffold_body'];
+        if (f != null) {
+            return f();
+        } else {
+            return null;
+        }
+    }
 
     static CustomUrl outOfABrowserUrlString(String urlstring) {
         final Uri uriParseBrowserUrl = Uri.parse(urlstring);

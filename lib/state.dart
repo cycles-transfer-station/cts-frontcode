@@ -73,8 +73,10 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     String loading_text = 'loading ...';
     bool is_loading = true; // state starts loading. the router sets the is_loading=false and calls tifyListeners() on a successfull completion of the load_first_state function. 
     
-    final GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
-
+    
+    
+    late BuildContext context; 
+    
     
     XDRICPRateWithATimestamp? xdr_icp_rate;
     

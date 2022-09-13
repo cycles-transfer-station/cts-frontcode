@@ -27,11 +27,26 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         state.loadfirststate().then((x){
             state.is_loading = false;
             notifyListeners();
-        }).catchError((e){
+        }).catchError((e) async {
             state.is_loading = false;/*TAKE THIS LINE OUT WHEN SET FOR THE GO.*/
-            state.loading_text = 'Error: ${e}';
+            state.loading_text = 'Error when loading the first state: ${e}';
+            await showDialog(
+                context: state.context,
+                builder: (BuildContext context) {
+                    return AlertDialog(
+                        title: Text('Error when loading the first state:'),
+                        content: Text('${e}'),
+                        actions: <Widget>[
+                            TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                            ),
+                        ]
+                    );
+                }   
+            );                 
             notifyListeners();
-            window.alert(e.toString());
+            
             //throw e; // for the debugging,
         });
     }
@@ -57,7 +72,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
     @override
     Widget build(BuildContext context) {
-    
+        
         List<String> page_branches = state.current_url.name.split('__');
         
         // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?

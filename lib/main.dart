@@ -20,6 +20,7 @@ class _BaseState extends State<Base> {
         return MaterialApp.router(
             routeInformationParser : _routeParser,
             routerDelegate         : _routeLegate,
+            backButtonDispatcher   : RootBackButtonDispatcher(),
             title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(
                 brightness: Brightness.dark,
