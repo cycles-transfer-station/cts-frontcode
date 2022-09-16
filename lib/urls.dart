@@ -53,12 +53,14 @@ class CustomUrl {
         this.string = urlstring;
     }
 
-    Page get_page() => urlmap[this.name]!['page']!(key: ValueKey<String>(this.string));
+    Page get_page() {
+        return urlmap[this.name]!['page']!(key: ValueKey('${urlmap[this.name]!['page']!.toString()} page' /*not this.string bc some different urls are with the same page widget.*/));
+    }
 
     Widget? main_page_scaffold_body() {
-        Widget Function() f = urlmap[this.name]!['main_page_scaffold_body'];
+        Widget Function({Key? key}) f = urlmap[this.name]!['main_page_scaffold_body'];
         if (f != null) {
-            return f();
+            return f(key: ValueKey('${urlmap[this.name]!['main_page_scaffold_body']!.toString()} main_page_scaffold_body'));
         } else {
             return null;
         }

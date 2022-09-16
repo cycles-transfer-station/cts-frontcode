@@ -83,15 +83,21 @@ class WelcomePage extends Page {
                 final curve_tween = CurveTween(curve: Curves.easeOutSine);
                 return FadeTransition(
                     opacity: animation.drive(tween).drive(curve_tween),
-                    child: WelcomePageWidget()
+                    child: WelcomePageWidget(key: ValueKey('WelcomePageWidget'))
                 );
             }
         );
     }
 }
-class WelcomePageWidget extends StatelessWidget {
-    WelcomePageWidget({Key? key}) : super(key: key);
+class WelcomePageWidget extends StatefulWidget {
+    const WelcomePageWidget({super.key});
+    State createState() => WelcomePageWidgetState();
+}
+class WelcomePageWidgetState extends State<WelcomePageWidget> {
 
+    GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
+    
+    
     @override
     Widget build(BuildContext context) {
     
@@ -100,7 +106,6 @@ class WelcomePageWidget extends StatelessWidget {
         state.context = context;
         
         
-        GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
         
         return /*SelectionArea(
             child: */Scaffold(
@@ -121,32 +126,33 @@ class WelcomePageWidget extends StatelessWidget {
                                     title: const Text('HOME'),
                                     onTap: () {
                                         state.current_url = CustomUrl('welcome');
-                                        Navigator.pop(context);
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        Navigator.pop(context);
+                                        
                                     },
                                 ),
                                 ListTile(
                                     title: const Text('TRANSFER-ICP'),
                                     onTap: () {
                                         state.current_url = CustomUrl('transfer_icp');
-                                        Navigator.pop(context);
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        Navigator.pop(context);
                                     },
                                 ),
                                 ListTile(
                                     title: const Text('CYCLES-BANK'),
                                     onTap: () {
                                         state.current_url = CustomUrl('cycles_bank');
-                                        Navigator.pop(context);
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        Navigator.pop(context);
                                     },
                                 ),
                                 ListTile(
                                     title: const Text('CYCLES-MARKET'),
                                     onTap: () {
                                         state.current_url = CustomUrl('cycles_market');
-                                        Navigator.pop(context);
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        Navigator.pop(context);
                                     },
                                 ),
                                 AboutListTile(
@@ -196,7 +202,7 @@ class WelcomePageWidget extends StatelessWidget {
 
 
 class WelcomeScaffoldBody extends StatelessWidget {
-    WelcomeScaffoldBody({Key? key}) : super(key: key);
+    WelcomeScaffoldBody({super.key});
     static WelcomeScaffoldBody create({Key? key}) => WelcomeScaffoldBody(key: key);
     @override
     Widget build(BuildContext context) {
