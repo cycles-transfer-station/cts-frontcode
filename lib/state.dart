@@ -28,6 +28,7 @@ import 'package:ic_tools/candid.dart' show
     ;
 import 'package:ic_tools/candid.dart' as candid;
 
+import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
@@ -41,7 +42,7 @@ import 'cycles_market.dart';
 import 'user.dart';
 import 'cycles_bank.dart';
 import 'icp_ledger.dart';
-
+import 'test.dart' as t;
 
 const String Ok  = 'Ok';
 const String Err = 'Err';
@@ -90,6 +91,8 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
 
     Future<void> loadfirststate() async { 
+        //await t.m();
+        
         
         if (IndexDB.is_support_here() != true) {
             window.alert('indexdb not supported. the user is log-out when the page closes.');

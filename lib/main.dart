@@ -24,11 +24,11 @@ class _BaseState extends State<Base> {
             title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(
                 brightness: Brightness.dark,
-                backgroundColor: const Color.fromRGBO(30, 30, 31, 0.9), //Colors.blueGrey
+                backgroundColor: grey_background, 
                 fontFamily: 'AxaxaxBold',
                 //typography: Typography.material2018(platform: platform)
                 appBarTheme: AppBarTheme(
-                    color: const Color.fromRGBO(76,97,145, 0.9), 
+                    color: blue, 
                     //backgroundColor Color?, 
                     //foregroundColor: double?, 
                     elevation: 1.5,  
@@ -38,6 +38,12 @@ class _BaseState extends State<Base> {
         );
     }
 }
+
+
+
+const Color grey_background = Color.fromRGBO(30, 30, 31, 0.9);
+const Color blue = Color.fromRGBO(76,97,145, 0.9);
+
 
 
 /*

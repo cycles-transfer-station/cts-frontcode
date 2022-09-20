@@ -475,7 +475,7 @@ class User {
         await this.fresh_icp_balance();
         IcpTokensWithATimestamp? icp_balance = this.icp_balance;
         if (icp_balance != null) {
-            if (icp_balance.icp.e8s < transfer_icp_quest.icp.e8s) {
+            if (icp_balance.icp < transfer_icp_quest.icp) {
                 throw Exception('user icp balance is too low. current balance: ${icp_balance.icp}');
             }
         }
