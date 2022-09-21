@@ -371,7 +371,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                             padding: EdgeInsets.all(7),
                                             child: ElevatedButton(
                                                 style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                child: Text('fresh', style: TextStyle(fontSize:11)),
+                                                child: Text('FRESH', style: TextStyle(fontSize:11)),
                                                 onPressed: () async {
                                                     state.loading_text = 'fresh user icp balance ...';
                                                     state.is_loading = true;
@@ -435,7 +435,47 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 )
             );
             
-        } else {
+            List<IcpTransferListItem> icp_transfers_list_items = state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList();
+            column_children.addAll([
+                Padding(
+                    padding: EdgeInsets.all(7),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
+                        onPressed: () async {
+                            state.loading_text = 'loading user icp transfers ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            try {
+                                await state.user!.fresh_icp_transfers();
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Error when loading the user icp transfers:'),
+                                            content: Text('${e}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
+                            }
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                        }
+                    )
+                ),
+                ListView(
+                    children: icp_transfers_list_items
+                )
+            ]);
+            
+        } else /*if (state.user == null)*/ {
             
             column_children.addAll([
                 Text('Log in for the icp-wallet.'),
@@ -636,6 +676,31 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                         )
                     )
                 ]
+            )
+        );
+    }
+}
+
+
+class IcpTransferListItem extends StatelessWidget {
+    late final IcpTransfer icp_transfer;
+    IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey(icp_transfer_.block_height));
+    
+    Widget build(BuildContext context) {        
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        
+        String subtitle = icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'Out' : 'In';
+        subtitle = subtitle + ': ';
+        subtitle = subtitle + icp_transfer.from_account_identifier == state.user!.user_icp_id ? icp_transfer.to_account_identifier : icp_transfer.from_account_identifier;
+        subtitle = subtitle + ': ${icp_transfer.amount}';
+        
+        return Container(
+            child: ListTile(
+                title: Text(icp_transfer.block_height),
+                subtitle: Text(subtitle),
+                isThreeLine: true
             )
         );
     }

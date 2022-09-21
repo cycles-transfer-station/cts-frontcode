@@ -86,6 +86,10 @@ Future<List<IcpTransfer>> get_icp_transfers(String icp_id, {int already_have = 0
         Map sponse_map = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
         //print_map('first_url: $sponse_map');
         
+        if (sponse_map['total'] as int == 0) {
+            return icp_transfers;
+        }
+        
         final int get_transfers_count = (sponse_map['total'] as int) - already_have;
         final String max_block_index = ((sponse_map['blocks']! as List)[0] as Map)['block_height'] as String;
         
