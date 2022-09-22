@@ -435,7 +435,6 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 )
             );
             
-            List<IcpTransferListItem> icp_transfers_list_items = state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList();
             column_children.addAll([
                 Padding(
                     padding: EdgeInsets.all(7),
@@ -471,7 +470,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ),
                 ListView(
-                    children: icp_transfers_list_items
+                    children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()
                 )
             ]);
             
@@ -698,7 +697,7 @@ class IcpTransferListItem extends StatelessWidget {
         
         return Container(
             child: ListTile(
-                title: Text(icp_transfer.block_height),
+                title: Text('${icp_transfer.block_height}, memo: ${icp_transfer.memo}'),
                 subtitle: Text(subtitle),
                 isThreeLine: true
             )
@@ -719,6 +718,36 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
+            
+        List<Widget> column_children = [
+            Padding(
+                padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
+                child: Container(
+                    child: Text('CYCLES-BANK', style: TextStyle(fontSize: 19))
+                )
+            ),
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                child: Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+                    indent: 34.0,
+                    endIndent: 34.0,
+                    //color: 
+                ),
+            )
+        ];
+    
+        
+        
+    
+    
+    
+        return Column(                
+            children: column_children,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center
+        );
     
 /*
             if (state.user!.cycles_bank == null) {
