@@ -113,7 +113,15 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             
             if (this.user!.cycles_bank == null) {
                 print('find_cycles_bank');
-                //await this.user!.find_cycles_bank();           
+                //await this.user!.find_cycles_bank();
+            }
+            
+            if (this.user!.cycles_bank != null) {
+                try {
+                    await this.user!.cycles_bank!.fresh_metrics();
+                } catch(e) {
+                    print('cycles-bank load metrics error: ${e}');
+                }
             }
         
             

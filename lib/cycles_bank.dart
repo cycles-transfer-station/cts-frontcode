@@ -787,7 +787,7 @@ typedef CTSFuel = Cycles;
 
 class CyclesBankMetrics {
     Cycles cycles_balance;
-    CTSFuel user_canister_ctsfuel_balance;
+    CTSFuel ctsfuel_balance;
     BigInt storage_size_mib;
     BigInt lifetime_termination_timestamp_seconds;
     Vector<Principal> cycles_transferrer_canisters;
@@ -811,7 +811,7 @@ class CyclesBankMetrics {
     BigInt download_cm_icp_transfers_out_chunk_size;
     CyclesBankMetrics._({
         required this.cycles_balance,
-        required this.user_canister_ctsfuel_balance,
+        required this.ctsfuel_balance,
         required this.storage_size_mib,
         required this.lifetime_termination_timestamp_seconds,
         required this.cycles_transferrer_canisters,
@@ -837,7 +837,7 @@ class CyclesBankMetrics {
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
             cycles_balance: Cycles.oftheNat(r['cycles_balance'] as Nat),
-            user_canister_ctsfuel_balance: CTSFuel.oftheNat(r['user_canister_ctsfuel_balance'] as Nat),
+            ctsfuel_balance: CTSFuel.oftheNat(r['ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,
             lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
             cycles_transferrer_canisters: (r['cycles_transferrer_canisters'] as Vector<Principal>), 

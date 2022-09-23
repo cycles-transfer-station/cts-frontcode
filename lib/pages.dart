@@ -24,7 +24,7 @@ import 'state_bind.dart';
 import 'widgets.dart';
 import 'user.dart';
 import 'icp_ledger.dart';
-
+import 'cycles_bank.dart';
 
 
 
@@ -336,21 +336,27 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             Padding(
                 padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
                 child: Container(
-                    child: Text('TRANSFER-ICP', style: TextStyle(fontSize: 19))
+                    child: Text(':TRANSFER-ICP.', style: TextStyle(fontSize: 19))
                 )
             ),
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                child: Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-                    indent: 34.0,
-                    endIndent: 34.0,
-                    //color: 
-                ),
+            Divider(
+                height: 13.0,   
+                thickness: 4.0,
+                indent: 34.0,
+                endIndent: 34.0,
+                //color: 
             )
         ];
+
+        // maybe put the following widgets into a listview so the page is scrollable
         
+        column_children.add(
+            Padding(
+                padding: EdgeInsets.fromLTRB(17,17,17,17)
+            )
+        );
+
+
         if (state.user != null) {
             column_children.add(
                 /*ListView(children: [ Wra])p*/ Wrap(
@@ -371,9 +377,9 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                             padding: EdgeInsets.all(7),
                                             child: ElevatedButton(
                                                 style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                child: Text('FRESH', style: TextStyle(fontSize:11)),
+                                                child: Text('LOAD ICP BALANCE', style: TextStyle(fontSize:11)),
                                                 onPressed: () async {
-                                                    state.loading_text = 'fresh user icp balance ...';
+                                                    state.loading_text = 'load user icp balance ...';
                                                     state.is_loading = true;
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                                     try {
@@ -523,27 +529,6 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                 children: <Widget>[
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'icp: '
-                        ),
-                        onSaved: (String? value) { icp = IcpTokens.oftheDouble(double.parse(value!)); },
-                        validator: (String? value) {
-                            String error_message = 'the value is set as a number with a max ${IcpTokens.DECIMAL_PLACES} decimal point places';
-                            if (value == null) {
-                                return error_message;
-                            }
-                            late double d;
-                            try {
-                                d = double.parse(value);
-                            } catch(e) {
-                                return error_message;
-                            }
-                            if (check_double_decimal_point_places(d) > IcpTokens.DECIMAL_PLACES) {
-                                return error_message;
-                            }
-                        }
-                    ),
-                    TextFormField(
-                        decoration: InputDecoration(
                             labelText: 'to: ',
                         ),
                         onSaved: (String? value) { to = value!; },
@@ -562,6 +547,27 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                                 return 'The checksum does not match, invalid icp-id.';
                             } 
                             return null;                            
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'icp: '
+                        ),
+                        onSaved: (String? value) { icp = IcpTokens.oftheDouble(double.parse(value!)); },
+                        validator: (String? value) {
+                            String error_message = 'the value is set as a number with a max ${IcpTokens.DECIMAL_PLACES} decimal point places';
+                            if (value == null) {
+                                return error_message;
+                            }
+                            late double d;
+                            try {
+                                d = double.parse(value);
+                            } catch(e) {
+                                return error_message;
+                            }
+                            if (check_double_decimal_point_places(d) > IcpTokens.DECIMAL_PLACES) {
+                                return error_message;
+                            }
                         }
                     ),
                     TextFormField(
@@ -628,7 +634,7 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Icp transfer is success. Block height: ${transfer_icp_success.block_height}\nfreshing icp balance and transfers list ...';
+                                    state.loading_text = 'Icp transfer is success. Block height: ${transfer_icp_success.block_height}\nloading icp balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     try {
@@ -723,25 +729,152 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             Padding(
                 padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
                 child: Container(
-                    child: Text('CYCLES-BANK', style: TextStyle(fontSize: 19))
+                    child: Text(':CYCLES-BANK.', style: TextStyle(fontSize: 19))
                 )
             ),
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                child: Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-                    indent: 34.0,
-                    endIndent: 34.0,
-                    //color: 
-                ),
+            Divider(
+                height: 13.0,   
+                thickness: 4.0,
+                indent: 34.0,
+                endIndent: 34.0,
+                //color: 
             )
         ];
-    
         
+        // maybe put the following widgets into a listview so the page is scrollable
         
-    
-    
+        column_children.add(
+            Padding(
+                padding: EdgeInsets.fromLTRB(17,17,17,17)
+            )
+        );
+        
+        if (state.user == null) {
+            
+            column_children.addAll([
+                Text('Log in for the cycles-bank.'),
+                Center(child: OutlineButton(
+                    button_text: 'ii login',
+                    on_press_complete: () async { await ii_login(context); }
+                )) 
+            ]);
+        
+        } else if (state.user!.cycles_bank == null) {
+            column_children.addAll([
+                
+                Padding(
+                    padding: EdgeInsets.fromLTRB(13,13,13,13),
+                    child: OutlineButton(
+                        button_text:'HOW IT WORKS',
+                        on_press_complete: () async {
+                            await showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('What is a CYCLES-BANK?'),
+                                        content: SingleChildScrollView(
+                                            child: Text(
+''' 
+A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
+
+'''
+                                            )
+                                        ),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('COOL'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            );
+                        }
+                    )
+                ),
+                OutlineButton(
+                    button_text: 'PURCHASE A CYCLES-BANK',
+                    on_press_complete: () async {  
+                            
+                    
+                    }
+                )
+            ]);
+        
+        } else /* if (state.user != null && state.user!.cycles_bank != null) */{
+            column_children.add(
+                Padding(
+                    padding: EdgeInsets.all(7),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('LOAD METRICS'),
+                        onPressed: () async {
+                            state.loading_text = 'loading cycles-bank metrics ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            try {
+                                await state.user!.cycles_bank!.fresh_metrics();
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('cycles-bank load metrics error:'),
+                                            content: Text('${e}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
+                            }
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                            return;                        
+                        }
+                    )
+                ),
+                // burn icp mint cycles,  
+                // topup ctsfuel with the cycles_balance
+            );
+            
+            if (state.user!.cycles_bank!.metrics != null) {
+                CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
+                
+                column_children.addAll([
+                    Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 15)),
+                    Wrap(
+                        children: [
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                child: Column(
+                                    children: [
+                                        Text('creation timestamp: ${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}'),
+                                        Text('CTSFuel: ${metrics.ctsfuel_balance}'),
+                                        Text('storage-usage MiB: ${metrics.storage_usage / BigInt.from(1024*1024)}'),
+                                        Text('storage-size MiB: ${metrics.storage_size_mib}'),
+                                        Text('lifetime-termination: ${metrics.lifetime_termination_timestamp_seconds}'),
+                                        Text(''),
+                                    ]  
+                                )
+                            ),
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                child: Column(
+                                    children: []
+                                )
+                            )
+                            
+                        ]
+                    )
+                ]);
+                
+            }
+        
+        } 
     
         return Column(                
             children: column_children,
@@ -802,10 +935,8 @@ A CTS-USER-CONTRACT gives the purchaser a
                             BigInt current_membership_start_cost_icp_e8s = await state.get_current_cts_user_membership_start_cost_icp_e8s();
                             
                             if (state.user!.icp_balance == null || state.user!.icp_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
-                                state.loading_text = 're-freshing user icp balance ...';
+                                state.loading_text = 'loading user icp balance ...';
                                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                
-                                await state.user!.fresh_icp_balance();
                             
                             }
                             
@@ -816,11 +947,8 @@ A CTS-USER-CONTRACT gives the purchaser a
             
             else /*if (state.user!.cycles_bank != null) */{
             
-            
-            
             }
 */
-        return Text('cycles-bank');        
 
     }
 }
@@ -837,9 +965,36 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
-    
-        return Text('cycles-market');
         
+        List<Widget> column_children = [
+            Padding(
+                padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
+                child: Container(
+                    child: Text(':CYCLES-MARKET.', style: TextStyle(fontSize: 19))
+                )
+            ),
+            Divider(
+                height: 13.0,   
+                thickness: 4.0,
+                indent: 34.0,
+                endIndent: 34.0,
+                //color: 
+            )
+        ];
+        
+        // maybe put the following widgets into a listview so the page is scrollable
+        
+        column_children.add(
+            Padding(
+                padding: EdgeInsets.fromLTRB(17,17,17,17)
+            )
+        );
+        
+        return Column(                
+            children: column_children,
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center
+        );        
     }
 }
 
