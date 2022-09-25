@@ -7,7 +7,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference, Nat64;
+import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference, Nat64, Nat, Blob;
+import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
@@ -441,6 +442,13 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 )
             );
             
+            if (state.user!.cycles_bank != null) {
+                column_children.addAll([
+                    // burn icp mint cycles,  
+                    // divider
+                ]);
+            } 
+            
             column_children.addAll([
                 Padding(
                     padding: EdgeInsets.all(7),
@@ -493,10 +501,12 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         }        
         
         
-        return Column(                
-            children: column_children,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center
+        return SingleChildScrollView(
+            child: Column(                
+                children: column_children,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center
+            )
         );
         
     }
@@ -531,17 +541,17 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                         decoration: InputDecoration(
                             labelText: 'to: ',
                         ),
-                        onSaved: (String? value) { to = value!; },
+                        onSaved: (String? value) { to = value!.trim().toLowerCase(); },
                         validator: (String? value) {
                             if (value == null || value.trim().length != 64) {
                                 return 'Icp ids are 64 characters long';
                             }
-                            for (String char in value.split('')) {
+                            for (String char in value.trim().toLowerCase().split('')) {
                                 if (lower_case_hex_chars.contains(char) == false && number_chars.contains(char) == false) {
                                     return 'Icp ids are in the hex format. hex format characters are 0-9 a-f.';
                                 }
                             }
-                            List<int> b = hexstringasthebytes(value);
+                            List<int> b = hexstringasthebytes(value.trim().toLowerCase());
                             Crc32 crc32_checksum_compute = Crc32()..add(b.sublist(4));
                             if (aresamebytes(crc32_checksum_compute.close(), b.sublist(0,4)) == false) {
                                 return 'The checksum does not match, invalid icp-id.';
@@ -645,7 +655,7 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Error when checking the user icp balance and the transfers list:'),
+                                                    title: Text('Error when loading the user icp balance and the transfers list:'),
                                                     content: Text('${e}'),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -836,16 +846,15 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                             return;                        
                         }
                     )
-                ),
-                // burn icp mint cycles,  
-                // topup ctsfuel with the cycles_balance
+                )
             );
             
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 
                 column_children.addAll([
-                    Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 15)),
+                    SelectableText('CYCLES-BANK ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),                
+                    Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 13)),
                     Wrap(
                         children: [
                             Container(
@@ -853,33 +862,39 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                                 child: Column(
                                     children: [
                                         Text('creation timestamp: ${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}'),
+                                        Text('lifetime-termination: ${metrics.lifetime_termination_timestamp_seconds}'),
                                         Text('CTSFuel: ${metrics.ctsfuel_balance}'),
                                         Text('storage-usage MiB: ${metrics.storage_usage / BigInt.from(1024*1024)}'),
                                         Text('storage-size MiB: ${metrics.storage_size_mib}'),
-                                        Text('lifetime-termination: ${metrics.lifetime_termination_timestamp_seconds}'),
-                                        Text(''),
-                                    ]  
+                                    ]
                                 )
                             ),
                             Container(
                                 alignment: Alignment.centerLeft,
                                 child: Column(
-                                    children: []
+                                    children: [
+                                        // topup ctsfuel with the cycles_balance
+                                        // grow storage size
+                                        // lengthen lifetime
+                                    
+                                    ]
                                 )
-                            )
-                            
+                            )   
                         ]
-                    )
-                ]);
-                
+                    ),
+                    CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
+                    //ListView() // both cycles transfers in and out.
+                                        
+                ]);   
             }
-        
-        } 
+        }
     
-        return Column(                
-            children: column_children,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center
+        return SingleChildScrollView(
+            child: Column(                
+                children: column_children,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center
+            )
         );
     
 /*
@@ -952,6 +967,257 @@ A CTS-USER-CONTRACT gives the purchaser a
 
     }
 }
+
+
+
+enum CyclesTransferMemoType {
+    Text,
+    Nat,
+    Blob
+}
+
+final String? Function(String?) cycles_transfer_memo_validator_text = (String? value) {
+    return null;
+};
+final String? Function(String?) cycles_transfer_memo_validator_nat = (String? value) {
+    if (value == null || value == '') {
+        return 'Must be a number';
+    }
+    try {
+        Nat nat = Nat(BigInt.parse(value, radix: 10));
+    } catch(e) {
+        return 'Must be a number >= 0 and without decimal places';
+    }
+    return null;
+};
+final String? Function(String?) cycles_transfer_memo_validator_blob = (String? value) {
+    if (value == null || value == '') {
+        return null;
+    } 
+    for (String char in value.trim().toLowerCase().split('')) {
+        if (lower_case_hex_chars.contains(char) == false && number_chars.contains(char) == false) {
+            return 'Blob is in the hex format. hex format characters are 0-9 a-f.';
+        }
+    }
+    if (value.trim().length > 64) {
+        return 'max 32 bytes for the now.';
+    }
+    return null;        
+};
+
+
+
+class CyclesBankTransferCyclesForm extends StatefulWidget {
+    CyclesBankTransferCyclesForm({super.key});
+    State createState() => CyclesBankTransferCyclesFormState();
+}
+class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late Principal for_the_canister;
+    late Cycles cycles;
+    late CyclesTransferMemo cycles_transfer_memo;
+    
+    CyclesTransferMemoType cycles_transfer_memo_type = CyclesTransferMemoType.Text;
+    
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+        late String? Function(String?) cycles_transfer_memo_validator;
+        switch (cycles_transfer_memo_type) {
+            case CyclesTransferMemoType.Text: 
+                cycles_transfer_memo_validator = cycles_transfer_memo_validator_text;
+            break;
+            case CyclesTransferMemoType.Nat: 
+                cycles_transfer_memo_validator = cycles_transfer_memo_validator_nat;
+            break;
+            case CyclesTransferMemoType.Blob: 
+                cycles_transfer_memo_validator = cycles_transfer_memo_validator_blob;
+            break;
+        }
+        
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'For the cycles-bank: ',
+                        ),
+                        onSaved: (String? v) { for_the_canister = Principal(v!); },
+                        validator: (String? v) {
+                            if (v == null || v == '') {
+                                return 'Write the text-principal-id of the cycles-bank that will cept the cycles';
+                            }
+                            late Principal p;
+                            try {
+                                p = Principal(v);
+                            } catch(e) {
+                                return 'invalid cycles-bank-principal-id';
+                            }
+                            if (p.bytes.length == 0) {
+                                return 'value must be the text-principal-id of the cycles-bank';
+                            }
+                            if (p.bytes.length >= 29) {
+                                return 'Must be a cycles-bank princpal-id';
+                            }
+                            return null;
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Cycles: ',
+                        ),
+                        onSaved: (String? v) { cycles = Cycles(cycles: BigInt.parse(v!, radix: 10)); },
+                        validator: (String? v) {
+                            if (v == null || v == '') {
+                                return 'Must be a number';
+                            }
+                            try {
+                                Cycles cycles = Cycles(cycles: BigInt.parse(v, radix: 10));
+                            } catch(e) {
+                                return 'Must be a number >= 0 and without decimal places';
+                            }
+                            return null;
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            prefix: DropdownButtonFormField<CyclesTransferMemoType>(
+                                items: const [
+                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Text'), value: CyclesTransferMemoType.Text ),
+                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Nat'), value: CyclesTransferMemoType.Nat ),
+                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Blob'), value: CyclesTransferMemoType.Blob ),                            
+                                ],
+                                value: cycles_transfer_memo_type,
+                                onChanged: (CyclesTransferMemoType? select_cycles_transfer_memo_type) { 
+                                    if (select_cycles_transfer_memo_type is CyclesTransferMemoType) { 
+                                        setState(() {
+                                            cycles_transfer_memo_type = select_cycles_transfer_memo_type; 
+                                        });
+                                    }
+                                }
+                            ),
+                            labelText: 'Cycles Transfer Memo: ',
+                        ),
+                        onSaved: (String? v) { 
+                            switch (cycles_transfer_memo_type) {
+                                case CyclesTransferMemoType.Text: 
+                                    cycles_transfer_memo = CyclesTransferMemo.text(candid.Text(v ?? ''));
+                                break;
+                                case CyclesTransferMemoType.Nat: 
+                                    cycles_transfer_memo = CyclesTransferMemo.nat(Nat(BigInt.parse(v == null || v == '' ? '0' : v!, radix: 10)));
+                                break;
+                                case CyclesTransferMemoType.Blob: 
+                                    cycles_transfer_memo = CyclesTransferMemo.blob(Blob(v == null || v.trim() == '' ? [] : hexstringasthebytes(v.trim().toLowerCase())));
+                                break;
+                            }
+                        },
+                        validator: cycles_transfer_memo_validator
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('TRANSFER CYCLES'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    UserTransferCyclesQuest transfer_cycles_quest = UserTransferCyclesQuest(
+                                        for_the_canister:for_the_canister,
+                                        cycles:cycles, 
+                                        cycles_transfer_memo:cycles_transfer_memo,
+                                    );
+                                    
+                                    state.loading_text = 'transferring cycles ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late BigInt cycles_transfer_out_id;
+                                    try {
+                                        cycles_transfer_out_id = await state.user!.cycles_bank!.transfer_cycles(transfer_cycles_quest);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Transfer Cycles Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+
+                                    }
+                                    
+                                    form_key.currentState!.reset();                                                                        
+                                    
+                                    state.loading_text = 'cycles transfer success. cycles_transfer_id: ${cycles_transfer_out_id}\nloading cycles balance and transfers list ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                
+                                    try {
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                        await state.user!.cycles_bank!.fresh_cycles_transfers_out();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the cycles balance and the transfers list:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Cycles Transfer Success:'),
+                                                content: Text('cycles_transfer_id: ${cycles_transfer_out_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );  
+    }
+}
+
+
+
 
 
 

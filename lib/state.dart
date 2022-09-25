@@ -296,7 +296,7 @@ class Cycles extends Nat {
     BigInt get cycles => super.value;
     
     String toString() {
-        return '${this.cycles/BigInt.parse('1000000000000', radix: 10)}Tcycles';
+        return '${this.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}Tcycles';
     }
     
     Cycles({required BigInt cycles}) : super(cycles);
