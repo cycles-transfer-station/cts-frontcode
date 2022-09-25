@@ -67,6 +67,9 @@ void main() {
 
 
 
+
+
+
 class CustomState { // with ChangeNotifier  // do i want change notifier here? false.
 
     CustomUrl current_url = CustomUrl('welcome');
@@ -78,6 +81,8 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     late BuildContext context; 
     
+    
+    late CTSFees cts_fees;
     
     XDRICPRateWithATimestamp? xdr_icp_rate;
     
@@ -101,6 +106,9 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         
         print('get state of the browser storage');
         await this.get_state_of_the_browser_storage();
+        
+        print('get cts_fees');
+        await this.load_cts_fees();
         
         print('fresh_xdr_icp_rate');
         await this.fresh_xdr_icp_rate();
@@ -130,6 +138,19 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         print('save state in the browser_storage');
         await this.save_state_in_the_browser_storage();
     }
+
+
+
+    Future<void> load_cts_fees() async {
+        Record cts_fees_record = c_backwards(
+            await cts.call(
+                method_name: 'see_fees',
+                calltype: CallType.query,
+                put_bytes: c_forwards([])
+            )
+        ).first as Record;
+        this.cts_fees = CTSFees.oftheRecord(cts_fees_record);
+    } 
 
 
     Future<void> fresh_xdr_icp_rate() async {
@@ -260,6 +281,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             idb.shutdown();
                             
             User user_of_the_idb = User(
+                state: this,
                 caller: await SubtleCryptoECDSAP256Caller.of_the_cryptokeys(public_key: user_crypto_key_public, private_key: user_crypto_key_private),
                 legations: legations
             );    
@@ -277,6 +299,31 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
 
     }
     
+}
+
+
+
+
+class CTSFees {
+    final Cycles cycles_bank_cost_cycles;
+    final Cycles cts_transfer_icp_fee;
+    final Cycles burn_icp_mint_cycles_fee;
+
+    CTSFees._({
+        required this.cycles_bank_cost_cycles,
+        required this.cts_transfer_icp_fee,
+        required this.burn_icp_mint_cycles_fee
+    
+    });
+    
+    static CTSFees oftheRecord(Record ctsfees_record) {
+        return CTSFees._(
+            cycles_bank_cost_cycles: Cycles.oftheNat(ctsfees_record['cycles_bank_cost_cycles'] as Nat),
+            cts_transfer_icp_fee: Cycles.oftheNat(ctsfees_record['cts_transfer_icp_fee'] as Nat),
+            burn_icp_mint_cycles_fee: Cycles.oftheNat(ctsfees_record['burn_icp_mint_cycles_fee'] as Nat)         
+        );
+    }
+
 }
 
 

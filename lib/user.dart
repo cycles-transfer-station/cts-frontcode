@@ -12,7 +12,8 @@ import 'cycles_bank.dart';
 import 'state.dart';
 
 class User {
-
+    CustomState state;
+    
     final SubtleCryptoECDSAP256Caller caller;
     final List<Legation> legations;
     
@@ -27,6 +28,7 @@ class User {
     CyclesBank? cycles_bank;
     
     User({
+        required this.state,
         required this.caller,
         required this.legations,
         this.icp_balance,
@@ -284,7 +286,13 @@ class User {
     };
 
 
-    Future<void> purchase_cycles_bank(Principal? opt_referral_user_id) async {
+    Future<void> purchase_cycles_bank({required Principal? opt_referral_user_id}) async {
+        await this.fresh_icp_balance();
+        await state.fresh_xdr_icp_rate();
+        IcpTokens cycles_bank_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate!.xdr_icp_rate); 
+        if (this.icp_balance!.icp < cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
+            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO }\ncurrent user icp balance: ${this.icp_balance!.icp}');
+        }
         Variant purchase_cycles_bank_result = c_backwards(
             await call(
                 cts,
@@ -441,14 +449,14 @@ class User {
             throw Exception('Error when checking the current xdr-icp rate.');
         },
         'MaxTransfer': (max_transfer_record) async {
-            throw Exception('The amount overflows. icp-amount + icp-fee*2 + the current cts-transfer-icp-fee: ${(max_transfer_record as Record)['cts_transfer_icp_fee']},  must be less than ${BigInt.from(2).pow(64)-BigInt.from(1)}');
+            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${(max_transfer_record as Record)['cts_transfer_icp_fee']}, must be less than ${BigInt.from(2).pow(64)-BigInt.from(1)}');
         },
         'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
             Record r = user_icp_ledger_balance_too_low_record as Record;
             IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
-            throw Exception('User icp balance is too low. \nuser icp balance: ${user_icp_ledger_balance}\nCTS-fee for this transfer: ${cts_transfer_icp_fee}\nicp-ledger-fees: 0.0002');
+            throw Exception('User icp balance is too low. \nuser icp balance: ${user_icp_ledger_balance}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}');
         },
         'IcpTransferCallError': (call_error) async {
             throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
@@ -473,11 +481,10 @@ class User {
 
     Future<TransferIcpSuccess> transfer_icp(TransferIcpQuest transfer_icp_quest) async {
         await this.fresh_icp_balance();
-        IcpTokensWithATimestamp? icp_balance = this.icp_balance;
-        if (icp_balance != null) {
-            if (icp_balance.icp < transfer_icp_quest.icp) {
-                throw Exception('user icp balance is too low. current balance: ${icp_balance.icp}');
-            }
+        await state.fresh_xdr_icp_rate();
+        IcpTokens cts_transfer_icp_fee = cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate!.xdr_icp_rate);
+        if (this.icp_balance!.icp < transfer_icp_quest.icp + cts_transfer_icp_fee + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
+            throw Exception('user icp balance is too low. current balance: ${this.icp_balance!.icp}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}');
         }
         Variant transfer_icp_result = c_backwards(
             await call(

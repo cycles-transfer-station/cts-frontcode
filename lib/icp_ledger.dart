@@ -138,4 +138,8 @@ Future<List<IcpTransfer>> get_icp_transfers(String icp_id, {int already_have = 0
 
 
 final IcpTokens ICP_LEDGER_TRANSFER_FEE = IcpTokens.oftheDouble(0.0001);
+final IcpTokens ICP_LEDGER_TRANSFER_FEE_TIMES_TWO = IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2));
+
+
+
 

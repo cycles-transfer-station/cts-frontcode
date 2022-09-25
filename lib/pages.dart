@@ -255,6 +255,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
                         SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
                         
                         state.user = User(
+                            state: state,
                             caller: test_caller,
                             legations: [],
                         );
@@ -602,7 +603,7 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('TRANSFER'),
+                            child: Text('TRANSFER ICP'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
                                     
@@ -770,6 +771,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             ]);
         
         } else if (state.user!.cycles_bank == null) {
+        
             column_children.addAll([
                 
                 Padding(
@@ -802,11 +804,76 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                         }
                     )
                 ),
+                
+                // current cost icp
+                // current icp-balance
+                
                 OutlineButton(
                     button_text: 'PURCHASE A CYCLES-BANK',
                     on_press_complete: () async {  
-                            
-                    
+                        state.loading_text = 'purchasing cycles-bank ...';
+                        state.is_loading = true;
+                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                        try {
+                            await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
+                        } catch(e) {
+                            await showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('Purchase cycles-bank error:'),
+                                        content: Text('${e}'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            );  
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                            return;    
+                        }
+                        state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
+                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                        try {
+                            await state.user!.cycles_bank!.fresh_metrics();
+                        } catch(e) {
+                            await showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('load cycles-bank metrics error:'),
+                                        content: Text('${e}'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            );  
+                        }
+                        state.is_loading = false;
+                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                        await showDialog(
+                            context: state.context,
+                            builder: (BuildContext context) {
+                                return AlertDialog(
+                                    title: Text('Cycles-bank purchase success:'),
+                                    content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
+                                    actions: <Widget>[
+                                        TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('OK'),
+                                        ),
+                                    ]
+                                );
+                            }   
+                        );                             
                     }
                 )
             ]);
@@ -993,7 +1060,7 @@ final String? Function(String?) cycles_transfer_memo_validator_nat = (String? va
 final String? Function(String?) cycles_transfer_memo_validator_blob = (String? value) {
     if (value == null || value == '') {
         return null;
-    } 
+    }
     for (String char in value.trim().toLowerCase().split('')) {
         if (lower_case_hex_chars.contains(char) == false && number_chars.contains(char) == false) {
             return 'Blob is in the hex format. hex format characters are 0-9 a-f.';
@@ -1392,6 +1459,7 @@ ii_login(BuildContext context) async {
                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                 
                 state.user = User(
+                    state: state,
                     caller: legatee_caller,
                     legations: user_legations,
                 );
