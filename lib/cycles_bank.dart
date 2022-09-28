@@ -925,7 +925,7 @@ class CyclesTransferOut {
             cycles_transfer_memo: CyclesTransferMemo.oftheVariant(r['cycles_transfer_memo'] as Variant),    
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,    
             opt_cycles_transfer_call_error: opt_cycles_transfer_call_error != null ? CallError.oftheRecord(opt_cycles_transfer_call_error) : null,
-            fee_paid: Cycles.oftheNat(r['fee_paid'] as Nat64)
+            fee_paid: Cycles.oftheNat(Nat((r['fee_paid'] as Nat64).value))
         );
     }
 }

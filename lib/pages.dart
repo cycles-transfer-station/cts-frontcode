@@ -334,23 +334,8 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
-        List<Widget> column_children = [
-            Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                child: Container(
-                    child: Text(':TRANSFER-ICP.', style: TextStyle(fontSize: 19))
-                )
-            ),
-            Divider(
-                height: 13.0,   
-                thickness: 4.0,
-                indent: 34.0,
-                endIndent: 34.0,
-                //color: 
-            )
-        ];
+        List<Widget> column_children = [];
 
-        // maybe put the following widgets into a listview so the page is scrollable
         
         column_children.add(
             Padding(
@@ -368,49 +353,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                 maxWidth: 500,
                                 minWidth: 250
                             ),
-                            child: Padding(
-                                padding: EdgeInsets.all(17.0),
-                                child: Column(
-                                    children: [
-                                        SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
-                                        Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}'),
-                                        Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
-                                        Padding(
-                                            padding: EdgeInsets.all(7),
-                                            child: ElevatedButton(
-                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                child: Text('LOAD ICP BALANCE', style: TextStyle(fontSize:11)),
-                                                onPressed: () async {
-                                                    state.loading_text = 'load user icp balance ...';
-                                                    state.is_loading = true;
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    try {
-                                                        await state.user!.fresh_icp_balance();
-                                                    } catch(e) {
-                                                        await showDialog(
-                                                            context: state.context,
-                                                            builder: (BuildContext context) {
-                                                                return AlertDialog(
-                                                                    title: Text('Error when checking the user icp balance:'),
-                                                                    content: Text('${e}'),
-                                                                    actions: <Widget>[
-                                                                        TextButton(
-                                                                            onPressed: () => Navigator.pop(context),
-                                                                            child: const Text('OK'),
-                                                                        ),
-                                                                    ]
-                                                                );
-                                                            }   
-                                                        );                                    
-                                                    }
-                                                    state.is_loading = false;
-                                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                                }
-                                            )
-                                        ),   
-                                    ]
-                                )
-                            )
+                            child: IcpIdAndBalanceAndLoadIcpBalance()
                         ),
                         ConstrainedBox(
                             constraints: BoxConstraints(
@@ -429,19 +372,6 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     ]
                 )
             );
-
-            column_children.add(
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
-                    child: Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 34.0,
-                        endIndent: 34.0,
-                        //color: 
-                    ),
-                )
-            );
             
             if (state.user!.cycles_bank != null) {
                 column_children.addAll([
@@ -451,6 +381,16 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             } 
             
             column_children.addAll([
+                Padding(
+                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                    child: Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 34.0,
+                        endIndent: 34.0,
+                        //color: 
+                    ),
+                ),
                 Padding(
                     padding: EdgeInsets.all(7),
                     child: ElevatedButton(
@@ -502,14 +442,71 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         }        
         
         
-        return SingleChildScrollView(
-            child: Column(                
-                children: column_children,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center
+        return Column(
+            children: [
+                ScaffoldBodyHeader('TRANSFER-ICP'),
+                SingleChildScrollView(
+                    child: Column(                
+                        children: column_children,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center
+                    )
+                )
+            ]
+        );
+    }
+}
+
+
+class IcpIdAndBalanceAndLoadIcpBalance extends StatelessWidget {
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state.context = context;
+        
+        return Padding(
+            padding: EdgeInsets.all(17.0),
+            child: Column(
+                children: [
+                    SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
+                    Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}'),
+                    Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('LOAD ICP BALANCE', style: TextStyle(fontSize:11)),
+                            onPressed: () async {
+                                state.loading_text = 'load user icp balance ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await state.user!.fresh_icp_balance();
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when checking the user icp balance:'),
+                                                content: Text('${e}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            }
+                        )
+                    ),   
+                ]
             )
         );
-        
     }
 }
 
@@ -700,7 +697,7 @@ class TransferIcpFormState extends State<TransferIcpForm> {
 
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
-    IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey(icp_transfer_.block_height));
+    IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey('IcpTransferListItem: ${icp_transfer_.block_height}'));
     
     Widget build(BuildContext context) {        
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -735,22 +732,8 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
-            
-        List<Widget> column_children = [
-            Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                child: Container(
-                    child: Text(':CYCLES-BANK.', style: TextStyle(fontSize: 19))
-                )
-            ),
-            Divider(
-                height: 13.0,   
-                thickness: 4.0,
-                indent: 34.0,
-                endIndent: 34.0,
-                //color: 
-            )
-        ];
+        
+        List<Widget> column_children = [];
         
         // maybe put the following widgets into a listview so the page is scrollable
         
@@ -875,7 +858,18 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                             }   
                         );                             
                     }
-                )
+                ),
+                Padding(
+                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                    child: Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 34.0,
+                        endIndent: 34.0,
+                        //color: 
+                    ),
+                ),
+                IcpIdAndBalanceAndLoadIcpBalance()
             ]);
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
@@ -919,6 +913,14 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 
+                List cycles_transfers = [ 
+                    ...state.user!.cycles_bank!.cycles_transfers_in, 
+                    ...state.user!.cycles_bank!.cycles_transfers_out 
+                ]..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos));
+
+                List<Widget> cycles_transfers_list_items = cycles_transfers.map<Widget>((ct)=>cycles_transfer_list_item(ct)).toList();
+                
+                
                 column_children.addAll([
                     SelectableText('CYCLES-BANK ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),                
                     Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 13)),
@@ -950,18 +952,68 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                         ]
                     ),
                     CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
-                    //ListView() // both cycles transfers in and out.
-                                        
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                        child: Divider(
+                            height: 13.0,   
+                            thickness: 4.0,
+                            indent: 34.0,
+                            endIndent: 34.0,
+                            //color: 
+                        ),
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
+                            onPressed: () async {
+                                state.loading_text = 'loading cycles-bank cycles transfers ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await state.user!.cycles_bank!.fresh_cycles_transfers_in();
+                                    await state.user!.cycles_bank!.fresh_cycles_transfers_out();
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when loading the cycles-bank cycles transfers:'),
+                                                content: Text('${e}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            }
+                        )
+                    ),
+                    ListView(
+                        children: cycles_transfers_list_items
+                    )                    
                 ]);   
             }
         }
     
-        return SingleChildScrollView(
-            child: Column(                
-                children: column_children,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center
-            )
+        return Column(
+            children: [
+                ScaffoldBodyHeader('CYCLES-BANK'),
+                SingleChildScrollView(
+                    child: Column(                
+                        children: column_children,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center
+                    )
+                )
+            ]
         );
     
 /*
@@ -1284,7 +1336,86 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
 }
 
 
+Widget cycles_transfer_list_item(dynamic ct){
+    if (ct is CyclesTransferIn) {
+        return CyclesTransferInListItem(ct as CyclesTransferIn);
+    } else if (ct is CyclesTransferOut) {
+        return CyclesTransferOutListItem(ct as CyclesTransferOut); 
+    } else {
+        throw Exception('look at the function: cycles_transfer_list_item. ct.runtimeType: ${ct.runtimeType}');
+    }
+}
 
+class CyclesTransferInListItem extends StatelessWidget {
+    final CyclesTransferIn cycles_transfer_in;
+    CyclesTransferInListItem(CyclesTransferIn _cycles_transfer_in): cycles_transfer_in = _cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${_cycles_transfer_in.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('IN'),
+                            subtitle: Text('ID: ${cycles_transfer_in.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles: ${cycles_transfer_in.cycles}'),
+                                Text('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
+                                Text('by: ${cycles_transfer_in.by_the_canister.text}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+class CyclesTransferOutListItem extends StatelessWidget {
+    final CyclesTransferOut cycles_transfer_out;
+    CyclesTransferOutListItem(CyclesTransferOut _cycles_transfer_out): cycles_transfer_out = _cycles_transfer_out, super(key: ValueKey('CyclesTransferOutListItem: ${_cycles_transfer_out.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('OUT'),
+                            subtitle: Text('ID: ${cycles_transfer_out.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('for: ${cycles_transfer_out.for_the_canister.text}'),
+                                Text('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
+                                Text('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
+                                Text('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
+                                Text('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
+                                Text('cycles_transferrer_fee: ${cycles_transfer_out.fee_paid}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
+                            ]                            
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
 
 
 
@@ -1299,35 +1430,29 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         state.context = context;
         
         
-        List<Widget> column_children = [
-            Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                child: Container(
-                    child: Text(':CYCLES-MARKET.', style: TextStyle(fontSize: 19))
-                )
-            ),
-            Divider(
-                height: 13.0,   
-                thickness: 4.0,
-                indent: 34.0,
-                endIndent: 34.0,
-                //color: 
-            )
-        ];
-        
-        // maybe put the following widgets into a listview so the page is scrollable
-        
+        List<Widget> column_children = [];
+                
         column_children.add(
             Padding(
                 padding: EdgeInsets.fromLTRB(17,17,17,17)
             )
         );
         
-        return Column(                
-            children: column_children,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center
-        );        
+        
+        
+        
+        return Column(
+            children: [
+                ScaffoldBodyHeader('CYCLES-MARKET'),
+                SingleChildScrollView(
+                    child: Column(                
+                        children: column_children,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center
+                    )
+                )
+            ]
+        );
     }
 }
 
@@ -1402,7 +1527,31 @@ class _BuyWalletPageWidgetState extends State<StatefulWidget> {
 
 
 
+class ScaffoldBodyHeader extends StatelessWidget {
+    final String header_text;
+    ScaffoldBodyHeader(this.header_text);
+    Widget build(BuildContext context) {
+        return Column(
+            children: [
+                Padding(
+                    padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
+                    child: Container(
+                        child: Text(header_text, style: TextStyle(fontSize: 19))
+                    )
+                ),
+                Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+                    indent: 34.0,
+                    endIndent: 34.0,
+                    //color: 
+                )
+            ]
+        ); 
+    }
+    
 
+}
 
 
 ii_login(BuildContext context) async {
