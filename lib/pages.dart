@@ -704,16 +704,29 @@ class IcpTransferListItem extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         
-        String subtitle = icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'Out' : 'In';
-        subtitle = subtitle + ': ';
-        subtitle = subtitle + icp_transfer.from_account_identifier == state.user!.user_icp_id ? icp_transfer.to_account_identifier : icp_transfer.from_account_identifier;
-        subtitle = subtitle + ': ${icp_transfer.amount}';
-        
         return Container(
-            child: ListTile(
-                title: Text('${icp_transfer.block_height}, memo: ${icp_transfer.memo}'),
-                subtitle: Text(subtitle),
-                isThreeLine: true
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'),
+                            subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
+                                Text('icp: ${icp_transfer.amount}'),
+                                Text('memo: ${icp_transfer.memo}'),
+                                Text('icp-ledger-fee: ${icp_transfer.fee}'),
+                                Text('timestamp: ${icp_transfer.timestamp_seconds}'),
+                            ]
+                        ),
+                    ]
+                )
             )
         );
     }

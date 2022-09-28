@@ -37,7 +37,7 @@ class IcpTransfer {
     final IcpTokens amount;
     final IcpTokens fee;
     final String memo;
-    final int timestamp_seconds;
+    final BigInt timestamp_seconds;
     IcpTransfer._({
         required this.block_height,
         required this.parent_hash,
@@ -117,7 +117,7 @@ Future<List<IcpTransfer>> get_icp_transfers(String icp_id, {int already_have = 0
                         amount: IcpTokens(e8s: BigInt.parse(block['amount'] as String)),
                         fee: IcpTokens(e8s: BigInt.parse(block['fee'] as String)),
                         memo: block['memo'] as String,
-                        timestamp_seconds: block['created_at'] as int,
+                        timestamp_seconds: BigInt.parse(block['created_at'].toString()),
                     )
                 );
             }
