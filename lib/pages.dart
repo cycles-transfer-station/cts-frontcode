@@ -112,8 +112,6 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
     
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
-        
         
         
         return /*SelectionArea(
@@ -462,7 +460,7 @@ class IcpIdAndBalanceAndLoadIcpBalance extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
+
         
         return Padding(
             padding: EdgeInsets.all(17.0),
@@ -528,7 +526,6 @@ class TransferIcpFormState extends State<TransferIcpForm> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         
         return Form(
@@ -748,13 +745,6 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         
         List<Widget> column_children = [];
         
-        // maybe put the following widgets into a listview so the page is scrollable
-        
-        column_children.add(
-            Padding(
-                padding: EdgeInsets.fromLTRB(17,17,17,17)
-            )
-        );
         
         if (state.user == null) {
             
@@ -776,14 +766,14 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         button_text:'HOW IT WORKS',
                         on_press_complete: () async {
                             await showDialog(
-                                context: state.context,
+                                context: context,
                                 builder: (BuildContext context) {
                                     return AlertDialog(
                                         title: Text('What is a CYCLES-BANK?'),
                                         content: SingleChildScrollView(
                                             child: Text(
 ''' 
-A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
+A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It is a smart-contract living on the Internet-Computer-Blockchain.
 
 '''
                                             )
@@ -800,10 +790,30 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                         }
                     )
                 ),
-                
-                // current cost icp
-                // current icp-balance
-                
+                Container(
+                    width:  double.infinity,
+                    padding: EdgeInsets.all(7),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Text('CYCLES-BANK COST XDR: ${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr'),
+                            Text('CURRENT XDR-ICP RATE: ${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}'),
+                            Text('CYCLES-BANK PURCHASE FEES: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'),
+                            Text('CYCLES-BANK TOTAL COST ICP: ${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'),
+                        ]
+                    )
+                ),
+                IcpIdAndBalanceAndLoadIcpBalance(),
+                Padding(
+                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                    child: Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 34.0,
+                        endIndent: 34.0,
+                        //color: 
+                    ),
+                ),
                 OutlineButton(
                     button_text: 'PURCHASE A CYCLES-BANK',
                     on_press_complete: () async {  
@@ -872,17 +882,6 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
                         );                             
                     }
                 ),
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
-                    child: Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 34.0,
-                        endIndent: 34.0,
-                        //color: 
-                    ),
-                ),
-                IcpIdAndBalanceAndLoadIcpBalance()
             ]);
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
@@ -1016,17 +1015,27 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer.
             }
         }
     
-        return Column(
-            children: [
-                ScaffoldBodyHeader('CYCLES-BANK'),
-                SingleChildScrollView(
-                    child: Column(                
-                        children: column_children,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center
-                    )
+        return Center(
+            child: Container(
+                constraints: BoxConstraints(maxWidth: 731),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                        ScaffoldBodyHeader('CYCLES-BANK'),
+                        Expanded(
+                            child: ListView(
+                                padding: EdgeInsets.all(0),
+                                children: [
+                                    Column(
+                                        children: column_children 
+                                    )
+                                ],
+                                addAutomaticKeepAlives: true
+                            )
+                        )
+                    ]
                 )
-            ]
+            )
         );
     
 /*
@@ -1156,7 +1165,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
+        
         
         late String? Function(String?) cycles_transfer_memo_validator;
         switch (cycles_transfer_memo_type) {
@@ -1555,8 +1564,8 @@ class ScaffoldBodyHeader extends StatelessWidget {
                 Divider(
                     height: 13.0,   
                     thickness: 4.0,
-                    indent: 34.0,
-                    endIndent: 34.0,
+//                    indent: 34.0,
+//                    endIndent: 34.0,
                     //color: 
                 )
             ]

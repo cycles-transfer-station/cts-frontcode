@@ -84,7 +84,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     late CTSFees cts_fees;
     
-    XDRICPRateWithATimestamp? xdr_icp_rate;
+    XDRICPRateWithATimestamp? xdr_icp_rate_with_a_timestamp;
     
     CyclesMarketData cycles_market_data = CyclesMarketData();
     
@@ -180,7 +180,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
-        this.xdr_icp_rate = XDRICPRateWithATimestamp(
+        this.xdr_icp_rate_with_a_timestamp = XDRICPRateWithATimestamp(
             xdr_icp_rate: XDRICPRate.oftheNat64(certified_xdr_permyriad_per_icp),
             timestamp_seconds: certified_timestamp_seconds.value 
         );        

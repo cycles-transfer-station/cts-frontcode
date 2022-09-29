@@ -230,6 +230,7 @@ class User {
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
+            try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${e}'); }
             throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         }, 
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
@@ -289,7 +290,7 @@ class User {
     Future<void> purchase_cycles_bank({required Principal? opt_referral_user_id}) async {
         await this.fresh_icp_balance();
         await state.fresh_xdr_icp_rate();
-        IcpTokens cycles_bank_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate!.xdr_icp_rate); 
+        IcpTokens cycles_bank_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate); 
         if (this.icp_balance!.icp < cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
             throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO }\ncurrent user icp balance: ${this.icp_balance!.icp}');
         }
@@ -482,7 +483,7 @@ class User {
     Future<TransferIcpSuccess> transfer_icp(TransferIcpQuest transfer_icp_quest) async {
         await this.fresh_icp_balance();
         await state.fresh_xdr_icp_rate();
-        IcpTokens cts_transfer_icp_fee = cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate!.xdr_icp_rate);
+        IcpTokens cts_transfer_icp_fee = cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate);
         if (this.icp_balance!.icp < transfer_icp_quest.icp + cts_transfer_icp_fee + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
             throw Exception('user icp balance is too low. current balance: ${this.icp_balance!.icp}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}');
         }
