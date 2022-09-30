@@ -351,7 +351,15 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                 maxWidth: 500,
                                 minWidth: 250
                             ),
-                            child: IcpIdAndBalanceAndLoadIcpBalance()
+                            child: Column(
+                                children: [
+                                    Container(
+                                        width: double.infinity,
+                                        child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
+                                    ),
+                                    IcpIdAndBalanceAndLoadIcpBalance()
+                                ]
+                            )
                         ),
                         ConstrainedBox(
                             constraints: BoxConstraints(
@@ -463,10 +471,9 @@ class IcpIdAndBalanceAndLoadIcpBalance extends StatelessWidget {
 
         
         return Padding(
-            padding: EdgeInsets.all(17.0),
+            padding: EdgeInsets.all(13.0),
             child: Column(
                 children: [
-                    SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
                     Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}'),
                     Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
@@ -793,19 +800,61 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                 Container(
                     width:  double.infinity,
                     padding: EdgeInsets.all(7),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                            Text('CYCLES-BANK COST XDR: ${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr'),
-                            Text('CURRENT XDR-ICP RATE: ${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}'),
-                            Text('CYCLES-BANK PURCHASE FEES: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'),
-                            Text('CYCLES-BANK TOTAL COST ICP: ${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'),
+                    child: DataTable(
+                        headingRowHeight: 0,
+                        showBottomBorder: true,
+                        columns: <DataColumn>[
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
+                                    ),
+                                ),
+                            ),
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
+                                    )
+                                )
+                            )
+                        ],
+                        rows: [
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('CYCLES-BANK COST XDR: ')),
+                                    DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr')),
+                                ]
+                            ),
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('CURRENT XDR-ICP RATE: ')),
+                                    DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}')),
+                                ]
+                            ),
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('ICP LEDGER FEES: ')),
+                                    DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                ]
+                            ),
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('CYCLES-BANK TOTAL COST ICP: ')),
+                                    DataCell(Text('${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                ]
+                            ),
                         ]
-                    )
+                    )                    
+                ),
+                Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(7,13,7,0),
+                    child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
                 ),
                 IcpIdAndBalanceAndLoadIcpBalance(),
                 Padding(
-                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                    padding: EdgeInsets.all(0),//fromLTRB(17, 17, 17, 17.0),
                     child: Divider(
                         height: 13.0,   
                         thickness: 4.0,
@@ -939,19 +988,66 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                     Wrap(
                         children: [
                             Container(
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                    children: [
-                                        Text('creation timestamp: ${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}'),
-                                        Text('lifetime-termination: ${metrics.lifetime_termination_timestamp_seconds}'),
-                                        Text('CTSFuel: ${metrics.ctsfuel_balance}'),
-                                        Text('storage-usage MiB: ${metrics.storage_usage / BigInt.from(1024*1024)}'),
-                                        Text('storage-size MiB: ${metrics.storage_size_mib}'),
-                                    ]
-                                )
+                                constraints: BoxConstraints(maxWidth: 375),
+                                width: double.infinity,
+                                //alignment: Alignment.centerLeft,
+                                child: DataTable(
+                                    columns: <DataColumn>[
+                                        DataColumn(
+                                          label: Expanded(
+                                            child: Text(
+                                              'Metric',
+                                              //style: TextStyle(fontStyle: FontStyle.italic),
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Expanded(
+                                            child: Text(
+                                              'value',
+                                              //style: TextStyle(fontStyle: FontStyle.italic),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                    rows: <DataRow>[
+                                        DataRow(
+                                          cells: <DataCell>[
+                                            DataCell(Text('Creation Timestamp: ')),
+                                            DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
+                                          ],
+                                        ),
+                                        DataRow(
+                                          cells: <DataCell>[
+                                            DataCell(Text('lifetime-termination: ')),
+                                            DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
+                                          ],
+                                        ),
+                                        DataRow(
+                                            cells: <DataCell>[
+                                                DataCell(Text('CTSFuel: ')),
+                                                DataCell(Text('${metrics.ctsfuel_balance}')),
+                                            ]
+                                        ),
+                                        DataRow(
+                                            cells: <DataCell>[
+                                                DataCell(Text('Storage Usage MiB: ')),
+                                                DataCell(Text('${metrics.storage_usage / BigInt.from(1024*1024)}')),
+                                            ]
+                                        ),
+                                        DataRow(
+                                            cells: <DataCell>[
+                                                DataCell(Text('storage-size MiB: ')),
+                                                DataCell(Text('${metrics.storage_size_mib}')),
+                                            ]
+                                        )
+                                    ]    
+                                ) 
                             ),
                             Container(
-                                alignment: Alignment.centerLeft,
+                                constraints: BoxConstraints(maxWidth: 375),
+                                width: double.infinity,
+                                //alignment: Alignment.centerLeft,
                                 child: Column(
                                     children: [
                                         // topup ctsfuel with the cycles_balance
