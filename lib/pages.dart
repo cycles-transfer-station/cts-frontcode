@@ -182,6 +182,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                             scaffold_key.currentState!.openDrawer();
                                         },
                                     ),
+                                    /*
                                     if (true) const Spacer(),
                                     IconButton(
                                         tooltip: 'Search',
@@ -193,6 +194,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                         icon: const Icon(Icons.favorite),
                                         onPressed: () {},
                                     ),
+                                    */
                                 ]
                             ) 
                         )       
@@ -430,7 +432,8 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                ListView(
+                //ListView(
+                Column(
                     children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()
                 )
             ]);
@@ -567,7 +570,7 @@ class TransferIcpFormState extends State<TransferIcpForm> {
                         ),
                         onSaved: (String? value) { icp = IcpTokens.oftheDouble(double.parse(value!)); },
                         validator: (String? value) {
-                            String error_message = 'the value is set as a number with a max ${IcpTokens.DECIMAL_PLACES} decimal point places';
+                            String error_message = 'Number with a max ${IcpTokens.DECIMAL_PLACES} decimal point places';
                             if (value == null) {
                                 return error_message;
                             }
@@ -855,53 +858,75 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                 IcpIdAndBalanceAndLoadIcpBalance(),
                 Padding(
                     padding: EdgeInsets.all(0),//fromLTRB(17, 17, 17, 17.0),
-                    child: Divider(
+                    child: Container(),
+                    /*Divider(
                         height: 13.0,   
                         thickness: 4.0,
                         indent: 34.0,
                         endIndent: 34.0,
                         //color: 
-                    ),
+                    ),*/
                 ),
-                OutlineButton(
-                    button_text: 'PURCHASE A CYCLES-BANK',
-                    on_press_complete: () async {  
-                        state.loading_text = 'purchasing cycles-bank ...';
-                        state.is_loading = true;
-                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                        try {
-                            await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
-                        } catch(e) {
-                            await showDialog(
-                                context: state.context,
-                                builder: (BuildContext context) {
-                                    return AlertDialog(
-                                        title: Text('Purchase cycles-bank error:'),
-                                        content: Text('${e}'),
-                                        actions: <Widget>[
-                                            TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('OK'),
-                                            ),
-                                        ]
-                                    );
-                                }   
-                            );  
+                Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(11,0,11,0),
+                    child: OutlineButton(
+                        button_text: 'PURCHASE CYCLES-BANK',
+                        on_press_complete: () async {  
+                            state.loading_text = 'purchasing cycles-bank ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            try {
+                                await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Purchase cycles-bank error:'),
+                                            content: Text('${e}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );  
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                return;    
+                            }
+                            state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            try {
+                                await state.user!.cycles_bank!.fresh_metrics();
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('load cycles-bank metrics error:'),
+                                            content: Text('${e}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );  
+                            }
                             state.is_loading = false;
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                            return;    
-                        }
-                        state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
-                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        try {
-                            await state.user!.cycles_bank!.fresh_metrics();
-                        } catch(e) {
                             await showDialog(
                                 context: state.context,
                                 builder: (BuildContext context) {
                                     return AlertDialog(
-                                        title: Text('load cycles-bank metrics error:'),
-                                        content: Text('${e}'),
+                                        title: Text('Cycles-bank purchase success:'),
+                                        content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
                                         actions: <Widget>[
                                             TextButton(
                                                 onPressed: () => Navigator.pop(context),
@@ -910,27 +935,10 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                                         ]
                                     );
                                 }   
-                            );  
+                            );                             
                         }
-                        state.is_loading = false;
-                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                        await showDialog(
-                            context: state.context,
-                            builder: (BuildContext context) {
-                                return AlertDialog(
-                                    title: Text('Cycles-bank purchase success:'),
-                                    content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
-                                    actions: <Widget>[
-                                        TextButton(
-                                            onPressed: () => Navigator.pop(context),
-                                            child: const Text('OK'),
-                                        ),
-                                    ]
-                                );
-                            }   
-                        );                             
-                    }
-                ),
+                    ),
+                )
             ]);
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
