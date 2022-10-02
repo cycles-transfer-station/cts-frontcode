@@ -432,9 +432,10 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                //ListView(
-                Column(
-                    children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()
+                ListView(
+                //Column(
+                    children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList(),
+                    scrollDirection: Axis.horizontal
                 )
             ]);
             
@@ -783,7 +784,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         content: SingleChildScrollView(
                                             child: Text(
 ''' 
-A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It is a smart-contract living on the Internet-Computer-Blockchain.
+A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the Internet-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers made by a CYCLES-BANK. 
 
 '''
                                             )
@@ -991,8 +992,14 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                 
                 
                 column_children.addAll([
-                    SelectableText('CYCLES-BANK ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),                
-                    Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 13)),
+                    Container(
+                        width: double.infinity,
+                        child: SelectableText('CYCLES-BANK ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),                
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 13)),
+                    ),
                     Wrap(
                         children: [
                             Container(
@@ -1000,11 +1007,13 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                                 width: double.infinity,
                                 //alignment: Alignment.centerLeft,
                                 child: DataTable(
+                                    headingRowHeight: 0,
+                                    showBottomBorder: true,
                                     columns: <DataColumn>[
                                         DataColumn(
                                           label: Expanded(
                                             child: Text(
-                                              'Metric',
+                                              '',
                                               //style: TextStyle(fontStyle: FontStyle.italic),
                                             ),
                                           ),
@@ -1012,7 +1021,7 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                                         DataColumn(
                                           label: Expanded(
                                             child: Text(
-                                              'value',
+                                              '',
                                               //style: TextStyle(fontStyle: FontStyle.italic),
                                             ),
                                           ),
@@ -1020,33 +1029,33 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                                     ],
                                     rows: <DataRow>[
                                         DataRow(
-                                          cells: <DataCell>[
-                                            DataCell(Text('Creation Timestamp: ')),
-                                            DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
-                                          ],
+                                            cells: <DataCell>[
+                                                DataCell(Text('creation-timestamp: ')),
+                                                DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
+                                            ],
                                         ),
                                         DataRow(
-                                          cells: <DataCell>[
-                                            DataCell(Text('lifetime-termination: ')),
-                                            DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
-                                          ],
+                                            cells: <DataCell>[
+                                                DataCell(Text('lifetime-termination: ')),
+                                                DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
+                                            ],
                                         ),
                                         DataRow(
                                             cells: <DataCell>[
                                                 DataCell(Text('CTSFuel: ')),
-                                                DataCell(Text('${metrics.ctsfuel_balance}')),
+                                                DataCell(Text('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
                                             ]
                                         ),
                                         DataRow(
                                             cells: <DataCell>[
-                                                DataCell(Text('Storage Usage MiB: ')),
-                                                DataCell(Text('${metrics.storage_usage / BigInt.from(1024*1024)}')),
+                                                DataCell(Text('storage-usage: ')),
+                                                DataCell(Text('${metrics.storage_usage / BigInt.from(1024*1024)}-MiB')),
                                             ]
                                         ),
                                         DataRow(
                                             cells: <DataCell>[
-                                                DataCell(Text('storage-size MiB: ')),
-                                                DataCell(Text('${metrics.storage_size_mib}')),
+                                                DataCell(Text('storage-size: ')),
+                                                DataCell(Text('${metrics.storage_size_mib}-MiB')),
                                             ]
                                         )
                                     ]    
@@ -1058,10 +1067,9 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                                 //alignment: Alignment.centerLeft,
                                 child: Column(
                                     children: [
-                                        // topup ctsfuel with the cycles_balance
-                                        // grow storage size
-                                        // lengthen lifetime
-                                    
+                                        CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
+                                        GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
+                                        LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
                                     ]
                                 )
                             )   
@@ -1113,7 +1121,8 @@ A CYCLES-BANK is a bank for the native stable-currency on the world-computer. It
                         )
                     ),
                     ListView(
-                        children: cycles_transfers_list_items
+                        children: cycles_transfers_list_items,
+                        scrollDirection: Axis.horizontal
                     )                    
                 ]);   
             }
@@ -1251,6 +1260,18 @@ final String? Function(String?) cycles_transfer_memo_validator_blob = (String? v
 };
 
 
+final String? Function(String?) cycles_validator = (String? v) {
+    if (v == null || v == '') {
+        return 'Must be a number';
+    }
+    try {
+        Cycles cycles = Cycles(cycles: BigInt.parse(v, radix: 10));
+    } catch(e) {
+        return 'Must be a number >= 0 and without decimal places';
+    }
+    return null;
+};
+
 
 class CyclesBankTransferCyclesForm extends StatefulWidget {
     CyclesBankTransferCyclesForm({super.key});
@@ -1317,17 +1338,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                             labelText: 'Cycles: ',
                         ),
                         onSaved: (String? v) { cycles = Cycles(cycles: BigInt.parse(v!, radix: 10)); },
-                        validator: (String? v) {
-                            if (v == null || v == '') {
-                                return 'Must be a number';
-                            }
-                            try {
-                                Cycles cycles = Cycles(cycles: BigInt.parse(v, radix: 10));
-                            } catch(e) {
-                                return 'Must be a number >= 0 and without decimal places';
-                            }
-                            return null;
-                        }
+                        validator: cycles_validator
                     ),
                     TextFormField(
                         decoration: InputDecoration(
@@ -1460,6 +1471,353 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
         );  
     }
 }
+
+
+class CTSFuelForTheCyclesBalanceForm extends StatefulWidget {
+    CTSFuelForTheCyclesBalanceForm({super.key});
+    State createState() => CTSFuelForTheCyclesBalanceFormState();
+}
+class CTSFuelForTheCyclesBalanceFormState extends State<CTSFuelForTheCyclesBalanceForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late Cycles cycles_for_the_ctsfuel;
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Form(
+            key: form_key,
+            child: Wrap(
+                children: [
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Cycles for the CTSFuel:',
+                        ),
+                        onSaved: (String? v) { cycles_for_the_ctsfuel = Cycles(cycles: BigInt.parse(v!, radix: 10)); },
+                        validator: cycles_validator
+                    ),    
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('TOPUP CTSFUEL'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'ctsfuel topup ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.cycles_balance_for_the_ctsfuel(cycles_for_the_ctsfuel);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('CTSFuel Topup Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                
+                                    form_key.currentState!.reset();                                                                        
+                                
+                                    state.loading_text = 'ctsfuel topup success.\nloading ctsfuel balance ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the ctsfuel balance:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('CTSFUEL TOPUP SUCCESS'),
+                                                content: Text('CTSFUEL-BALANCE: ${state.user!.cycles_bank!.metrics!.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );
+    }
+}
+
+
+
+
+
+class GrowStorageSizeForm extends StatefulWidget {
+    GrowStorageSizeForm({super.key});
+    State createState() => GrowStorageSizeFormState();
+}
+class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late BigInt new_storage_size_mib; //ChangeStorageSizeQuest
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Form(
+            key: form_key,
+            child: Wrap(
+                children: [
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Set Storage Size MiB',
+                        ),
+                        onSaved: (String? v) { new_storage_size_mib = BigInt.parse(v!, radix: 10); },
+                        validator: (String? v) {
+                            String e_s = 'Must be a whole number';
+                            if (v == null || v == '') {
+                                return e_s;
+                            }
+                            try {
+                                BigInt bi = BigInt.parse(v);
+                            } catch(e) {
+                                return e_s;
+                            }
+                            return null;
+                        }
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('GROW STORAGE'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'growing storage ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.change_storage_size( 
+                                            ChangeStorageSizeQuest(
+                                                new_storage_size_mib: new_storage_size_mib
+                                            )
+                                        );
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Grow Storage Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.user!.cycles_bank!.metrics!.storage_size_mib = new_storage_size_mib;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Grow Storage Success.'),
+                                                content: Text('New cycles-bank storage-size Mib: ${state.user!.cycles_bank!.metrics!.storage_size_mib}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        )
+                    )
+                ]
+            ),
+        );
+    }
+}
+
+
+
+
+class LengthenLifetimeForm extends StatefulWidget {
+    LengthenLifetimeForm({super.key});
+    State createState() => LengthenLifetimeFormState();
+}
+class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late BigInt set_lifetime_termination_timestamp_seconds;
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Form(
+            key: form_key,
+            child: Wrap(
+                children: [
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Set Lifetime Termination Unix Timestamp Seconds',
+                        ),
+                        onSaved: (String? v) { set_lifetime_termination_timestamp_seconds = BigInt.parse(v!, radix: 10); },
+                        validator: (String? v) {
+                            String e_s = 'Must be a whole number';
+                            if (v == null || v == '') {
+                                return e_s;
+                            }
+                            late BigInt bi;
+                            try {
+                                bi = BigInt.parse(v);
+                            } catch(e) {
+                                return e_s;
+                            }
+                            if (bi < state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds) {
+                                return 'Must lengthen the lifetime';
+                            } 
+                            return null;
+                        }
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('SET LIFETIME'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'lengthening cycles-bank lifetime ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late BigInt new_lifetime_termination_timestamp_seconds;
+                                    try {
+                                        new_lifetime_termination_timestamp_seconds = await state.user!.cycles_bank!.lengthen_lifetime( 
+                                            LengthenLifetimeQuest(
+                                                set_lifetime_termination_timestamp_seconds: set_lifetime_termination_timestamp_seconds
+                                            )
+                                        );
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Grow Storage Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Lengthen Lifetime Success.'),
+                                                content: Text('New cycles-bank lifetime-termination-timestamp: ${state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                }
+                            }
+                        )
+                    )
+                ]
+            ),
+        );
+    }
+}
+
+
+
+
+
+
+
+
+
 
 
 Widget cycles_transfer_list_item(dynamic ct){

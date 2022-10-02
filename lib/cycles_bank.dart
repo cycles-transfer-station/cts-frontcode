@@ -687,7 +687,7 @@ class CyclesBank extends Canister {
         ).first as Variant;
         match_variant<void>(sponse, {
             Ok:(nul) {
-                
+                            
             },
             Err:(cycles_balance_for_the_ctsfuel_balance_error) {
                 match_variant<Never>(cycles_balance_for_the_ctsfuel_balance_error as Variant, {
@@ -698,7 +698,6 @@ class CyclesBank extends Canister {
                 });
             }
         });    
-        await this.fresh_metrics();
     }
 
 
@@ -732,7 +731,6 @@ class CyclesBank extends Canister {
                 });
             }
         });
-        await this.fresh_metrics();
         return new_lifetime_termination_timestamp_seconds;
     }
 
@@ -766,7 +764,6 @@ class CyclesBank extends Canister {
                 });    
             }
         });
-        await this.fresh_metrics();
     }
 
     
@@ -957,6 +954,7 @@ class LengthenLifetimeQuest extends Record {
         this['set_lifetime_termination_timestamp_seconds'] = Nat(this.set_lifetime_termination_timestamp_seconds);
     }
 }
+
 
 
 class ChangeStorageSizeQuest extends Record {
