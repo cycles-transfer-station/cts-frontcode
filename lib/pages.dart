@@ -359,7 +359,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                         width: double.infinity,
                                         child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
                                     ),
-                                    IcpIdAndBalanceAndLoadIcpBalance()
+                                    IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
                                 ]
                             )
                         ),
@@ -372,7 +372,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                 children: [
                                     Padding(
                                         padding: EdgeInsets.all(17.0),
-                                        child: TransferIcpForm(key: ValueKey('TransferIcpForm on the transfer_icp page.'))  /*Text('')*/
+                                        child: TransferIcpForm(key: ValueKey('TransferIcpScaffoldBody TransferIcpForm'))  /*Text('')*/
                                     )
                                 ]
                             )
@@ -384,9 +384,22 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             if (state.user!.cycles_bank != null) {
                 column_children.addAll([
                     // burn icp mint cycles,  
-                    // divider
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
+                        child: Divider(
+                            height: 13.0,   
+                            thickness: 4.0,
+                            indent: 34.0,
+                            endIndent: 34.0,
+                            //color: 
+                        ),
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: BurnIcpMintCyclesForm(key: ValueKey('TransferIcpScaffoldBody BurnIcpMintCyclesForm'))
+                    )
                 ]);
-            } 
+            }
             
             column_children.addAll([
                 Padding(
@@ -488,7 +501,9 @@ class TransferIcpScaffoldBody extends StatelessWidget {
 }
 
 
-class IcpIdAndBalanceAndLoadIcpBalance extends StatelessWidget {
+class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
+    IcpBalanceAndLoadIcpBalance({super.key});
+    
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -772,6 +787,167 @@ class TransferIcpFormState extends State<TransferIcpForm> {
 }
 
 
+
+class BurnIcpMintCyclesForm extends StatefulWidget {
+    BurnIcpMintCyclesForm({super.key});
+    State createState() => BurnIcpMintCyclesFormState();
+}
+class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late IcpTokens burn_icp;
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    Container(
+                        width: double.infinity,
+                        child: DataTable(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        ),
+                                    ),
+                                ),
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        )
+                                    )
+                                )
+                            ],
+                            rows: [
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('BURN ICP MINT CYCLES FEE XDR: ')),
+                                        DataCell(Text('${state.cts_fees.burn_icp_mint_cycles_fee.cycles/CYCLES_PER_XDR}-xdr')),
+                                    ]
+                                ),
+                            ]
+                        )
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'burn icp: ',
+                        ),
+                        onSaved: (String? value) { burn_icp = IcpTokens.oftheDouble(double.parse(value!.trim())); },
+                        validator: (String? value) {
+                            String e_s = 'Number >= 0 with a max ${IcpTokens.DECIMAL_PLACES} decimal point places';
+                            if (value == null || value.trim() == '') {
+                                return e_s;
+                            }
+                            try {
+                                IcpTokens icpts = IcpTokens.oftheDouble(double.parse(value!.trim()));
+                            } catch(e) {
+                                return e_s;
+                            }
+                            return null;                            
+                        }
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('BURN ICP MINT CYCLES'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'burning icp and minting cycles ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late BurnIcpMintCyclesSuccess burn_icp_mint_cycles_success;
+                                    try {
+                                        burn_icp_mint_cycles_success = await state.user!.burn_icp_mint_cycles(burn_icp);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Burn Icp Mint Cycles Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'Burn icp mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user} \nloading icp balance, icp transfers, and cycles-bank cycles-balance ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.fresh_icp_balance();
+                                        await state.user!.fresh_icp_transfers();
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the icp balance, icp transfers, and cycles-bank cycles-balance:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Burn Icp Mint Cycles Success:'),
+                                                content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );
+    }
+}
+
+
+
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
     IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey('IcpTransferListItem: ${icp_transfer_.block_height}'));
@@ -925,7 +1101,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     padding: EdgeInsets.fromLTRB(7,13,7,0),
                     child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
                 ),
-                IcpIdAndBalanceAndLoadIcpBalance(),
+                IcpBalanceAndLoadIcpBalance(),
                 Padding(
                     padding: EdgeInsets.all(0),//fromLTRB(17, 17, 17, 17.0),
                     child: Container(),
@@ -1111,7 +1287,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                         ),
                                         DataRow(
                                             cells: <DataCell>[
-                                                DataCell(Text('CTSFuel: ')),
+                                                DataCell(Text('ctsfuel: ')),
                                                 DataCell(Text('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
                                             ]
                                         ),
@@ -1141,7 +1317,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                         LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
                                     ]
                                 )
-                            )   
+                            )
                         ]
                     ),
                     CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
@@ -1189,10 +1365,19 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             }
                         )
                     ),
+                    SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child:
+                            Row(
+                                children: cycles_transfers_list_items
+                            )
+                    )
+                    /*
                     ListView(
                         children: cycles_transfers_list_items,
                         scrollDirection: Axis.horizontal
-                    )                    
+                    ) 
+                    */
                 ]);   
             }
         }
