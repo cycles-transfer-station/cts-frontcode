@@ -432,11 +432,21 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                ListView(
-                //Column(
-                    children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList(),
-                    scrollDirection: Axis.horizontal
+                /*Container(
+                    constraints: BoxConstraints(maxHeight: 200),
+                    child:ListView(
+                        children: [
+                */    
+                SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                    child:
+                        Row(
+                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()
+                        )
                 )
+                /*    ],
+                    scrollDirection: Axis.horizontal
+                )*/
             ]);
             
         } else /*if (state.user == null)*/ {
@@ -452,17 +462,27 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         }        
         
         
-        return Column(
-            children: [
-                ScaffoldBodyHeader('TRANSFER-ICP'),
-                SingleChildScrollView(
-                    child: Column(                
-                        children: column_children,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center
-                    )
+        return Center(
+            child: Container(
+                constraints: BoxConstraints(maxWidth: 731),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                        ScaffoldBodyHeader('TRANSFER-ICP'),
+                        Expanded(
+                            child: ListView(
+                                padding: EdgeInsets.all(0),
+                                children: [
+                                    Column(
+                                        children: column_children 
+                                    )
+                                ],
+                                addAutomaticKeepAlives: true
+                            )
+                        )
+                    ]
                 )
-            ]
+            )
         );
     }
 }
@@ -543,9 +563,58 @@ class TransferIcpFormState extends State<TransferIcpForm> {
             key: form_key,
             child: Column(
                 children: <Widget>[
+                    Container(
+                        width: double.infinity,
+                        child: DataTable(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        ),
+                                    ),
+                                ),
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        )
+                                    )
+                                )
+                            ],
+                            rows: [
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('ICP TRANSFER FEE XDR: ')),
+                                        DataCell(Text('${state.cts_fees.cts_transfer_icp_fee.cycles/CYCLES_PER_XDR}-xdr')),
+                                    ]
+                                ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('CURRENT XDR-ICP RATE: ')),
+                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}')),
+                                    ]
+                                ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('ICP LEDGER FEES: ')),
+                                        DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                    ]
+                                ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('ICP TRANSFER TOTAL COST: ')),
+                                        DataCell(Text('${cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                    ]
+                                ),
+                            ]
+                        )
+                    ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'to: ',
+                            labelText: 'for: ',
                         ),
                         onSaved: (String? value) { to = value!.trim().toLowerCase(); },
                         validator: (String? value) {
