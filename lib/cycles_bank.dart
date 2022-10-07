@@ -22,7 +22,10 @@ class CyclesBank extends Canister {
     List<CyclesTransferOut> cycles_transfers_out = [];
     
     final String cm_icp_id; 
-    IcpTokens? cm_icp_balance;
+    IcpTokensWithATimestamp? = cm_icp_balance_with_a_timestamp;
+    IcpTokens? get cm_icp_balance => this.cm_icp_balance_with_a_timestamp != null ? this.cm_icp_balance_with_a_timestamp.icp : null;
+    List<IcpTransfer> cm_icp_transfers = [];
+    
     List<CMCyclesPosition> cm_cycles_positions = [];
     List<CMIcpPosition> cm_icp_positions = [];
     List<CMCyclesPositionPurchase> cm_cycles_positions_purchases = [];
@@ -137,11 +140,25 @@ class CyclesBank extends Canister {
     Future<void> fresh_cm_icp_balance() async {
         // check icp ledger balance of the cycles-bank cycles-market-[ac]count
         // check the icp_lock in the cycles-market
-        IcpTokens icp_ledger_balance = IcpTokens.oftheDouble(await check_icp_balance(this.cm_icp_id));
-        IcpTokens icp_in_the_lock = await this.cm_see_icp_lock(); 
-        this.cm_icp_balance = icp_ledger_balance - icp_in_the_lock;
+        List<IcpTokens> rs = await Future.wait([ 
+            Future(()async{return IcpTokens.oftheDouble(await check_icp_balance(this.cm_icp_id));}),   
+            this.cm_see_icp_lock()
+        ]);
+        IcpTokens icp_ledger_balance = rs[0];
+        IcpTokens icp_in_the_lock = rs[1]; 
+        this.cm_icp_balance_with_a_timestamp = IcpTokensWithATimestamp(
+            icp: icp_ledger_balance - icp_in_the_lock
+        );
     }
     
+    Future<void> fresh_cm_icp_transfers() async {
+        this.cm_icp_transfers.addAll(
+            await get_icp_transfers(
+                this.cm_icp_id, 
+                already_have: this.cm_icp_transfers.length
+            )
+        );
+    }
     
     Future<void> fresh_cm_cycles_positions() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
@@ -671,7 +688,6 @@ class CyclesBank extends Canister {
             }
         });
         this.metrics!.cm_icp_transfers_out_len = this.metrics!.cm_icp_transfers_out_len + BigInt.from(1);
-        await this.fresh_cm_icp_transfers_out();
         return block_height;
     }
 

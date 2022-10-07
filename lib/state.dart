@@ -104,25 +104,30 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         }
         
         
-        print('get state of the browser storage');
-        await this.get_state_of_the_browser_storage();
-        
-        print('get cts_fees');
-        await this.load_cts_fees();
-        
+        print('load state of the browser storage');
+        print('load cts_fees');
         print('fresh_xdr_icp_rate');
-        await this.fresh_xdr_icp_rate();
-
+        
+        Future.wait([
+            this.load_state_of_the_browser_storage(),
+            this.load_cts_fees(),
+            this.fresh_xdr_icp_rate(),
+        ]);
+        
         
         if (this.user != null) {
         
+            List<Future<void>> fs = [];
+            
             print('fresh_icp_balance');
-            await this.user!.fresh_icp_balance();
+            fs.add(this.user!.fresh_icp_balance());
             
             if (this.user!.cycles_bank == null) {
                 print('find_cycles_bank');
-                //await this.user!.find_cycles_bank();
+                fs.add(this.user!.find_cycles_bank());
             }
+            
+            await Future.wait(fs);
             
             if (this.user!.cycles_bank != null) {
                 try {
@@ -256,7 +261,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     }
     
     
-    Future<void> get_state_of_the_browser_storage() async {
+    Future<void> load_state_of_the_browser_storage() async {
     
         try {
             IndexDB idb = await IndexDB.open('cts', ['state']);
@@ -448,17 +453,28 @@ class XDRICPRateWithATimestamp {
 
 class XDRICPRate extends Nat64 {
     BigInt get xdr_permyriad_per_icp => super.value;
+    
     XDRICPRate({required BigInt xdr_permyriad_per_icp}): super(xdr_permyriad_per_icp);
-    static oftheNat64(CandidType nat64) {
+    
+    static XDRICPRate oftheXdrPerMyriadPerIcpNat64(CandidType nat64) {
         return XDRICPRate(
             xdr_permyriad_per_icp: (nat64 as Nat64).value
         );
     }
+    static XDRICPRate oftheDouble(double xdr_per_icp) {
+        if (check_double_decimal_point_places(xdr_per_icp) > XDRICPRate.DECIMAL_PLACES) {
+            throw Exception('max ${XDRICPRate.DECIMAL_PLACES} decimal places for the xdr-per-icp');
+        }
+        return XDRICPRate(
+            xdr_per_myriad_per_icp: BigInt.parse((xdr_per_icp * XDRICPRate.DIVIDABLE_BY.toDouble()).toString().split('.')[0]);
+        );
+    }
     String toString() {
-        return '${this.xdr_permyriad_per_icp/XDRICPRate.DIVIDABLE_BY}';
+        return '${this.xdr_permyriad_per_icp/BigInt.from(XDRICPRate.DIVIDABLE_BY)}';
     }
     
-    static BigInt DIVIDABLE_BY = BigInt.from(10000);
+    static int DECIMAL_PLACES = 4;
+    static int DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES);
 }
 
 
