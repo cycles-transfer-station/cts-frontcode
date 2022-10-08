@@ -22,8 +22,15 @@ class CyclesBank extends Canister {
     List<CyclesTransferOut> cycles_transfers_out = [];
     
     final String cm_icp_id; 
-    IcpTokensWithATimestamp? = cm_icp_balance_with_a_timestamp;
-    IcpTokens? get cm_icp_balance => this.cm_icp_balance_with_a_timestamp != null ? this.cm_icp_balance_with_a_timestamp.icp : null;
+    IcpTokensWithATimestamp? cm_icp_balance_with_a_timestamp;
+    IcpTokens? get cm_icp_balance => this.cm_icp_balance_with_a_timestamp != null ? this.cm_icp_balance_with_a_timestamp!.icp : null;
+    void set cm_icp_balance(IcpTokens? icpts) { 
+        if (icpts != null) {  
+            this.cm_icp_balance_with_a_timestamp = IcpTokensWithATimestamp(icp: icpts);
+        } else {
+            this.cm_icp_balance_with_a_timestamp = null;
+        }
+    }
     List<IcpTransfer> cm_icp_transfers = [];
     
     List<CMCyclesPosition> cm_cycles_positions = [];
@@ -334,7 +341,7 @@ class CyclesBank extends Canister {
                             },
                             'CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump': (r_ctype) {
                                 Record r = r_ctype as Record;
-                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate.oftheNat64(r['minimum_rate_for_a_bump'] as Nat64)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
+                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['minimum_rate_for_a_bump'] as Nat64)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
                             },
                             'MinimumCyclesPosition': (cycles_nat) {
                                 throw Exception('The minimum cycles for a cycles-position is: ${Cycles.oftheNat(cycles_nat)}');
@@ -411,7 +418,7 @@ class CyclesBank extends Canister {
                             },
                             'CyclesMarketIsFull_MaximumRateAndMinimumIcpPositionForABump': (r_ctype) {
                                 Record r = r_ctype as Record;
-                                throw Exception('The cycles-market icp-positions are full. If you create an icp-position with a maximum xdr-icp-rate: ${XDRICPRate.oftheNat64(r['maximum_rate_for_a_bump']!)} and with a minimum icp-position: ${IcpTokens.oftheRecord(r['minimum_icp_position_for_a_bump']!)} then you will bump the most expensive icp-position and take its place.');
+                                throw Exception('The cycles-market icp-positions are full. If you create an icp-position with a maximum xdr-icp-rate: ${XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['maximum_rate_for_a_bump']!)} and with a minimum icp-position: ${IcpTokens.oftheRecord(r['minimum_icp_position_for_a_bump']!)} then you will bump the most expensive icp-position and take its place.');
                             },
                             'MinimumIcpPosition': (icptokens_record) {
                                 throw Exception('The minimum icp for an icp-position is: ${IcpTokens.oftheRecord(icptokens_record as Record)}');
@@ -1005,7 +1012,7 @@ class CMCyclesPosition {
             id: (r['id'] as Nat).value,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
-            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
             create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
         );
@@ -1035,7 +1042,7 @@ class CMIcpPosition {
             id: (r['id'] as Nat).value,   
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
             minimum_purchase: IcpTokens.oftheRecord(r['minimum_purchase'] as Record),
-            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['xdr_permyriad_per_icp_rate'] as Nat64),
             create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
@@ -1064,7 +1071,7 @@ class CMCyclesPositionPurchase {
     static CMCyclesPositionPurchase oftheRecord(Record r) {
         return CMCyclesPositionPurchase._(
             cycles_position_id: (r['cycles_position_id'] as Nat).value,
-            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
@@ -1093,7 +1100,7 @@ class CMIcpPositionPurchase{
     static CMIcpPositionPurchase oftheRecord(Record r) {
         return CMIcpPositionPurchase._(
             icp_position_id: (r['icp_position_id'] as Nat).value,
-            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
             purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),

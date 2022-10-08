@@ -54,15 +54,14 @@ const String Err = 'Err';
 
 /*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
 
-final Canister cycles_market = Canister(Principal(''/*put the id here*/));
+final Canister cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
 
 void main() {
     if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
         print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
     }
 }
-
-
+void vd = main();
 
 
 
@@ -104,42 +103,40 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         }
         
         
-        print('load state of the browser storage');
         print('load cts_fees');
         print('fresh_xdr_icp_rate');
-        
-        Future.wait([
-            this.load_state_of_the_browser_storage(),
+        print('load state of the browser storage');
+
+
+        await Future.wait([
             this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
+            Future(()async{ 
+                await this.load_state_of_the_browser_storage();
+                if (this.user != null) {
+                    
+                    print('user fresh_icp_balance');
+                    
+                    await Future.wait([
+                        this.user!.fresh_icp_balance(),
+                        Future(()async{
+                            if (this.user!.cycles_bank == null) {
+                                print('user find_cycles_bank');
+                                //await this.user!.find_cycles_bank();
+                            }
+                            if (this.user!.cycles_bank != null) {
+                                try {
+                                    await this.user!.cycles_bank!.fresh_metrics();
+                                } catch(e) {
+                                    print('cycles-bank load metrics error: ${e}');
+                                }
+                            }        
+                        }),
+                    ]);
+                } 
+            }),
         ]);
-        
-        
-        if (this.user != null) {
-        
-            List<Future<void>> fs = [];
-            
-            print('fresh_icp_balance');
-            fs.add(this.user!.fresh_icp_balance());
-            
-            if (this.user!.cycles_bank == null) {
-                print('find_cycles_bank');
-                fs.add(this.user!.find_cycles_bank());
-            }
-            
-            await Future.wait(fs);
-            
-            if (this.user!.cycles_bank != null) {
-                try {
-                    await this.user!.cycles_bank!.fresh_metrics();
-                } catch(e) {
-                    print('cycles-bank load metrics error: ${e}');
-                }
-            }
-        
-            
-        }
-        
+                
         print('save state in the browser_storage');
         await this.save_state_in_the_browser_storage();
     }
@@ -186,7 +183,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
         this.xdr_icp_rate_with_a_timestamp = XDRICPRateWithATimestamp(
-            xdr_icp_rate: XDRICPRate.oftheNat64(certified_xdr_permyriad_per_icp),
+            xdr_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(certified_xdr_permyriad_per_icp),
             timestamp_seconds: certified_timestamp_seconds.value 
         );        
     }
@@ -408,7 +405,6 @@ Cycles icptokens_to_cycles(IcpTokens icpts, XDRICPRate xdr_icp_rate) {
         * CYCLES_PER_XDR 
         ~/ (IcpTokens.DIVIDABLE_BY * XDRICPRate.DIVIDABLE_BY)
     );
-    
 }
 
 IcpTokens cycles_to_icptokens(Cycles cycles, XDRICPRate xdr_icp_rate) {
@@ -466,15 +462,15 @@ class XDRICPRate extends Nat64 {
             throw Exception('max ${XDRICPRate.DECIMAL_PLACES} decimal places for the xdr-per-icp');
         }
         return XDRICPRate(
-            xdr_per_myriad_per_icp: BigInt.parse((xdr_per_icp * XDRICPRate.DIVIDABLE_BY.toDouble()).toString().split('.')[0]);
+            xdr_permyriad_per_icp: BigInt.parse((xdr_per_icp * XDRICPRate.DIVIDABLE_BY.toDouble()).toString().split('.')[0])
         );
     }
     String toString() {
-        return '${this.xdr_permyriad_per_icp/BigInt.from(XDRICPRate.DIVIDABLE_BY)}';
+        return '${this.xdr_permyriad_per_icp/XDRICPRate.DIVIDABLE_BY}';
     }
     
     static int DECIMAL_PLACES = 4;
-    static int DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES);
+    static BigInt DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES));
 }
 
 

@@ -95,7 +95,7 @@ class CyclesPosition {
             positor: r['positor'] as Principal,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
-            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64), 
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['xdr_permyriad_per_icp_rate'] as Nat64), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -122,7 +122,7 @@ class IcpPosition {
             positor: r['positor'] as Principal,
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
             minimum_purchase: IcpTokens.oftheRecord(r['minimum_purchase'] as Record),
-            xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['xdr_permyriad_per_icp_rate'] as Nat64), 
+            xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['xdr_permyriad_per_icp_rate'] as Nat64), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -156,7 +156,7 @@ class CyclesPositionPurchase {
         return CyclesPositionPurchase._(
             cycles_position_id: (r['cycles_position_id'] as Nat).value,
             cycles_position_positor: (r['cycles_position_positor'] as Principal),
-            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
             purchaser: r['purchaser'] as Principal,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
@@ -199,7 +199,7 @@ class IcpPositionPurchase {
         return IcpPositionPurchase._(
             icp_position_id: (r['icp_position_id'] as Nat).value,
             icp_position_positor: (r['icp_position_positor'] as Principal),
-            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
             id: (r['id'] as Nat).value,
             purchaser: r['purchaser'] as Principal,
             icp: IcpTokens.oftheRecord(r['icp'] as Record),

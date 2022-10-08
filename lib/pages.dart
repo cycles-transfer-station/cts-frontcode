@@ -666,7 +666,6 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                         ),
                         onSaved: (String? value) { to = value!.trim().toLowerCase(); },
                         validator: icp_id_string_validator          
-                        }
                     ),
                     TextFormField(
                         decoration: InputDecoration(
@@ -848,8 +847,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             labelText: 'burn icp: ',
                         ),
                         onSaved: (String? value) { burn_icp = IcpTokens.oftheDouble(double.parse(value!.trim())); },
-                        validator: icp_validator               
-                        }
+                        validator: icp_validator
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
@@ -1120,6 +1118,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 ),
                 Container(
                     width: double.infinity,
+                    height: 50,
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: OutlineButton(
                         button_text: 'PURCHASE CYCLES-BANK',
@@ -1235,8 +1234,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 
                 List cycles_transfers = [ 
                     ...state.user!.cycles_bank!.cycles_transfers_in, 
-                    ...state.user!.cycles_bank!.cycles_transfers_out 
-                ]..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos));
+                    ...state.user!.cycles_bank!.cycles_transfers_out,
+                    ...state.user!.cycles_bank!.cm_cycles_positions,
+                    ...state.user!.cycles_bank!.cm_icp_positions,
+                    ...state.user!.cycles_bank!.cm_cycles_positions_purchases,
+                    ...state.user!.cycles_bank!.cm_icp_positions_purchases,
+                    ...state.user!.cycles_bank!.cm_icp_transfers_out,
+                ]
+                ..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos));
 
                 List<Widget> cycles_transfers_list_items = cycles_transfers.map<Widget>((ct)=>cycles_transfer_list_item(ct)).toList();
                 
@@ -1349,6 +1354,11 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                     await Future.wait([
                                         state.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         state.user!.cycles_bank!.fresh_cycles_transfers_out(),
+                                        state.user!.cycles_bank!.fresh_cm_cycles_positions(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_positions(),
+                                        state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_transfers_out()
                                     ]);
                                 } catch(e) {
                                     await showDialog(
@@ -2088,6 +2098,16 @@ Widget cycles_transfer_list_item(dynamic ct){
         return CyclesTransferInListItem(ct as CyclesTransferIn);
     } else if (ct is CyclesTransferOut) {
         return CyclesTransferOutListItem(ct as CyclesTransferOut); 
+    } else if (ct is CMCyclesPosition) {
+        return CMCyclesPositionListItem(ct as CMCyclesPosition); 
+    } else if (ct is CMIcpPosition) {
+        return CMIcpPositionListItem(ct as CMIcpPosition); 
+    } else if (ct is CMCyclesPositionPurchase) {
+        return CMCyclesPositionPurchaseListItem(ct as CMCyclesPositionPurchase); 
+    } else if (ct is CMIcpPositionPurchase) {
+        return CMIcpPositionPurchaseListItem(ct as CMIcpPositionPurchase); 
+    } else if (ct is CMIcpTransferOut) {
+        return CMIcpTransferOutListItem(ct as CMIcpTransferOut);
     } else {
         throw Exception('look at the function: cycles_transfer_list_item. ct.runtimeType: ${ct.runtimeType}');
     }
@@ -2107,7 +2127,7 @@ class CyclesTransferInListItem extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
-                            title: Text('IN'),
+                            title: Text('CYCLES TRANSFER IN'),
                             subtitle: Text('ID: ${cycles_transfer_in.id}'),
                         ),
                         Column(
@@ -2141,7 +2161,7 @@ class CyclesTransferOutListItem extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
-                            title: Text('OUT'),
+                            title: Text('CYCLES TRANSFER OUT'),
                             subtitle: Text('ID: ${cycles_transfer_out.id}'),
                         ),
                         Column(
@@ -2163,6 +2183,200 @@ class CyclesTransferOutListItem extends StatelessWidget {
         );
     }
 }
+
+
+class CMCyclesPositionListItem extends StatelessWidget {
+    final CMCyclesPosition cm_cycles_position;
+    CMCyclesPositionListItem(CMCyclesPosition _cm_cycles_position): cm_cycles_position = _cm_cycles_position, super(key: ValueKey('CMCyclesPositionListItem: ${_cm_cycles_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('MARKET CYCLES POSITION'),
+                            subtitle: Text('ID: ${cm_cycles_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles: ${cm_cycles_position.cycles.cycles}'),
+                                Text('minimum-purchase: ${cm_cycles_position.minimum_purchase.cycles}'),
+                                Text('xdr/Tcycles per icp rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
+                                Text('market create position fee: ${cm_cycles_position.create_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
+                            ]                            
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+
+class CMIcpPositionListItem extends StatelessWidget {
+    final CMIcpPosition cm_icp_position;
+    CMIcpPositionListItem(CMIcpPosition _cm_icp_position): cm_icp_position = _cm_icp_position, super(key: ValueKey('CMIcpPositionListItem: ${_cm_icp_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('MARKET ICP POSITION'),
+                            subtitle: Text('ID: ${cm_icp_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp: ${cm_icp_position.icp}'),
+                                Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
+                                Text('xdr/Tcycles per icp rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
+                                Text('market create position fee: ${cm_icp_position.create_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+
+
+class CMCyclesPositionPurchaseListItem extends StatelessWidget {
+    final CMCyclesPositionPurchase cm_cycles_position_purchase;
+    CMCyclesPositionPurchaseListItem(CMCyclesPositionPurchase _cm_cycles_position_purchase): cm_cycles_position_purchase = _cm_cycles_position_purchase, super(key: ValueKey('CMCyclesPositionPurchaseListItem: ${_cm_cycles_position_purchase.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('MARKET CYCLES POSITION PURCHASE'),
+                            subtitle: Text('ID: ${cm_cycles_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles-position id: ${cm_cycles_position_purchase.cycles_position_id}'),
+                                Text('cycles purchase: ${cm_cycles_position_purchase.cycles}'),
+                                Text('xdr/Tcycles per icp purchase rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
+                                Text('icp payment: ${cycles_to_icptokens(cm_cycles_position_purchase.cycles, cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('market purchase position fee: ${cm_cycles_position_purchase.purchase_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position_purchase.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+
+class CMIcpPositionPurchaseListItem extends StatelessWidget {
+    final CMIcpPositionPurchase cm_icp_position_purchase;
+    CMIcpPositionPurchaseListItem(CMIcpPositionPurchase _cm_icp_position_purchase): cm_icp_position_purchase = _cm_icp_position_purchase, super(key: ValueKey('CMIcpPositionPurchaseListItem: ${_cm_icp_position_purchase.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('MARKET ICP POSITION PURCHASE'),
+                            subtitle: Text('ID: ${cm_icp_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp-position id: ${cm_icp_position_purchase.icp_position_id}'),
+                                Text('icp purchase: ${cm_icp_position_purchase.icp}'),
+                                Text('xdr/Tcycles per icp purchase rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
+                                Text('cycles payment: ${icptokens_to_cycles(cm_icp_position_purchase.icp, cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('market purchase position fee: ${cm_icp_position_purchase.purchase_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_position_purchase.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+
+
+class CMIcpTransferOutListItem extends StatelessWidget {
+    final CMIcpTransferOut cm_icp_transfer_out;
+    CMIcpTransferOutListItem(CMIcpTransferOut _cm_icp_transfer_out): cm_icp_transfer_out = _cm_icp_transfer_out, super(key: ValueKey('CMIcpTransferOutListItem: ${_cm_icp_transfer_out.block_height}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('CYCLES-MARKET ICP BALANCE WITHDRAWAL'),
+                            subtitle: Text('BLOCK: ${cm_icp_transfer_out.block_height}'),
+                        ),
+                        Column( // datatable?
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp withdrawal: ${cm_icp_transfer_out.icp}'),
+                                Text('for: ${cm_icp_transfer_out.to}'),
+                                Text('icp ledger fee: ${cm_icp_transfer_out.icp_fee}'),
+                                Text('cycles-market icp-withdraw-fee: ${cm_icp_transfer_out.transfer_icp_balance_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_transfer_out.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )            
+        );
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2204,15 +2418,17 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
             column_children.addAll([
                 Container(
                     width: double.infinity,
+                    height: 50,
+                    constraints: BoxConstraints(maxWidth: 731),
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: OutlineButton(
                         button_text: 'PURCHASE CYCLES-BANK',
                         on_press_complete: () async {
                             state.current_url = CustomUrl('cycles_bank');
                             state.loading_text = 'loading ...';
-                            state.loading = true;
+                            state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            state.loading = false;
+                            state.is_loading = false;
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                         }
                     )
@@ -2297,11 +2513,21 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                     ]
                 )
             
-            ])
+            ]);
         }
         
         
         column_children.addAll([
+            Padding(
+                padding: EdgeInsets.all(13),
+                child: Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+                    indent: 17.0,
+                    endIndent: 17.0,
+                    //color: 
+                ),
+            ),    
             Padding(
                 padding: EdgeInsets.all(7),
                 child: ElevatedButton(
@@ -2390,14 +2616,14 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
 
 class CyclesBankCMTransferIcpForm extends StatefulWidget {
     CyclesBankCMTransferIcpForm({super.key});
-    State<CyclesBankCMTransferIcpForm> createState => CyclesBankCMTransferIcpFormState();
-}$
+    State<CyclesBankCMTransferIcpForm> createState() => CyclesBankCMTransferIcpFormState();
+}
 class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
     
     late IcpTokens withdraw_icp;
     late String to;
-    IcpTokens icp_fee = ICP_LEDGER_TRANSFER_ICP_FEE;  
+    IcpTokens icp_fee = ICP_LEDGER_TRANSFER_FEE;
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -2475,9 +2701,9 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                                     form_key.currentState!.save();
                                     
                                     CyclesMarketTransferIcpBalanceQuest cm_transfer_icp_balance_quest = CyclesMarketTransferIcpBalanceQuest(
-                                        icp:icp,
+                                        icp: withdraw_icp,
                                         icp_fee: icp_fee, 
-                                        to:to,
+                                        to: to,
                                     );
                                     
                                     state.loading_text = 'withdraw icp ...';
@@ -2649,7 +2875,7 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                     ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'minimum_purchase: '
+                            labelText: 'minimum purchase: '
                         ),
                         onSaved: (String? value) { minimum_purchase = Cycles(cycles: BigInt.parse(value!, radix: 10)); },
                         validator: cycles_validator
@@ -2711,7 +2937,7 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     
                                     try {
                                         await Future.wait([
-                                            state.cycles_market.fresh_cycles_positions(),
+                                            state.cycles_market_data.fresh_cycles_positions(),
                                             state.user!.cycles_bank!.fresh_metrics(),
                                             state.user!.cycles_bank!.fresh_cm_cycles_positions(),
                                         ]);
@@ -2771,6 +2997,7 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
     
     late IcpTokens icp_for_the_position; 
     late IcpTokens minimum_purchase;
+    late XDRICPRate xdr_icp_rate;
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -2780,13 +3007,163 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
             key: form_key,
             child: Column(
                 children: <Widget>[               
-                    
+                    Container(
+                        width: double.infinity,
+                        child: Center(
+                            child: Text('CREATE ICP-POSITION')
+                        ),
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: DataTable(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        ),
+                                    ),
+                                ),
+                                DataColumn(
+                                    label: Expanded(
+                                        child: Text(
+                                            '',
+                                        )
+                                    )
+                                )
+                            ],
+                            rows: [
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('CREATE ICP-POSITION FEE: ')),
+                                        DataCell(Text('0.05-TCycles/XDR')),
+                                    ]
+                                )                            
+                            ]
+                        )
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'icp for the position: ',
+                        ),
+                        onSaved: (String? value) { icp_for_the_position = IcpTokens.oftheDouble(double.parse(value!.trim())); },
+                        validator: icp_validator
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'minimum purchase: '
+                        ),
+                        onSaved: (String? value) { minimum_purchase = IcpTokens.oftheDouble(double.parse(value!.trim())); },
+                        validator: icp_validator
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'XDR/TCycles per ICP rate: '
+                        ),
+                        onSaved: (String? value) { xdr_icp_rate = XDRICPRate.oftheDouble(double.parse(value!.trim())); },
+                        validator: xdr_icp_rate_validator
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('CREATE ICP-POSITION'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    CreateIcpPositionQuest cm_create_icp_position_quest = CreateIcpPositionQuest(
+                                        icp: icp_for_the_position,
+                                        minimum_purchase: minimum_purchase,
+                                        xdr_icp_rate: xdr_icp_rate
+                                    );
+                                    
+                                    state.loading_text = 'create icp-position ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late CreateIcpPositionSuccess create_icp_position_success;
+                                    try {
+                                        create_icp_position_success = await state.user!.cycles_bank!.cm_create_icp_position(cm_create_icp_position_quest);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('cycles-market create icp-position error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'create icp-position success. \icp-position ID: ${create_icp_position_success.position_id}\nloading cycles-market icp-positions, icp-balance, and cycles-balance ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.cycles_market_data.fresh_icp_positions(),
+                                            state.user!.cycles_bank!.fresh_metrics(),
+                                            state.user!.cycles_bank!.fresh_cm_icp_balance(),
+                                            state.user!.cycles_bank!.fresh_cm_icp_positions(),
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the cycles-market icp-positions, icp-balance, and cycles-balance.'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Cycles-Market Create ICP-POSITION Success:'),
+                                                content: Text('icp-position ID: ${create_icp_position_success.position_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                            }
+                        )
+                    )
                 ]
             )
         );
-
-
-
+    }
 }
 
 
