@@ -454,7 +454,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                     child:
                         Row(
-                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()
+                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()..reverse()
                         )
                 )
                 /*    ],
@@ -1235,14 +1235,17 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 List cycles_transfers = [ 
                     ...state.user!.cycles_bank!.cycles_transfers_in, 
                     ...state.user!.cycles_bank!.cycles_transfers_out,
+                    /*
                     ...state.user!.cycles_bank!.cm_cycles_positions,
                     ...state.user!.cycles_bank!.cm_icp_positions,
                     ...state.user!.cycles_bank!.cm_cycles_positions_purchases,
                     ...state.user!.cycles_bank!.cm_icp_positions_purchases,
                     ...state.user!.cycles_bank!.cm_icp_transfers_out,
+                    */
                 ]
-                ..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos));
-
+                ..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos))
+                ..reverse();
+                
                 List<Widget> cycles_transfers_list_items = cycles_transfers.map<Widget>((ct)=>cycles_transfer_list_item(ct)).toList();
                 
                 
@@ -2511,23 +2514,87 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         CyclesBankCMCreateCyclesPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateCyclesPositionForm')),
                         CyclesBankCMCreateIcpPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateIcpPositionForm')),
                     ]
-                )
-            
+                ),
+                Padding(
+                    padding: EdgeInsets.all(13),
+                    child: Divider(
+                        height: 13.0,   
+                        thickness: 4.0,
+                        indent: 17.0,
+                        endIndent: 17.0,
+                        //color: 
+                    ),
+                ),    
             ]);
+            
+                                    
+            List<CyclesMarketDataPosition> user_positions = [
+                ...state.cycles_market_data.cycles_positions
+                ...state.cycles_market_data.icp_positions
+            ]
+            .where((CyclesMarketDataPosition cmdp){
+                return cmdp.positor.text == state.user!.cycles_bank!.principal.text;
+            }).toList()
+            ..sort((CyclesMarketDataPosition cmdp1, CyclesMarketDataPosition cmdp2){
+                return cmdp1.timestamp_nanos.compareTo(cmdp2.timestamp_nanos) 
+            })
+            ..reverse();
+            
+            List<Widget> user_positions_list_items = user_positions.map<Widget>((CyclesMarketDataPosition cmdp){
+                if (cmdp is CyclesPosition) {
+                    return UserCyclesPositionListItem(cmdp as CyclesPosition);
+                } else if (cmdp is IcpPosition) {
+                    return UserIcpPositionListItem(cmdp as IcpPosition)
+                }
+                throw Exception('unknown cycles_market_data_position type');
+            }).toList();
+            
+            if (user_positions.length > 0) {
+                column_children.addAll([
+                    Container(
+                        width: double.infinity,
+                        child: Text('USER-POSITIONS', style: TextStyle(fontSize: 17)),
+                    ),
+                    SingleChildScrollableView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                            children: user_positions_list_items,                
+                        )
+                    ),
+                ]);
+            }
+                    
         }
         
         
+        
+        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.where((CyclesPosition cp){
+            if (state.user != null && state.user!.cycles_bank != null) {
+                return cp.positor.text != state.user!.cycles_bank!.principal.text; 
+            } else {
+                return true;
+            }
+        })
+        .toList()
+        ..reverse();
+        
+        List<CyclesPositionListItem> cycles_positions_list_items = cycles_positions.map((cp)=>CyclesPositionListItem(cp)).toList();
+        
+        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.where((IcpPosition ip){
+            if (state.user != null && state.user!.cycles_bank != null) {
+                return ip.positor.text != state.user!.cycles_bank!.principal.text; 
+            } else {
+                return true;
+            }
+        })
+        .toList()
+        ..reverse();
+        
+        List<IcpPositionListItem> icp_positions_list_items = icp_positions.map((ip)=>IcpPositionListItem(ip)).toList();
+        
+        
+        
         column_children.addAll([
-            Padding(
-                padding: EdgeInsets.all(13),
-                child: Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-                    indent: 17.0,
-                    endIndent: 17.0,
-                    //color: 
-                ),
-            ),    
             Padding(
                 padding: EdgeInsets.all(7),
                 child: ElevatedButton(
@@ -2562,6 +2629,26 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         state.is_loading = false;
                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                     }
+                )
+            ),
+            Container(
+                width: double.infinity,
+                child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
+            ),
+            SingleChildScrollableView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                    children: cycles_positions_list_items 
+                )
+            ),
+            Container(
+                width: double.infinity,
+                child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
+            ),
+            SingleChildScrollableView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                    children: icp_positions_list_items
                 )
             ),
             

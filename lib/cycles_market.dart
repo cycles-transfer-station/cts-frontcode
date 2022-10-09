@@ -74,7 +74,14 @@ Future<List<T>> cycles_market_download_mechanism<T>({
 }
 
 
-class CyclesPosition {
+abstract class CyclesMarketDataPosition {
+    final BigInt id;
+    final Principal positor;
+    final XDRICPRate xdr_permyriad_per_icp_rate;
+    final BigInt timestamp_nanos;
+}
+
+class CyclesPosition implements CyclesMarketDataPosition {
     final BigInt id;   
     final Principal positor;
     final Cycles cycles;
@@ -101,7 +108,7 @@ class CyclesPosition {
     }
 }
 
-class IcpPosition {
+class IcpPosition implements CyclesMarketDataPosition {
     final BigInt id;   
     final Principal positor;
     final IcpTokens icp;
@@ -127,6 +134,8 @@ class IcpPosition {
         );
     }
 }
+
+
 class CyclesPositionPurchase {
     final BigInt cycles_position_id;
     final Principal cycles_position_positor;
