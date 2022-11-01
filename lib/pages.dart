@@ -26,7 +26,7 @@ import 'widgets.dart';
 import 'user.dart';
 import 'icp_ledger.dart';
 import 'cycles_bank.dart';
-
+import 'cycles_market.dart';
 
 
 
@@ -454,7 +454,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                     child:
                         Row(
-                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()..reverse()
+                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()..reversed
                         )
                 )
                 /*    ],
@@ -1244,7 +1244,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     */
                 ]
                 ..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos))
-                ..reverse();
+                ..reversed;
                 
                 List<Widget> cycles_transfers_list_items = cycles_transfers.map<Widget>((ct)=>cycles_transfer_list_item(ct)).toList();
                 
@@ -2529,22 +2529,22 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
             
                                     
             List<CyclesMarketDataPosition> user_positions = [
-                ...state.cycles_market_data.cycles_positions
+                ...state.cycles_market_data.cycles_positions,
                 ...state.cycles_market_data.icp_positions
             ]
             .where((CyclesMarketDataPosition cmdp){
                 return cmdp.positor.text == state.user!.cycles_bank!.principal.text;
             }).toList()
             ..sort((CyclesMarketDataPosition cmdp1, CyclesMarketDataPosition cmdp2){
-                return cmdp1.timestamp_nanos.compareTo(cmdp2.timestamp_nanos) 
+                return cmdp1.id.compareTo(cmdp2.id);
             })
-            ..reverse();
+            ..reversed;
             
             List<Widget> user_positions_list_items = user_positions.map<Widget>((CyclesMarketDataPosition cmdp){
                 if (cmdp is CyclesPosition) {
                     return UserCyclesPositionListItem(cmdp as CyclesPosition);
                 } else if (cmdp is IcpPosition) {
-                    return UserIcpPositionListItem(cmdp as IcpPosition)
+                    return UserIcpPositionListItem(cmdp as IcpPosition);
                 }
                 throw Exception('unknown cycles_market_data_position type');
             }).toList();
@@ -2555,7 +2555,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         width: double.infinity,
                         child: Text('USER-POSITIONS', style: TextStyle(fontSize: 17)),
                     ),
-                    SingleChildScrollableView(
+                    SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                             children: user_positions_list_items,                
@@ -2568,27 +2568,14 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         
         
         
-        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.where((CyclesPosition cp){
-            if (state.user != null && state.user!.cycles_bank != null) {
-                return cp.positor.text != state.user!.cycles_bank!.principal.text; 
-            } else {
-                return true;
-            }
-        })
-        .toList()
-        ..reverse();
+        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.reversed.toList();
+        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.reversed.toList();
+        if (state.user != null && state.user!.cycles_bank != null) {
+            cycles_positions = cycles_positions.where((CyclesPosition cp)=>cp.positor.text != state.user!.cycles_bank!.principal.text).toList();
+            icp_positions = icp_positions.where((IcpPosition ip)=>ip.positor.text != state.user!.cycles_bank!.principal.text).toList();
+        }
         
         List<CyclesPositionListItem> cycles_positions_list_items = cycles_positions.map((cp)=>CyclesPositionListItem(cp)).toList();
-        
-        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.where((IcpPosition ip){
-            if (state.user != null && state.user!.cycles_bank != null) {
-                return ip.positor.text != state.user!.cycles_bank!.principal.text; 
-            } else {
-                return true;
-            }
-        })
-        .toList()
-        ..reverse();
         
         List<IcpPositionListItem> icp_positions_list_items = icp_positions.map((ip)=>IcpPositionListItem(ip)).toList();
         
@@ -2635,7 +2622,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            SingleChildScrollableView(
+            SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                     children: cycles_positions_list_items 
@@ -2645,7 +2632,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            SingleChildScrollableView(
+            SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                     children: icp_positions_list_items
@@ -3248,6 +3235,195 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                         )
                     )
                 ]
+            )
+        );
+    }
+}
+
+
+
+
+
+
+
+class UserCyclesPositionListItem extends StatelessWidget {
+    final CyclesPosition cycles_position;
+    UserCyclesPositionListItem(CyclesPosition _cycles_position): cycles_position = _cycles_position, super(key: ValueKey('UserCyclesPositionListItem: ${_cycles_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('USER CYCLES POSITION'),
+                            subtitle: Text('ID: ${cycles_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles: ${cycles_position.cycles}'),
+                                Text('minimum-purchase: ${cycles_position.minimum_purchase}'),
+                                Text('xdr-icp-rate: ${cycles_position.xdr_permyriad_per_icp_rate}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cycles_position.timestamp_nanos)}'),
+                            ]
+                        ),
+                        Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('VOID POSITION'),
+                                onPressed: () async {
+                                    
+                                }
+                            )
+                        )
+
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+class UserIcpPositionListItem extends StatelessWidget {
+    final IcpPosition icp_position;
+    UserIcpPositionListItem(IcpPosition _icp_position): icp_position = _icp_position, super(key: ValueKey('UserIcpPositionListItem: ${_icp_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('USER ICP POSITION'),
+                            subtitle: Text('ID: ${icp_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp: ${icp_position.icp}'),
+                                Text('minimum-purchase: ${icp_position.minimum_purchase}'),
+                                Text('xdr-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate}'),
+                                Text('timestamp: ${seconds_of_the_nanos(icp_position.timestamp_nanos)}'),
+                            ]
+                        ),
+                        Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('VOID POSITION'),
+                                onPressed: () async {
+                                    
+                                }
+                            )
+                        )
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+
+class CyclesPositionListItem extends StatelessWidget {
+    final CyclesPosition cycles_position;
+    CyclesPositionListItem(CyclesPosition _cycles_position): cycles_position = _cycles_position, super(key: ValueKey('CyclesPositionListItem: ${_cycles_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('CYCLES POSITION'),
+                            subtitle: Text('ID: ${cycles_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('positor: ${cycles_position.positor.text}'),
+                                Text('cycles: ${cycles_position.cycles}'),
+                                Text('minimum-purchase: ${cycles_position.minimum_purchase}'),
+                                Text('xdr-icp-rate: ${cycles_position.xdr_permyriad_per_icp_rate}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cycles_position.timestamp_nanos)}'),
+                            ]
+                        ),
+                        Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('PURCHASE'),
+                                onPressed: () async {
+                                    
+                                }
+                            )
+                        )
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+class IcpPositionListItem extends StatelessWidget {
+    final IcpPosition icp_position;
+    IcpPositionListItem(IcpPosition _icp_position): icp_position = _icp_position, super(key: ValueKey('IcpPositionListItem: ${_icp_position.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('ICP POSITION'),
+                            subtitle: Text('ID: ${icp_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('positor: ${icp_position.positor.text}'),
+                                Text('icp: ${icp_position.icp}'),
+                                Text('minimum-purchase: ${icp_position.minimum_purchase}'),
+                                Text('xdr-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate}'),
+                                Text('timestamp: ${seconds_of_the_nanos(icp_position.timestamp_nanos)}'),
+                            ]
+                        ),
+                        Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('PURCHASE'),
+                                onPressed: () async {
+                                    //await showDialog();
+                                }
+                            )
+                        )
+                    ]
+                )
             )
         );
     }

@@ -75,10 +75,10 @@ Future<List<T>> cycles_market_download_mechanism<T>({
 
 
 abstract class CyclesMarketDataPosition {
-    final BigInt id;
-    final Principal positor;
-    final XDRICPRate xdr_permyriad_per_icp_rate;
-    final BigInt timestamp_nanos;
+    BigInt get id;
+    Principal get positor;
+    XDRICPRate get xdr_permyriad_per_icp_rate;
+    BigInt get timestamp_nanos;
 }
 
 class CyclesPosition implements CyclesMarketDataPosition {
