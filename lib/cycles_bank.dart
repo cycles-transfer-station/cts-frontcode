@@ -39,6 +39,13 @@ class CyclesBank extends Canister {
     List<CMIcpPositionPurchase> cm_icp_positions_purchases = [];
     List<CMIcpTransferOut> cm_icp_transfers_out = [];
     
+    List<CMMessageCyclesPositionPurchasePositorLog> cm_message_cycles_position_purchase_positor_logs = [];
+    List<CMMessageCyclesPositionPurchasePurchaserLog> cm_message_cycles_position_purchase_purchaser_logs = [];
+    List<CMMessageIcpPositionPurchasePositorLog> cm_message_icp_position_purchase_positor_logs = [];
+    List<CMMessageIcpPositionPurchasePurchaserLog> cm_message_icp_position_purchase_purchaser_logs = [];
+    List<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs = [];
+    List<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs = [];
+    
     CyclesBank(
         super.principal,
         this.user,
@@ -60,15 +67,13 @@ class CyclesBank extends Canister {
     Future<Iterable<T>> cycles_bank_download_mechanism<T>({
         required int chunk_size, 
         required int len_so_far,
-        required int len,
         required String download_method_name,  
         required T Function(Record) function,
     }) async {
         List<T> list = [];
-        int total_chunks = (len / chunk_size).toDouble().ceil();
         int start_chunk = (len_so_far / chunk_size).toDouble().floor();
         int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
-        for (int i=start_chunk; i<total_chunks; i++) {
+        for (int i=start_chunk; true; i++) {
             Option<Vector<Record>> opt_records = c_backwards(
                 await this.user.call(
                     this,
@@ -80,9 +85,12 @@ class CyclesBank extends Canister {
             Vector<Record>? records = opt_records.value;
             if (records != null) {
                 list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
+                if (records.length < chunk_size) {
+                    break;
+                }
             } else {
                 break;
-            }        
+            }      
         }
         return list;
     }
@@ -97,7 +105,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_in_chunk_size.toInt(), 
                 len_so_far: this.cycles_transfers_in.length,
-                len: this.metrics!.cycles_transfers_in_len.toInt(),
                 download_method_name: 'download_cycles_transfers_in', 
                 function: CyclesTransferIn.oftheRecord,
             )
@@ -110,7 +117,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_out_chunk_size.toInt(), 
                 len_so_far: this.cycles_transfers_out.length,
-                len: this.metrics!.cycles_transfers_out_len.toInt(),
                 download_method_name: 'download_cycles_transfers_out', 
                 function: CyclesTransferOut.oftheRecord,
             )
@@ -173,7 +179,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_cycles_positions_chunk_size.toInt(), 
                 len_so_far: this.cm_cycles_positions.length,
-                len: this.metrics!.cm_cycles_positions_len.toInt(),
                 download_method_name: 'download_cm_cycles_positions', 
                 function: CMCyclesPosition.oftheRecord,
             )
@@ -186,7 +191,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_positions_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_positions.length,
-                len: this.metrics!.cm_icp_positions_len.toInt(),
                 download_method_name: 'download_cm_icp_positions', 
                 function: CMIcpPosition.oftheRecord,
             )
@@ -199,7 +203,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_cycles_positions_purchases_chunk_size.toInt(), 
                 len_so_far: this.cm_cycles_positions_purchases.length,
-                len: this.metrics!.cm_cycles_positions_purchases_len.toInt(),
                 download_method_name: 'download_cm_cycles_positions_purchases', 
                 function: CMCyclesPositionPurchase.oftheRecord,
             )
@@ -212,7 +215,6 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_positions_purchases_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_positions_purchases.length,
-                len: this.metrics!.cm_icp_positions_purchases_len.toInt(),
                 download_method_name: 'download_cm_icp_positions_purchases', 
                 function: CMIcpPositionPurchase.oftheRecord,
             )
@@ -225,12 +227,89 @@ class CyclesBank extends Canister {
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cm_icp_transfers_out_chunk_size.toInt(), 
                 len_so_far: this.cm_icp_transfers_out.length,
-                len: this.metrics!.cm_icp_transfers_out_len.toInt(),
                 download_method_name: 'download_cm_icp_transfers_out', 
                 function: CMIcpTransferOut.oftheRecord,
             )
-        ); 
+        );
     }
+    
+    
+
+    
+    
+    Future<void> fresh_cm_message_cycles_position_purchase_positor_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_cycles_position_purchase_positor_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageCyclesPositionPurchasePositorLog>(
+                chunk_size: this.metrics!.download_cm_message_cycles_position_purchase_positor_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_cycles_position_purchase_positor_logs.length,
+                download_method_name: 'download_cm_message_cycles_position_purchase_positor_logs', 
+                function: CMMessageCyclesPositionPurchasePositorLog.oftheRecord,
+            )
+        );
+    }
+    
+    Future<void> fresh_cm_message_cycles_position_purchase_purchaser_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_cycles_position_purchase_purchaser_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageCyclesPositionPurchasePurchaserLog>(
+                chunk_size: this.metrics!.download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_cycles_position_purchase_purchaser_logs.length,
+                download_method_name: 'download_cm_message_cycles_position_purchase_purchaser_logs', 
+                function: CMMessageCyclesPositionPurchasePurchaserLog.oftheRecord,
+            )
+        );
+    }
+    
+    Future<void> fresh_cm_message_icp_position_purchase_positor_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_icp_position_purchase_positor_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageIcpPositionPurchasePositorLog>(
+                chunk_size: this.metrics!.download_cm_message_icp_position_purchase_positor_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_icp_position_purchase_positor_logs.length,
+                download_method_name: 'download_cm_message_icp_position_purchase_positor_logs', 
+                function: CMMessageIcpPositionPurchasePositorLog.oftheRecord,
+            )
+        );
+    }
+    
+    Future<void> fresh_cm_message_icp_position_purchase_purchaser_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_icp_position_purchase_purchaser_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageIcpPositionPurchasePurchaserLog>(
+                chunk_size: this.metrics!.download_cm_message_icp_position_purchase_purchaser_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_icp_position_purchase_purchaser_logs.length,
+                download_method_name: 'download_cm_message_icp_position_purchase_purchaser_logs', 
+                function: CMMessageIcpPositionPurchasePurchaserLog.oftheRecord,
+            )
+        );
+    }
+    
+    Future<void> fresh_cm_message_void_cycles_position_positor_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_void_cycles_position_positor_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageVoidCyclesPositionPositorLog>(
+                chunk_size: this.metrics!.download_cm_message_void_cycles_position_positor_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_void_cycles_position_positor_logs.length,
+                download_method_name: 'download_cm_message_void_cycles_position_positor_logs', 
+                function: CMMessageVoidCyclesPositionPositorLog.oftheRecord,
+            )
+        );
+    }
+
+    Future<void> fresh_cm_message_void_icp_position_positor_logs() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        this.cm_message_void_icp_position_positor_logs.addAll(
+            await cycles_bank_download_mechanism<CMMessageVoidIcpPositionPositorLog>(
+                chunk_size: this.metrics!.download_cm_message_void_icp_position_positor_logs_chunk_size.toInt(), 
+                len_so_far: this.cm_message_void_icp_position_positor_logs.length,
+                download_method_name: 'download_cm_message_void_icp_position_positor_logs', 
+                function: CMMessageVoidIcpPositionPositorLog.oftheRecord,
+            )
+        );
+    }
+
+
     
     //Future<void> delete_ functionality coming soon
     
@@ -829,6 +908,13 @@ class CyclesBankMetrics {
     BigInt download_cm_cycles_positions_purchases_chunk_size;
     BigInt download_cm_icp_positions_purchases_chunk_size;
     BigInt download_cm_icp_transfers_out_chunk_size;
+    BigInt download_cm_message_cycles_position_purchase_positor_logs_chunk_size;
+    BigInt download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size;
+    BigInt download_cm_message_icp_position_purchase_positor_logs_chunk_size;
+    BigInt download_cm_message_icp_position_purchase_purchaser_logs_chunk_size;
+    BigInt download_cm_message_void_cycles_position_positor_logs_chunk_size;
+    BigInt download_cm_message_void_icp_position_positor_logs_chunk_size;
+    
     CyclesBankMetrics._({
         required this.cycles_balance,
         required this.ctsfuel_balance,
@@ -852,7 +938,13 @@ class CyclesBankMetrics {
         required this.download_cm_icp_positions_chunk_size,
         required this.download_cm_cycles_positions_purchases_chunk_size,
         required this.download_cm_icp_positions_purchases_chunk_size,
-        required this.download_cm_icp_transfers_out_chunk_size
+        required this.download_cm_icp_transfers_out_chunk_size,
+        required this.download_cm_message_cycles_position_purchase_positor_logs_chunk_size,
+        required this.download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size,
+        required this.download_cm_message_icp_position_purchase_positor_logs_chunk_size,
+        required this.download_cm_message_icp_position_purchase_purchaser_logs_chunk_size,
+        required this.download_cm_message_void_cycles_position_positor_logs_chunk_size,
+        required this.download_cm_message_void_icp_position_positor_logs_chunk_size,
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
@@ -878,7 +970,13 @@ class CyclesBankMetrics {
             download_cm_icp_positions_chunk_size: (r['download_cm_icp_positions_chunk_size'] as Nat).value,
             download_cm_cycles_positions_purchases_chunk_size: (r['download_cm_cycles_positions_purchases_chunk_size'] as Nat).value,
             download_cm_icp_positions_purchases_chunk_size: (r['download_cm_icp_positions_purchases_chunk_size'] as Nat).value,
-            download_cm_icp_transfers_out_chunk_size: (r['download_cm_icp_transfers_out_chunk_size'] as Nat).value
+            download_cm_icp_transfers_out_chunk_size: (r['download_cm_icp_transfers_out_chunk_size'] as Nat).value,
+            download_cm_message_cycles_position_purchase_positor_logs_chunk_size: (r['download_cm_message_cycles_position_purchase_positor_logs_chunk_size'] as Nat).value,
+            download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size: (r['download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size'] as Nat).value,
+            download_cm_message_icp_position_purchase_positor_logs_chunk_size: (r['download_cm_message_icp_position_purchase_positor_logs_chunk_size'] as Nat).value,
+            download_cm_message_icp_position_purchase_purchaser_logs_chunk_size: (r['download_cm_message_icp_position_purchase_purchaser_logs_chunk_size'] as Nat).value,
+            download_cm_message_void_cycles_position_positor_logs_chunk_size: (r['download_cm_message_void_cycles_position_positor_logs_chunk_size'] as Nat).value,
+            download_cm_message_void_icp_position_positor_logs_chunk_size: (r['download_cm_message_void_icp_position_positor_logs_chunk_size'] as Nat).value,
         );
     }
 }
@@ -1305,5 +1403,296 @@ class CyclesMarketTransferIcpBalanceQuest extends Record {
         this['to'] = Blob(hexstringasthebytes(this.to));
     }
 }
+
+
+
+// --------
+
+
+class CMCyclesPositionPurchasePositorMessageQuest {
+    final BigInt cycles_position_id;
+    final BigInt purchase_id;
+    final Principal purchaser;
+    final BigInt purchase_timestamp_nanos;
+    final Cycles cycles_purchase;
+    final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
+    final IcpTokens icp_payment;
+    final BigInt icp_transfer_block_height;
+    final BigInt icp_transfer_timestamp_nanos;
+    
+    CMCyclesPositionPurchasePositorMessageQuest._({
+        required this.cycles_position_id,
+        required this.purchase_id,
+        required this.purchaser,
+        required this.purchase_timestamp_nanos,
+        required this.cycles_purchase,
+        required this.cycles_position_xdr_permyriad_per_icp_rate,
+        required this.icp_payment,
+        required this.icp_transfer_block_height,
+        required this.icp_transfer_timestamp_nanos,
+    });
+    static CMCyclesPositionPurchasePositorMessageQuest oftheRecord(Record r) {
+        return CMCyclesPositionPurchasePositorMessageQuest._(
+            cycles_position_id: (r['cycles_position_id'] as Nat).value,
+            purchase_id: (r['purchase_id'] as Nat).value,
+            purchaser: (r['purchaser'] as Principal),
+            purchase_timestamp_nanos: (r['purchase_timestamp_nanos'] as Nat).value,
+            cycles_purchase: Cycles.oftheNat(r['cycles_purchase'] as Nat),
+            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            icp_payment: IcpTokens.oftheRecord(r['icp_payment'] as Record),
+            icp_transfer_block_height: (r['icp_transfer_block_height'] as Nat64).value,
+            icp_transfer_timestamp_nanos: (r['icp_transfer_timestamp_nanos'] as Nat).value,            
+        );
+    }
+}
+
+class CMMessageCyclesPositionPurchasePositorLog {
+    final BigInt timestamp_nanos;
+    final CMCyclesPositionPurchasePositorMessageQuest cm_message_cycles_position_purchase_positor_quest; 
+    CMMessageCyclesPositionPurchasePositorLog._({
+        required this.timestamp_nanos,
+        required this.cm_message_cycles_position_purchase_positor_quest
+    });
+    static CMMessageCyclesPositionPurchasePositorLog oftheRecord(Record r) {
+        return CMMessageCyclesPositionPurchasePositorLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cm_message_cycles_position_purchase_positor_quest: CMCyclesPositionPurchasePositorMessageQuest.oftheRecord(r['cm_message_cycles_position_purchase_positor_quest'] as Record)
+        );
+    }
+}
+
+
+
+class CMCyclesPositionPurchasePurchaserMessageQuest {
+    final BigInt cycles_position_id;
+    final Principal cycles_position_positor;
+    final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
+    final BigInt purchase_id;
+    final BigInt purchase_timestamp_nanos;
+    final IcpTokens icp_payment;
+    
+    CMCyclesPositionPurchasePurchaserMessageQuest._({
+        required this.cycles_position_id,
+        required this.cycles_position_positor,
+        required this.cycles_position_xdr_permyriad_per_icp_rate,
+        required this.purchase_id,
+        required this.purchase_timestamp_nanos,
+        required this.icp_payment,
+    });
+    static CMCyclesPositionPurchasePurchaserMessageQuest oftheRecord(Record r) {
+        return CMCyclesPositionPurchasePurchaserMessageQuest._(
+            cycles_position_id: (r['cycles_position_id'] as Nat).value,
+            cycles_position_positor: (r['cycles_position_positor'] as Principal),
+            cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            purchase_id: (r['purchase_id'] as Nat).value,
+            purchase_timestamp_nanos: (r['purchase_timestamp_nanos'] as Nat).value,
+            icp_payment: IcpTokens.oftheRecord(r['icp_payment'] as Record),
+        );
+    }
+}
+
+
+class CMMessageCyclesPositionPurchasePurchaserLog {
+    final BigInt timestamp_nanos;
+    final Cycles cycles_purchase;
+    final CMCyclesPositionPurchasePurchaserMessageQuest cm_message_cycles_position_purchase_purchaser_quest;
+    CMMessageCyclesPositionPurchasePurchaserLog._({
+        required this.timestamp_nanos,
+        required this.cycles_purchase,
+        required this.cm_message_cycles_position_purchase_purchaser_quest
+    });
+    static CMMessageCyclesPositionPurchasePurchaserLog oftheRecord(Record r) {
+        return CMMessageCyclesPositionPurchasePurchaserLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cycles_purchase: Cycles.oftheNat(r['cycles_purchase'] as Nat),
+            cm_message_cycles_position_purchase_purchaser_quest: CMCyclesPositionPurchasePurchaserMessageQuest.oftheRecord(r['cm_message_cycles_position_purchase_purchaser_quest'] as Record)
+        );
+    } 
+}
+
+
+class CMIcpPositionPurchasePositorMessageQuest {
+    final BigInt icp_position_id;
+    final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
+    final Principal purchaser;
+    final BigInt purchase_id;
+    final IcpTokens icp_purchase;
+    final BigInt purchase_timestamp_nanos;
+    CMIcpPositionPurchasePositorMessageQuest._({
+        required this.icp_position_id,
+        required this.icp_position_xdr_permyriad_per_icp_rate,
+        required this.purchaser,
+        required this.purchase_id,
+        required this.icp_purchase,
+        required this.purchase_timestamp_nanos,
+    });
+    static CMIcpPositionPurchasePositorMessageQuest oftheRecord(Record r) {
+        return CMIcpPositionPurchasePositorMessageQuest._(
+            icp_position_id: (r['icp_position_id'] as Nat).value, 
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            purchaser: (r['purchaser'] as Principal),
+            purchase_id: (r['purchase_id'] as Nat).value,
+            icp_purchase: IcpTokens.oftheRecord(r['icp_purchase'] as Record),
+            purchase_timestamp_nanos: (r['purchase_timestamp_nanos'] as Nat).value,            
+        );
+    }
+}
+
+
+class CMMessageIcpPositionPurchasePositorLog {
+    
+    final BigInt timestamp_nanos;
+    final Cycles cycles_payment;
+    final CMIcpPositionPurchasePositorMessageQuest cm_message_icp_position_purchase_positor_quest;
+    
+    CMMessageIcpPositionPurchasePositorLog._({
+        required this.timestamp_nanos,
+        required this.cycles_payment,
+        required this.cm_message_icp_position_purchase_positor_quest,
+    });
+    
+    static CMMessageIcpPositionPurchasePositorLog oftheRecord(Record r) {
+        return CMMessageIcpPositionPurchasePositorLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cycles_payment: Cycles.oftheNat(r['cycles_payment'] as Nat),
+            cm_message_icp_position_purchase_positor_quest: CMIcpPositionPurchasePositorMessageQuest.oftheRecord(r['cm_message_icp_position_purchase_positor_quest'] as Record),        
+        );
+    }
+}
+
+
+
+class CMIcpPositionPurchasePurchaserMessageQuest {
+    final BigInt icp_position_id;
+    final BigInt purchase_id; 
+    final Principal positor;
+    final BigInt purchase_timestamp_nanos;
+    final Cycles cycles_payment;
+    final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
+    final IcpTokens icp_purchase;
+    final BigInt icp_transfer_block_height;
+    final BigInt icp_transfer_timestamp_nanos;       
+
+    CMIcpPositionPurchasePurchaserMessageQuest._({
+        required this.icp_position_id,
+        required this.purchase_id,
+        required this.positor,
+        required this.purchase_timestamp_nanos,
+        required this.cycles_payment,
+        required this.icp_position_xdr_permyriad_per_icp_rate,
+        required this.icp_purchase,
+        required this.icp_transfer_block_height,
+        required this.icp_transfer_timestamp_nanos,      
+    });
+
+    static CMIcpPositionPurchasePurchaserMessageQuest oftheRecord(Record r) {
+        return CMIcpPositionPurchasePurchaserMessageQuest._(
+            icp_position_id: (r['icp_position_id'] as Nat).value,  
+            purchase_id: (r['purchase_id'] as Nat).value,
+            positor: (r['positor'] as Principal),
+            purchase_timestamp_nanos: (r['purchase_timestamp_nanos'] as Nat).value,
+            cycles_payment: Cycles.oftheNat(r['cycles_payment'] as Nat),
+            icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            icp_purchase: IcpTokens.oftheRecord(r['icp_purchase'] as Record),
+            icp_transfer_block_height: (r['icp_transfer_block_height'] as Nat64).value,
+            icp_transfer_timestamp_nanos: (r['icp_transfer_timestamp_nanos'] as Nat).value,        
+        );
+    }
+}
+
+class CMMessageIcpPositionPurchasePurchaserLog {
+    final BigInt timestamp_nanos;
+    final CMIcpPositionPurchasePurchaserMessageQuest cm_message_icp_position_purchase_purchaser_quest;
+    CMMessageIcpPositionPurchasePurchaserLog._({
+        required this.timestamp_nanos,
+        required this.cm_message_icp_position_purchase_purchaser_quest,
+    });
+    static CMMessageIcpPositionPurchasePurchaserLog oftheRecord(Record r) {
+        return CMMessageIcpPositionPurchasePurchaserLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cm_message_icp_position_purchase_purchaser_quest: CMIcpPositionPurchasePurchaserMessageQuest.oftheRecord(r['cm_message_icp_position_purchase_purchaser_quest'] as Record) 
+        );
+    }    
+}
+
+
+
+
+
+
+class CMVoidCyclesPositionPositorMessageQuest {
+    final BigInt position_id;
+    final BigInt timestamp_nanos;    
+    CMVoidCyclesPositionPositorMessageQuest._({
+        required this.position_id,
+        required this.timestamp_nanos,
+    });
+    static CMVoidCyclesPositionPositorMessageQuest oftheRecord(Record r) {
+        return CMVoidCyclesPositionPositorMessageQuest._(
+            position_id: (r['position_id'] as Nat).value,
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+        );
+    }
+}
+
+
+class CMMessageVoidCyclesPositionPositorLog {
+    final BigInt timestamp_nanos;
+    final Cycles void_cycles;
+    final CMVoidCyclesPositionPositorMessageQuest cm_message_void_cycles_position_positor_quest;
+
+    CMMessageVoidCyclesPositionPositorLog._({
+        required this.timestamp_nanos,
+        required this.void_cycles,
+        required this.cm_message_void_cycles_position_positor_quest,
+    });
+    static CMMessageVoidCyclesPositionPositorLog oftheRecord(Record r) {
+        return CMMessageVoidCyclesPositionPositorLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value, 
+            void_cycles: Cycles.oftheNat(r['void_cycles'] as Nat),
+            cm_message_void_cycles_position_positor_quest: CMVoidCyclesPositionPositorMessageQuest.oftheRecord(r['cm_message_void_cycles_position_positor_quest'] as Record),            
+        );
+    }
+}
+
+
+
+class CMVoidIcpPositionPositorMessageQuest {
+    final BigInt position_id;
+    final IcpTokens void_icp;
+    final BigInt timestamp_nanos;
+    CMVoidIcpPositionPositorMessageQuest._({
+        required this.position_id,
+        required this.void_icp,
+        required this.timestamp_nanos,
+    });
+    static CMVoidIcpPositionPositorMessageQuest oftheRecord(Record r) {
+        return CMVoidIcpPositionPositorMessageQuest._(
+            position_id: (r['position_id'] as Nat).value, 
+            void_icp: IcpTokens.oftheRecord(r['void_icp'] as Record),
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,     
+        );
+    }
+}
+
+
+class CMMessageVoidIcpPositionPositorLog {
+    final BigInt timestamp_nanos;
+    final CMVoidIcpPositionPositorMessageQuest cm_message_void_icp_position_positor_quest;
+    CMMessageVoidIcpPositionPositorLog._({
+        required this.timestamp_nanos,
+        required this.cm_message_void_icp_position_positor_quest,
+    });
+    static CMMessageVoidIcpPositionPositorLog oftheRecord(Record r) {
+        return CMMessageVoidIcpPositionPositorLog._(
+            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
+            cm_message_void_icp_position_positor_quest: CMVoidIcpPositionPositorMessageQuest.oftheRecord(r['cm_message_void_icp_position_positor_quest'] as Record)        
+        );
+    }
+}
+
+
+
+
 
 
