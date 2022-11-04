@@ -81,6 +81,7 @@ abstract class CyclesMarketDataPosition {
     BigInt get timestamp_nanos;
 }
 
+
 class CyclesPosition implements CyclesMarketDataPosition {
     final BigInt id;   
     final Principal positor;
@@ -136,7 +137,16 @@ class IcpPosition implements CyclesMarketDataPosition {
 }
 
 
-class CyclesPositionPurchase {
+abstract class CyclesMarketDataPositionPurchase {
+    BigInt get position_id;
+    Principal get position_positor;
+    XDRICPRate get position_xdr_permyriad_per_icp_rate;
+    BigInt get id;
+    Principal get purchaser;
+    BigInt get timestamp_nanos;
+}
+
+class CyclesPositionPurchase implements CyclesMarketDataPositionPurchase {
     final BigInt cycles_position_id;
     final Principal cycles_position_positor;
     final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
@@ -147,7 +157,12 @@ class CyclesPositionPurchase {
     final bool cycles_payout_lock;
     final bool icp_payout_lock;
     final Record cycles_payout_data;
-    final bool icp_payout;
+    final Record icp_payout_data;
+    
+    BigInt get position_id => cycles_position_id;
+    Principal get position_positor => cycles_position_positor; 
+    XDRICPRate get position_xdr_permyriad_per_icp_rate => cycles_position_xdr_permyriad_per_icp_rate;
+    
     CyclesPositionPurchase._({
         required this.cycles_position_id,
         required this.cycles_position_positor,
@@ -159,7 +174,7 @@ class CyclesPositionPurchase {
         required this.cycles_payout_lock,
         required this.icp_payout_lock,
         required this.cycles_payout_data,
-        required this.icp_payout,
+        required this.icp_payout_data,
     });
     static CyclesPositionPurchase oftheRecord(Record r) {
         return CyclesPositionPurchase._(
@@ -173,13 +188,13 @@ class CyclesPositionPurchase {
             cycles_payout_lock: (r['cycles_payout_lock'] as Bool).value,
             icp_payout_lock: (r['icp_payout_lock'] as Bool).value,
             cycles_payout_data: (r['cycles_payout_data'] as Record),
-            icp_payout: (r['icp_payout'] as Bool).value,
+            icp_payout_data: (r['icp_payout_data'] as Record),
         );
     }
 }
 
 
-class IcpPositionPurchase {
+class IcpPositionPurchase implements CyclesMarketDataPositionPurchase {
     final BigInt icp_position_id;
     final Principal icp_position_positor;
     final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
@@ -190,7 +205,12 @@ class IcpPositionPurchase {
     final bool cycles_payout_lock;
     final bool icp_payout_lock;
     final Record cycles_payout_data;
-    final bool icp_payout;
+    final Record icp_payout_data;
+    
+    BigInt get position_id => icp_position_id;
+    Principal get position_positor => icp_position_positor; 
+    XDRICPRate get position_xdr_permyriad_per_icp_rate => icp_position_xdr_permyriad_per_icp_rate;
+    
     IcpPositionPurchase._({
         required this.icp_position_id,
         required this.icp_position_positor,
@@ -202,7 +222,7 @@ class IcpPositionPurchase {
         required this.cycles_payout_lock,
         required this.icp_payout_lock,
         required this.cycles_payout_data,
-        required this.icp_payout,
+        required this.icp_payout_data,
     });
     static IcpPositionPurchase oftheRecord(Record r) {
         return IcpPositionPurchase._(
@@ -216,7 +236,7 @@ class IcpPositionPurchase {
             cycles_payout_lock: (r['cycles_payout_lock'] as Bool).value,
             icp_payout_lock: (r['icp_payout_lock'] as Bool).value,
             cycles_payout_data: (r['cycles_payout_data'] as Record),
-            icp_payout: (r['icp_payout'] as Bool).value,
+            icp_payout_data: (r['icp_payout_data'] as Record),
         );
     }
 }

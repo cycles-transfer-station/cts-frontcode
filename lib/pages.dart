@@ -2423,7 +2423,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     constraints: BoxConstraints(maxWidth: 731),
-                    padding: EdgeInsets.fromLTRB(11,0,11,0),
+                    padding: EdgeInsets.all(11),
                     child: OutlineButton(
                         button_text: 'PURCHASE CYCLES-BANK',
                         on_press_complete: () async {
@@ -2527,42 +2527,153 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 ),    
             ]);
             
-                                    
-            List<CyclesMarketDataPosition> user_positions = [
-                ...state.cycles_market_data.cycles_positions,
-                ...state.cycles_market_data.icp_positions
-            ]
-            .where((CyclesMarketDataPosition cmdp){
-                return cmdp.positor.text == state.user!.cycles_bank!.principal.text;
-            }).toList()
-            ..sort((CyclesMarketDataPosition cmdp1, CyclesMarketDataPosition cmdp2){
-                return cmdp1.id.compareTo(cmdp2.id);
-            })
-            ..reversed;
             
-            List<Widget> user_positions_list_items = user_positions.map<Widget>((CyclesMarketDataPosition cmdp){
-                if (cmdp is CyclesPosition) {
-                    return UserCyclesPositionListItem(cmdp as CyclesPosition);
-                } else if (cmdp is IcpPosition) {
-                    return UserIcpPositionListItem(cmdp as IcpPosition);
-                }
-                throw Exception('unknown cycles_market_data_position type');
-            }).toList();
+            final bool Function(CyclesMarketDataPosition) is_position_by_the_user = (CyclesMarketDataPosition cmdp) {
+                return aresamebytes(cmdp.positor.bytes, state.user!.cycles_bank!.principal.bytes);
+            };
             
-            if (user_positions.length > 0) {
+            Map<BigInt, CyclesPosition> current_user_cycles_positions = Map.fromIterable(
+                state.cycles_market_data.cycles_positions.where(is_position_by_the_user).toList(),
+                key: (cp) => cp.id,
+                value: (cp) => cp
+            );
+        
+            Map<BigInt, IcpPosition> current_user_icp_positions = Map.fromIterable(
+                state.cycles_market_data.icp_positions.where(is_position_by_the_user).toList(),
+                key: (ip) => ip.id,
+                value: (ip) => ip
+            );
+                
+            List<CMCyclesPosition> cycles_bank_cm_cycles_positions_logs = state.user!.cycles_bank!.cm_cycles_positions.toList()
+                ..sort((CMCyclesPosition cm_cp1, CMCyclesPosition cm_cp2)=>cm_cp1.id.compareTo(cm_cp2.id))
+                ..reversed;
+
+            List<CMIcpPosition> cycles_bank_cm_icp_positions_logs = state.user!.cycles_bank!.cm_icp_positions.toList()
+                ..sort((CMIcpPosition cm_ip1, CMIcpPosition cm_ip2)=>cm_ip1.id.compareTo(cm_ip2.id))
+                ..reversed;
+                
+            Map<BigInt, List<CMMessageCyclesPositionPurchasePositorLog>> user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs = {};
+            
+            Map<BigInt, List<CMMessageIcpPositionPurchasePositorLog>> user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs = {};
+            
+            for (CMCyclesPosition cm_cycles_position in cycles_bank_cm_cycles_positions_logs) {
+                user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id] = 
+                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_positor_logs
+                        .where((CMMessageCyclesPositionPurchasePositorLog l) => cm_cycles_position.id == l.cm_message_cycles_position_purchase_positor_quest.cycles_position_id)
+                        .toList()
+                        ..sort((CMMessageCyclesPositionPurchasePositorLog l1, CMMessageCyclesPositionPurchasePositorLog l2) => l1.cm_message_cycles_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_cycles_position_purchase_positor_quest.purchase_id));
+            }
+
+            for (CMIcpPosition cm_icp_position in cycles_bank_cm_icp_positions_logs) {
+                user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id] = 
+                    state.user!.cycles_bank!.cm_message_icp_position_purchase_positor_logs
+                        .where((CMMessageIcpPositionPurchasePositorLog l) => cm_icp_position.id == l.cm_message_icp_position_purchase_positor_quest.icp_position_id)
+                        .toList()
+                        ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
+            }
+
+            
+            
+            if (cycles_bank_cm_cycles_positions_logs.length > 0) {
                 column_children.addAll([
                     Container(
                         width: double.infinity,
-                        child: Text('USER-POSITIONS', style: TextStyle(fontSize: 17)),
+                        child: Text('USER-CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
                     ),
                     SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
-                            children: user_positions_list_items,                
+                            children: [
+                                 ListView.builder(
+                                    key: ValueKey('cm user-cycles-positions'),
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: false,
+                                    shrinkWrap: false,
+                                    padding: EdgeInsets.all(7),
+                                    itemBuilder: (BuildContext context, int i) {
+                                        CMCyclesPosition cm_cycles_position = cycles_bank_cm_cycles_positions_logs[i];
+                                        List<CMMessageCyclesPositionPurchasePositorLog> purchases = user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id]!;  
+                                        Cycles? current_position;
+                                        if (current_user_cycles_positions[cm_cycles_position.id] is CyclesPosition) {
+                                            current_position = (current_user_cycles_positions[cm_cycles_position.id] as CyclesPosition).cycles;
+                                        }
+                                        CMMessageVoidCyclesPositionPositorLog? cm_message_void_cycles_position_positor_log;
+                                        Iterable<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id = 
+                                            state.user!.cycles_bank!.cm_message_void_cycles_position_positor_logs
+                                                .where((CMMessageVoidCyclesPositionPositorLog l) => cm_cycles_position.id == l.cm_message_void_cycles_position_positor_quest.position_id);
+                                        if (cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.length > 0) {
+                                            cm_message_void_cycles_position_positor_log = cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.first;
+                                        }
+                                        return UserCyclesPositionListItem(
+                                            cm_cycles_position: cm_cycles_position,
+                                            purchases: purchases,
+                                            current_position: current_position,             
+                                            cm_message_void_cycles_position_positor_log: cm_message_void_cycles_position_positor_log,
+                                        );
+                                    },
+                                    itemCount: cycles_bank_cm_cycles_positions_logs.length,
+                                    addAutomaticKeepAlives: true,
+                                    addRepaintBoundaries: true,
+                                    addSemanticIndexes: true,
+                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                    clipBehavior: Clip.hardEdge
+                                )
+                            ]                
                         )
-                    ),
+                    )
                 ]);
             }
+            
+            if (cycles_bank_cm_icp_positions_logs.length > 0) {
+                column_children.addAll([
+                    Container(
+                        width: double.infinity,
+                        child: Text('USER-ICP-POSITIONS', style: TextStyle(fontSize: 17)),
+                    ),
+                    SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                            children: [
+                                 ListView.builder(
+                                    key: ValueKey('cm user-icp-positions'),
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: false,
+                                    shrinkWrap: false,
+                                    padding: EdgeInsets.all(7),
+                                    itemBuilder: (BuildContext context, int i) {
+                                        CMIcpPosition cm_icp_position = cycles_bank_cm_icp_positions_logs[i];
+                                        List<CMMessageIcpPositionPurchasePositorLog> purchases = user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id]!;  
+                                        IcpTokens? current_position;
+                                        if (current_user_icp_positions[cm_icp_position.id] is IcpPosition) {
+                                            current_position = (current_user_icp_positions[cm_icp_position.id] as IcpPosition).icp;
+                                        }
+                                        CMMessageVoidIcpPositionPositorLog? cm_message_void_icp_position_positor_log;
+                                        Iterable<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id = 
+                                            state.user!.cycles_bank!.cm_message_void_icp_position_positor_logs
+                                                .where((CMMessageVoidIcpPositionPositorLog l) => cm_icp_position.id == l.cm_message_void_icp_position_positor_quest.position_id);
+                                        if (cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.length > 0) {
+                                            cm_message_void_icp_position_positor_log = cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.first;
+                                        }
+                                        return UserIcpPositionListItem(
+                                            cm_icp_position: cm_icp_position,
+                                            purchases: purchases,
+                                            current_position: current_position,             
+                                            cm_message_void_icp_position_positor_log: cm_message_void_icp_position_positor_log,
+                                        );
+                                    },
+                                    itemCount: cycles_bank_cm_icp_positions_logs.length,
+                                    addAutomaticKeepAlives: true,
+                                    addRepaintBoundaries: true,
+                                    addSemanticIndexes: true,
+                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                    clipBehavior: Clip.hardEdge
+                                )
+                            ]                
+                        )
+                    )
+                ]);
+            }
+            
                     
         }
         
@@ -3246,13 +3357,112 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
 
 
 
+
+
+
+
+
+
+
 class UserCyclesPositionListItem extends StatelessWidget {
-    final CyclesPosition cycles_position;
-    UserCyclesPositionListItem(CyclesPosition _cycles_position): cycles_position = _cycles_position, super(key: ValueKey('UserCyclesPositionListItem: ${_cycles_position.id}'));
+    final CMCyclesPosition cm_cycles_position;
+    final List<CMMessageCyclesPositionPurchasePositorLog> purchases;
+    final Cycles? current_position; // null means the position is void/not-active
+    final CMMessageVoidCyclesPositionPositorLog? cm_message_void_cycles_position_positor_log; // null means it is either on the market, or complete.
+    
+    UserCyclesPositionListItem({
+        required CMCyclesPosition cm_cycles_position,
+        required this.purchases,
+        required this.current_position,
+        required this.cm_message_void_cycles_position_positor_log
+    }): cm_cycles_position = cm_cycles_position, super(key: ValueKey('UserCyclesPositionListItem: ${cm_cycles_position.id}'));
+    
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
+        List<Widget> column_side_of_the_listtile_children = [
+            Text('original posit: ${cm_cycles_position.cycles}'),
+            Text('minimum-purchase: ${cm_cycles_position.minimum_purchase}'),
+            Text('xdr-icp-rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
+            Text('create_position_fee: ${cm_cycles_position.create_position_fee}'),
+            Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
+        ];
+        
+        if (current_position != null) {
+            column_side_of_the_listtile_children.addAll([
+                Text('on-the-market: true'),
+                Text('current-position: ${this.current_position!}'),    
+            ]);
+        } else {
+            column_side_of_the_listtile_children.add(
+                Text('on-the-market: false')
+            );
+        }
+        
+        Widget purchases_widget = Container(
+            constraints: BoxConstraints(maxHeight: 100),
+            child: SingleChildScrollView(
+                child: Column(
+                    children: purchases.map((CMMessageCyclesPositionPurchasePositorLog purchase){
+                        
+                        return Container(
+                            padding: EdgeInsets.all(11),
+                            child: Card(
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                        ListTile(
+                                            title: Text('PURCHASE'),
+                                            subtitle: Text('ID: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchase_id}'),
+                                        ),
+                                        Column(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                                Text('purchaser: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchaser}'),
+                                                Text('cycles-purchase: ${purchase.cm_message_cycles_position_purchase_positor_quest.cycles_purchase}'),
+                                                Text('icp-payment: ${purchase.cm_message_cycles_position_purchase_positor_quest.icp_payment}'),
+                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_cycles_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            )
+                        );
+                    }).toList()
+                ) 
+            )
+        ); 
+        
+        List<Widget> card_column_last_widgets = [];
+ 
+        if (this.cm_message_void_cycles_position_positor_log == null) {
+            card_column_last_widgets.add(
+                Padding(
+                    padding: EdgeInsets.all(7),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('VOID POSITION'),
+                        onPressed: () async {
+                            
+                        }
+                    )
+                ),
+            );
+        } else {
+            card_column_last_widgets.add(
+                Container(
+                    child: Column(
+                        children: [
+                            Text('void-cycles: ${this.cm_message_void_cycles_position_positor_log!.void_cycles}'),
+                            Text('void-timestamp: ${this.cm_message_void_cycles_position_positor_log!.cm_message_void_cycles_position_positor_quest.timestamp_nanos}'),
+                        ]
+                    )
+                )
+            );
+        }
+        
         return Container(
             padding: EdgeInsets.all(11),
             child: Card(
@@ -3261,29 +3471,15 @@ class UserCyclesPositionListItem extends StatelessWidget {
                     children: <Widget>[
                         ListTile(
                             title: Text('USER CYCLES POSITION'),
-                            subtitle: Text('ID: ${cycles_position.id}'),
+                            subtitle: Text('ID: ${cm_cycles_position.id}'),
                         ),
                         Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('cycles: ${cycles_position.cycles}'),
-                                Text('minimum-purchase: ${cycles_position.minimum_purchase}'),
-                                Text('xdr-icp-rate: ${cycles_position.xdr_permyriad_per_icp_rate}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cycles_position.timestamp_nanos)}'),
-                            ]
+                            children: column_side_of_the_listtile_children
                         ),
-                        Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('VOID POSITION'),
-                                onPressed: () async {
-                                    
-                                }
-                            )
-                        )
-
+                        purchases_widget,
+                        ...card_column_last_widgets
                     ]
                 )
             )
@@ -3292,6 +3488,133 @@ class UserCyclesPositionListItem extends StatelessWidget {
 }
 
 
+
+class UserIcpPositionListItem extends StatelessWidget {
+    final CMIcpPosition cm_icp_position;
+    final List<CMMessageIcpPositionPurchasePositorLog> purchases;
+    final IcpTokens? current_position; // null means the position is void/not-active
+    final CMMessageVoidIcpPositionPositorLog? cm_message_void_icp_position_positor_log; // null means it is either on the market, or complete.
+    
+    UserIcpPositionListItem({
+        required CMIcpPosition cm_icp_position,
+        required this.purchases,
+        required this.current_position,
+        required this.cm_message_void_icp_position_positor_log
+    }): cm_icp_position = cm_icp_position, super(key: ValueKey('UserIcpPositionListItem: ${cm_icp_position.id}'));
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        List<Widget> column_side_of_the_listtile_children = [
+            Text('original posit: ${cm_icp_position.icp}'),
+            Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
+            Text('xdr-icp-rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
+            Text('create_position_fee: ${cm_icp_position.create_position_fee}'),
+            Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
+        ];
+        
+        if (current_position != null) {
+            column_side_of_the_listtile_children.addAll([
+                Text('on-the-market: true'),
+                Text('current-position: ${this.current_position!}'),    
+            ]);
+        } else {
+            column_side_of_the_listtile_children.add(
+                Text('on-the-market: false')
+            );
+        }
+        
+        Widget purchases_widget = Container(
+            constraints: BoxConstraints(maxHeight: 100),
+            child: SingleChildScrollView(
+                child: Column(
+                    children: purchases.map((CMMessageIcpPositionPurchasePositorLog purchase){
+                        
+                        return Container(
+                            padding: EdgeInsets.all(11),
+                            child: Card(
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                        ListTile(
+                                            title: Text('PURCHASE'),
+                                            subtitle: Text('ID: ${purchase.cm_message_icp_position_purchase_positor_quest.purchase_id}'),
+                                        ),
+                                        Column(
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                                Text('purchaser: ${purchase.cm_message_icp_position_purchase_positor_quest.purchaser}'),
+                                                Text('icp-purchase: ${purchase.cm_message_icp_position_purchase_positor_quest.icp_purchase}'),
+                                                Text('cycles-payment: ${purchase.cycles_payment}'),
+                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_icp_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            )
+                        );
+                    }).toList()
+                ) 
+            )
+        ); 
+        
+        List<Widget> card_column_last_widgets = [];
+ 
+        if (this.cm_message_void_icp_position_positor_log == null) {
+            card_column_last_widgets.add(
+                Padding(
+                    padding: EdgeInsets.all(7),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('VOID POSITION'),
+                        onPressed: () async {
+                            
+                        }
+                    )
+                ),
+            );
+        } else {
+            card_column_last_widgets.add(
+                Container(
+                    child: Column(
+                        children: [
+                            Text('void-icp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.void_icp}'),
+                            Text('void-timestamp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.timestamp_nanos}'),
+                        ]
+                    )
+                )
+            );
+        }
+        
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('USER ICP POSITION'),
+                            subtitle: Text('ID: ${cm_icp_position.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: column_side_of_the_listtile_children
+                        ),
+                        purchases_widget,
+                        ...card_column_last_widgets
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+
+/*
 class UserIcpPositionListItem extends StatelessWidget {
     final IcpPosition icp_position;
     UserIcpPositionListItem(IcpPosition _icp_position): icp_position = _icp_position, super(key: ValueKey('UserIcpPositionListItem: ${_icp_position.id}'));
@@ -3335,7 +3658,7 @@ class UserIcpPositionListItem extends StatelessWidget {
         );
     }
 }
-
+*/
 
 
 class CyclesPositionListItem extends StatelessWidget {
