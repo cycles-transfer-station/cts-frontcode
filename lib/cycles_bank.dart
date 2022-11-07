@@ -74,15 +74,15 @@ class CyclesBank extends Canister {
         int start_chunk = (len_so_far / chunk_size).toDouble().floor();
         int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
         for (int i=start_chunk; true; i++) {
-            Option<Vector<Record>> opt_records = c_backwards(
+            Option opt_records = (c_backwards(
                 await this.user.call(
                     this,
                     method_name: download_method_name,
                     calltype: CallType.query,
                     put_bytes: c_forwards([Nat(BigInt.from(i))])
                 )
-            )[0] as Option<Vector<Record>>;
-            Vector<Record>? records = opt_records.value;
+            )[0] as Option);
+            Vector<Record>? records = opt_records.value != null ? (opt_records.value! as Vector).cast_vector<Record>() : null;
             if (records != null) {
                 list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
                 if (records.length < chunk_size) {
@@ -315,7 +315,7 @@ class CyclesBank extends Canister {
     
     Future<BigInt/*cycles_transfer_id*/> transfer_cycles(UserTransferCyclesQuest q) async {
         if (q.for_the_canister.bytes.length >= 29) {
-            throw Exception('Transfer cycles between canisters. Make sure that these cycles are for a canister.');
+            throw Exception('Transfer cycles between canisters. Make sure that these cycles are for a canister-id.');
         }
         Variant transfer_cycles_sponse = c_backwards(
             await this.user.call(
@@ -537,6 +537,7 @@ class CyclesBank extends Canister {
                             cycles: purchase_cycles,
                         ),
                         cycles_position_xdr_permyriad_per_icp_rate: cycles_position.xdr_permyriad_per_icp_rate,
+                        cycles_position_positor: cycles_position.positor
                     )
                 ])
             )
@@ -619,7 +620,8 @@ class CyclesBank extends Canister {
                             icp_position_id: icp_position.id, 
                             icp: purchase_icp
                         ),
-                        icp_position_xdr_permyriad_per_icp_rate: icp_position.xdr_permyriad_per_icp_rate
+                        icp_position_xdr_permyriad_per_icp_rate: icp_position.xdr_permyriad_per_icp_rate,
+                        icp_position_positor: icp_position.positor
                     )
                 ])
             )
@@ -952,7 +954,7 @@ class CyclesBankMetrics {
             ctsfuel_balance: CTSFuel.oftheNat(r['ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,
             lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
-            cycles_transferrer_canisters: (r['cycles_transferrer_canisters'] as Vector<Principal>), 
+            cycles_transferrer_canisters: ((r['cycles_transferrer_canisters'] as Vector).cast_vector<Principal>()), 
             user_id: (r['user_id'] as Principal),
             user_canister_creation_timestamp_nanos: (r['user_canister_creation_timestamp_nanos'] as Nat).value,
             storage_usage: (r['storage_usage'] as Nat).value,
@@ -1152,6 +1154,7 @@ class CMIcpPosition {
 class CMCyclesPositionPurchase {
     final BigInt cycles_position_id;
     final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
+    final Principal cycles_position_positor;
     final BigInt id;
     final Cycles cycles;
     final Cycles purchase_position_fee;
@@ -1160,6 +1163,7 @@ class CMCyclesPositionPurchase {
     CMCyclesPositionPurchase._({
         required this.cycles_position_id,
         required this.cycles_position_xdr_permyriad_per_icp_rate,
+        required this.cycles_position_positor,
         required this.id,
         required this.cycles,
         required this.purchase_position_fee,
@@ -1170,6 +1174,7 @@ class CMCyclesPositionPurchase {
         return CMCyclesPositionPurchase._(
             cycles_position_id: (r['cycles_position_id'] as Nat).value,
             cycles_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['cycles_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            cycles_position_positor: r['cycles_position_positor'] as Principal,
             id: (r['id'] as Nat).value,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
@@ -1181,6 +1186,7 @@ class CMCyclesPositionPurchase {
 class CMIcpPositionPurchase{
     final BigInt icp_position_id;
     final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
+    final Principal icp_position_positor;
     final BigInt id;
     final IcpTokens icp;
     final Cycles purchase_position_fee;
@@ -1189,6 +1195,7 @@ class CMIcpPositionPurchase{
     CMIcpPositionPurchase._({
         required this.icp_position_id,
         required this.icp_position_xdr_permyriad_per_icp_rate,
+        required this.icp_position_positor,
         required this.id,
         required this.icp,
         required this.purchase_position_fee,
@@ -1199,6 +1206,7 @@ class CMIcpPositionPurchase{
         return CMIcpPositionPurchase._(
             icp_position_id: (r['icp_position_id'] as Nat).value,
             icp_position_xdr_permyriad_per_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['icp_position_xdr_permyriad_per_icp_rate'] as Nat64),
+            icp_position_positor: r['icp_position_positor'] as Principal,
             id: (r['id'] as Nat).value,
             icp: IcpTokens.oftheRecord(r['icp'] as Record),
             purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
@@ -1302,12 +1310,15 @@ class CreateIcpPositionSuccess {
 class CyclesBankCMPurchaseCyclesPositionQuest extends Record {
     final CyclesMarketPurchaseCyclesPositionQuest cycles_market_purchase_cycles_position_quest;
     final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;                                              // for the cycles-bank-log
+    final Principal cycles_position_positor;
     CyclesBankCMPurchaseCyclesPositionQuest({
         required this.cycles_market_purchase_cycles_position_quest,
         required this.cycles_position_xdr_permyriad_per_icp_rate,
+        required this.cycles_position_positor,
     }) {
         this['cycles_market_purchase_cycles_position_quest'] = this.cycles_market_purchase_cycles_position_quest;
         this['cycles_position_xdr_permyriad_per_icp_rate'] = this.cycles_position_xdr_permyriad_per_icp_rate;
+        this['cycles_position_positor'] = this.cycles_position_positor;
     }
 }
 
@@ -1341,12 +1352,15 @@ class PurchaseCyclesPositionSuccess {
 class CyclesBankCMPurchaseIcpPositionQuest extends Record {
     final CyclesMarketPurchaseIcpPositionQuest cycles_market_purchase_icp_position_quest;
     final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
+    final Principal icp_position_positor;
     CyclesBankCMPurchaseIcpPositionQuest({
         required this.cycles_market_purchase_icp_position_quest,
-        required this.icp_position_xdr_permyriad_per_icp_rate
+        required this.icp_position_xdr_permyriad_per_icp_rate,
+        required this.icp_position_positor,
     }) {
         this['cycles_market_purchase_icp_position_quest'] = this.cycles_market_purchase_icp_position_quest;
         this['icp_position_xdr_permyriad_per_icp_rate'] = this.icp_position_xdr_permyriad_per_icp_rate;
+        this['icp_position_positor'] = this.icp_position_positor;
     }
 }
 
