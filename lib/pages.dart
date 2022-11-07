@@ -27,6 +27,7 @@ import 'user.dart';
 import 'icp_ledger.dart';
 import 'cycles_bank.dart';
 import 'cycles_market.dart';
+import 'indexdb.dart';
 
 
 
@@ -122,49 +123,73 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         automaticallyImplyLeading: false,
                     ),
                     drawer: Drawer(
-                        child: ListView(
-                            padding: EdgeInsets.zero,
+                        child: Column(
                             children: [
                                 DrawerHeader(
                                     child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : Text('USER ID: ${state.user!.principal.text}')
-                        
                                 ),
-                                ListTile(
-                                    title: const Text('HOME'),
-                                    onTap: () {
-                                        state.current_url = CustomUrl('welcome');
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        Navigator.pop(context);
-                                        
-                                    },
+                                Expanded(
+                                    child: ListView(
+                                        padding: EdgeInsets.zero,
+                                        children: [
+                                            ListTile(
+                                                title: const Text('HOME'),
+                                                onTap: () {
+                                                    state.current_url = CustomUrl('welcome');
+                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    Navigator.pop(context);
+                                                    
+                                                },
+                                            ),
+                                            ListTile(
+                                                title: const Text('TRANSFER-ICP'),
+                                                onTap: () {
+                                                    state.current_url = CustomUrl('transfer_icp');
+                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    Navigator.pop(context);
+                                                },
+                                            ),
+                                            ListTile(
+                                                title: const Text('CYCLES-BANK'),
+                                                onTap: () {
+                                                    state.current_url = CustomUrl('cycles_bank');
+                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    Navigator.pop(context);
+                                                },
+                                            ),
+                                            ListTile(
+                                                title: const Text('CYCLES-MARKET'),
+                                                onTap: () {
+                                                    state.current_url = CustomUrl('cycles_market');
+                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    Navigator.pop(context);
+                                                },
+                                            ),
+                                            AboutListTile(
+                                                applicationVersion: '0.1.0',
+                                            ),
+                                        ]
+                                    )
                                 ),
-                                ListTile(
-                                    title: const Text('TRANSFER-ICP'),
-                                    onTap: () {
-                                        state.current_url = CustomUrl('transfer_icp');
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        Navigator.pop(context);
-                                    },
+                                Container(
+                                    child: Align(
+                                        alignment: FractionalOffset.bottomCenter,
+                                        child: Column(
+                                            children: <Widget>[
+                                                Divider(),
+                                                OutlineButton(
+                                                    button_text: 'LOG-OUT',
+                                                    on_press_complete: () {
+                                                        state.user = null;
+                                                        IndexDB.delete_database('cts');
+                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
+                                                        Navigator.pop(context);
+                                                    },
+                                                ),
+                                            ]
+                                        )
+                                    )
                                 ),
-                                ListTile(
-                                    title: const Text('CYCLES-BANK'),
-                                    onTap: () {
-                                        state.current_url = CustomUrl('cycles_bank');
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        Navigator.pop(context);
-                                    },
-                                ),
-                                ListTile(
-                                    title: const Text('CYCLES-MARKET'),
-                                    onTap: () {
-                                        state.current_url = CustomUrl('cycles_market');
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        Navigator.pop(context);
-                                    },
-                                ),
-                                AboutListTile(
-                                    applicationVersion: '0.1.0',
-                                )
                             ]
                         )
                     ),
@@ -314,6 +339,12 @@ class WelcomeScaffoldBody extends StatelessWidget {
 
         }
         
+        column_children.add(
+            SingleChildScrollView(
+                child: Text("""""")
+            )
+        );
+        
         return Column(                
             children: column_children,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -400,7 +431,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ]);
             }
-            
+
             column_children.addAll([
                 Padding(
                     padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
@@ -445,21 +476,26 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                /*Container(
-                    constraints: BoxConstraints(maxHeight: 200),
-                    child:ListView(
-                        children: [
-                */    
-                SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                    child:
-                        Row(
-                            children: state.user!.icp_transfers.map<IcpTransferListItem>((IcpTransfer icp_transfer)=>IcpTransferListItem(icp_transfer)).toList()..reversed
-                        )
+                
+                Container(
+                    constraints: BoxConstraints(maxHeight: 500),
+                    child: ListView.builder(
+                        key: ValueKey('transfer-icp icp-transfers-list-items'),
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        shrinkWrap: false,
+                        padding: EdgeInsets.all(11),
+                        itemBuilder: (BuildContext context, int i) {
+                            return IcpTransferListItem(state.user!.icp_transfers[i]);
+                        },
+                        itemCount: state.user!.icp_transfers.length,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
+                        addSemanticIndexes: true,
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                        clipBehavior: Clip.hardEdge
+                    )
                 )
-                /*    ],
-                    scrollDirection: Axis.horizontal
-                )*/
             ]);
             
         } else /*if (state.user == null)*/ {
@@ -738,7 +774,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Icp transfer is success. Block height: ${transfer_icp_success.block_height}\nloading icp balance and transfers list ...';
+                                    state.loading_text = 'Icp transfer is success. Block height: ${transfer_icp_success.block_height.value}\nloading icp balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     try {
@@ -764,9 +800,6 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                         );                                    
                                     }
                                 
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
                                     await showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -781,7 +814,11 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                                 ]
                                             );
                                         }   
-                                    );                                    
+                                    ); 
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
                                 }
                             }
                         )
@@ -955,20 +992,21 @@ class IcpTransferListItem extends StatelessWidget {
         
         
         return Container(
-            padding: EdgeInsets.all(11),
+            padding: EdgeInsets.all(11),            
+            constraints: BoxConstraints(maxWidth: 250),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
-                            title: Text(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'),
+                            title: Text('ICP TRANSFER ${icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'}'),
                             subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
                         ),
                         Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                                Text(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
+                                SelectableText(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
                                 Text('icp: ${icp_transfer.amount}'),
                                 Text('memo: ${icp_transfer.memo}'),
                                 Text('icp-ledger-fee: ${icp_transfer.fee}'),
@@ -1193,6 +1231,12 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
             column_children.add(
+                Container(
+                    padding: EdgeInsets.all(11),
+                    child: SelectableText('CYCLES-BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),
+                )
+            );
+            column_children.add(
                 Padding(
                     padding: EdgeInsets.all(7),
                     child: ElevatedButton(
@@ -1232,31 +1276,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 
-                List cycles_transfers = [ 
-                    ...state.user!.cycles_bank!.cycles_transfers_in, 
-                    ...state.user!.cycles_bank!.cycles_transfers_out,
-                    /*
-                    ...state.user!.cycles_bank!.cm_cycles_positions,
-                    ...state.user!.cycles_bank!.cm_icp_positions,
-                    ...state.user!.cycles_bank!.cm_cycles_positions_purchases,
-                    ...state.user!.cycles_bank!.cm_icp_positions_purchases,
-                    ...state.user!.cycles_bank!.cm_icp_transfers_out,
-                    */
-                ]
-                ..sort((ct1,ct2)=>ct1.timestamp_nanos.compareTo(ct2.timestamp_nanos))
-                ..reversed;
-                
-                List<Widget> cycles_transfers_list_items = cycles_transfers.map<Widget>((ct)=>cycles_transfer_list_item(ct)).toList();
-                
-                
                 column_children.addAll([
                     Container(
                         width: double.infinity,
-                        child: SelectableText('CYCLES-BANK ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),                
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 13)),
+                        child: Column(
+                            children: [
+                                Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
+                            ]
+                        )
                     ),
                     Wrap(
                         children: [
@@ -1357,11 +1384,6 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                     await Future.wait([
                                         state.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         state.user!.cycles_bank!.fresh_cycles_transfers_out(),
-                                        state.user!.cycles_bank!.fresh_cm_cycles_positions(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_positions(),
-                                        state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_transfers_out()
                                     ]);
                                 } catch(e) {
                                     await showDialog(
@@ -1385,19 +1407,52 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             }
                         )
                     ),
-                    SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child:
-                            Row(
-                                children: cycles_transfers_list_items
-                            )
+                    Container(
+                        width: double.infinity,
+                        child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
+                    ),
+                    Container(
+                        constraints: BoxConstraints(maxHeight: 500),
+                        child: ListView.builder(
+                            key: ValueKey('cb cycles-transfers-out'),
+                            scrollDirection: Axis.horizontal,
+                            reverse: true,
+                            shrinkWrap: false,
+                            padding: EdgeInsets.all(11),
+                            itemBuilder: (BuildContext context, int i) {
+                                return CyclesTransferOutListItem(state.user!.cycles_bank!.cycles_transfers_out[i]);
+                            },
+                            itemCount: state.user!.cycles_bank!.cycles_transfers_out.length,
+                            addAutomaticKeepAlives: true,
+                            addRepaintBoundaries: true,
+                            addSemanticIndexes: true,
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                            clipBehavior: Clip.hardEdge
+                        )   
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
+                    ),
+                    Container(
+                        constraints: BoxConstraints(maxHeight: 500),
+                        child: ListView.builder(
+                            key: ValueKey('cb cycles-transfers-in'),
+                            scrollDirection: Axis.horizontal,
+                            reverse: true,
+                            shrinkWrap: false,
+                            padding: EdgeInsets.all(11),
+                            itemBuilder: (BuildContext context, int i) {
+                                return CyclesTransferInListItem(state.user!.cycles_bank!.cycles_transfers_in[i]);
+                            },
+                            itemCount: state.user!.cycles_bank!.cycles_transfers_in.length,
+                            addAutomaticKeepAlives: true,
+                            addRepaintBoundaries: true,
+                            addSemanticIndexes: true,
+                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                            clipBehavior: Clip.hardEdge
+                        )   
                     )
-                    /*
-                    ListView(
-                        children: cycles_transfers_list_items,
-                        scrollDirection: Axis.horizontal
-                    ) 
-                    */
                 ]);   
             }
         }
@@ -1424,75 +1479,6 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 )
             )
         );
-    
-/*
-            if (state.user!.cycles_bank == null) {
-                
-                column_children.add(
-                );
-                
-                column_children.add(
-                    /*Align(
-                        alignment: Alignment.centerLeft,
-                        child: */
-                    //)
-                );
-                
-                column_children.add(
-                    Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 17.0,
-                        endIndent: 17.0,
-                        //color: 
-                    )
-                );
-                    
-                column_children.add(
-                    Padding(
-                        padding: EdgeInsets.all(17.0),
-                        child: Text.rich(     
-                            TextSpan(
-                                text: '',
-                                children: <InlineSpan>[
-                                    TextSpan(
-                                        text: 
-'''
-A CTS-USER-CONTRACT gives the purchaser a  
-'''                                     ,
-                                    ),
-                                ]
-                            )
-                        )
-                    )
-                );    
-                    
-                column_children.add(
-                    /*Center(child: */OutlineButton(
-                        button_text: 'CREATE CTS USER CONTRACT',
-                        on_press_complete: null/*() async {
-                            state.loading_text = 'checking the icp-xdr exchange rate ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            
-                            BigInt current_membership_start_cost_icp_e8s = await state.get_current_cts_user_membership_start_cost_icp_e8s();
-                            
-                            if (state.user!.icp_balance == null || state.user!.icp_balance!.icp_balance_e8s < current_membership_start_cost_icp_e8s) {
-                                state.loading_text = 'loading user icp balance ...';
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                            
-                            }
-                            
-                        } */
-                    )/*)*/
-                );
-            }
-            
-            else /*if (state.user!.cycles_bank != null) */{
-            
-            }
-*/
-
     }
 }
 
@@ -1589,12 +1575,12 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         ),
                         onSaved: (String? v) { for_the_canister = Principal(v!); },
                         validator: (String? v) {
-                            if (v == null || v == '') {
+                            if (v == null || v.trim() == '') {
                                 return 'Write the text-principal-id of the cycles-bank that will cept the cycles';
                             }
                             late Principal p;
                             try {
-                                p = Principal(v);
+                                p = Principal(v.trim());
                             } catch(e) {
                                 return 'invalid cycles-bank-principal-id';
                             }
@@ -1614,25 +1600,28 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         onSaved: (String? v) { cycles = Cycles(cycles: BigInt.parse(v!, radix: 10)); },
                         validator: cycles_validator
                     ),
-                    TextFormField(
+                    DropdownButtonFormField<CyclesTransferMemoType>(
                         decoration: InputDecoration(
-                            prefix: DropdownButtonFormField<CyclesTransferMemoType>(
-                                items: const [
-                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Text'), value: CyclesTransferMemoType.Text ),
-                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Nat'), value: CyclesTransferMemoType.Nat ),
-                                    DropdownMenuItem<CyclesTransferMemoType>(child: Text('Blob'), value: CyclesTransferMemoType.Blob ),                            
-                                ],
-                                value: cycles_transfer_memo_type,
-                                onChanged: (CyclesTransferMemoType? select_cycles_transfer_memo_type) { 
-                                    if (select_cycles_transfer_memo_type is CyclesTransferMemoType) { 
-                                        setState(() {
-                                            this.cycles_transfer_memo_type = select_cycles_transfer_memo_type; 
-                                        });
-                                    }
-                                }
-                            ),
                             labelText: 'Cycles Transfer Memo: ',
                         ),
+                        items: const [
+                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Text'), value: CyclesTransferMemoType.Text ),
+                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Nat'), value: CyclesTransferMemoType.Nat ),
+                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Blob'), value: CyclesTransferMemoType.Blob ),                            
+                        ],
+                        value: cycles_transfer_memo_type,
+                        onChanged: (CyclesTransferMemoType? select_cycles_transfer_memo_type) { 
+                            if (select_cycles_transfer_memo_type is CyclesTransferMemoType) { 
+                                setState(() {
+                                    this.cycles_transfer_memo_type = select_cycles_transfer_memo_type; 
+                                });
+                            }
+                        }
+                    ),
+                    TextFormField(
+                        //decoration: InputDecoration(
+                        //    labelText: 'Cycles Transfer Memo: ',
+                        //),
                         onSaved: (String? v) { 
                             switch (cycles_transfer_memo_type) {
                                 case CyclesTransferMemoType.Text: 
@@ -2094,28 +2083,6 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
 
 
 
-
-
-Widget cycles_transfer_list_item(dynamic ct){
-    if (ct is CyclesTransferIn) {
-        return CyclesTransferInListItem(ct as CyclesTransferIn);
-    } else if (ct is CyclesTransferOut) {
-        return CyclesTransferOutListItem(ct as CyclesTransferOut); 
-    } else if (ct is CMCyclesPosition) {
-        return CMCyclesPositionListItem(ct as CMCyclesPosition); 
-    } else if (ct is CMIcpPosition) {
-        return CMIcpPositionListItem(ct as CMIcpPosition); 
-    } else if (ct is CMCyclesPositionPurchase) {
-        return CMCyclesPositionPurchaseListItem(ct as CMCyclesPositionPurchase); 
-    } else if (ct is CMIcpPositionPurchase) {
-        return CMIcpPositionPurchaseListItem(ct as CMIcpPositionPurchase); 
-    } else if (ct is CMIcpTransferOut) {
-        return CMIcpTransferOutListItem(ct as CMIcpTransferOut);
-    } else {
-        throw Exception('look at the function: cycles_transfer_list_item. ct.runtimeType: ${ct.runtimeType}');
-    }
-}
-
 class CyclesTransferInListItem extends StatelessWidget {
     final CyclesTransferIn cycles_transfer_in;
     CyclesTransferInListItem(CyclesTransferIn _cycles_transfer_in): cycles_transfer_in = _cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${_cycles_transfer_in.id}'));
@@ -2572,8 +2539,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
             }
 
-            
-            
+
             if (cycles_bank_cm_cycles_positions_logs.length > 0) {
                 column_children.addAll([
                     Container(
@@ -2674,7 +2640,80 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 ]);
             }
             
-                    
+            if (state.user!.cycles_bank!.cm_cycles_positions_purchases.length > 0) {
+                column_children.addAll([
+                    Container(
+                        width: double.infinity,
+                        child: Text('USER-CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+                    ),
+                    ListView.builder(
+                        key: ValueKey('cm user-cycles-positions-purchases'),
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        shrinkWrap: false,
+                        padding: EdgeInsets.all(7),
+                        itemBuilder: (BuildContext context, int i) {
+                            CMCyclesPositionPurchase cm_cycles_position_purchase = state.user!.cycles_bank!.cm_cycles_positions_purchases[i];
+                            CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log;
+                            try {
+                                cm_message_cycles_position_purchase_purchaser_log = 
+                                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_purchaser_logs
+                                    .where((CMMessageCyclesPositionPurchasePurchaserLog cm_message_cycles_position_purchase_purchaser_log)=>cm_message_cycles_position_purchase_purchaser_log.cm_message_cycles_position_purchase_purchaser_quest.purchase_id == cm_cycles_position_purchase.id).first;
+                            } catch(e) {
+                                
+                            }
+                            return UserCyclesPositionPurchaseListItem(
+                                cm_cycles_position_purchase: cm_cycles_position_purchase,
+                                cm_message_cycles_position_purchase_purchaser_log: cm_message_cycles_position_purchase_purchaser_log
+                            );
+                        },
+                        itemCount: state.user!.cycles_bank!.cm_cycles_positions_purchases.length,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
+                        addSemanticIndexes: true,
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                        clipBehavior: Clip.hardEdge
+                    )
+                ]);
+            } 
+            
+            if (state.user!.cycles_bank!.cm_icp_positions_purchases.length > 0) {
+                column_children.addAll([
+                    Container(
+                        width: double.infinity,
+                        child: Text('USER-ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+                    ),
+                    ListView.builder(
+                        key: ValueKey('cm user-icp-positions-purchases'),
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        shrinkWrap: false,
+                        padding: EdgeInsets.all(7),
+                        itemBuilder: (BuildContext context, int i) {
+                            CMIcpPositionPurchase cm_icp_position_purchase = state.user!.cycles_bank!.cm_icp_positions_purchases[i];
+                            CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log;
+                            try {
+                                cm_message_icp_position_purchase_purchaser_log = 
+                                    state.user!.cycles_bank!.cm_message_icp_position_purchase_purchaser_logs
+                                    .where((CMMessageIcpPositionPurchasePurchaserLog cm_message_icp_position_purchase_purchaser_log)=>cm_message_icp_position_purchase_purchaser_log.cm_message_icp_position_purchase_purchaser_quest.purchase_id == cm_icp_position_purchase.id).first;
+                            } catch(e) {
+                                
+                            }
+                            return UserIcpPositionPurchaseListItem(
+                                cm_icp_position_purchase: cm_icp_position_purchase,
+                                cm_message_icp_position_purchase_purchaser_log: cm_message_icp_position_purchase_purchaser_log
+                            );
+                        },
+                        itemCount: state.user!.cycles_bank!.cm_icp_positions_purchases.length,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
+                        addSemanticIndexes: true,
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                        clipBehavior: Clip.hardEdge
+                    )
+                ]);
+            }
+            
         }
         
         
@@ -3612,6 +3651,96 @@ class UserIcpPositionListItem extends StatelessWidget {
     }
 }
 
+class UserCyclesPositionPurchaseListItem extends StatelessWidget {
+    final CMCyclesPositionPurchase cm_cycles_position_purchase;
+    final CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log; 
+    UserCyclesPositionPurchaseListItem({
+        required CMCyclesPositionPurchase cm_cycles_position_purchase,
+        required this.cm_message_cycles_position_purchase_purchaser_log
+    }) : cm_cycles_position_purchase = cm_cycles_position_purchase, super(key: ValueKey('UserCyclesPositionPurchaseListItem ${cm_cycles_position_purchase.id}'));
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('USER CYCLES POSITION PURCHASE'),
+                            subtitle: Text('PURCHASE ID: ${cm_cycles_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles-purchase: ${cm_cycles_position_purchase.cycles}'),
+                                Text('icp-payment: ${cycles_to_icptokens(cm_cycles_position_purchase.cycles, cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('xdr-icp-rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
+                                Text('cycles-position-positor: ${cm_cycles_position_purchase.cycles_position_positor}'),
+                                Text('cycles-position-id: ${cm_cycles_position_purchase.cycles_position_id}'),
+                                Text('purchase-position-fee: ${cm_cycles_position_purchase.purchase_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position_purchase.timestamp_nanos)}'),
+                                Text('payout-status: ${cm_message_cycles_position_purchase_purchaser_log == null ? 'pending' : 'complete'}'),
+                            ]
+                        ),
+                        
+                    ]
+                )
+            )
+        );
+    }
+    
+}
+
+class UserIcpPositionPurchaseListItem extends StatelessWidget {
+    final CMIcpPositionPurchase cm_icp_position_purchase;
+    final CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log; 
+    UserIcpPositionPurchaseListItem({
+        required CMIcpPositionPurchase cm_icp_position_purchase,
+        required this.cm_message_icp_position_purchase_purchaser_log
+    }) : cm_icp_position_purchase = cm_icp_position_purchase, super(key: ValueKey('UserIcpPositionPurchaseListItem ${cm_icp_position_purchase.id}'));
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('USER ICP POSITION PURCHASE'),
+                            subtitle: Text('PURCHASE ID: ${cm_icp_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp-purchase: ${cm_icp_position_purchase.icp}'),
+                                Text('cycles-payment: ${icptokens_to_cycles(cm_icp_position_purchase.icp, cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('xdr-icp-rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
+                                Text('icp-position-positor: ${cm_icp_position_purchase.icp_position_positor}'),
+                                Text('icp-position-id: ${cm_icp_position_purchase.icp_position_id}'),
+                                Text('purchase-position-fee: ${cm_icp_position_purchase.purchase_position_fee}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_position_purchase.timestamp_nanos)}'),
+                                Text('payout-status: ${cm_message_icp_position_purchase_purchaser_log == null ? 'pending' : 'complete'}')
+                            ]
+                        ),
+                        
+                    ]
+                )
+            )
+        );
+    }
+    
+}
+
 
 
 /*
@@ -3876,7 +4005,7 @@ ii_login(BuildContext context) async {
                     InternetIdentityAuthorize(
                         kind: "authorize-client", 
                         sessionPublicKey: legatee_caller.public_key_DER,
-                        maxTimeToLive: 1000000000*60*60*24
+                        maxTimeToLive: 1000000000*60*60*24*30
                     ),
                     "https://identity.ic0.app"
                 );

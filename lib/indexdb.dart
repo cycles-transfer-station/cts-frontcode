@@ -12,6 +12,11 @@ class IndexDB {
     
     static bool is_support_here() => window.indexedDB != null;
     
+    static void delete_database(String db_name) {
+        callMethod(window.indexedDB!, 'deleteDatabase', [db_name]);
+    }
+    
+    
     final String name;
     Object idb_open_db_quest; // save the q bc it needs to stay 
     Object/*IDBDatabase*/ idb_database;

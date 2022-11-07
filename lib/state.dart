@@ -49,12 +49,12 @@ const String Err = 'Err';
 
 
 //final Canister cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai'));
-
-
-
 /*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
 
-final Canister cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
+//final Canister cycles_market = Canister(Principal('woddh-aqaaa-aaaal-aazqq-cai'));
+/*TEST*/final Canister cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
+
+
 
 void main() {
     if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
@@ -122,7 +122,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                         Future(()async{
                             if (this.user!.cycles_bank == null) {
                                 print('user find_cycles_bank');
-                                //await this.user!.find_cycles_bank();
+                                await this.user!.find_cycles_bank();
                             }
                             if (this.user!.cycles_bank != null) {
                                 try {
@@ -192,6 +192,8 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     Future<void> save_state_in_the_browser_storage() async {
     
         if (this.user != null) {
+            
+            /*
             List<Map> legations_maps = [];
             for (Legation legation in this.user!.legations) {
                 legations_maps.add(
@@ -204,6 +206,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                     }
                 );
             }
+            */
             
             try {
                 IndexDB idb = await IndexDB.open('cts', ['state']);
@@ -238,15 +241,31 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                     await idb.add_object(
                         object_store_name: 'state', 
                         key: 'user_legations', 
-                        value: this.user!.legations.map<JSLegation>((Legation l)=>JSLegation.ofaLegation(l)).toList(), 
+                        value: this.user!.legations.map<JSLegation>((Legation l)=>jslegation_of_a_legation(l)).toList(), 
                     ) == false
                 ) {
                     await idb.put_object(
                         object_store_name: 'state', 
                         key: 'user_legations', 
-                        value: this.user!.legations.map<JSLegation>((Legation l)=>JSLegation.ofaLegation(l)).toList(), 
+                        value: this.user!.legations.map<JSLegation>((Legation l)=>jslegation_of_a_legation(l)).toList(), 
                     );  
-                }                
+                }       
+                
+                if (this.user!.cycles_bank != null) {
+                    if (
+                        await idb.add_object(
+                            object_store_name: 'state', 
+                            key: 'user_cycles_bank', 
+                            value: '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}', 
+                        ) == false
+                    ) {
+                        await idb.put_object(
+                            object_store_name: 'state', 
+                            key: 'user_cycles_bank', 
+                            value: '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}', 
+                        );  
+                    }                
+                }
                 
                 idb.shutdown();
             } catch(e) {
@@ -278,7 +297,12 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             List<Legation> legations = (await idb.get_object(
                 object_store_name: 'state', 
                 key: 'user_legations'
-            ) as List<dynamic>).cast<JSLegation>().map<Legation>((JSLegation jslegation)=>JSLegation.asaLegation(jslegation)).toList(); 
+            ) as List<dynamic>).cast<JSLegation>().map<Legation>((JSLegation jslegation)=>legation_of_a_jslegation(jslegation)).toList(); 
+
+            String? user_cycles_bank = await idb.get_object(
+                object_store_name: 'state', 
+                key: 'user_cycles_bank'
+            ) as String?;
 
             idb.shutdown();
                             
@@ -287,6 +311,14 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                 caller: await SubtleCryptoECDSAP256Caller.of_the_cryptokeys(public_key: user_crypto_key_public, private_key: user_crypto_key_private),
                 legations: legations
             );    
+            
+            if (user_cycles_bank != null) {
+                List<String> user_cycles_bank_data = user_cycles_bank.split(':');
+                if (user_cycles_bank_data[0] == user_of_the_idb.principal.text) {
+                    user_of_the_idb.cycles_bank = CyclesBank(Principal(user_cycles_bank_data[1]), user_of_the_idb);
+                }
+            }
+            
             //print(user_of_the_idb.caller);
             if (user_of_the_idb.expiration_unix_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_unix_timestamp_nanoseconds! - BigInt.from(1000000000*60*20) ) {
                 this.user = user_of_the_idb;
@@ -560,7 +592,7 @@ class JSLegation  {
         
     });
     
-    
+    /*
     static JSLegation ofaLegation(Legation legation) {
         return JSLegation(
             legatee_public_key_DER: legation.legatee_public_key_DER,
@@ -580,9 +612,28 @@ class JSLegation  {
             legator_signature: jslegation.legator_signature, 
         );
     }
+    */
 }
 
+JSLegation jslegation_of_a_legation(Legation legation) {
+    return JSLegation(
+        legatee_public_key_DER: legation.legatee_public_key_DER,
+        expiration_unix_timestamp_nanoseconds: legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
+        target_canisters_ids: legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,
+        legator_public_key_DER: legation.legator_public_key_DER,
+        legator_signature: legation.legator_signature, 
+    );
+}
 
+Legation legation_of_a_jslegation(JSLegation jslegation) {
+    return Legation(
+        legatee_public_key_DER: jslegation.legatee_public_key_DER,
+        expiration_unix_timestamp_nanoseconds: BigInt.parse(jslegation.expiration_unix_timestamp_nanoseconds, radix:10),
+        target_canisters_ids: jslegation.target_canisters_ids != null ? jslegation.target_canisters_ids!.map<Principal>((String ps)=>Principal(ps)).toList() : null,
+        legator_public_key_DER: jslegation.legator_public_key_DER,
+        legator_signature: jslegation.legator_signature, 
+    );
+}
 
 
 

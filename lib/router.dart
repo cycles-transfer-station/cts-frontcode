@@ -29,12 +29,12 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             notifyListeners();
         }).catchError((e) async {
             state.is_loading = false;/*TAKE THIS LINE OUT WHEN SET FOR THE GO.*/
-            state.loading_text = 'Error when loading the first state: ${e}';
+            state.loading_text = 'Error loading the first state: ${e}';
             await showDialog(
                 context: state.context,
                 builder: (BuildContext context) {
                     return AlertDialog(
-                        title: Text('Error when loading the first state:'),
+                        title: Text('Error loading the first state:'),
                         content: Text('${e}'),
                         actions: <Widget>[
                             TextButton(
