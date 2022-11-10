@@ -73,7 +73,7 @@ timestamp: ${this.timestamp_seconds}
 
 
 Future<List<IcpTransfer>> get_icp_transfers(String icp_id, {int already_have = 0}) async {
-    print(icp_id);
+    //print(icp_id);
     List<IcpTransfer> icp_transfers = [];
     try {
         

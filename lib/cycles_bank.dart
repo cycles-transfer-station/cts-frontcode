@@ -368,7 +368,6 @@ class CyclesBank extends Canister {
             }
         });
         this.metrics!.cycles_transfers_out_len = this.metrics!.cycles_transfers_out_len + BigInt.from(1);
-        await this.fresh_cycles_transfers_out();
         return cycles_transfer_out_id;
     }
     

@@ -3,6 +3,7 @@ import 'dart:html';
 import 'dart:js' as js;
 import 'dart:js_util';
 import 'dart:convert';
+import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
 
@@ -177,15 +178,18 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                         child: Column(
                                             children: <Widget>[
                                                 Divider(),
-                                                OutlineButton(
-                                                    button_text: 'LOG-OUT',
-                                                    on_press_complete: () {
-                                                        state.user = null;
-                                                        IndexDB.delete_database('cts');
-                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
-                                                        Navigator.pop(context);
-                                                    },
-                                                ),
+                                                Container(
+                                                    padding: EdgeInsets.all(17),
+                                                    child: OutlineButton(
+                                                        button_text: 'LOG-OUT',
+                                                        on_press_complete: () {
+                                                            state.user = null;
+                                                            IndexDB.delete_database('cts');
+                                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
+                                                            Navigator.pop(context);
+                                                        }
+                                                    )
+                                                )
                                             ]
                                         )
                                     )
@@ -267,54 +271,56 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         
         if (state.user == null) {
-            column_children.add(
-                OutlineButton(
-                    button_text: 'test user login',
-                    on_press_complete: () async {
-                        /*test*/
-                        state.is_loading = true;
-                        state.loading_text = 'loading test';
-                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                        
-                        
-                        SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-                        
-                        state.user = User(
-                            state: state,
-                            caller: test_caller,
-                            legations: [],
-                        );
-                        
-                        await state.save_state_in_the_browser_storage();
-                        
-                        try {
-                            await state.loadfirststate();
-                        } catch(e) {
-                            await showDialog(
-                                context: state.context,
-                                builder: (BuildContext context) {
-                                    return AlertDialog(
-                                        title: Text('Error:'),
-                                        content: Text('$e'),
-                                        actions: <Widget>[
-                                            TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('OK'),
-                                            ),
-                                        ]
-                                    );
-                                }   
+            if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
+                column_children.add(
+                    OutlineButton(
+                        button_text: 'test user login',
+                        on_press_complete: () async {
+                            /*test*/
+                            state.is_loading = true;
+                            state.loading_text = 'loading test';
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            
+                            
+                            SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
+                            
+                            state.user = User(
+                                state: state,
+                                caller: test_caller,
+                                legations: [],
                             );
-                            state.loading_text = 'Error: ${e}';
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
-                            return;
+                            
+                            await state.save_state_in_the_browser_storage();
+                            
+                            try {
+                                await state.loadfirststate();
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Error:'),
+                                            content: Text('$e'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );
+                                state.loading_text = 'Error: ${e}';
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
+                                return;
+                            }
+                            
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                         }
-                        
-                        state.is_loading = false;
-                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                    }
-                )
-            );
+                    )
+                );
+            }
             
             column_children.add(   
                 Center(child: OutlineButton(
@@ -359,6 +365,8 @@ class TransferIcpScaffoldBody extends StatelessWidget {
     TransferIcpScaffoldBody({Key? key}) : super(key: key);
     static TransferIcpScaffoldBody create({Key? key}) => TransferIcpScaffoldBody(key: key);
     
+    final ScrollController scroll_controller = ScrollController();
+    
     @override
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -376,54 +384,50 @@ class TransferIcpScaffoldBody extends StatelessWidget {
 
 
         if (state.user != null) {
-            column_children.add(
-                /*ListView(children: [ Wra])p*/ Wrap(
-                    children: [
-                        ConstrainedBox(
-                            constraints: BoxConstraints(
-                                maxWidth: 500,
-                                minWidth: 250
+            column_children.addAll([
+                Container(
+                    constraints: BoxConstraints(
+                        maxWidth: 350,
+                        minWidth: 250
+                    ),
+                    child: Column(
+                        children: [
+                            Center(
+                                child: SelectableText('USER-ICP-ID:', style: TextStyle(fontSize: 13)),
                             ),
-                            child: Column(
-                                children: [
-                                    Container(
-                                        width: double.infinity,
-                                        child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 11)),
-                                    ),
-                                    IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
-                                ]
-                            )
-                        ),
-                        ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: 500,
-                              minWidth: 250
+                            Center(
+                                child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
                             ),
-                            child: Column(
-                                children: [
-                                    Padding(
-                                        padding: EdgeInsets.all(17.0),
-                                        child: UserTransferIcpForm(key: ValueKey('TransferIcpScaffoldBody UserTransferIcpForm'))  /*Text('')*/
-                                    )
-                                ]
+                            IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
+                        ]
+                    )
+                ),
+                SizedBox(
+                    width: 1,
+                    height: 5
+                ),
+                Container(
+                    constraints: BoxConstraints(
+                        maxWidth: 350,
+                        minWidth: 250
+                    ),
+                    child: Column(
+                        children: [
+                            Padding(
+                                padding: EdgeInsets.all(17.0),
+                                child: UserTransferIcpForm(key: ValueKey('TransferIcpScaffoldBody UserTransferIcpForm'))  /*Text('')*/
                             )
-                        )
-                    ]
+                        ]
+                    )
                 )
-            );
+            ]);
             
             if (state.user!.cycles_bank != null) {
                 column_children.addAll([
                     // burn icp mint cycles,  
-                    Padding(
-                        padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
-                        child: Divider(
-                            height: 13.0,   
-                            thickness: 4.0,
-                            indent: 34.0,
-                            endIndent: 34.0,
-                            //color: 
-                        ),
+                    SizedBox(
+                        width: 1,
+                        height: 40
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
@@ -431,17 +435,14 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ]);
             }
-
+    
+    
+            List<IcpTransfer> icp_transfers_reversed = state.user!.icp_transfers..reversed;
+            
             column_children.addAll([
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
-                    child: Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 34.0,
-                        endIndent: 34.0,
-                        //color: 
-                    ),
+                SizedBox(
+                    width: 1,
+                    height: 40
                 ),
                 Padding(
                     padding: EdgeInsets.all(7),
@@ -476,24 +477,34 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                
-                Container(
-                    constraints: BoxConstraints(maxHeight: 500),
-                    child: ListView.builder(
-                        key: ValueKey('transfer-icp icp-transfers-list-items'),
-                        scrollDirection: Axis.horizontal,
-                        reverse: true,
-                        shrinkWrap: false,
-                        padding: EdgeInsets.all(11),
-                        itemBuilder: (BuildContext context, int i) {
-                            return IcpTransferListItem(state.user!.icp_transfers[i]);
-                        },
-                        itemCount: state.user!.icp_transfers.length,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        addSemanticIndexes: true,
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                        clipBehavior: Clip.hardEdge
+                LimitedBox(
+                    maxHeight: 300,
+                    child: Container(
+                        constraints: BoxConstraints(),
+                        padding: EdgeInsets.all(17),
+                        child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                            child: Scrollbar(
+                                controller: scroll_controller,
+                                child: ListView.builder(
+                                    controller: scroll_controller,
+                                    key: ValueKey('transfer-icp icp-transfers-list-items'),
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: false,
+                                    shrinkWrap: false,
+                                    padding: EdgeInsets.all(11),
+                                    itemBuilder: (BuildContext context, int i) {
+                                        return IcpTransferListItem(icp_transfers_reversed[i]);
+                                    },
+                                    itemCount: icp_transfers_reversed.length,
+                                    addAutomaticKeepAlives: true,
+                                    addRepaintBoundaries: true,
+                                    addSemanticIndexes: true,
+                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                    clipBehavior: Clip.hardEdge
+                                )
+                            )
+                        )
                     )
                 )
             ]);
@@ -546,13 +557,13 @@ class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
 
         
         return Padding(
-            padding: EdgeInsets.all(13.0),
+            padding: EdgeInsets.fromLTRB(13.0, 18, 13,13),
             child: Column(
                 children: [
-                    Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}'),
+                    Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}', style: TextStyle(fontSize:17)),
                     Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
-                        padding: EdgeInsets.all(7),
+                        padding: EdgeInsets.fromLTRB(7,13,7,7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('LOAD ICP BALANCE', style: TextStyle(fontSize:11)),
@@ -642,6 +653,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
+        const double datatable_text_fontsize = 13.0;
         
         return Form(
             key: form_key,
@@ -649,9 +661,12 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                 children: <Widget>[
                     Container(
                         width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(11,7,11,17),
                         child: DataTable(
                             headingRowHeight: 0,
                             showBottomBorder: true,
+                            //dataRowHeight: 14,
+                            dividerThickness: 0.0,
                             columns: <DataColumn>[
                                 DataColumn(
                                     label: Expanded(
@@ -671,26 +686,26 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                             rows: [
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('ICP TRANSFER FEE XDR: ')),
-                                        DataCell(Text('${state.cts_fees.cts_transfer_icp_fee.cycles/CYCLES_PER_XDR}-xdr')),
+                                        DataCell(Text('ICP TRANSFER FEE XDR: ', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('${state.cts_fees.cts_transfer_icp_fee.cycles/CYCLES_PER_XDR}-xdr', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('CURRENT XDR-ICP RATE: ')),
-                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}')),
+                                        DataCell(Text('CURRENT XDR-ICP RATE: ', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('ICP LEDGER FEES: ')),
-                                        DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                        DataCell(Text('ICP LEDGER FEES: ', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('ICP TRANSFER TOTAL COST: ')),
-                                        DataCell(Text('${cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                        DataCell(Text('ICP TRANSFER TOTAL COST: ', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('${cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                             ]
@@ -714,22 +729,19 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                         decoration: InputDecoration(
                             labelText: 'memo: '
                         ),
-                        initialValue: '0',
                         onSaved: (String? value) { memo = value == null || value == '' ? Nat64(BigInt.from(0)) : Nat64(BigInt.parse(value)); },
                         validator: (String? value) {
-                            if (value != null && value != '') {
-                                String error_string = 'Invalid memo. An icp memo is a number between 0 and 2^64 - 1';
-                                try {
-                                    Nat64 n = Nat64(BigInt.parse(value, radix: 10));
-                                } catch(e) {
-                                    return error_string;
-                                }
+                            String error_string = 'Invalid memo. An icp memo is a number between 0 and 2^64 - 1';
+                            try {
+                                Nat64 n = Nat64(value == null || value == '' ? BigInt.from(0) : BigInt.parse(value, radix: 10));
+                            } catch(e) {
+                                return error_string;
                             }
                             return null;
                         }                        
                     ),
                     Padding(
-                        padding: EdgeInsets.all(7),
+                        padding: EdgeInsets.fromLTRB(7, 17, 7,7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('TRANSFER ICP'),
@@ -990,29 +1002,33 @@ class IcpTransferListItem extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
+        bool is_cts_transfer_icp_fee = BigInt.parse(icp_transfer.memo) == BigInt.parse('4851594152737391941') && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == common.icp_id(cts.principal);
         
         return Container(
             padding: EdgeInsets.all(11),            
-            constraints: BoxConstraints(maxWidth: 250),
+            constraints: BoxConstraints(maxWidth: 300),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
-                            title: Text('ICP TRANSFER ${icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'}'),
+                            title: Text( is_cts_transfer_icp_fee  ? 'CTS TRANSFER-ICP FEE' : 'ICP TRANSFER ${icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'}'),
                             subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
                         ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                SelectableText(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
-                                Text('icp: ${icp_transfer.amount}'),
-                                Text('memo: ${icp_transfer.memo}'),
-                                Text('icp-ledger-fee: ${icp_transfer.fee}'),
-                                Text('timestamp: ${icp_transfer.timestamp_seconds}'),
-                            ]
-                        ),
+                        Container(
+                            padding: EdgeInsets.all(17),
+                            child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    SelectableText(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
+                                    SelectableText('icp: ${icp_transfer.amount}'),
+                                    SelectableText('memo: ${icp_transfer.memo}'),
+                                    Text('icp-ledger-fee: ${icp_transfer.fee}'),
+                                    Text('timestamp: ${icp_transfer.timestamp_seconds}'),
+                                ]
+                            )
+                        )
                     ]
                 )
             )
@@ -1026,6 +1042,10 @@ class IcpTransferListItem extends StatelessWidget {
 class CyclesBankScaffoldBody extends StatelessWidget {
     CyclesBankScaffoldBody({Key? key}) : super(key: key);
     static CyclesBankScaffoldBody create({Key? key}) => CyclesBankScaffoldBody(key: key);
+    
+    final ScrollController cycles_transfers_out_scroll_controller = ScrollController();
+    final ScrollController cycles_transfers_in_scroll_controller = ScrollController();    
+    
     
     @override
     Widget build(BuildContext context) {
@@ -1232,7 +1252,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
             column_children.add(
                 Container(
-                    padding: EdgeInsets.all(11),
+                    padding: EdgeInsets.fromLTRB(11,0,11,11),
                     child: SelectableText('CYCLES-BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),
                 )
             );
@@ -1276,21 +1296,36 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 
+                List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out..reversed;
+                List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in..reversed;
+                
+                for (CyclesTransferOut cto in cycles_transfers_out_reversed) {
+                    print([cto.id, cto.cycles_sent, cto.cycles_refunded, cto.fee_paid]);
+                }
+                for (CyclesTransferIn cti in cycles_transfers_in_reversed) {
+                    print([cti.id, cti.cycles]);
+                }
+                
+                
                 column_children.addAll([
                     Container(
                         width: double.infinity,
                         child: Column(
                             children: [
-                                Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
+                                Container(
+                                    padding: EdgeInsets.fromLTRB(7,10,7,17),
+                                    child: Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
+                                )
                             ]
                         )
                     ),
                     Wrap(
                         children: [
                             Container(
-                                constraints: BoxConstraints(maxWidth: 375),
+                                constraints: BoxConstraints(maxWidth: 350),
                                 width: double.infinity,
                                 //alignment: Alignment.centerLeft,
+                                padding: EdgeInsets.fromLTRB(13,7,13,7),
                                 child: DataTable(
                                     headingRowHeight: 0,
                                     showBottomBorder: true,
@@ -1347,9 +1382,10 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                 ) 
                             ),
                             Container(
-                                constraints: BoxConstraints(maxWidth: 375),
+                                constraints: BoxConstraints(maxWidth: 350),
                                 width: double.infinity,
                                 //alignment: Alignment.centerLeft,
+                                padding: EdgeInsets.fromLTRB(13,7,13,7),
                                 child: Column(
                                     children: [
                                         CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
@@ -1411,47 +1447,69 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         width: double.infinity,
                         child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
                     ),
-                    Container(
-                        constraints: BoxConstraints(maxHeight: 500),
-                        child: ListView.builder(
-                            key: ValueKey('cb cycles-transfers-out'),
-                            scrollDirection: Axis.horizontal,
-                            reverse: true,
-                            shrinkWrap: false,
-                            padding: EdgeInsets.all(11),
-                            itemBuilder: (BuildContext context, int i) {
-                                return CyclesTransferOutListItem(state.user!.cycles_bank!.cycles_transfers_out[i]);
-                            },
-                            itemCount: state.user!.cycles_bank!.cycles_transfers_out.length,
-                            addAutomaticKeepAlives: true,
-                            addRepaintBoundaries: true,
-                            addSemanticIndexes: true,
-                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                            clipBehavior: Clip.hardEdge
-                        )   
+                    LimitedBox(
+                        maxHeight: 300,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: cycles_transfers_out_scroll_controller,
+                                    child: ListView.builder(
+                                        controller: cycles_transfers_out_scroll_controller,    
+                                        key: ValueKey('cb cycles-transfers-out'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(11),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            return CyclesTransferOutListItem(cycles_transfers_out_reversed[i]);
+                                        },
+                                        itemCount: cycles_transfers_out_reversed.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
+                                )
+                            )
+                        )
                     ),
                     Container(
                         width: double.infinity,
                         child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
                     ),
-                    Container(
-                        constraints: BoxConstraints(maxHeight: 500),
-                        child: ListView.builder(
-                            key: ValueKey('cb cycles-transfers-in'),
-                            scrollDirection: Axis.horizontal,
-                            reverse: true,
-                            shrinkWrap: false,
-                            padding: EdgeInsets.all(11),
-                            itemBuilder: (BuildContext context, int i) {
-                                return CyclesTransferInListItem(state.user!.cycles_bank!.cycles_transfers_in[i]);
-                            },
-                            itemCount: state.user!.cycles_bank!.cycles_transfers_in.length,
-                            addAutomaticKeepAlives: true,
-                            addRepaintBoundaries: true,
-                            addSemanticIndexes: true,
-                            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                            clipBehavior: Clip.hardEdge
-                        )   
+                    LimitedBox(
+                        maxHeight: 300,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: cycles_transfers_in_scroll_controller,
+                                    child: ListView.builder(
+                                        controller: cycles_transfers_in_scroll_controller,
+                                        key: ValueKey('cb cycles-transfers-in'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(11),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            return CyclesTransferInListItem(cycles_transfers_in_reversed[i]);
+                                        },
+                                        itemCount: cycles_transfers_in_reversed.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
+                                )   
+                            )
+                        ),
                     )
                 ]);   
             }
@@ -1459,14 +1517,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
     
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 731),
+                constraints: BoxConstraints(maxWidth: 900),//731),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                         ScaffoldBodyHeader('CYCLES-BANK'),
                         Expanded(
                             child: ListView(
-                                padding: EdgeInsets.all(0),
+                                padding: EdgeInsets.all(17),
                                 children: [
                                     Column(
                                         children: column_children 
@@ -1660,8 +1718,9 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                     try {
                                         cycles_transfer_out_id = await state.user!.cycles_bank!.transfer_cycles(transfer_cycles_quest);
                                     } catch(e) {
+                                        print(e);
                                         await showDialog(
-                                            context: state.context,
+                                            context: context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Transfer Cycles Error:'),
@@ -1686,6 +1745,22 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                     state.loading_text = 'cycles transfer success. cycles_transfer_id: ${cycles_transfer_out_id}\nloading cycles balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                 
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Cycles Transfer Success:'),
+                                                content: Text('cycles_transfer_id: ${cycles_transfer_out_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
+                                
                                     try {
                                         await Future.wait([
                                             state.user!.cycles_bank!.fresh_metrics(),
@@ -1708,25 +1783,10 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                             }   
                                         );                                    
                                     }
-                                
+                                    
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Cycles Transfer Success:'),
-                                                content: Text('cycles_transfer_id: ${cycles_transfer_out_id}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
                                 }
                             }
                         )
@@ -1933,9 +1993,6 @@ class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
                                     form_key.currentState!.reset();
                                     state.user!.cycles_bank!.metrics!.storage_size_mib = new_storage_size_mib;
                                     
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
                                     await showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -1951,6 +2008,34 @@ class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
                                             );
                                         }
                                     );
+                                    
+                                    state.loading_text = 'loading cycles-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-balance'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );
+                                            
+                                    }
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
                                 }
                             }
                         )
@@ -2085,13 +2170,14 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
 
 class CyclesTransferInListItem extends StatelessWidget {
     final CyclesTransferIn cycles_transfer_in;
-    CyclesTransferInListItem(CyclesTransferIn _cycles_transfer_in): cycles_transfer_in = _cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${_cycles_transfer_in.id}'));
+    CyclesTransferInListItem(CyclesTransferIn cycles_transfer_in): cycles_transfer_in = cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${cycles_transfer_in.id}'));
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 300),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -2119,12 +2205,13 @@ class CyclesTransferInListItem extends StatelessWidget {
 
 class CyclesTransferOutListItem extends StatelessWidget {
     final CyclesTransferOut cycles_transfer_out;
-    CyclesTransferOutListItem(CyclesTransferOut _cycles_transfer_out): cycles_transfer_out = _cycles_transfer_out, super(key: ValueKey('CyclesTransferOutListItem: ${_cycles_transfer_out.id}'));
+    CyclesTransferOutListItem(CyclesTransferOut cycles_transfer_out): cycles_transfer_out = cycles_transfer_out, super(key: ValueKey('CyclesTransferOutListItem: ${cycles_transfer_out.id}'));
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
         return Container(
+            constraints: BoxConstraints(maxWidth: 300),
             padding: EdgeInsets.all(11),
             child: Card(
                 child: Column(
@@ -2305,7 +2392,7 @@ class CMIcpPositionPurchaseListItem extends StatelessWidget {
 
 class CMIcpTransferOutListItem extends StatelessWidget {
     final CMIcpTransferOut cm_icp_transfer_out;
-    CMIcpTransferOutListItem(CMIcpTransferOut _cm_icp_transfer_out): cm_icp_transfer_out = _cm_icp_transfer_out, super(key: ValueKey('CMIcpTransferOutListItem: ${_cm_icp_transfer_out.block_height}'));
+    CMIcpTransferOutListItem(CMIcpTransferOut cm_icp_transfer_out): cm_icp_transfer_out = cm_icp_transfer_out, super(key: ValueKey('CMIcpTransferOutListItem: ${cm_icp_transfer_out.block_height}'));
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);

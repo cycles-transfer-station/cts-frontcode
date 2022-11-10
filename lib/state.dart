@@ -24,7 +24,8 @@ import 'package:ic_tools/candid.dart' show
     Nat8,
     Nat32,
     Bool,
-    match_variant
+    match_variant,
+    candid_text_hash
     ;
 import 'package:ic_tools/candid.dart' as candid;
 
@@ -377,7 +378,7 @@ class Cycles extends Nat {
     BigInt get cycles => super.value;
     
     String toString() {
-        return '${this.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}Tcycles';
+        return '${this.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}T';
     }
     
     Cycles({required BigInt cycles}) : super(cycles);
@@ -558,6 +559,19 @@ class CyclesTransferMemo extends Variant {
         CyclesTransferMemo ctm = CyclesTransferMemo._();
         ctm[ctmvariant.keys.first] = ctmvariant.values.first;
         return ctm;
+    }
+    
+    String toString() {
+        if (this.keys.first == candid_text_hash('Text')) {
+            return 'Text: ${(this.values.first as candid.Text).value}';
+        }
+        if (this.keys.first == candid_text_hash('Blob')) {
+            return 'Blob: ${bytesasahexstring((this.values.first as Blob).bytes)}';
+        }
+        if (this.keys.first == candid_text_hash('Nat')) {
+            return 'Nat: ${(this.values.first as Nat).value}';
+        }
+        throw Exception('');
     }
     
 }
