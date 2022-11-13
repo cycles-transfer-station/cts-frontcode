@@ -127,7 +127,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: Column(
                             children: [
                                 DrawerHeader(
-                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : Text('USER ID: ${state.user!.principal.text}')
+                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : SelectableText('USER ID: ${state.user!.principal.text}')
                                 ),
                                 Expanded(
                                     child: ListView(
@@ -337,7 +337,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
                     Padding(
                         padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
                         child: Container(
-                            child: Text('USER ID: ${state.user!.principal.text}')
+                            child: SelectableText('USER ID: ${state.user!.principal.text}')
                         )
                     ),
                 ]
@@ -385,40 +385,39 @@ class TransferIcpScaffoldBody extends StatelessWidget {
 
         if (state.user != null) {
             column_children.addAll([
-                Container(
-                    constraints: BoxConstraints(
-                        maxWidth: 350,
-                        minWidth: 250
-                    ),
-                    child: Column(
-                        children: [
-                            Center(
-                                child: SelectableText('USER-ICP-ID:', style: TextStyle(fontSize: 13)),
+                Wrap(
+                    children: [
+                        Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 350,
+                                minWidth: 250
                             ),
-                            Center(
-                                child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
-                            ),
-                            IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
-                        ]
-                    )
-                ),
-                SizedBox(
-                    width: 1,
-                    height: 5
-                ),
-                Container(
-                    constraints: BoxConstraints(
-                        maxWidth: 350,
-                        minWidth: 250
-                    ),
-                    child: Column(
-                        children: [
-                            Padding(
-                                padding: EdgeInsets.all(17.0),
-                                child: UserTransferIcpForm(key: ValueKey('TransferIcpScaffoldBody UserTransferIcpForm'))  /*Text('')*/
+                            padding: EdgeInsets.all(17),
+                            child: Column(
+                                children: [
+                                    Center(
+                                        child: SelectableText('USER-ICP-ID:', style: TextStyle(fontSize: 13)),
+                                    ),
+                                    Center(
+                                        child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
+                                    ),
+                                    IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
+                                ]
                             )
-                        ]
-                    )
+                        ),
+                        Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 350,
+                                minWidth: 250
+                            ),
+                            padding: EdgeInsets.all(17),
+                            child: Column(
+                                children: [
+                                    UserTransferIcpForm(key: ValueKey('TransferIcpScaffoldBody UserTransferIcpForm'))  /*Text('')*/
+                                ]
+                            )
+                        )
+                    ]
                 )
             ]);
             
@@ -430,7 +429,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                         height: 40
                     ),
                     Padding(
-                        padding: EdgeInsets.all(7),
+                        padding: EdgeInsets.all(17),
                         child: BurnIcpMintCyclesForm(key: ValueKey('TransferIcpScaffoldBody BurnIcpMintCyclesForm'))
                     )
                 ]);
@@ -478,7 +477,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ),
                 LimitedBox(
-                    maxHeight: 300,
+                    maxHeight: 307,
                     child: Container(
                         constraints: BoxConstraints(),
                         padding: EdgeInsets.all(17),
@@ -524,7 +523,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 731),
+                constraints: BoxConstraints(maxWidth: 800),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -994,6 +993,9 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
 
 
 
+
+final String cts_main_icp_id = common.icp_id(cts.principal); 
+
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
     IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey('IcpTransferListItem: ${icp_transfer_.block_height}'));
@@ -1002,7 +1004,17 @@ class IcpTransferListItem extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        bool is_cts_transfer_icp_fee = BigInt.parse(icp_transfer.memo) == BigInt.parse('4851594152737391941') && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == common.icp_id(cts.principal);
+        bool is_cts_transfer_icp_fee = icp_transfer.memo == '4851594152738179000' && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == cts_main_icp_id;
+
+        bool is_out = icp_transfer.from_account_identifier == state.user!.user_icp_id;
+        bool is_in = icp_transfer.to_account_identifier == state.user!.user_icp_id;
+        
+        late String listtile_title;
+        if (is_cts_transfer_icp_fee) {
+            listtile_title = 'CTS TRANSFER-ICP FEE';
+        } else {
+            listtile_title = 'ICP-TRANSFER' + (is_out ? ' OUT' : '') + (is_in ? ' IN' : '');
+        }
         
         return Container(
             padding: EdgeInsets.all(11),            
@@ -1012,20 +1024,21 @@ class IcpTransferListItem extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
-                            title: Text( is_cts_transfer_icp_fee  ? 'CTS TRANSFER-ICP FEE' : 'ICP TRANSFER ${icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'OUT' : 'IN'}'),
+                            title: Text(listtile_title),
                             subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
                         ),
                         Container(
                             padding: EdgeInsets.all(17),
+                            width: double.infinity, 
                             child: Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                    SelectableText(icp_transfer.from_account_identifier == state.user!.user_icp_id ? 'for: ${icp_transfer.to_account_identifier}' : 'by: ${icp_transfer.from_account_identifier}'),
+                                    SelectableText((is_out ? 'for: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? 'by: ${icp_transfer.from_account_identifier}' : '')),
                                     SelectableText('icp: ${icp_transfer.amount}'),
                                     SelectableText('memo: ${icp_transfer.memo}'),
-                                    Text('icp-ledger-fee: ${icp_transfer.fee}'),
-                                    Text('timestamp: ${icp_transfer.timestamp_seconds}'),
+                                    SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),
+                                    SelectableText('timestamp: ${icp_transfer.timestamp_seconds}'),
                                 ]
                             )
                         )
@@ -1158,9 +1171,15 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     )                    
                 ),
                 Container(
-                    width: double.infinity,
                     padding: EdgeInsets.fromLTRB(7,13,7,0),
-                    child: SelectableText('USER-ICP-ID: ${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
+                    child: Center(
+                        child: Column(
+                            children: [
+                                Text('USER-ICP-ID: '),
+                                SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
+                            ]
+                        )
+                    )
                 ),
                 IcpBalanceAndLoadIcpBalance(),
                 Padding(
@@ -1252,13 +1271,20 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
             column_children.add(
                 Container(
-                    padding: EdgeInsets.fromLTRB(11,0,11,11),
-                    child: SelectableText('CYCLES-BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 15)),
+                    padding: EdgeInsets.fromLTRB(11,0,11,17),
+                    child: Center(
+                        child: Column(
+                            children: [
+                                Text('CYCLES-BANK-ID: '),
+                                SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 20)),
+                            ]
+                        )
+                    )
                 )
             );
             column_children.add(
                 Padding(
-                    padding: EdgeInsets.all(7),
+                    padding: EdgeInsets.all(17),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
                         child: Text('LOAD METRICS'),
@@ -1313,7 +1339,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         child: Column(
                             children: [
                                 Container(
-                                    padding: EdgeInsets.fromLTRB(7,10,7,17),
+                                    padding: EdgeInsets.fromLTRB(7,10,7,27),
                                     child: Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
                                 )
                             ]
@@ -1322,90 +1348,95 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     Wrap(
                         children: [
                             Container(
-                                constraints: BoxConstraints(maxWidth: 350),
-                                width: double.infinity,
+                                constraints: BoxConstraints(maxWidth: 450),
+                                //width: double.infinity,
                                 //alignment: Alignment.centerLeft,
-                                padding: EdgeInsets.fromLTRB(13,7,13,7),
-                                child: DataTable(
-                                    headingRowHeight: 0,
-                                    showBottomBorder: true,
-                                    columns: <DataColumn>[
-                                        DataColumn(
-                                          label: Expanded(
-                                            child: Text(
-                                              '',
-                                              //style: TextStyle(fontStyle: FontStyle.italic),
+                                //padding: EdgeInsets.fromLTRB(13,7,13,7),
+                                child: Center(
+                                    child: DataTable(
+                                        headingRowHeight: 0,
+                                        showBottomBorder: true,
+                                        columns: <DataColumn>[
+                                            DataColumn(
+                                              label: Expanded(
+                                                child: Text(
+                                                  '',
+                                                  //style: TextStyle(fontStyle: FontStyle.italic),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                        DataColumn(
-                                          label: Expanded(
-                                            child: Text(
-                                              '',
-                                              //style: TextStyle(fontStyle: FontStyle.italic),
+                                            DataColumn(
+                                              label: Expanded(
+                                                child: Text(
+                                                  '',
+                                                  //style: TextStyle(fontStyle: FontStyle.italic),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                    ],
-                                    rows: <DataRow>[
-                                        DataRow(
-                                            cells: <DataCell>[
-                                                DataCell(Text('creation-timestamp: ')),
-                                                DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
-                                            ],
-                                        ),
-                                        DataRow(
-                                            cells: <DataCell>[
-                                                DataCell(Text('lifetime-termination: ')),
-                                                DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
-                                            ],
-                                        ),
-                                        DataRow(
-                                            cells: <DataCell>[
-                                                DataCell(Text('ctsfuel: ')),
-                                                DataCell(Text('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
-                                            ]
-                                        ),
-                                        DataRow(
-                                            cells: <DataCell>[
-                                                DataCell(Text('storage-usage: ')),
-                                                DataCell(Text('${metrics.storage_usage / BigInt.from(1024*1024)}-MiB')),
-                                            ]
-                                        ),
-                                        DataRow(
-                                            cells: <DataCell>[
-                                                DataCell(Text('storage-size: ')),
-                                                DataCell(Text('${metrics.storage_size_mib}-MiB')),
-                                            ]
-                                        )
-                                    ]    
-                                ) 
+                                        ],
+                                        rows: <DataRow>[
+                                            DataRow(
+                                                cells: <DataCell>[
+                                                    DataCell(Text('creation-timestamp: ')),
+                                                    DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
+                                                ],
+                                            ),
+                                            DataRow(
+                                                cells: <DataCell>[
+                                                    DataCell(Text('lifetime-termination: ')),
+                                                    DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
+                                                ],
+                                            ),
+                                            DataRow(
+                                                cells: <DataCell>[
+                                                    DataCell(Text('ctsfuel: ')),
+                                                    DataCell(Text('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
+                                                ]
+                                            ),
+                                            DataRow(
+                                                cells: <DataCell>[
+                                                    DataCell(Text('storage-usage: ')),
+                                                    DataCell(Text('${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(3)}-MiB')),
+                                                ]
+                                            ),
+                                            DataRow(
+                                                cells: <DataCell>[
+                                                    DataCell(Text('storage-size: ')),
+                                                    DataCell(Text('${metrics.storage_size_mib}-MiB')),
+                                                ]
+                                            )
+                                        ]    
+                                    )
+                                )
                             ),
                             Container(
                                 constraints: BoxConstraints(maxWidth: 350),
-                                width: double.infinity,
+                                //width: double.infinity,
                                 //alignment: Alignment.centerLeft,
-                                padding: EdgeInsets.fromLTRB(13,7,13,7),
-                                child: Column(
-                                    children: [
-                                        CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
-                                        GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
-                                        LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
-                                    ]
+                                //margin: EdgeInsets.fromLTRB(13,7,13,7),
+                                child: Center(
+                                    child: Column(
+                                        children: [
+                                            CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
+                                            SizedBox(
+                                                height: 20, 
+                                                width: 1
+                                            ),
+                                            GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
+                                            SizedBox(
+                                                height: 20, 
+                                                width: 1
+                                            ),
+                                            LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
+                                        ]
+                                    )
                                 )
                             )
                         ]
                     ),
-                    CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
-                    Padding(
-                        padding: EdgeInsets.fromLTRB(17, 17, 17, 17.0),
-                        child: Divider(
-                            height: 13.0,   
-                            thickness: 4.0,
-                            indent: 34.0,
-                            endIndent: 34.0,
-                            //color: 
-                        ),
+                    Container(
+                        padding: EdgeInsets.fromLTRB(13,17,13,17),
+                        child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
@@ -1448,7 +1479,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
                     ),
                     LimitedBox(
-                        maxHeight: 300,
+                        maxHeight: 337,
                         child: Container(
                             constraints: BoxConstraints(),
                             padding: EdgeInsets.all(17),
@@ -1482,7 +1513,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
                     ),
                     LimitedBox(
-                        maxHeight: 300,
+                        maxHeight: 307,
                         child: Container(
                             constraints: BoxConstraints(),
                             padding: EdgeInsets.all(17),
@@ -2175,9 +2206,15 @@ class CyclesTransferInListItem extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
+        /*bool is_mint = 
+            cycles_transfer_in.cycles_transfer_memo.containsKey('Blob') 
+            && bytesasahexstring((cycles_transfer_in.cycles_transfer_memo['Blob'] as Blob).bytes) == '4354532d4255524e2d4943502d4d494e542d4359434c4553' 
+            && cycles_transfer_in.by_the_canister.text == cts.principal.text;
+        */
+        
         return Container(
             padding: EdgeInsets.all(11),
-            constraints: BoxConstraints(maxWidth: 300),
+            constraints: BoxConstraints(maxWidth: 350),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -2186,16 +2223,20 @@ class CyclesTransferInListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER IN'),
                             subtitle: Text('ID: ${cycles_transfer_in.id}'),
                         ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('cycles: ${cycles_transfer_in.cycles}'),
-                                Text('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
-                                Text('by: ${cycles_transfer_in.by_the_canister.text}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
-                            ]
-                        ),
+                        Container(
+                            padding: EdgeInsets.all(17),
+                            width: double.infinity, 
+                            child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    SelectableText('cycles: ${cycles_transfer_in.cycles}'),
+                                    SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
+                                    SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
+                                    SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
+                                ]
+                            ),
+                        )
                     ]
                 )
             )            
@@ -2211,7 +2252,7 @@ class CyclesTransferOutListItem extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
         return Container(
-            constraints: BoxConstraints(maxWidth: 300),
+            constraints: BoxConstraints(maxWidth: 350),
             padding: EdgeInsets.all(11),
             child: Card(
                 child: Column(
@@ -2221,19 +2262,23 @@ class CyclesTransferOutListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER OUT'),
                             subtitle: Text('ID: ${cycles_transfer_out.id}'),
                         ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('for: ${cycles_transfer_out.for_the_canister.text}'),
-                                Text('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
-                                Text('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
-                                Text('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
-                                Text('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
-                                Text('cycles_transferrer_fee: ${cycles_transfer_out.fee_paid}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
-                            ]                            
-                        ),
+                        Container(
+                            padding: EdgeInsets.all(17),
+                            width: double.infinity, 
+                            child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
+                                    SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
+                                    SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
+                                    SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
+                                    SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
+                                    SelectableText('cycles_transferrer_fee: ${cycles_transfer_out.fee_paid}'),
+                                    SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
+                                ]                            
+                            ),
+                        )
                     ]
                 )
             )            

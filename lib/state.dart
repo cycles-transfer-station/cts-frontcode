@@ -125,8 +125,13 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                 print('user find_cycles_bank');
                                 await this.user!.find_cycles_bank();
                             }
+                            
+                            print('save state in the browser_storage');
+                            this.save_state_in_the_browser_storage().then((x){});
+                            
                             if (this.user!.cycles_bank != null) {
                                 try {
+                                    print('loading cycles-bank-metrics');
                                     await this.user!.cycles_bank!.fresh_metrics();
                                 } catch(e) {
                                     print('cycles-bank load metrics error: ${e}');
@@ -138,8 +143,6 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             }),
         ]);
                 
-        print('save state in the browser_storage');
-        await this.save_state_in_the_browser_storage();
     }
 
 

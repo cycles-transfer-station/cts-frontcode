@@ -56,7 +56,7 @@ class CyclesBank extends Canister {
             await this.user.call(
                 this,
                 method_name: 'metrics',
-                calltype: CallType.call,
+                calltype: CallType.query,
                 put_bytes: c_forwards([])
             )
         )[0] as Record;

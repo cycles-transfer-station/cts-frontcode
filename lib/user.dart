@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:html';
+import 'dart:math';
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
@@ -450,14 +451,14 @@ class User {
             throw Exception('Error when checking the current xdr-icp rate.');
         },
         'MaxTransfer': (max_transfer_record) async {
-            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${(max_transfer_record as Record)['cts_transfer_icp_fee']}, must be less than ${BigInt.from(2).pow(64)-BigInt.from(1)}');
+            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${IcpTokens.oftheRecord((max_transfer_record as Record)['cts_transfer_icp_fee'] as Record)}, must be less than ${(BigInt.from(2).pow(64)-BigInt.from(1))/BigInt.from(10).pow(8)}');
         },
         'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
             Record r = user_icp_ledger_balance_too_low_record as Record;
             IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
-            throw Exception('User icp balance is too low. \nuser icp balance: ${user_icp_ledger_balance}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}');
+            throw Exception('User icp balance is too low. \nuser icp balance: ${user_icp_ledger_balance}\ncts-transfer-icp-fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}');
         },
         'IcpTransferCallError': (call_error) async {
             throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
