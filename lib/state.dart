@@ -79,7 +79,10 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     
     
-    late BuildContext context; 
+    late BuildContext _scontext; 
+    
+    void set context(BuildContext c) { this._scontext = c; }
+    BuildContext get context => this._scontext;
     
     
     late CTSFees cts_fees;

@@ -20,28 +20,28 @@ class CyclesMarketData {
     
     Future<void> fresh_cycles_positions() async {
         this.cycles_positions = await cycles_market_download_mechanism(
-            download_method_name: 'download_cycles_positions',
+            download_method_name: 'see_cycles_positions',
             function: CyclesPosition.oftheRecord
         );
     }
     
     Future<void> fresh_icp_positions() async {
         this.icp_positions = await cycles_market_download_mechanism(
-            download_method_name: 'download_icp_positions',
+            download_method_name: 'see_icp_positions',
             function: IcpPosition.oftheRecord
         );
     }
 
     Future<void> fresh_cycles_positions_purchases() async {
         this.cycles_positions_purchases = await cycles_market_download_mechanism(
-            download_method_name: 'download_cycles_positions_purchases',
+            download_method_name: 'see_cycles_positions_purchases',
             function: CyclesPositionPurchase.oftheRecord
         );
     }
 
     Future<void> fresh_icp_positions_purchases() async {
         this.icp_positions_purchases = await cycles_market_download_mechanism(
-            download_method_name: 'download_icp_positions_purchases',
+            download_method_name: 'see_icp_positions_purchases',
             function: IcpPositionPurchase.oftheRecord
         );
     }
@@ -56,16 +56,15 @@ Future<List<T>> cycles_market_download_mechanism<T>({
 }) async {
     List<T> list = [];
     for (int i=0; true; i++) {
-        Option<Vector<Record>> opt_records = c_backwards(
+        Option<Vector> opt_records = (c_backwards(
             await cycles_market.call(
                 method_name: download_method_name,
                 calltype: CallType.query,
                 put_bytes: c_forwards([Record.oftheMap({ 'chunk_i': Nat(BigInt.from(i)) })])
             )
-        )[0] as Option<Vector<Record>>;
-        Vector<Record>? records = opt_records.value;
-        if (records != null) {
-            list.addAll(records.map<T>(function));
+        )[0] as Option).cast_option<Vector>();
+        if (opt_records.value != null) {
+            list.addAll(opt_records.value!.cast_vector<Record>().map<T>(function));
         } else {
             break;
         }

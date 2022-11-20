@@ -178,7 +178,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                         child: Column(
                                             children: <Widget>[
                                                 Divider(),
-                                                Container(
+                                                if (state.user != null) Container(
                                                     padding: EdgeInsets.all(17),
                                                     child: OutlineButton(
                                                         button_text: 'LOG-OUT',
@@ -190,6 +190,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                         }
                                                     )
                                                 )
+                                                else/*if (state.user == null)*/ SizedBox(height: 20) 
                                             ]
                                         )
                                     )
@@ -436,7 +437,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             }
     
     
-            List<IcpTransfer> icp_transfers_reversed = state.user!.icp_transfers..reversed;
+            List<IcpTransfer> icp_transfers_reversed = state.user!.icp_transfers.reversed.toList();
             
             column_children.addAll([
                 SizedBox(
@@ -1004,7 +1005,7 @@ class IcpTransferListItem extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        bool is_cts_transfer_icp_fee = icp_transfer.memo == '4851594152738179000' && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == cts_main_icp_id;
+        bool is_cts_transfer_icp_fee = icp_transfer.memo == '4851594152738179398' && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == cts_main_icp_id;
 
         bool is_out = icp_transfer.from_account_identifier == state.user!.user_icp_id;
         bool is_in = icp_transfer.to_account_identifier == state.user!.user_icp_id;
@@ -1027,19 +1028,23 @@ class IcpTransferListItem extends StatelessWidget {
                             title: Text(listtile_title),
                             subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
                         ),
-                        Container(
-                            padding: EdgeInsets.all(17),
-                            width: double.infinity, 
-                            child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    SelectableText((is_out ? 'for: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? 'by: ${icp_transfer.from_account_identifier}' : '')),
-                                    SelectableText('icp: ${icp_transfer.amount}'),
-                                    SelectableText('memo: ${icp_transfer.memo}'),
-                                    SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),
-                                    SelectableText('timestamp: ${icp_transfer.timestamp_seconds}'),
-                                ]
+                        Expanded(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
+                                width: double.infinity, 
+                                child: SingleChildScrollView(
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            SelectableText((is_out ? 'for: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? '${is_out ? '\n' : ''}by: ${icp_transfer.from_account_identifier}' : '')),
+                                            SelectableText('icp: ${icp_transfer.amount}'),
+                                            SelectableText('memo: ${icp_transfer.memo}'),
+                                            SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),
+                                            SelectableText('timestamp: ${icp_transfer.timestamp_seconds}'),
+                                        ]
+                                    )
+                                )
                             )
                         )
                     ]
@@ -1322,15 +1327,16 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 
-                List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out..reversed;
-                List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in..reversed;
-                
+                List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
+                List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
+                /*
                 for (CyclesTransferOut cto in cycles_transfers_out_reversed) {
                     print([cto.id, cto.cycles_sent, cto.cycles_refunded, cto.fee_paid]);
                 }
                 for (CyclesTransferIn cti in cycles_transfers_in_reversed) {
                     print([cti.id, cti.cycles]);
                 }
+                */
                 
                 
                 column_children.addAll([
@@ -1340,7 +1346,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             children: [
                                 Container(
                                     padding: EdgeInsets.fromLTRB(7,10,7,27),
-                                    child: Text('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
+                                    child: SelectableText('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
                                 )
                             ]
                         )
@@ -1378,31 +1384,31 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                             DataRow(
                                                 cells: <DataCell>[
                                                     DataCell(Text('creation-timestamp: ')),
-                                                    DataCell(Text('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
+                                                    DataCell(SelectableText('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
                                                 ],
                                             ),
                                             DataRow(
                                                 cells: <DataCell>[
                                                     DataCell(Text('lifetime-termination: ')),
-                                                    DataCell(Text('${metrics.lifetime_termination_timestamp_seconds}')),
+                                                    DataCell(SelectableText('${metrics.lifetime_termination_timestamp_seconds}')),
                                                 ],
                                             ),
                                             DataRow(
                                                 cells: <DataCell>[
                                                     DataCell(Text('ctsfuel: ')),
-                                                    DataCell(Text('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
+                                                    DataCell(SelectableText('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
                                                 ]
                                             ),
                                             DataRow(
                                                 cells: <DataCell>[
                                                     DataCell(Text('storage-usage: ')),
-                                                    DataCell(Text('${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(3)}-MiB')),
+                                                    DataCell(SelectableText('${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(5)}-MiB')),
                                                 ]
                                             ),
                                             DataRow(
                                                 cells: <DataCell>[
                                                     DataCell(Text('storage-size: ')),
-                                                    DataCell(Text('${metrics.storage_size_mib}-MiB')),
+                                                    DataCell(SelectableText('${metrics.storage_size_mib}-MiB')),
                                                 ]
                                             )
                                         ]    
@@ -1891,6 +1897,22 @@ class CTSFuelForTheCyclesBalanceFormState extends State<CTSFuelForTheCyclesBalan
                                 
                                     form_key.currentState!.reset();                                                                        
                                 
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('CTSFUEL TOPUP SUCCESS'),
+                                                content: Text('CTSFUEL-BALANCE: ${state.user!.cycles_bank!.metrics!.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    
                                     state.loading_text = 'ctsfuel topup success.\nloading ctsfuel balance ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
@@ -1913,25 +1935,10 @@ class CTSFuelForTheCyclesBalanceFormState extends State<CTSFuelForTheCyclesBalan
                                             }   
                                         );                                    
                                     }
-                                
+                                    
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('CTSFUEL TOPUP SUCCESS'),
-                                                content: Text('CTSFUEL-BALANCE: ${state.user!.cycles_bank!.metrics!.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }
-                                    );
                                 }
                             }
                         )
@@ -2161,10 +2168,8 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
                                     
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
                                     
                                     await showDialog(
                                         context: state.context,
@@ -2181,6 +2186,34 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                                             );
                                         }
                                     );
+                                    
+                                    state.loading_text = 'loading cycles-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-balance'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );
+                                            
+                                    }
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
                                 }
                             }
                         )
@@ -2223,19 +2256,23 @@ class CyclesTransferInListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER IN'),
                             subtitle: Text('ID: ${cycles_transfer_in.id}'),
                         ),
-                        Container(
-                            padding: EdgeInsets.all(17),
-                            width: double.infinity, 
-                            child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    SelectableText('cycles: ${cycles_transfer_in.cycles}'),
-                                    SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
-                                    SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
-                                    SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
-                                ]
-                            ),
+                        Expanded(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
+                                width: double.infinity, 
+                                child: SingleChildScrollView(
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            SelectableText('cycles: ${cycles_transfer_in.cycles}'),
+                                            SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
+                                            SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
+                                            SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
+                                        ]
+                                    ),
+                                )
+                            )
                         )
                     ]
                 )
@@ -2262,22 +2299,26 @@ class CyclesTransferOutListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER OUT'),
                             subtitle: Text('ID: ${cycles_transfer_out.id}'),
                         ),
-                        Container(
-                            padding: EdgeInsets.all(17),
-                            width: double.infinity, 
-                            child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
-                                    SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
-                                    SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
-                                    SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
-                                    SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
-                                    SelectableText('cycles_transferrer_fee: ${cycles_transfer_out.fee_paid}'),
-                                    SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
-                                ]                            
-                            ),
+                        Expanded(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
+                                width: double.infinity, 
+                                child: SingleChildScrollView(
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
+                                            SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
+                                            SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
+                                            SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
+                                            SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
+                                            SelectableText('cycles_transferrer_fee: ${cycles_transfer_out.fee_paid}'),
+                                            SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
+                                        ]                            
+                                    ),
+                                )
+                            )
                         )
                     ]
                 )
@@ -2494,6 +2535,17 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
     CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
     
+    final ScrollController user_cycles_positions_scroll_controller = ScrollController();
+    final ScrollController user_icp_positions_scroll_controller = ScrollController();    
+    final ScrollController user_cycles_positions_purchases_scroll_controller = ScrollController();
+    final ScrollController user_icp_positions_purchases_scroll_controller = ScrollController();    
+    final ScrollController cycles_positions_scroll_controller = ScrollController();
+    final ScrollController icp_positions_scroll_controller = ScrollController();    
+    final ScrollController cycles_positions_purchases_scroll_controller = ScrollController();
+    final ScrollController icp_positions_purchases_scroll_controller = ScrollController();    
+    
+    
+    
     @override
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -2538,10 +2590,62 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
             ]);
         } else if (state.user != null && state.user!.cycles_bank != null) {
             column_children.addAll([
+                Center(
+                    child: Padding(
+                        padding: EdgeInsets.all(17),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
+                            onPressed: () async {
+                                state.loading_text = 'loading cycles-market data ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await Future.wait([
+                                        state.cycles_market_data.fresh_cycles_positions(),
+                                        state.cycles_market_data.fresh_icp_positions(),
+                                        state.cycles_market_data.fresh_cycles_positions_purchases(),
+                                        state.cycles_market_data.fresh_icp_positions_purchases(),
+                                        state.user!.cycles_bank!.fresh_metrics(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_balance(),
+                                        state.user!.cycles_bank!.fresh_cm_cycles_positions(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_positions(),
+                                        state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
+                                        state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
+                                        state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_positor_logs(),
+                                        state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_purchaser_logs(),
+                                        state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_positor_logs(),
+                                        state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs(),
+                                        state.user!.cycles_bank!.fresh_cm_message_void_cycles_position_positor_logs(),
+                                        state.user!.cycles_bank!.fresh_cm_message_void_icp_position_positor_logs(),
+                                    ]);
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when loading the cycles-market data:'),
+                                                content: Text('${e}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            }
+                        )
+                    ),
+                ),
                 Wrap(
                     children: [
                         Container(
-                            constraints: BoxConstraints(),
+                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: Column(
                                 children: [
                                     Container(
@@ -2557,7 +2661,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                             ) 
                         ),
                         Container(
-                            constraints: BoxConstraints(),
+                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: Column(
                                 children: [
                                     Padding(
@@ -2610,8 +2714,14 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 ),
                 Wrap(
                     children: [
-                        CyclesBankCMCreateCyclesPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateCyclesPositionForm')),
-                        CyclesBankCMCreateIcpPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateIcpPositionForm')),
+                        Container(
+                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
+                            child: CyclesBankCMCreateCyclesPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateCyclesPositionForm')),
+                        ),
+                        Container(
+                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
+                            child: CyclesBankCMCreateIcpPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateIcpPositionForm')),
+                        )
                     ]
                 ),
                 Padding(
@@ -2670,6 +2780,18 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         .toList()
                         ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
             }
+            
+            
+            print(state.cycles_market_data.icp_positions);
+            print(state.cycles_market_data.cycles_positions);
+            print(state.cycles_market_data.icp_positions_purchases);
+            print(state.cycles_market_data.cycles_positions_purchases);
+            print(current_user_cycles_positions);
+            print(current_user_icp_positions);
+            print(cycles_bank_cm_cycles_positions_logs);
+            print(cycles_bank_cm_icp_positions_logs);
+            print(user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs);
+            print(user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs);
 
 
             if (cycles_bank_cm_cycles_positions_logs.length > 0) {
@@ -2678,45 +2800,51 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         width: double.infinity,
                         child: Text('USER-CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
                     ),
-                    SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                            children: [
-                                 ListView.builder(
-                                    key: ValueKey('cm user-cycles-positions'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        CMCyclesPosition cm_cycles_position = cycles_bank_cm_cycles_positions_logs[i];
-                                        List<CMMessageCyclesPositionPurchasePositorLog> purchases = user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id]!;  
-                                        Cycles? current_position;
-                                        if (current_user_cycles_positions[cm_cycles_position.id] is CyclesPosition) {
-                                            current_position = (current_user_cycles_positions[cm_cycles_position.id] as CyclesPosition).cycles;
-                                        }
-                                        CMMessageVoidCyclesPositionPositorLog? cm_message_void_cycles_position_positor_log;
-                                        Iterable<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id = 
-                                            state.user!.cycles_bank!.cm_message_void_cycles_position_positor_logs
-                                                .where((CMMessageVoidCyclesPositionPositorLog l) => cm_cycles_position.id == l.cm_message_void_cycles_position_positor_quest.position_id);
-                                        if (cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.length > 0) {
-                                            cm_message_void_cycles_position_positor_log = cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.first;
-                                        }
-                                        return UserCyclesPositionListItem(
-                                            cm_cycles_position: cm_cycles_position,
-                                            purchases: purchases,
-                                            current_position: current_position,             
-                                            cm_message_void_cycles_position_positor_log: cm_message_void_cycles_position_positor_log,
-                                        );
-                                    },
-                                    itemCount: cycles_bank_cm_cycles_positions_logs.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
+                    LimitedBox(
+                        maxHeight: 507,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: user_cycles_positions_scroll_controller,
+                                    child: ListView.builder(
+                                        key: ValueKey('cm user-cycles-positions'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(7),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            CMCyclesPosition cm_cycles_position = cycles_bank_cm_cycles_positions_logs[i];
+                                            List<CMMessageCyclesPositionPurchasePositorLog> purchases = user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id]!;  
+                                            Cycles? current_position;
+                                            if (current_user_cycles_positions[cm_cycles_position.id] is CyclesPosition) {
+                                                current_position = (current_user_cycles_positions[cm_cycles_position.id] as CyclesPosition).cycles;
+                                            }
+                                            CMMessageVoidCyclesPositionPositorLog? cm_message_void_cycles_position_positor_log;
+                                            Iterable<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id = 
+                                                state.user!.cycles_bank!.cm_message_void_cycles_position_positor_logs
+                                                    .where((CMMessageVoidCyclesPositionPositorLog l) => cm_cycles_position.id == l.cm_message_void_cycles_position_positor_quest.position_id);
+                                            if (cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.length > 0) {
+                                                cm_message_void_cycles_position_positor_log = cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.first;
+                                            }
+                                            return UserCyclesPositionListItem(
+                                                cm_cycles_position: cm_cycles_position,
+                                                purchases: purchases,
+                                                current_position: current_position,             
+                                                cm_message_void_cycles_position_positor_log: cm_message_void_cycles_position_positor_log,
+                                            );
+                                        },
+                                        itemCount: cycles_bank_cm_cycles_positions_logs.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
                                 )
-                            ]                
+                            )                   
                         )
                     )
                 ]);
@@ -2728,45 +2856,51 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         width: double.infinity,
                         child: Text('USER-ICP-POSITIONS', style: TextStyle(fontSize: 17)),
                     ),
-                    SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                            children: [
-                                 ListView.builder(
-                                    key: ValueKey('cm user-icp-positions'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        CMIcpPosition cm_icp_position = cycles_bank_cm_icp_positions_logs[i];
-                                        List<CMMessageIcpPositionPurchasePositorLog> purchases = user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id]!;  
-                                        IcpTokens? current_position;
-                                        if (current_user_icp_positions[cm_icp_position.id] is IcpPosition) {
-                                            current_position = (current_user_icp_positions[cm_icp_position.id] as IcpPosition).icp;
-                                        }
-                                        CMMessageVoidIcpPositionPositorLog? cm_message_void_icp_position_positor_log;
-                                        Iterable<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id = 
-                                            state.user!.cycles_bank!.cm_message_void_icp_position_positor_logs
-                                                .where((CMMessageVoidIcpPositionPositorLog l) => cm_icp_position.id == l.cm_message_void_icp_position_positor_quest.position_id);
-                                        if (cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.length > 0) {
-                                            cm_message_void_icp_position_positor_log = cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.first;
-                                        }
-                                        return UserIcpPositionListItem(
-                                            cm_icp_position: cm_icp_position,
-                                            purchases: purchases,
-                                            current_position: current_position,             
-                                            cm_message_void_icp_position_positor_log: cm_message_void_icp_position_positor_log,
-                                        );
-                                    },
-                                    itemCount: cycles_bank_cm_icp_positions_logs.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
+                    LimitedBox(
+                        maxHeight: 507,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: user_icp_positions_scroll_controller,
+                                    child: ListView.builder(
+                                        key: ValueKey('cm user-icp-positions'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(7),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            CMIcpPosition cm_icp_position = cycles_bank_cm_icp_positions_logs[i];
+                                            List<CMMessageIcpPositionPurchasePositorLog> purchases = user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id]!;  
+                                            IcpTokens? current_position;
+                                            if (current_user_icp_positions[cm_icp_position.id] is IcpPosition) {
+                                                current_position = (current_user_icp_positions[cm_icp_position.id] as IcpPosition).icp;
+                                            }
+                                            CMMessageVoidIcpPositionPositorLog? cm_message_void_icp_position_positor_log;
+                                            Iterable<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id = 
+                                                state.user!.cycles_bank!.cm_message_void_icp_position_positor_logs
+                                                    .where((CMMessageVoidIcpPositionPositorLog l) => cm_icp_position.id == l.cm_message_void_icp_position_positor_quest.position_id);
+                                            if (cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.length > 0) {
+                                                cm_message_void_icp_position_positor_log = cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.first;
+                                            }
+                                            return UserIcpPositionListItem(
+                                                cm_icp_position: cm_icp_position,
+                                                purchases: purchases,
+                                                current_position: current_position,             
+                                                cm_message_void_icp_position_positor_log: cm_message_void_icp_position_positor_log,
+                                            );
+                                        },
+                                        itemCount: cycles_bank_cm_icp_positions_logs.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
                                 )
-                            ]                
+                            )                
                         )
                     )
                 ]);
@@ -2778,33 +2912,46 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         width: double.infinity,
                         child: Text('USER-CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
                     ),
-                    ListView.builder(
-                        key: ValueKey('cm user-cycles-positions-purchases'),
-                        scrollDirection: Axis.horizontal,
-                        reverse: true,
-                        shrinkWrap: false,
-                        padding: EdgeInsets.all(7),
-                        itemBuilder: (BuildContext context, int i) {
-                            CMCyclesPositionPurchase cm_cycles_position_purchase = state.user!.cycles_bank!.cm_cycles_positions_purchases[i];
-                            CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log;
-                            try {
-                                cm_message_cycles_position_purchase_purchaser_log = 
-                                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_purchaser_logs
-                                    .where((CMMessageCyclesPositionPurchasePurchaserLog cm_message_cycles_position_purchase_purchaser_log)=>cm_message_cycles_position_purchase_purchaser_log.cm_message_cycles_position_purchase_purchaser_quest.purchase_id == cm_cycles_position_purchase.id).first;
-                            } catch(e) {
-                                
-                            }
-                            return UserCyclesPositionPurchaseListItem(
-                                cm_cycles_position_purchase: cm_cycles_position_purchase,
-                                cm_message_cycles_position_purchase_purchaser_log: cm_message_cycles_position_purchase_purchaser_log
-                            );
-                        },
-                        itemCount: state.user!.cycles_bank!.cm_cycles_positions_purchases.length,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        addSemanticIndexes: true,
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                        clipBehavior: Clip.hardEdge
+                    LimitedBox(
+                        maxHeight: 507,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: user_cycles_positions_purchases_scroll_controller,
+                                    child: ListView.builder(
+                                        key: ValueKey('cm user-cycles-positions-purchases'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(7),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            CMCyclesPositionPurchase cm_cycles_position_purchase = state.user!.cycles_bank!.cm_cycles_positions_purchases[i];
+                                            CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log;
+                                            try {
+                                                cm_message_cycles_position_purchase_purchaser_log = 
+                                                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_purchaser_logs
+                                                    .where((CMMessageCyclesPositionPurchasePurchaserLog cm_message_cycles_position_purchase_purchaser_log)=>cm_message_cycles_position_purchase_purchaser_log.cm_message_cycles_position_purchase_purchaser_quest.purchase_id == cm_cycles_position_purchase.id).first;
+                                            } catch(e) {
+                                                
+                                            }
+                                            return UserCyclesPositionPurchaseListItem(
+                                                cm_cycles_position_purchase: cm_cycles_position_purchase,
+                                                cm_message_cycles_position_purchase_purchaser_log: cm_message_cycles_position_purchase_purchaser_log
+                                            );
+                                        },
+                                        itemCount: state.user!.cycles_bank!.cm_cycles_positions_purchases.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
+                                )
+                            )
+                        )
                     )
                 ]);
             } 
@@ -2815,68 +2962,80 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         width: double.infinity,
                         child: Text('USER-ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
                     ),
-                    ListView.builder(
-                        key: ValueKey('cm user-icp-positions-purchases'),
-                        scrollDirection: Axis.horizontal,
-                        reverse: true,
-                        shrinkWrap: false,
-                        padding: EdgeInsets.all(7),
-                        itemBuilder: (BuildContext context, int i) {
-                            CMIcpPositionPurchase cm_icp_position_purchase = state.user!.cycles_bank!.cm_icp_positions_purchases[i];
-                            CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log;
-                            try {
-                                cm_message_icp_position_purchase_purchaser_log = 
-                                    state.user!.cycles_bank!.cm_message_icp_position_purchase_purchaser_logs
-                                    .where((CMMessageIcpPositionPurchasePurchaserLog cm_message_icp_position_purchase_purchaser_log)=>cm_message_icp_position_purchase_purchaser_log.cm_message_icp_position_purchase_purchaser_quest.purchase_id == cm_icp_position_purchase.id).first;
-                            } catch(e) {
-                                
-                            }
-                            return UserIcpPositionPurchaseListItem(
-                                cm_icp_position_purchase: cm_icp_position_purchase,
-                                cm_message_icp_position_purchase_purchaser_log: cm_message_icp_position_purchase_purchaser_log
-                            );
-                        },
-                        itemCount: state.user!.cycles_bank!.cm_icp_positions_purchases.length,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        addSemanticIndexes: true,
-                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                        clipBehavior: Clip.hardEdge
+                    LimitedBox(
+                        maxHeight: 507,
+                        child: Container(
+                            constraints: BoxConstraints(),
+                            padding: EdgeInsets.all(17),
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                                child: Scrollbar(
+                                    controller: user_icp_positions_purchases_scroll_controller,
+                                    child: ListView.builder(
+                                        key: ValueKey('cm user-icp-positions-purchases'),
+                                        scrollDirection: Axis.horizontal,
+                                        reverse: false,
+                                        shrinkWrap: false,
+                                        padding: EdgeInsets.all(7),
+                                        itemBuilder: (BuildContext context, int i) {
+                                            CMIcpPositionPurchase cm_icp_position_purchase = state.user!.cycles_bank!.cm_icp_positions_purchases[i];
+                                            CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log;
+                                            try {
+                                                cm_message_icp_position_purchase_purchaser_log = 
+                                                    state.user!.cycles_bank!.cm_message_icp_position_purchase_purchaser_logs
+                                                    .where((CMMessageIcpPositionPurchasePurchaserLog cm_message_icp_position_purchase_purchaser_log)=>cm_message_icp_position_purchase_purchaser_log.cm_message_icp_position_purchase_purchaser_quest.purchase_id == cm_icp_position_purchase.id).first;
+                                            } catch(e) {
+                                                
+                                            }
+                                            return UserIcpPositionPurchaseListItem(
+                                                cm_icp_position_purchase: cm_icp_position_purchase,
+                                                cm_message_icp_position_purchase_purchaser_log: cm_message_icp_position_purchase_purchaser_log
+                                            );
+                                        },
+                                        itemCount: state.user!.cycles_bank!.cm_icp_positions_purchases.length,
+                                        addAutomaticKeepAlives: true,
+                                        addRepaintBoundaries: true,
+                                        addSemanticIndexes: true,
+                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                        clipBehavior: Clip.hardEdge
+                                    )
+                                )
+                            )
+                        )
                     )
                 ]);
-            }
-            
+            }    
         }
         
         
         
         List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.reversed.toList();
         List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.reversed.toList();
+        List<CyclesPositionPurchase> cycles_positions_purchases = state.cycles_market_data.cycles_positions_purchases.reversed.toList();
+        List<IcpPositionPurchase> icp_positions_purchases = state.cycles_market_data.icp_positions_purchases.reversed.toList();
+        
+        
         if (state.user != null && state.user!.cycles_bank != null) {
             cycles_positions = cycles_positions.where((CyclesPosition cp)=>cp.positor.text != state.user!.cycles_bank!.principal.text).toList();
             icp_positions = icp_positions.where((IcpPosition ip)=>ip.positor.text != state.user!.cycles_bank!.principal.text).toList();
-        }
-        
-        List<CyclesPositionListItem> cycles_positions_list_items = cycles_positions.map((cp)=>CyclesPositionListItem(cp)).toList();
-        
-        List<IcpPositionListItem> icp_positions_list_items = icp_positions.map((ip)=>IcpPositionListItem(ip)).toList();
-        
-        
+        }        
         
         column_children.addAll([
-            Padding(
+            if (state.user == null || state.user!.cycles_bank == null) Padding(
                 padding: EdgeInsets.all(7),
                 child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: blue),
-                    child: Text('LOAD CYCLES-MARKET POSITIONS', style: TextStyle(fontSize:11)),
+                    child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
                     onPressed: () async {
-                        state.loading_text = 'loading cycles-market positions ...';
+                        state.loading_text = 'loading cycles-market data ...';
                         state.is_loading = true;
                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                         try {
                             await Future.wait([
                                 state.cycles_market_data.fresh_cycles_positions(),
-                                state.cycles_market_data.fresh_icp_positions()
+                                state.cycles_market_data.fresh_icp_positions(),
+                                state.cycles_market_data.fresh_cycles_positions_purchases(),
+                                state.cycles_market_data.fresh_icp_positions_purchases()
                             ]);
                         } catch(e) {
                             await showDialog(
@@ -2904,24 +3063,134 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                    children: cycles_positions_list_items 
+            LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: cycles_positions_scroll_controller,
+                            child: ListView.builder(
+                                key: ValueKey('cm cycles-positions'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return CyclesPositionListItem(cycles_positions[i]);
+                                },
+                                itemCount: cycles_positions.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
                 )
             ),
             Container(
                 width: double.infinity,
                 child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                    children: icp_positions_list_items
+            LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: icp_positions_scroll_controller,
+                            child: ListView.builder(
+                                key: ValueKey('cm icp-positions'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return IcpPositionListItem(icp_positions[i]);
+                                },
+                                itemCount: icp_positions.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
                 )
             ),
-            
-            
+            Container(
+                width: double.infinity,
+                child: Text('CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+            ),
+            LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: cycles_positions_purchases_scroll_controller,
+                            child: ListView.builder(
+                                key: ValueKey('cm cycles-positions-purchases'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return CyclesPositionPurchaseListItem(cycles_positions_purchases[i]);
+                                },
+                                itemCount: cycles_positions_purchases.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
+            Container(
+                width: double.infinity,
+                child: Text('ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+            ),
+            LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: icp_positions_purchases_scroll_controller,
+                            child: ListView.builder(
+                                key: ValueKey('cm icp-positions-purchases'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return IcpPositionPurchaseListItem(icp_positions_purchases[i]);
+                                },
+                                itemCount: icp_positions_purchases.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
         ]);
         
         
@@ -2952,17 +3221,27 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         );
         */
         
-        return Column(
-            children: [
-                ScaffoldBodyHeader('CYCLES-MARKET'),
-                SingleChildScrollView(
-                    child: Column(                
-                        children: column_children,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center
-                    )
+        
+        return Center(
+            child: Container(
+                constraints: BoxConstraints(maxWidth: 900),//731),
+                child: Column(
+                    children: [
+                        ScaffoldBodyHeader('CYCLES-MARKET'),
+                        Expanded(
+                            child: ListView(
+                                padding: EdgeInsets.all(0),
+                                children: [
+                                    Column(
+                                        children: column_children 
+                                    )
+                                ],
+                                addAutomaticKeepAlives: true
+                            )
+                        )
+                    ]
                 )
-            ]
+            )
         );
     }
 }
@@ -3552,90 +3831,10 @@ class UserCyclesPositionListItem extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
-        List<Widget> column_side_of_the_listtile_children = [
-            Text('original posit: ${cm_cycles_position.cycles}'),
-            Text('minimum-purchase: ${cm_cycles_position.minimum_purchase}'),
-            Text('xdr-icp-rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
-            Text('create_position_fee: ${cm_cycles_position.create_position_fee}'),
-            Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
-        ];
-        
-        if (current_position != null) {
-            column_side_of_the_listtile_children.addAll([
-                Text('on-the-market: true'),
-                Text('current-position: ${this.current_position!}'),    
-            ]);
-        } else {
-            column_side_of_the_listtile_children.add(
-                Text('on-the-market: false')
-            );
-        }
-        
-        Widget purchases_widget = Container(
-            constraints: BoxConstraints(maxHeight: 100),
-            child: SingleChildScrollView(
-                child: Column(
-                    children: purchases.map((CMMessageCyclesPositionPurchasePositorLog purchase){
-                        
-                        return Container(
-                            padding: EdgeInsets.all(11),
-                            child: Card(
-                                child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                        ListTile(
-                                            title: Text('PURCHASE'),
-                                            subtitle: Text('ID: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchase_id}'),
-                                        ),
-                                        Column(
-                                            mainAxisAlignment: MainAxisAlignment.start,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                                Text('purchaser: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchaser}'),
-                                                Text('cycles-purchase: ${purchase.cm_message_cycles_position_purchase_positor_quest.cycles_purchase}'),
-                                                Text('icp-payment: ${purchase.cm_message_cycles_position_purchase_positor_quest.icp_payment}'),
-                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_cycles_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
-                                            ]
-                                        ),
-                                    ]
-                                )
-                            )
-                        );
-                    }).toList()
-                ) 
-            )
-        ); 
-        
-        List<Widget> card_column_last_widgets = [];
- 
-        if (this.cm_message_void_cycles_position_positor_log == null) {
-            card_column_last_widgets.add(
-                Padding(
-                    padding: EdgeInsets.all(7),
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('VOID POSITION'),
-                        onPressed: () async {
-                            
-                        }
-                    )
-                ),
-            );
-        } else {
-            card_column_last_widgets.add(
-                Container(
-                    child: Column(
-                        children: [
-                            Text('void-cycles: ${this.cm_message_void_cycles_position_positor_log!.void_cycles}'),
-                            Text('void-timestamp: ${this.cm_message_void_cycles_position_positor_log!.cm_message_void_cycles_position_positor_quest.timestamp_nanos}'),
-                        ]
-                    )
-                )
-            );
-        }
         
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -3644,13 +3843,89 @@ class UserCyclesPositionListItem extends StatelessWidget {
                             title: Text('USER CYCLES POSITION'),
                             subtitle: Text('ID: ${cm_cycles_position.id}'),
                         ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: column_side_of_the_listtile_children
+                        Expanded(
+                            child: Padding(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
+                                child: SingleChildScrollView(
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        children: [
+                                            Container(
+                                                width: double.infinity,
+                                                child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Text('original posit: ${cm_cycles_position.cycles}'),
+                                                        Text('minimum-purchase: ${cm_cycles_position.minimum_purchase}'),
+                                                        Text('xdr-icp-rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
+                                                        Text('create_position_fee: ${cm_cycles_position.create_position_fee}'),
+                                                        Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
+                                                        if (current_position != null) ...[
+                                                            Text('on-the-market: true'),
+                                                            Text('current-position: ${this.current_position!}'),    
+                                                        ]
+                                                        else Text('on-the-market: false')
+                                                    ]
+                                                )
+                                            ),
+                                            SizedBox(
+                                                width: 1,
+                                                height: 10,
+                                            ),
+                                            Container(
+                                                child: Column(
+                                                    children: purchases.map((CMMessageCyclesPositionPurchasePositorLog purchase){
+                                                        return Container(
+                                                            padding: EdgeInsets.all(11),
+                                                            child: Card(
+                                                                child: Column(
+                                                                    mainAxisSize: MainAxisSize.min,
+                                                                    children: <Widget>[
+                                                                        ListTile(
+                                                                            title: Text('PURCHASE'),
+                                                                            subtitle: Text('ID: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchase_id}'),
+                                                                        ),
+                                                                        Column(
+                                                                            mainAxisAlignment: MainAxisAlignment.start,
+                                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                                            children: [
+                                                                                Text('purchaser: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchaser}'),
+                                                                                Text('cycles-purchase: ${purchase.cm_message_cycles_position_purchase_positor_quest.cycles_purchase}'),
+                                                                                Text('icp-payment: ${purchase.cm_message_cycles_position_purchase_positor_quest.icp_payment}'),
+                                                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_cycles_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
+                                                                            ]
+                                                                        )
+                                                                    ]
+                                                                )
+                                                            )
+                                                        );
+                                                    }).toList() 
+                                                )
+                                            )
+                                        ]
+                                    )
+                                )
+                            )
                         ),
-                        purchases_widget,
-                        ...card_column_last_widgets
+                        if (this.cm_message_void_cycles_position_positor_log == null && current_position != null) Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('VOID POSITION'),
+                                onPressed: () async {
+                                    
+                                }
+                            )
+                        )
+                        else if (this.cm_message_void_cycles_position_positor_log != null) Container(
+                            child: Column(
+                                children: [
+                                    Text('void-cycles: ${this.cm_message_void_cycles_position_positor_log!.void_cycles}'),
+                                    Text('void-timestamp: ${this.cm_message_void_cycles_position_positor_log!.cm_message_void_cycles_position_positor_quest.timestamp_nanos}'),
+                                ]
+                            )
+                        )
                     ]
                 )
             )
@@ -3676,91 +3951,11 @@ class UserIcpPositionListItem extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
-        List<Widget> column_side_of_the_listtile_children = [
-            Text('original posit: ${cm_icp_position.icp}'),
-            Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
-            Text('xdr-icp-rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
-            Text('create_position_fee: ${cm_icp_position.create_position_fee}'),
-            Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
-        ];
-        
-        if (current_position != null) {
-            column_side_of_the_listtile_children.addAll([
-                Text('on-the-market: true'),
-                Text('current-position: ${this.current_position!}'),    
-            ]);
-        } else {
-            column_side_of_the_listtile_children.add(
-                Text('on-the-market: false')
-            );
-        }
-        
-        Widget purchases_widget = Container(
-            constraints: BoxConstraints(maxHeight: 100),
-            child: SingleChildScrollView(
-                child: Column(
-                    children: purchases.map((CMMessageIcpPositionPurchasePositorLog purchase){
-                        
-                        return Container(
-                            padding: EdgeInsets.all(11),
-                            child: Card(
-                                child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                        ListTile(
-                                            title: Text('PURCHASE'),
-                                            subtitle: Text('ID: ${purchase.cm_message_icp_position_purchase_positor_quest.purchase_id}'),
-                                        ),
-                                        Column(
-                                            mainAxisAlignment: MainAxisAlignment.start,
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                                Text('purchaser: ${purchase.cm_message_icp_position_purchase_positor_quest.purchaser}'),
-                                                Text('icp-purchase: ${purchase.cm_message_icp_position_purchase_positor_quest.icp_purchase}'),
-                                                Text('cycles-payment: ${purchase.cycles_payment}'),
-                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_icp_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
-                                            ]
-                                        ),
-                                    ]
-                                )
-                            )
-                        );
-                    }).toList()
-                ) 
-            )
-        ); 
-        
-        List<Widget> card_column_last_widgets = [];
- 
-        if (this.cm_message_void_icp_position_positor_log == null) {
-            card_column_last_widgets.add(
-                Padding(
-                    padding: EdgeInsets.all(7),
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('VOID POSITION'),
-                        onPressed: () async {
-                            
-                        }
-                    )
-                ),
-            );
-        } else {
-            card_column_last_widgets.add(
-                Container(
-                    child: Column(
-                        children: [
-                            Text('void-icp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.void_icp}'),
-                            Text('void-timestamp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.timestamp_nanos}'),
-                        ]
-                    )
-                )
-            );
-        }
+    
         
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -3769,13 +3964,93 @@ class UserIcpPositionListItem extends StatelessWidget {
                             title: Text('USER ICP POSITION'),
                             subtitle: Text('ID: ${cm_icp_position.id}'),
                         ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: column_side_of_the_listtile_children
+                        Expanded(
+                            child: Padding(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
+                                child: SingleChildScrollView(
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        children: [
+                                            Container(
+                                                width: double.infinity,
+                                                child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Text('original posit: ${cm_icp_position.icp}'),
+                                                        Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
+                                                        Text('xdr-icp-rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
+                                                        Text('create_position_fee: ${cm_icp_position.create_position_fee}'),
+                                                        Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
+                                                        if (current_position != null) ...[
+                                                            Text('on-the-market: true'),
+                                                            Text('current-position: ${this.current_position!}'),    
+                                                        ]
+                                                        else Text('on-the-market: false') 
+                                                    ]
+                                                )
+                                            ),
+                                            SizedBox(
+                                                width: 1,
+                                                height: 10,
+                                            ),
+                                            Container(
+                                                child: Column(
+                                                    children: purchases.map((CMMessageIcpPositionPurchasePositorLog purchase){    
+                                                        return Container(
+                                                            padding: EdgeInsets.all(11),
+                                                            child: Card(
+                                                                child: Column(
+                                                                    mainAxisSize: MainAxisSize.min,
+                                                                    children: <Widget>[
+                                                                        ListTile(
+                                                                            title: Text('PURCHASE'),
+                                                                            subtitle: Text('ID: ${purchase.cm_message_icp_position_purchase_positor_quest.purchase_id}'),
+                                                                        ),
+                                                                        Column(
+                                                                            mainAxisAlignment: MainAxisAlignment.start,
+                                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                                            children: [
+                                                                                Text('purchaser: ${purchase.cm_message_icp_position_purchase_positor_quest.purchaser}'),
+                                                                                Text('icp-purchase: ${purchase.cm_message_icp_position_purchase_positor_quest.icp_purchase}'),
+                                                                                Text('cycles-payment: ${purchase.cycles_payment}'),
+                                                                                Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_icp_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
+                                                                            ]
+                                                                        )
+                                                                    ]
+                                                                )
+                                                            )
+                                                        );
+                                                    }).toList()
+                                                ) 
+                                            ),
+                                        ]
+                                    )
+                                )
+                            )
                         ),
-                        purchases_widget,
-                        ...card_column_last_widgets
+                        SizedBox(
+                            width: 1,
+                            height: 10,
+                        ),
+                        if (this.cm_message_void_icp_position_positor_log == null && current_position != null) Padding(
+                            padding: EdgeInsets.all(7),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('VOID POSITION'),
+                                onPressed: () async {
+                                    
+                                }
+                            )
+                        )
+                        else if (this.cm_message_void_icp_position_positor_log != null) Container(
+                            child: Column(
+                                children: [
+                                    Text('void-icp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.void_icp}'),
+                                    Text('void-timestamp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.timestamp_nanos}'),
+                                ]
+                            )
+                        )
                     ]
                 )
             )
@@ -3924,7 +4199,7 @@ class UserIcpPositionListItem extends StatelessWidget {
 
 class CyclesPositionListItem extends StatelessWidget {
     final CyclesPosition cycles_position;
-    CyclesPositionListItem(CyclesPosition _cycles_position): cycles_position = _cycles_position, super(key: ValueKey('CyclesPositionListItem: ${_cycles_position.id}'));
+    CyclesPositionListItem(CyclesPosition cycles_position): cycles_position = cycles_position, super(key: ValueKey('CyclesPositionListItem: ${cycles_position.id}'));
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -3970,7 +4245,7 @@ class CyclesPositionListItem extends StatelessWidget {
 
 class IcpPositionListItem extends StatelessWidget {
     final IcpPosition icp_position;
-    IcpPositionListItem(IcpPosition _icp_position): icp_position = _icp_position, super(key: ValueKey('IcpPositionListItem: ${_icp_position.id}'));
+    IcpPositionListItem(IcpPosition icp_position): icp_position = icp_position, super(key: ValueKey('IcpPositionListItem: ${icp_position.id}'));
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -4006,6 +4281,84 @@ class IcpPositionListItem extends StatelessWidget {
                                 }
                             )
                         )
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+
+class CyclesPositionPurchaseListItem extends StatelessWidget {
+    final CyclesPositionPurchase cycles_position_purchase;
+    CyclesPositionPurchaseListItem(CyclesPositionPurchase cycles_position_purchase): cycles_position_purchase = cycles_position_purchase, super(key: ValueKey('CyclesPositionPurchaseListItem: ${cycles_position_purchase.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('CYCLES POSITION PURCHASE'),
+                            subtitle: Text('ID: ${cycles_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('cycles-purchase: ${cycles_position_purchase.cycles}'),
+                                Text('icp-payment: ${cycles_to_icptokens(cycles_position_purchase.cycles, cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('xdr-icp-rate: ${cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
+                                Text('purchaser: ${cycles_position_purchase.purchaser.text}'),
+                                Text('positor: ${cycles_position_purchase.cycles_position_positor.text}'),
+                                Text('cycles-position-id: ${cycles_position_purchase.cycles_position_id}'),
+                                Text('timestamp: ${seconds_of_the_nanos(cycles_position_purchase.timestamp_nanos)}'),
+                            ]
+                        ),
+                    ]
+                )
+            )
+        );
+    }
+}
+
+
+
+class IcpPositionPurchaseListItem extends StatelessWidget {
+    final IcpPositionPurchase icp_position_purchase;
+    IcpPositionPurchaseListItem(IcpPositionPurchase icp_position_purchase): icp_position_purchase = icp_position_purchase, super(key: ValueKey('IcpPositionPurchaseListItem: ${icp_position_purchase.id}'));
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('ICP POSITION PURCHASE'),
+                            subtitle: Text('ID: ${icp_position_purchase.id}'),
+                        ),
+                        Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Text('icp-purchase: ${icp_position_purchase.icp}'),
+                                Text('cycles-payment: ${icptokens_to_cycles(icp_position_purchase.icp, icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
+                                Text('xdr-icp-rate: ${icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
+                                Text('purchaser: ${icp_position_purchase.purchaser.text}'),
+                                Text('positor: ${icp_position_purchase.icp_position_positor.text}'),
+                                Text('icp-position-id: ${icp_position_purchase.icp_position_id}'),
+                                Text('timestamp: ${seconds_of_the_nanos(icp_position_purchase.timestamp_nanos)}'),
+                            ]
+                        ),
                     ]
                 )
             )

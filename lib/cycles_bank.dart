@@ -794,6 +794,9 @@ class CyclesBank extends Canister {
             },
             Err:(cycles_balance_for_the_ctsfuel_balance_error) {
                 match_variant<Never>(cycles_balance_for_the_ctsfuel_balance_error as Variant, {
+                    'MinimumCyclesForTheCTSFuel': (r) {
+                        throw Exception('Minimum cycles for the ctsfuel: ${Cycles.oftheNat((r as Record)['minimum_cycles_for_the_ctsfuel']!)}');
+                    },
                     'CyclesBalanceTooLow': (cycles_balance_record) { 
                         this.metrics!.cycles_balance = Cycles.oftheNat((cycles_balance_record as Record)['cycles_balance']!);
                         throw Exception('The cycles_balance is too low.');
@@ -821,12 +824,12 @@ class CyclesBank extends Canister {
             Err: (lengthen_lifetime_error) {
                 return match_variant<Never>(lengthen_lifetime_error as Variant, {
                     'MinimumSetLifetimeTerminationTimestampSeconds': (nat) {
-                        throw Exception('The minimum days that the lifetime of this cycles-bank can lengthen is ${((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24}');
+                        throw Exception('The minimum days that the lifetime of this cycles-bank can lengthen is ${(((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24).toStringAsFixed(3)}');
                     },
                     'CyclesBalanceTooLow': (r_ctype){
                         Record r = r_ctype as Record;
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles_balance in the cycles-bank is too low.\ncost to lengthen the lifetime for ${ (q.set_lifetime_termination_timestamp_seconds - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24 }-days: ${Cycles.oftheNat(r['lengthen_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
+                        throw Exception('The cycles_balance in the cycles-bank is too low.\ncost to lengthen the lifetime for ${ ((q.set_lifetime_termination_timestamp_seconds - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24).toStringAsFixed(3) }-days: ${Cycles.oftheNat(r['lengthen_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
                     },
                     'CBSMCallError': (call_error_record) {
                         throw Exception('cbsm call error: ${CallError.oftheRecord(call_error_record as Record)}');
