@@ -4145,56 +4145,9 @@ class UserIcpPositionPurchaseListItem extends StatelessWidget {
             )
         );
     }
-    
 }
 
 
-
-/*
-class UserIcpPositionListItem extends StatelessWidget {
-    final IcpPosition icp_position;
-    UserIcpPositionListItem(IcpPosition _icp_position): icp_position = _icp_position, super(key: ValueKey('UserIcpPositionListItem: ${_icp_position.id}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('USER ICP POSITION'),
-                            subtitle: Text('ID: ${icp_position.id}'),
-                        ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('icp: ${icp_position.icp}'),
-                                Text('minimum-purchase: ${icp_position.minimum_purchase}'),
-                                Text('xdr-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate}'),
-                                Text('timestamp: ${seconds_of_the_nanos(icp_position.timestamp_nanos)}'),
-                            ]
-                        ),
-                        Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('VOID POSITION'),
-                                onPressed: () async {
-                                    
-                                }
-                            )
-                        )
-                    ]
-                )
-            )
-        );
-    }
-}
-*/
 
 
 class CyclesPositionListItem extends StatelessWidget {
@@ -4206,6 +4159,7 @@ class CyclesPositionListItem extends StatelessWidget {
 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -4252,6 +4206,7 @@ class IcpPositionListItem extends StatelessWidget {
         
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -4299,6 +4254,7 @@ class CyclesPositionPurchaseListItem extends StatelessWidget {
 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -4338,6 +4294,7 @@ class IcpPositionPurchaseListItem extends StatelessWidget {
 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
