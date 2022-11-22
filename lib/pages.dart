@@ -817,7 +817,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                         builder: (BuildContext context) {
                                             return AlertDialog(
                                                 title: Text('Icp Transfer Success:'),
-                                                content: Text('transfer block height: ${transfer_icp_success.block_height}'),
+                                                content: Text('transfer block height: ${transfer_icp_success.block_height.value}'),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),
@@ -2666,7 +2666,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 children: [
                                     Padding(
                                         padding:EdgeInsets.all(7),
-                                        child: Text('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ${state.user!.cycles_bank!.cm_icp_id}')
+                                        child: SelectableText('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ${state.user!.cycles_bank!.cm_icp_id}')
                                     ),
                                     Text('ICP-BALANCE: ${state.user!.cycles_bank!.cm_icp_balance != null ? state.user!.cycles_bank!.cm_icp_balance! : 'unknown'}'),
                                     Text('timestamp: ${state.user!.cycles_bank!.cm_icp_balance_with_a_timestamp != null ? seconds_of_the_nanos(state.user!.cycles_bank!.cm_icp_balance_with_a_timestamp!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
@@ -2781,18 +2781,6 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
             }
             
-            
-            print(state.cycles_market_data.icp_positions);
-            print(state.cycles_market_data.cycles_positions);
-            print(state.cycles_market_data.icp_positions_purchases);
-            print(state.cycles_market_data.cycles_positions_purchases);
-            print(current_user_cycles_positions);
-            print(current_user_icp_positions);
-            print(cycles_bank_cm_cycles_positions_logs);
-            print(cycles_bank_cm_icp_positions_logs);
-            print(user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs);
-            print(user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs);
-
 
             if (cycles_bank_cm_cycles_positions_logs.length > 0) {
                 column_children.addAll([
@@ -3375,6 +3363,7 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                                     
                                     try {
                                         await Future.wait([
+                                            state.user!.cycles_bank!.fresh_metrics(),                                        
                                             state.user!.cycles_bank!.fresh_cm_icp_balance(),
                                             state.user!.cycles_bank!.fresh_cm_icp_transfers(),
                                             state.user!.cycles_bank!.fresh_cm_icp_transfers_out(),
@@ -4072,6 +4061,7 @@ class UserCyclesPositionPurchaseListItem extends StatelessWidget {
                 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -4087,7 +4077,7 @@ class UserCyclesPositionPurchaseListItem extends StatelessWidget {
                                 Text('cycles-purchase: ${cm_cycles_position_purchase.cycles}'),
                                 Text('icp-payment: ${cycles_to_icptokens(cm_cycles_position_purchase.cycles, cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
                                 Text('xdr-icp-rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
-                                Text('cycles-position-positor: ${cm_cycles_position_purchase.cycles_position_positor}'),
+                                Text('cycles-position-positor: ${cm_cycles_position_purchase.cycles_position_positor.text}'),
                                 Text('cycles-position-id: ${cm_cycles_position_purchase.cycles_position_id}'),
                                 Text('purchase-position-fee: ${cm_cycles_position_purchase.purchase_position_fee}'),
                                 Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position_purchase.timestamp_nanos)}'),
@@ -4117,6 +4107,7 @@ class UserIcpPositionPurchaseListItem extends StatelessWidget {
                 
         return Container(
             padding: EdgeInsets.all(11),
+            constraints: BoxConstraints(maxWidth: 320),
             child: Card(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -4132,7 +4123,7 @@ class UserIcpPositionPurchaseListItem extends StatelessWidget {
                                 Text('icp-purchase: ${cm_icp_position_purchase.icp}'),
                                 Text('cycles-payment: ${icptokens_to_cycles(cm_icp_position_purchase.icp, cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
                                 Text('xdr-icp-rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
-                                Text('icp-position-positor: ${cm_icp_position_purchase.icp_position_positor}'),
+                                Text('icp-position-positor: ${cm_icp_position_purchase.icp_position_positor.text}'),
                                 Text('icp-position-id: ${cm_icp_position_purchase.icp_position_id}'),
                                 Text('purchase-position-fee: ${cm_icp_position_purchase.purchase_position_fee}'),
                                 Text('timestamp: ${seconds_of_the_nanos(cm_icp_position_purchase.timestamp_nanos)}'),
@@ -4180,14 +4171,8 @@ class CyclesPositionListItem extends StatelessWidget {
                             ]
                         ),
                         Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('PURCHASE'),
-                                onPressed: () async {
-                                    
-                                }
-                            )
+                            padding: EdgeInsets.all(11),
+                            child: PurchaseCyclesPositionForm(cycles_position, key: ValueKey('PurchaseCyclesPositionForm ${cycles_position.id}')),
                         )
                     ]
                 )
@@ -4227,14 +4212,8 @@ class IcpPositionListItem extends StatelessWidget {
                             ]
                         ),
                         Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('PURCHASE'),
-                                onPressed: () async {
-                                    //await showDialog();
-                                }
-                            )
+                            padding: EdgeInsets.all(11),
+                            child: PurchaseIcpPositionForm(icp_position, key: ValueKey('PurchaseIcpPositionForm ${icp_position.id}')),
                         )
                     ]
                 )
@@ -4242,6 +4221,260 @@ class IcpPositionListItem extends StatelessWidget {
         );
     }
 }
+
+
+
+class PurchaseCyclesPositionForm extends StatefulWidget {
+    final CyclesPosition cycles_position;
+    PurchaseCyclesPositionForm(this.cycles_position, {super.key});
+    State<PurchaseCyclesPositionForm> createState() => PurchaseCyclesPositionFormState();
+}
+class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late Cycles purchase_cycles;
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'purchase cycles:',
+                        ),
+                        onSaved: (String? value) { purchase_cycles = Cycles(cycles: BigInt.parse(value!, radix: 10)); },
+                        validator: cycles_validator
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('PURCHASE'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'purchasing ${purchase_cycles}-cycles ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late PurchaseCyclesPositionSuccess purchase_cycles_position_success;
+                                    try {
+                                        purchase_cycles_position_success = await state.user!.cycles_bank!.cm_purchase_cycles_position(
+                                            this.widget.cycles_position, 
+                                            purchase_cycles
+                                        );
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Purchase Cycles:'),
+                                                    content: Text('$e'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                                                        
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Purchase Cycles Success'),
+                                                content: Text('${purchase_cycles}-cycles. purchase-id: ${purchase_cycles_position_success.purchase_id}.'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    
+                                    state.loading_text = 'loading cycles-balance and cycles-market-icp-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.cycles_bank!.fresh_metrics(),
+                                            state.user!.cycles_bank!.fresh_cm_icp_balance()
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-bank balance:'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );       
+                                    }
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                }
+                            }
+                        )
+                    )
+                ]
+            )   
+        );
+    }
+}
+
+
+
+
+class PurchaseIcpPositionForm extends StatefulWidget {
+    final IcpPosition icp_position;
+    PurchaseIcpPositionForm(this.icp_position, {super.key});
+    State<PurchaseIcpPositionForm> createState() => PurchaseIcpPositionFormState();
+}
+class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late IcpTokens purchase_icp;
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'purchase icp:',
+                        ),
+                        onSaved: (String? value) { purchase_icp = IcpTokens.oftheDouble(double.parse(value!.trim())); },
+                        validator: icp_validator
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('PURCHASE'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'purchasing ${purchase_icp}-icp ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late PurchaseIcpPositionSuccess purchase_icp_position_success;
+                                    try {
+                                        purchase_icp_position_success = await state.user!.cycles_bank!.cm_purchase_icp_position(
+                                            this.widget.icp_position, 
+                                            purchase_icp
+                                        );
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Purchase Icp:'),
+                                                    content: Text('$e'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                                                        
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Purchase Icp Success'),
+                                                content: Text('${purchase_icp}-icp. purchase-id: ${purchase_icp_position_success.purchase_id}.'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    
+                                    state.loading_text = 'loading cycles-market-icp-balance and cycles-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.cycles_bank!.fresh_metrics(),
+                                            state.user!.cycles_bank!.fresh_cm_icp_balance()
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-bank balance:'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );       
+                                    }
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                }
+                            }
+                        )
+                    )
+                ]
+            )   
+        );
+    }
+}
+
+
+
+
+
 
 
 
