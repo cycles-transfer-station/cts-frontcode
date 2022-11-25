@@ -25218,7 +25218,7 @@ ri(a){return A.a5b(new A.uL("Paste is not implemented for this browser."),null,t
 A.iL.prototype={
 gL0(){var s=this.a
 s=s==null?null:s.canvasKitBaseUrl
-return s==null?"https://unpkg.com/canvaskit-wasm@0.35.0/bin/":s},
+return s==null?"/canvaskit/":s},
 gL1(){var s=this.a
 s=s==null?null:s.canvasKitForceCpuOnly
 return s===!0},
