@@ -15,7 +15,6 @@ class Loading extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         String loading_text = opt_loading_text != null ? opt_loading_text! : state.loading_text;    
         

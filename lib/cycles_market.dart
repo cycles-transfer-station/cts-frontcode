@@ -45,6 +45,15 @@ class CyclesMarketData {
             function: IcpPositionPurchase.oftheRecord
         );
     }
+    
+    Future<void> load_data() async {
+        await Future.wait([
+            this.fresh_cycles_positions(),
+            this.fresh_icp_positions(),
+            this.fresh_cycles_positions_purchases(),
+            this.fresh_icp_positions_purchases(),
+        ]);
+    }
 
 
 }

@@ -48,6 +48,7 @@ class LoadingPage extends Page {
     LoadingPage({LocalKey? key}) : super(key: key);
     
     Route createRoute(BuildContext context) {
+        
         return PageRouteBuilder(
             settings: this,
             // do a cool fade in and fade out 
@@ -87,6 +88,7 @@ class WelcomePage extends Page {
     static WelcomePage create({LocalKey? key}) => WelcomePage(key: key);
 
     Route createRoute(BuildContext context) {
+        
         return PageRouteBuilder(
             settings: this,
             pageBuilder: (context, animation, animation2) {
@@ -114,7 +116,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
     
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
+        state.context = context;
         
         return /*SelectionArea(
             child: */Scaffold(
@@ -247,7 +249,6 @@ class WelcomeScaffoldBody extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         
         List<Widget> column_children = [
@@ -372,7 +373,6 @@ class TransferIcpScaffoldBody extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         List<Widget> column_children = [];
 
@@ -1069,7 +1069,6 @@ class CyclesBankScaffoldBody extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         
         List<Widget> column_children = [];
@@ -2550,7 +2549,6 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        state.context = context;
         
         
         List<Widget> column_children = [];
@@ -2602,22 +2600,9 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                 try {
                                     await Future.wait([
-                                        state.cycles_market_data.fresh_cycles_positions(),
-                                        state.cycles_market_data.fresh_icp_positions(),
-                                        state.cycles_market_data.fresh_cycles_positions_purchases(),
-                                        state.cycles_market_data.fresh_icp_positions_purchases(),
+                                        state.cycles_market_data.load_data(),
                                         state.user!.cycles_bank!.fresh_metrics(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_balance(),
-                                        state.user!.cycles_bank!.fresh_cm_cycles_positions(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_positions(),
-                                        state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
-                                        state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
-                                        state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_positor_logs(),
-                                        state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_purchaser_logs(),
-                                        state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_positor_logs(),
-                                        state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs(),
-                                        state.user!.cycles_bank!.fresh_cm_message_void_cycles_position_positor_logs(),
-                                        state.user!.cycles_bank!.fresh_cm_message_void_icp_position_positor_logs(),
+                                        state.user!.cycles_bank!.load_cm_data()
                                     ]);
                                 } catch(e) {
                                     await showDialog(
@@ -2781,7 +2766,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
             }
             
-
+            
             if (cycles_bank_cm_cycles_positions_logs.length > 0) {
                 column_children.addAll([
                     Container(
@@ -2798,6 +2783,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 child: Scrollbar(
                                     controller: user_cycles_positions_scroll_controller,
                                     child: ListView.builder(
+                                        controller: user_cycles_positions_scroll_controller,
                                         key: ValueKey('cm user-cycles-positions'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
@@ -2854,6 +2840,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 child: Scrollbar(
                                     controller: user_icp_positions_scroll_controller,
                                     child: ListView.builder(
+                                        controller: user_icp_positions_scroll_controller,
                                         key: ValueKey('cm user-icp-positions'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
@@ -2910,6 +2897,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 child: Scrollbar(
                                     controller: user_cycles_positions_purchases_scroll_controller,
                                     child: ListView.builder(
+                                        controller: user_cycles_positions_purchases_scroll_controller,
                                         key: ValueKey('cm user-cycles-positions-purchases'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
@@ -2960,6 +2948,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 child: Scrollbar(
                                     controller: user_icp_positions_purchases_scroll_controller,
                                     child: ListView.builder(
+                                        controller: user_icp_positions_purchases_scroll_controller,
                                         key: ValueKey('cm user-icp-positions-purchases'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
@@ -3020,10 +3009,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                         try {
                             await Future.wait([
-                                state.cycles_market_data.fresh_cycles_positions(),
-                                state.cycles_market_data.fresh_icp_positions(),
-                                state.cycles_market_data.fresh_cycles_positions_purchases(),
-                                state.cycles_market_data.fresh_icp_positions_purchases()
+                                state.cycles_market_data.load_data()
                             ]);
                         } catch(e) {
                             await showDialog(
@@ -3051,7 +3037,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            LimitedBox(
+            if (cycles_positions.length > 0) LimitedBox(
                 maxHeight: 407,
                 child: Container(
                     constraints: BoxConstraints(),
@@ -3061,6 +3047,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         child: Scrollbar(
                             controller: cycles_positions_scroll_controller,
                             child: ListView.builder(
+                                controller: cycles_positions_scroll_controller,
                                 key: ValueKey('cm cycles-positions'),
                                 scrollDirection: Axis.horizontal,
                                 reverse: false,
@@ -3084,7 +3071,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
             ),
-            LimitedBox(
+            if (icp_positions.length > 0) LimitedBox(
                 maxHeight: 407,
                 child: Container(
                     constraints: BoxConstraints(),
@@ -3094,6 +3081,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         child: Scrollbar(
                             controller: icp_positions_scroll_controller,
                             child: ListView.builder(
+                                controller: icp_positions_scroll_controller,
                                 key: ValueKey('cm icp-positions'),
                                 scrollDirection: Axis.horizontal,
                                 reverse: false,
@@ -3117,7 +3105,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
             ),
-            LimitedBox(
+            if (cycles_positions_purchases.length > 0) LimitedBox(
                 maxHeight: 407,
                 child: Container(
                     constraints: BoxConstraints(),
@@ -3127,6 +3115,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         child: Scrollbar(
                             controller: cycles_positions_purchases_scroll_controller,
                             child: ListView.builder(
+                                controller: cycles_positions_purchases_scroll_controller,
                                 key: ValueKey('cm cycles-positions-purchases'),
                                 scrollDirection: Axis.horizontal,
                                 reverse: false,
@@ -3150,7 +3139,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 width: double.infinity,
                 child: Text('ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
             ),
-            LimitedBox(
+            if (icp_positions_purchases.length > 0) LimitedBox(
                 maxHeight: 407,
                 child: Container(
                     constraints: BoxConstraints(),
@@ -3160,6 +3149,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         child: Scrollbar(
                             controller: icp_positions_purchases_scroll_controller,
                             child: ListView.builder(
+                                controller: icp_positions_purchases_scroll_controller,
                                 key: ValueKey('cm icp-positions-purchases'),
                                 scrollDirection: Axis.horizontal,
                                 reverse: false,
@@ -3819,7 +3809,6 @@ class UserCyclesPositionListItem extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
         
         return Container(
             padding: EdgeInsets.all(11),
@@ -4657,7 +4646,6 @@ class ScaffoldBodyHeader extends StatelessWidget {
 ii_login(BuildContext context) async {
     CustomState state = MainStateBind.get_state<CustomState>(context);
     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    state.context = context;
     
     
     SubtleCryptoECDSAP256Caller legatee_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 

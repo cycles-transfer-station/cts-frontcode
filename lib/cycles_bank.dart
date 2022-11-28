@@ -61,6 +61,8 @@ class CyclesBank extends Canister {
             )
         )[0] as Record;
         this.metrics = CyclesBankMetrics.oftheRecord(metrics_record);
+        
+        //print('cm_message_cycles_position_purchase_positor_logs_len: ${this.metrics!.cm_message_cycles_position_purchase_positor_logs_len}');
     }
     
 
@@ -99,7 +101,7 @@ class CyclesBank extends Canister {
 
 
     Future<void> fresh_cycles_transfers_in() async {
-        await this.fresh_metrics();
+        if (this.metrics == null) { await this.fresh_metrics(); }
 
         this.cycles_transfers_in.addAll(
             await cycles_bank_download_mechanism(
@@ -154,7 +156,7 @@ class CyclesBank extends Canister {
         // check icp ledger balance of the cycles-bank cycles-market-[ac]count
         // check the icp_lock in the cycles-market
         List<IcpTokens> rs = await Future.wait([ 
-            Future(()async{return IcpTokens.oftheDouble(await check_icp_balance(this.cm_icp_id));}),   
+            check_icp_balance(this.cm_icp_id),   
             this.cm_see_icp_lock()
         ]);
         IcpTokens icp_ledger_balance = rs[0];
@@ -308,7 +310,22 @@ class CyclesBank extends Canister {
             )
         );
     }
-
+    
+    Future<void> load_cm_data() async {
+        await Future.wait([
+            this.fresh_cm_icp_balance(),
+            this.fresh_cm_cycles_positions(),
+            this.fresh_cm_icp_positions(),
+            this.fresh_cm_cycles_positions_purchases(),
+            this.fresh_cm_icp_positions_purchases(),
+            this.fresh_cm_message_cycles_position_purchase_positor_logs(),
+            this.fresh_cm_message_cycles_position_purchase_purchaser_logs(),
+            this.fresh_cm_message_icp_position_purchase_positor_logs(),
+            this.fresh_cm_message_icp_position_purchase_purchaser_logs(),
+            this.fresh_cm_message_void_cycles_position_positor_logs(),
+            this.fresh_cm_message_void_icp_position_positor_logs(),
+        ]);
+    }
 
     
     //Future<void> delete_ functionality coming soon
@@ -918,6 +935,12 @@ class CyclesBankMetrics {
     BigInt download_cm_message_icp_position_purchase_purchaser_logs_chunk_size;
     BigInt download_cm_message_void_cycles_position_positor_logs_chunk_size;
     BigInt download_cm_message_void_icp_position_positor_logs_chunk_size;
+    BigInt cm_message_cycles_position_purchase_positor_logs_len;
+    BigInt cm_message_cycles_position_purchase_purchaser_logs_len;
+    BigInt cm_message_icp_position_purchase_positor_logs_len;
+    BigInt cm_message_icp_position_purchase_purchaser_logs_len;
+    BigInt cm_message_void_cycles_position_positor_logs_len;
+    BigInt cm_message_void_icp_position_positor_logs_len;         
     
     CyclesBankMetrics._({
         required this.cycles_balance,
@@ -949,6 +972,12 @@ class CyclesBankMetrics {
         required this.download_cm_message_icp_position_purchase_purchaser_logs_chunk_size,
         required this.download_cm_message_void_cycles_position_positor_logs_chunk_size,
         required this.download_cm_message_void_icp_position_positor_logs_chunk_size,
+        required this.cm_message_cycles_position_purchase_positor_logs_len,
+        required this.cm_message_cycles_position_purchase_purchaser_logs_len,
+        required this.cm_message_icp_position_purchase_positor_logs_len,
+        required this.cm_message_icp_position_purchase_purchaser_logs_len,
+        required this.cm_message_void_cycles_position_positor_logs_len,
+        required this.cm_message_void_icp_position_positor_logs_len,            
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
@@ -981,6 +1010,13 @@ class CyclesBankMetrics {
             download_cm_message_icp_position_purchase_purchaser_logs_chunk_size: (r['download_cm_message_icp_position_purchase_purchaser_logs_chunk_size'] as Nat).value,
             download_cm_message_void_cycles_position_positor_logs_chunk_size: (r['download_cm_message_void_cycles_position_positor_logs_chunk_size'] as Nat).value,
             download_cm_message_void_icp_position_positor_logs_chunk_size: (r['download_cm_message_void_icp_position_positor_logs_chunk_size'] as Nat).value,
+            cm_message_cycles_position_purchase_positor_logs_len: (r['cm_message_cycles_position_purchase_positor_logs_len'] as Nat).value,
+            cm_message_cycles_position_purchase_purchaser_logs_len: (r['cm_message_cycles_position_purchase_purchaser_logs_len'] as Nat).value,
+            cm_message_icp_position_purchase_positor_logs_len: (r['cm_message_icp_position_purchase_positor_logs_len'] as Nat).value,
+            cm_message_icp_position_purchase_purchaser_logs_len: (r['cm_message_icp_position_purchase_purchaser_logs_len'] as Nat).value,
+            cm_message_void_cycles_position_positor_logs_len: (r['cm_message_void_cycles_position_positor_logs_len'] as Nat).value,
+            cm_message_void_icp_position_positor_logs_len: (r['cm_message_void_icp_position_positor_logs_len'] as Nat).value,
+            
         );
     }
 }

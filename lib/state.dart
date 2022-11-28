@@ -109,13 +109,14 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         
         print('load cts_fees');
         print('fresh_xdr_icp_rate');
-        print('load state of the browser storage');
-
+        print('load cycles-market-data');
 
         await Future.wait([
             this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
+            this.cycles_market_data.load_data(),
             Future(()async{ 
+                print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
                 if (this.user != null) {
                     
@@ -135,9 +136,18 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                             if (this.user!.cycles_bank != null) {
                                 try {
                                     print('loading cycles-bank-metrics');
+                                    // await this before reading the cb-logs
                                     await this.user!.cycles_bank!.fresh_metrics();
+                    
+                                    print('loading cycles-transfers-in-out, and cm-data');
+                                    await Future.wait([
+                                        this.user!.cycles_bank!.fresh_cycles_transfers_out(),
+                                        this.user!.cycles_bank!.fresh_cycles_transfers_in(),
+                                        this.user!.cycles_bank!.load_cm_data(),
+                                    ]);
+                                
                                 } catch(e) {
-                                    print('cycles-bank load metrics error: ${e}');
+                                    print('cycles-bank load metrics, cycles-transfers-in-out, and cm-data error: ${e}');
                                 }
                             }        
                         }),
