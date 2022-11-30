@@ -62,8 +62,6 @@ void main() {
         print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
     }
 }
-void vd = main();
-
 
 
 

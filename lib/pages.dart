@@ -3511,6 +3511,57 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     
                                     form_key.currentState!.save();
                                     
+                                    bool _continue = false;
+                                    
+                                    BigInt cycles_modulo_xdr_permyriad_per_icp = cycles_for_the_position.cycles % xdr_icp_rate.xdr_permyriad_per_icp;
+                                    BigInt minimum_purchase_modulo_xdr_permyriad_per_icp = minimum_purchase.cycles % xdr_icp_rate.xdr_permyriad_per_icp;
+                                    
+                                    if (cycles_modulo_xdr_permyriad_per_icp != BigInt.from(0) || minimum_purchase_modulo_xdr_permyriad_per_icp != BigInt.from(0)) { 
+                                        
+                                        Cycles new_cycles = Cycles(cycles: cycles_for_the_position.cycles - cycles_modulo_xdr_permyriad_per_icp); 
+                                        Cycles new_minimum_purchase = Cycles(cycles: minimum_purchase.cycles - minimum_purchase_modulo_xdr_permyriad_per_icp);
+                                        
+                                        if (new_cycles.cycles == BigInt.from(0)) {
+                                            new_cycles = Cycles(cycles: xdr_icp_rate.xdr_permyriad_per_icp);
+                                        }
+                                        if (new_minimum_purchase.cycles == BigInt.from(0)) {
+                                            new_minimum_purchase = Cycles(cycles: xdr_icp_rate.xdr_permyriad_per_icp);
+                                        }
+                                        
+                                        await showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                                Widget cancelButton = TextButton(
+                                                    child: Text("Cancel"),
+                                                    onPressed:  () {
+                                                        Navigator.of(context).pop();
+                                                    },
+                                                );
+                                                Widget continueButton = TextButton(
+                                                    child: Text("Continue"),
+                                                    onPressed:  () {
+                                                        _continue = true;
+                                                        Navigator.of(context).pop();
+                                                    },
+                                                );
+                                                return AlertDialog(
+                                                    title: Text("Confirm"),
+                                                    content: Text("The cycles and minimum-purchase of the position must be a multiple of the position\'s-TCycles-per-icp-rate*10000. \nContinue with the following values for the cycles and for the minimum-purchase of the position?\ncycles: ${cycles_for_the_position} -> ${new_cycles}\nminimum_purchase: ${minimum_purchase} -> ${new_minimum_purchase}"),
+                                                    actions: [
+                                                        cancelButton,
+                                                        continueButton,
+                                                    ],
+                                                );
+                                            }
+                                        );     
+                                        if (_continue == true) {
+                                            cycles_for_the_position = new_cycles;
+                                            minimum_purchase = new_minimum_purchase;
+                                        } else {
+                                            return;
+                                        }
+                                    }
+                                    
                                     CreateCyclesPositionQuest cm_create_cycles_position_quest = CreateCyclesPositionQuest(
                                         cycles: cycles_for_the_position,
                                         minimum_purchase: minimum_purchase,
@@ -4246,6 +4297,52 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
                                     form_key.currentState!.save();
+                                    
+                                    bool _continue = false;
+                                    
+                                    BigInt purchase_cycles_modulo_xdr_permyriad_per_icp = purchase_cycles.cycles % this.widget.cycles_position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp;
+                                    
+                                    if (purchase_cycles_modulo_xdr_permyriad_per_icp != BigInt.from(0)) { 
+                                        
+                                        Cycles new_purchase_cycles = Cycles(cycles: purchase_cycles.cycles - purchase_cycles_modulo_xdr_permyriad_per_icp);
+                                        
+                                        if (new_purchase_cycles.cycles == BigInt.from(0)) {
+                                            new_purchase_cycles = Cycles(cycles: this.widget.cycles_position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp);
+                                        }
+                                        
+                                        await showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                                Widget cancelButton = TextButton(
+                                                    child: Text("Cancel"),
+                                                    onPressed:  () {
+                                                        Navigator.of(context).pop();
+                                                    },
+                                                );
+                                                Widget continueButton = TextButton(
+                                                    child: Text("Continue"),
+                                                    onPressed:  () {
+                                                        _continue = true;
+                                                        Navigator.of(context).pop();
+                                                    },
+                                                );
+                                                return AlertDialog(
+                                                    title: Text("Confirm"),
+                                                    content: Text("The cycles-purchase must be a multiple of the position\'s-TCycles-per-icp-rate*10000. \nContinue with the following new value for the cycles-purchase?\npurchase-cycles: ${purchase_cycles} -> ${new_purchase_cycles}"),
+                                                    actions: [
+                                                        cancelButton,
+                                                        continueButton,
+                                                    ],
+                                                );
+                                            }
+                                        );     
+                                        if (_continue == true) {
+                                            purchase_cycles = new_purchase_cycles;
+                                        } else {
+                                            return;
+                                        }
+                                    }
+                                    
                                     
                                     state.loading_text = 'purchasing ${purchase_cycles}-cycles ...';
                                     state.is_loading = true;
