@@ -8,9 +8,9 @@ import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
-import 'icp_ledger.dart';
-import 'cycles_bank.dart';
-import 'state.dart';
+import 'transfer_icp/icp_ledger.dart';
+import 'cycles_bank/cycles_bank.dart';
+import 'config/state.dart';
 
 class User {
     CustomState state;
@@ -52,7 +52,7 @@ class User {
     Future<void> fresh_icp_balance() async {
     
         Record icptokens_record = (c_backwards(await ledger.call(
-            calltype: CallType.call,
+            calltype: CallType.query,
             method_name: 'account_balance',
             put_bytes: c_forwards([
                 Record.oftheMap({

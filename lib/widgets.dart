@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'state.dart';
-import 'state_bind.dart';
+import 'config/state.dart';
+import 'config/state_bind.dart';
 
 
 
