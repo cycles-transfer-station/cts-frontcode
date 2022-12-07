@@ -160,9 +160,10 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     width: double.infinity,
                     height: 50,
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
-                    child: OutlineButton(
-                        button_text: 'PURCHASE CYCLES-BANK',
-                        on_press_complete: () async {  
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('PURCHASE CYCLES-BANK'),
+                        onPressed: () async {  
                             state.loading_text = 'purchasing cycles-bank ...';
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);

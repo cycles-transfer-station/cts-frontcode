@@ -21,7 +21,7 @@ class CyclesPositionListItem extends StatelessWidget {
         return Container(
             padding: EdgeInsets.all(11),
             constraints: BoxConstraints(maxWidth: 320),
-            child: Card(
+            child: Card( 
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[

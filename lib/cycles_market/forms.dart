@@ -34,12 +34,14 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                 children: <Widget>[               
                     Container(
                         width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(7,11,7,11),
                         child: Center(
                             child: Text('WITHDRAW ICP')
                         ),
                     ),
                     Container(
                         width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(7,11,7,11),
                         child: DataTable(
                             headingRowHeight: 0,
                             showBottomBorder: true,
@@ -62,7 +64,7 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                             rows: [
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('CYCLES-MARKET WITHDRAW ICP FEE: ')),
+                                        DataCell(Text('WITHDRAW ICP FEE: ')),
                                         DataCell(Text('0.05-TCycles/XDR')),
                                     ]
                                 ),
@@ -89,8 +91,10 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                         onSaved: (String? value) { withdraw_icp = IcpTokens.oftheDoubleString(value!); },
                         validator: icp_validator
                     ),
-                    Padding(
-                        padding: EdgeInsets.all(7),
+                    Container(
+                        width: double.infinity,
+                        height: 70.0,
+                        padding: EdgeInsets.all(17),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('WITHDRAW ICP'),
@@ -234,37 +238,6 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                         child: Center(
                             child: Text('CREATE CYCLES-POSITION')
                         ),
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: DataTable(
-                            headingRowHeight: 0,
-                            showBottomBorder: true,
-                            columns: <DataColumn>[
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        ),
-                                    ),
-                                ),
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        )
-                                    )
-                                )
-                            ],
-                            rows: [
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('CREATE CYCLES-POSITION FEE: ')),
-                                        DataCell(Text('0.05-TCycles/XDR')),
-                                    ]
-                                )                            
-                            ]
-                        )
                     ),
                     TextFormField(
                         decoration: InputDecoration(
@@ -485,37 +458,6 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                         child: Center(
                             child: Text('CREATE ICP-POSITION')
                         ),
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: DataTable(
-                            headingRowHeight: 0,
-                            showBottomBorder: true,
-                            columns: <DataColumn>[
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        ),
-                                    ),
-                                ),
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        )
-                                    )
-                                )
-                            ],
-                            rows: [
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('CREATE ICP-POSITION FEE: ')),
-                                        DataCell(Text('0.05-TCycles/XDR')),
-                                    ]
-                                )                            
-                            ]
-                        )
                     ),
                     TextFormField(
                         decoration: InputDecoration(

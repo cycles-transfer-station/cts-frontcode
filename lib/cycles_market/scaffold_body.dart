@@ -121,11 +121,22 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                             child: Column(
                                 children: [
                                     Container(
-                                        padding: EdgeInsets.all(7), 
+                                        padding: EdgeInsets.fromLTRB(17,5,17,5),
                                         child: Column(
                                             children: [
-                                                Text('CYCLES-BANK CYCLES BALANCE:'),
-                                                Text('${state.user!.cycles_bank!.metrics != null ? state.user!.cycles_bank!.metrics!.cycles_balance : 'unknown'}', style: TextStyle(fontSize:14))
+                                                Center(
+                                                    child: SelectableText('CYCLES-BANK-ID: ', style: TextStyle(fontSize: 13)),
+                                                ),
+                                                SizedBox(
+                                                    height: 27,
+                                                    child: Center(
+                                                        child: SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 11)),
+                                                    ),
+                                                ),
+                                                Container(
+                                                    padding: EdgeInsets.fromLTRB(10,7,10,3),
+                                                    child: Text('CYCLES: ${state.user!.cycles_bank!.metrics != null ? state.user!.cycles_bank!.metrics!.cycles_balance : 'unknown'}', style: TextStyle(fontSize:17)),                   
+                                                )
                                             ]
                                         )
                                     )
@@ -136,12 +147,27 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                             constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: Column(
                                 children: [
-                                    Padding(
-                                        padding:EdgeInsets.all(7),
-                                        child: SelectableText('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ${state.user!.cycles_bank!.cm_icp_id}')
+                                    Container(
+                                        padding: EdgeInsets.fromLTRB(17,5,17,5),
+                                        child: Column(
+                                            children: [
+                                                Center(
+                                                    child: SelectableText('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ', style: TextStyle(fontSize: 13)),
+                                                ),
+                                                SizedBox(
+                                                    height: 27,
+                                                    child: Center(
+                                                        child: SelectableText('${state.user!.cycles_bank!.cm_icp_id}', style: TextStyle(fontSize: 11)),
+                                                    ),
+                                                ),
+                                                Container(
+                                                    padding: EdgeInsets.fromLTRB(10,7,10,3),
+                                                    child: Text('ICP: ${state.user!.cycles_bank!.cm_icp_balance != null ? state.user!.cycles_bank!.cm_icp_balance! : 'unknown'}', style: TextStyle(fontSize:17)),                   
+                                                )
+                                            ]
+                                        )
                                     ),
-                                    Text('ICP-BALANCE: ${state.user!.cycles_bank!.cm_icp_balance != null ? state.user!.cycles_bank!.cm_icp_balance! : 'unknown'}'),
-                                    Text('timestamp: ${state.user!.cycles_bank!.cm_icp_balance_with_a_timestamp != null ? seconds_of_the_nanos(state.user!.cycles_bank!.cm_icp_balance_with_a_timestamp!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
+                                    /*
                                     Padding(
                                         padding: EdgeInsets.all(7),
                                         child: ElevatedButton(
@@ -175,10 +201,30 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                             }
                                         )
                                     ),   
-                                    Container(
+                                    */
+                                    Padding(
                                         padding: EdgeInsets.all(7),
-                                        child: CyclesBankCMTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankCMTransferIcpForm'))
-                                    )
+                                        child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                            child: Text('WITHDRAW CM ICP BALANCE', style: TextStyle(fontSize:11)),
+                                            onPressed: () async {
+                                                await showDialog(
+                                                    context: context,
+                                                    builder: (BuildContext context) {
+                                                        return AlertDialog(
+                                                            title: Center(child: Text('Withdraw cycles-market icp-balance')),
+                                                            content: Container(
+                                                                padding: EdgeInsets.all(7),
+                                                                child: CyclesBankCMTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankCMTransferIcpForm'))
+                                                            ),
+                                                            //actions: <Widget>[]
+                                                        );
+                                                    }   
+                                                );
+                                            }
+                                        )
+                                    ),   
+                                    
                                 ]
                             ) 
                         )
@@ -187,6 +233,49 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 SizedBox(
                     width: 1,
                     height: 15
+                ),
+                Container(
+                    padding: EdgeInsets.fromLTRB(10,17,10,17),
+                    child: DataTable(
+                        headingRowHeight: 0,
+                        showBottomBorder: true,
+                        columns: <DataColumn>[
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
+                                    ),
+                                ),
+                            ),
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
+                                    )
+                                )
+                            )
+                        ],
+                        rows: [
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('CREATE POSITION FEE: ')),
+                                    DataCell(Text('0.05-TCycles/XDR')),
+                                ]
+                            ),
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('PURCHASE POSITION FEE: ')),
+                                    DataCell(Text('0.05-TCycles/XDR')),
+                                ]
+                            )                            
+
+                            
+                        ]
+                    )
+                ),
+                SizedBox(
+                    height: 17,
+                    width: 1    
                 ),
                 Wrap(
                     children: [
@@ -211,6 +300,196 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                     ),
                 ),    
             ]);
+            
+        }    
+        
+        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.reversed.toList();
+        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.reversed.toList();
+        List<CyclesPositionPurchase> cycles_positions_purchases = state.cycles_market_data.cycles_positions_purchases.reversed.toList();
+        List<IcpPositionPurchase> icp_positions_purchases = state.cycles_market_data.icp_positions_purchases.reversed.toList();
+        
+        
+        if (state.user != null && state.user!.cycles_bank != null) {
+            cycles_positions = cycles_positions.where((CyclesPosition cp)=>cp.positor.text != state.user!.cycles_bank!.principal.text).toList();
+            icp_positions = icp_positions.where((IcpPosition ip)=>ip.positor.text != state.user!.cycles_bank!.principal.text).toList();
+        }        
+        
+        column_children.addAll([
+            if (state.user == null || state.user!.cycles_bank == null) Padding(
+                padding: EdgeInsets.all(7),
+                child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: blue),
+                    child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
+                    onPressed: () async {
+                        state.loading_text = 'loading cycles-market data ...';
+                        state.is_loading = true;
+                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                        try {
+                            await Future.wait([
+                                state.cycles_market_data.load_data()
+                            ]);
+                        } catch(e) {
+                            await showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('Error when loading the cycles-market positions:'),
+                                        content: Text('${e}'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            );                                    
+                        }
+                        state.is_loading = false;
+                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                    }
+                )
+            ),
+            if (cycles_positions.length > 0) Container(
+                width: double.infinity,
+                child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
+            ),
+            if (cycles_positions.length > 0) LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: cycles_positions_scroll_controller,
+                            child: ListView.builder(
+                                controller: cycles_positions_scroll_controller,
+                                key: ValueKey('cm cycles-positions'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return CyclesPositionListItem(cycles_positions[i]);
+                                },
+                                itemCount: cycles_positions.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
+            if (icp_positions.length > 0) Container(
+                width: double.infinity,
+                child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
+            ),
+            if (icp_positions.length > 0) LimitedBox(
+                maxHeight: 407,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: icp_positions_scroll_controller,
+                            child: ListView.builder(
+                                controller: icp_positions_scroll_controller,
+                                key: ValueKey('cm icp-positions'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return IcpPositionListItem(icp_positions[i]);
+                                },
+                                itemCount: icp_positions.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
+            if (cycles_positions_purchases.length > 0) Container(
+                width: double.infinity,
+                child: Text('CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+            ),
+            if (cycles_positions_purchases.length > 0) LimitedBox(
+                maxHeight: 390,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: cycles_positions_purchases_scroll_controller,
+                            child: ListView.builder(
+                                controller: cycles_positions_purchases_scroll_controller,
+                                key: ValueKey('cm cycles-positions-purchases'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return CyclesPositionPurchaseListItem(cycles_positions_purchases[i]);
+                                },
+                                itemCount: cycles_positions_purchases.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
+            if (icp_positions_purchases.length > 0) Container(
+                width: double.infinity,
+                child: Text('ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
+            ),
+            if (icp_positions_purchases.length > 0) LimitedBox(
+                maxHeight: 390,
+                child: Container(
+                    constraints: BoxConstraints(),
+                    padding: EdgeInsets.all(17),
+                    child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                        child: Scrollbar(
+                            controller: icp_positions_purchases_scroll_controller,
+                            child: ListView.builder(
+                                controller: icp_positions_purchases_scroll_controller,
+                                key: ValueKey('cm icp-positions-purchases'),
+                                scrollDirection: Axis.horizontal,
+                                reverse: false,
+                                shrinkWrap: false,
+                                padding: EdgeInsets.all(7),
+                                itemBuilder: (BuildContext context, int i) {
+                                    return IcpPositionPurchaseListItem(icp_positions_purchases[i]);
+                                },
+                                itemCount: icp_positions_purchases.length,
+                                addAutomaticKeepAlives: true,
+                                addRepaintBoundaries: true,
+                                addSemanticIndexes: true,
+                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                clipBehavior: Clip.hardEdge
+                            )
+                        )
+                    )
+                )
+            ),
+        ]);
+        
+            
+        if (state.user != null && state.user!.cycles_bank != null) {    
             
             
             final bool Function(CyclesMarketDataPosition) is_position_by_the_user = (CyclesMarketDataPosition cmdp) {
@@ -474,221 +753,6 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 ]);
             }    
         }
-        
-        
-        
-        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.reversed.toList();
-        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.reversed.toList();
-        List<CyclesPositionPurchase> cycles_positions_purchases = state.cycles_market_data.cycles_positions_purchases.reversed.toList();
-        List<IcpPositionPurchase> icp_positions_purchases = state.cycles_market_data.icp_positions_purchases.reversed.toList();
-        
-        
-        if (state.user != null && state.user!.cycles_bank != null) {
-            cycles_positions = cycles_positions.where((CyclesPosition cp)=>cp.positor.text != state.user!.cycles_bank!.principal.text).toList();
-            icp_positions = icp_positions.where((IcpPosition ip)=>ip.positor.text != state.user!.cycles_bank!.principal.text).toList();
-        }        
-        
-        column_children.addAll([
-            if (state.user == null || state.user!.cycles_bank == null) Padding(
-                padding: EdgeInsets.all(7),
-                child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: blue),
-                    child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
-                    onPressed: () async {
-                        state.loading_text = 'loading cycles-market data ...';
-                        state.is_loading = true;
-                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                        try {
-                            await Future.wait([
-                                state.cycles_market_data.load_data()
-                            ]);
-                        } catch(e) {
-                            await showDialog(
-                                context: state.context,
-                                builder: (BuildContext context) {
-                                    return AlertDialog(
-                                        title: Text('Error when loading the cycles-market positions:'),
-                                        content: Text('${e}'),
-                                        actions: <Widget>[
-                                            TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('OK'),
-                                            ),
-                                        ]
-                                    );
-                                }   
-                            );                                    
-                        }
-                        state.is_loading = false;
-                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                    }
-                )
-            ),
-            Container(
-                width: double.infinity,
-                child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
-            ),
-            if (cycles_positions.length > 0) LimitedBox(
-                maxHeight: 407,
-                child: Container(
-                    constraints: BoxConstraints(),
-                    padding: EdgeInsets.all(17),
-                    child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                        child: Scrollbar(
-                            controller: cycles_positions_scroll_controller,
-                            child: ListView.builder(
-                                controller: cycles_positions_scroll_controller,
-                                key: ValueKey('cm cycles-positions'),
-                                scrollDirection: Axis.horizontal,
-                                reverse: false,
-                                shrinkWrap: false,
-                                padding: EdgeInsets.all(7),
-                                itemBuilder: (BuildContext context, int i) {
-                                    return CyclesPositionListItem(cycles_positions[i]);
-                                },
-                                itemCount: cycles_positions.length,
-                                addAutomaticKeepAlives: true,
-                                addRepaintBoundaries: true,
-                                addSemanticIndexes: true,
-                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                clipBehavior: Clip.hardEdge
-                            )
-                        )
-                    )
-                )
-            ),
-            Container(
-                width: double.infinity,
-                child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
-            ),
-            if (icp_positions.length > 0) LimitedBox(
-                maxHeight: 407,
-                child: Container(
-                    constraints: BoxConstraints(),
-                    padding: EdgeInsets.all(17),
-                    child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                        child: Scrollbar(
-                            controller: icp_positions_scroll_controller,
-                            child: ListView.builder(
-                                controller: icp_positions_scroll_controller,
-                                key: ValueKey('cm icp-positions'),
-                                scrollDirection: Axis.horizontal,
-                                reverse: false,
-                                shrinkWrap: false,
-                                padding: EdgeInsets.all(7),
-                                itemBuilder: (BuildContext context, int i) {
-                                    return IcpPositionListItem(icp_positions[i]);
-                                },
-                                itemCount: icp_positions.length,
-                                addAutomaticKeepAlives: true,
-                                addRepaintBoundaries: true,
-                                addSemanticIndexes: true,
-                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                clipBehavior: Clip.hardEdge
-                            )
-                        )
-                    )
-                )
-            ),
-            Container(
-                width: double.infinity,
-                child: Text('CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-            ),
-            if (cycles_positions_purchases.length > 0) LimitedBox(
-                maxHeight: 390,
-                child: Container(
-                    constraints: BoxConstraints(),
-                    padding: EdgeInsets.all(17),
-                    child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                        child: Scrollbar(
-                            controller: cycles_positions_purchases_scroll_controller,
-                            child: ListView.builder(
-                                controller: cycles_positions_purchases_scroll_controller,
-                                key: ValueKey('cm cycles-positions-purchases'),
-                                scrollDirection: Axis.horizontal,
-                                reverse: false,
-                                shrinkWrap: false,
-                                padding: EdgeInsets.all(7),
-                                itemBuilder: (BuildContext context, int i) {
-                                    return CyclesPositionPurchaseListItem(cycles_positions_purchases[i]);
-                                },
-                                itemCount: cycles_positions_purchases.length,
-                                addAutomaticKeepAlives: true,
-                                addRepaintBoundaries: true,
-                                addSemanticIndexes: true,
-                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                clipBehavior: Clip.hardEdge
-                            )
-                        )
-                    )
-                )
-            ),
-            Container(
-                width: double.infinity,
-                child: Text('ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-            ),
-            if (icp_positions_purchases.length > 0) LimitedBox(
-                maxHeight: 390,
-                child: Container(
-                    constraints: BoxConstraints(),
-                    padding: EdgeInsets.all(17),
-                    child: ScrollConfiguration(
-                        behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                        child: Scrollbar(
-                            controller: icp_positions_purchases_scroll_controller,
-                            child: ListView.builder(
-                                controller: icp_positions_purchases_scroll_controller,
-                                key: ValueKey('cm icp-positions-purchases'),
-                                scrollDirection: Axis.horizontal,
-                                reverse: false,
-                                shrinkWrap: false,
-                                padding: EdgeInsets.all(7),
-                                itemBuilder: (BuildContext context, int i) {
-                                    return IcpPositionPurchaseListItem(icp_positions_purchases[i]);
-                                },
-                                itemCount: icp_positions_purchases.length,
-                                addAutomaticKeepAlives: true,
-                                addRepaintBoundaries: true,
-                                addSemanticIndexes: true,
-                                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                clipBehavior: Clip.hardEdge
-                            )
-                        )
-                    )
-                )
-            ),
-        ]);
-        
-        
-        
-        
-        /*
-        return Center(
-            child: Container(
-                constraints: BoxConstraints(maxWidth: 731),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                        ScaffoldBodyHeader('CYCLES-MARKET'),
-                        Expanded(
-                            child: ListView(
-                                padding: EdgeInsets.all(0),
-                                children: [
-                                    Column(
-                                        children: column_children 
-                                    )
-                                ],
-                                addAutomaticKeepAlives: true
-                            )
-                        )
-                    ]
-                )
-            )
-        );
-        */
         
         
         return Center(
