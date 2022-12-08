@@ -138,7 +138,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     child: Center(
                         child: Column(
                             children: [
-                                Text('USER-ICP-ID: '),
+                                Text('USER-CTS-ICP-ID: '),
                                 SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
                             ]
                         )

@@ -48,7 +48,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                             child: Column(
                                 children: [
                                     Center(
-                                        child: SelectableText('USER-ICP-ID:', style: TextStyle(fontSize: 13)),
+                                        child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
                                     ),
                                     Center(
                                         child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
@@ -88,7 +88,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             }
     
     
-            List<IcpTransfer> icp_transfers_reversed = state.user!.icp_transfers.reversed.toList();
+            List<IcpTransfer> icp_transfers = state.user!.icp_transfers.toList();
             
             column_children.addAll([
                 SizedBox(
@@ -145,9 +145,9 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                     shrinkWrap: false,
                                     padding: EdgeInsets.all(11),
                                     itemBuilder: (BuildContext context, int i) {
-                                        return IcpTransferListItem(icp_transfers_reversed[i]);
+                                        return IcpTransferListItem(icp_transfers[i]);
                                     },
-                                    itemCount: icp_transfers_reversed.length,
+                                    itemCount: icp_transfers.length,
                                     addAutomaticKeepAlives: true,
                                     addRepaintBoundaries: true,
                                     addSemanticIndexes: true,

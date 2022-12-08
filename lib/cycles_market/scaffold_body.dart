@@ -280,10 +280,12 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 Wrap(
                     children: [
                         Container(
+                            padding: EdgeInsets.all(11),
                             constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: CyclesBankCMCreateCyclesPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateCyclesPositionForm')),
                         ),
                         Container(
+                            padding: EdgeInsets.all(11),
                             constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: CyclesBankCMCreateIcpPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateIcpPositionForm')),
                         )
@@ -510,11 +512,11 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 
             List<CMCyclesPosition> cycles_bank_cm_cycles_positions_logs = state.user!.cycles_bank!.cm_cycles_positions.toList()
                 ..sort((CMCyclesPosition cm_cp1, CMCyclesPosition cm_cp2)=>cm_cp1.id.compareTo(cm_cp2.id))
-                ..reversed;
-
+                ..reversed.toList();
+                
             List<CMIcpPosition> cycles_bank_cm_icp_positions_logs = state.user!.cycles_bank!.cm_icp_positions.toList()
                 ..sort((CMIcpPosition cm_ip1, CMIcpPosition cm_ip2)=>cm_ip1.id.compareTo(cm_ip2.id))
-                ..reversed;
+                ..reversed.toList();
                 
             Map<BigInt, List<CMMessageCyclesPositionPurchasePositorLog>> user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs = {};
             
@@ -652,6 +654,9 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
             }
             
             if (state.user!.cycles_bank!.cm_cycles_positions_purchases.length > 0) {
+                
+                List<CMCyclesPositionPurchase> cycles_bank_cm_cycles_positions_purchases = state.user!.cycles_bank!.cm_cycles_positions_purchases.reversed.toList();
+            
                 column_children.addAll([
                     Container(
                         width: double.infinity,
@@ -674,7 +679,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                         shrinkWrap: false,
                                         padding: EdgeInsets.all(7),
                                         itemBuilder: (BuildContext context, int i) {
-                                            CMCyclesPositionPurchase cm_cycles_position_purchase = state.user!.cycles_bank!.cm_cycles_positions_purchases[i];
+                                            CMCyclesPositionPurchase cm_cycles_position_purchase = cycles_bank_cm_cycles_positions_purchases[i];
                                             CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log;
                                             try {
                                                 cm_message_cycles_position_purchase_purchaser_log = 
@@ -688,7 +693,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                                 cm_message_cycles_position_purchase_purchaser_log: cm_message_cycles_position_purchase_purchaser_log
                                             );
                                         },
-                                        itemCount: state.user!.cycles_bank!.cm_cycles_positions_purchases.length,
+                                        itemCount: cycles_bank_cm_cycles_positions_purchases.length,
                                         addAutomaticKeepAlives: true,
                                         addRepaintBoundaries: true,
                                         addSemanticIndexes: true,
@@ -703,6 +708,9 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
             } 
             
             if (state.user!.cycles_bank!.cm_icp_positions_purchases.length > 0) {
+                
+                List<CMIcpPositionPurchase> cycles_bank_cm_icp_positions_purchases = state.user!.cycles_bank!.cm_icp_positions_purchases.reversed.toList();
+            
                 column_children.addAll([
                     Container(
                         width: double.infinity,
@@ -725,7 +733,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                         shrinkWrap: false,
                                         padding: EdgeInsets.all(7),
                                         itemBuilder: (BuildContext context, int i) {
-                                            CMIcpPositionPurchase cm_icp_position_purchase = state.user!.cycles_bank!.cm_icp_positions_purchases[i];
+                                            CMIcpPositionPurchase cm_icp_position_purchase = cycles_bank_cm_icp_positions_purchases[i];
                                             CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log;
                                             try {
                                                 cm_message_icp_position_purchase_purchaser_log = 
@@ -739,7 +747,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                                 cm_message_icp_position_purchase_purchaser_log: cm_message_icp_position_purchase_purchaser_log
                                             );
                                         },
-                                        itemCount: state.user!.cycles_bank!.cm_icp_positions_purchases.length,
+                                        itemCount: cycles_bank_cm_icp_positions_purchases.length,
                                         addAutomaticKeepAlives: true,
                                         addRepaintBoundaries: true,
                                         addSemanticIndexes: true,

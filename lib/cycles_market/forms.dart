@@ -468,7 +468,7 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                     ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'minimum purchase: '
+                            labelText: 'icp minimum purchase: '
                         ),
                         onSaved: (String? value) { minimum_purchase = IcpTokens.oftheDoubleString(value!); },
                         validator: icp_validator

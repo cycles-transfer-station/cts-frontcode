@@ -72,7 +72,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                 DataRow(
                                     cells: [
                                         DataCell(Text('CURRENT XDR-ICP RATE: ', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate}', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                                 DataRow(

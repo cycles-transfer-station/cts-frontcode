@@ -719,6 +719,12 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                         DataCell(Text('${state.cts_fees.burn_icp_mint_cycles_fee.cycles/CYCLES_PER_XDR}-xdr')),
                                     ]
                                 ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('CURRENT NETWORK TCYCLES-ICP RATE: ', )),
+                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate}')),
+                                    ]
+                                ),
                             ]
                         )
                     ),
