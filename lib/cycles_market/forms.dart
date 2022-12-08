@@ -169,21 +169,25 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Cycles-Market Withdraw Icp Success:'),
-                                                content: Text('transfer block height: ${withdraw_icp_block_height}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
+                                    await Future(()async{
+                                        await Duration(seconds: 1);
+                                        Navigator.pop(state.context);
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Cycles-Market Withdraw Icp Success:'),
+                                                    content: Text('transfer block height: ${withdraw_icp_block_height}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );
+                                    });
                                 }
                             }
                         )

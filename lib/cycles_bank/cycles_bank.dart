@@ -127,36 +127,25 @@ class CyclesBank extends Canister {
     
     
     Future<IcpTokens> cm_see_icp_lock() async {
-        Variant sponse = c_backwards(
+        IcpTokens icp_lock = IcpTokens.oftheRecord(c_backwards(
             await this.user.call(
-                this,
-                calltype: CallType.call,
-                method_name: 'cm_see_icp_lock',
-                put_bytes: c_forwards([])
+                cycles_market,
+                calltype: CallType.query,
+                method_name: 'see_icp_lock',
+                put_bytes: c_forwards([
+                    Record.oftheMap({
+                        'principal_id': this.principal
+                    })
+                ])
             )
-        )[0] as Variant;
-        IcpTokens icp_lock = match_variant<IcpTokens>(sponse, {
-            Ok: (icp_tokens_record) {
-                return IcpTokens.oftheRecord(icp_tokens_record as Record);
-            },
-            Err: (cm_see_icp_lock_error) {
-                return match_variant<Never>(cm_see_icp_lock_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel is too low in this cycles-bank. topup the CTSFuel.');
-                    },
-                    'CyclesMarketSeeIcpLockCallError':(call_error_record) {
-                        throw Exception('Call error when calling see_icp_lock method on the cycles-market: ${CallError.oftheRecord(call_error_record as Record)}');
-                    }
-                });
-            }
-        });      
+        )[0] as Record);
         return icp_lock;
     }
     Future<void> fresh_cm_icp_balance() async {
         // check icp ledger balance of the cycles-bank cycles-market-[ac]count
         // check the icp_lock in the cycles-market
         List<IcpTokens> rs = await Future.wait([ 
-            check_icp_balance(this.cm_icp_id),   
+            check_icp_balance(this.cm_icp_id, calltype: CallType.query),   
             this.cm_see_icp_lock()
         ]);
         IcpTokens icp_ledger_balance = rs[0];
