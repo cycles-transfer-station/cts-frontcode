@@ -10,6 +10,7 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/pages.dart';
 import '../transfer_icp/forms.dart';
+import '../transfer_icp/scaffold_body.dart';
 import '../main.dart';
 import '../user.dart';
 import './cycles_bank.dart';
@@ -111,6 +112,13 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
             key: form_key,
             child: Column(
                 children: <Widget>[
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(7,11,7,11),
+                        child: Center(
+                            child: Text('TRANSFER-CYCLES', style: TextStyle(fontSize:17))
+                        ),
+                    ),
                     TextFormField(
                         decoration: InputDecoration(
                             labelText: 'For the cycles-bank: ',
@@ -161,9 +169,6 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         }
                     ),
                     TextFormField(
-                        //decoration: InputDecoration(
-                        //    labelText: 'Cycles Transfer Memo: ',
-                        //),
                         onSaved: (String? v) { 
                             switch (cycles_transfer_memo_type) {
                                 case CyclesTransferMemoType.Text: 
@@ -692,6 +697,24 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
             child: Column(
                 children: <Widget>[
                     Container(
+                        padding: EdgeInsets.all(7),
+                        child: Column(
+                            children: [
+                                Center(
+                                    child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
+                                ),
+                                Center(
+                                    child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
+                                ),
+                                IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesDialog IcpBalanceAndLoadIcpBalance'))
+                            ]
+                        )
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 17
+                    ),
+                    Container(
                         width: double.infinity,
                         child: DataTable(
                             headingRowHeight: 0,
@@ -727,6 +750,10 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                 ),
                             ]
                         )
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 17
                     ),
                     TextFormField(
                         decoration: InputDecoration(

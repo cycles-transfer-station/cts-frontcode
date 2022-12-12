@@ -8,7 +8,6 @@ import '../config/state_bind.dart';
 import 'icp_ledger.dart';
 import 'forms.dart';
 import 'cards.dart';
-import '../cycles_bank/forms.dart';
 import '../main.dart';
 import '../widgets.dart';
 import '../config/pages.dart';
@@ -72,20 +71,6 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     ]
                 )
             ]);
-            
-            if (state.user!.cycles_bank != null) {
-                column_children.addAll([
-                    // burn icp mint cycles,  
-                    SizedBox(
-                        width: 1,
-                        height: 40
-                    ),
-                    Padding(
-                        padding: EdgeInsets.all(17),
-                        child: BurnIcpMintCyclesForm(key: ValueKey('TransferIcpScaffoldBody BurnIcpMintCyclesForm'))
-                    )
-                ]);
-            }
     
     
             List<IcpTransfer> icp_transfers = state.user!.icp_transfers.toList();

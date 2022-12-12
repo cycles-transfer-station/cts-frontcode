@@ -40,6 +40,26 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                         ),
                     ),
                     Container(
+                        padding: EdgeInsets.fromLTRB(17,5,17,5),
+                        child: Column(
+                            children: [
+                                Center(
+                                    child: SelectableText('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ', style: TextStyle(fontSize: 13)),
+                                ),
+                                SizedBox(
+                                    height: 27,
+                                    child: Center(
+                                        child: SelectableText('${state.user!.cycles_bank!.cm_icp_id}', style: TextStyle(fontSize: 11)),
+                                    ),
+                                ),
+                                Container(
+                                    padding: EdgeInsets.fromLTRB(10,7,10,3),
+                                    child: Text('ICP: ${state.user!.cycles_bank!.cm_icp_balance != null ? state.user!.cycles_bank!.cm_icp_balance! : 'unknown'}', style: TextStyle(fontSize:17)),                   
+                                )
+                            ]
+                        )
+                    ),
+                    Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(7,11,7,11),
                         child: DataTable(
@@ -65,7 +85,7 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                                 DataRow(
                                     cells: [
                                         DataCell(Text('WITHDRAW ICP FEE: ')),
-                                        DataCell(Text('0.05-TCycles/XDR')),
+                                        DataCell(Text('0.05-TCycles')),
                                     ]
                                 ),
                                 DataRow(

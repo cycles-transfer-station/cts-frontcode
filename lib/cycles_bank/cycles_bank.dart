@@ -694,6 +694,10 @@ class CyclesBank extends Canister {
                             'WrongCaller': (nul) {
                                 throw Exception('File this error: WrongCaller');
                             },
+                            'MinimumWaitTime': (rc) { 
+                                Record r = rc as Record;
+                                throw Exception('Minimum wait time to void a position is ${(r['minimum_wait_time_seconds'] as Nat).value.toInt() / 60 / 60}-hour(s). This position can void in ${ ( ( (r['position_creation_timestamp_seconds'] as Nat).value + (r['minimum_wait_time_seconds'] as Nat).value ) - get_current_time_seconds() ) / BigInt.from(60)}-minutes.');
+                            },
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },

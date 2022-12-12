@@ -114,9 +114,14 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         )
                     ),
                 ),
+                SizedBox(
+                    width: 3,
+                    height: 17
+                ),
                 Wrap(
                     children: [
                         Container(
+                            padding: EdgeInsets.fromLTRB(0,0,0,17),
                             constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: Column(
                                 children: [
@@ -144,6 +149,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                             ) 
                         ),
                         Container(
+                            padding: EdgeInsets.fromLTRB(0,0,0,17),
                             constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
                             child: Column(
                                 children: [
@@ -214,8 +220,8 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                                         return AlertDialog(
                                                             title: Center(child: Text('Withdraw cycles-market icp-balance')),
                                                             content: Container(
-                                                                padding: EdgeInsets.all(7),
-                                                                child: CyclesBankCMTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankCMTransferIcpForm'))
+                                                                padding: EdgeInsets.all(0),
+                                                                child: CyclesBankCMTransferIcpForm(key: ValueKey('CyclesMarketScaffoldBody CyclesBankCMTransferIcpForm'))
                                                             ),
                                                             //actions: <Widget>[]
                                                         );
@@ -259,13 +265,13 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                             DataRow(
                                 cells: [
                                     DataCell(Text('CREATE POSITION FEE: ')),
-                                    DataCell(Text('0.05-TCycles/XDR')),
+                                    DataCell(Text('0.05-TCycles')),
                                 ]
                             ),
                             DataRow(
                                 cells: [
                                     DataCell(Text('PURCHASE POSITION FEE: ')),
-                                    DataCell(Text('0.05-TCycles/XDR')),
+                                    DataCell(Text('0.05-TCycles')),
                                 ]
                             )                            
 

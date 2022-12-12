@@ -144,7 +144,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         )
                     )
                 ),
-                IcpBalanceAndLoadIcpBalance(),
+                IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody PurchaseCyclesBank IcpBalanceAndLoadIcpBalance')),
                 Padding(
                     padding: EdgeInsets.all(0),//fromLTRB(17, 17, 17, 17.0),
                     child: Container(),
@@ -216,7 +216,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                 context: state.context,
                                 builder: (BuildContext context) {
                                     return AlertDialog(
-                                        title: Text('Cycles-bank purchase success:'),
+                                        title: Text('cycles-bank purchase success:'),
                                         content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
                                         actions: <Widget>[
                                             TextButton(
@@ -233,7 +233,28 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
             ]);
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
-            column_children.add(
+            
+            String cycles_balance = 'unknown';
+            String creation_timestamp = 'unknown';
+            String lifetime_termination = 'unknown';
+            String ctsfuel = 'unknown';
+            String storage_usage = 'unknown';
+            String storage_size = 'unknown';
+            
+            if (state.user!.cycles_bank!.metrics != null) {
+                CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
+                cycles_balance = '${metrics.cycles_balance}';
+                creation_timestamp = '${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}';
+                lifetime_termination = '${metrics.lifetime_termination_timestamp_seconds}';
+                ctsfuel = '${(metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY).toStringAsFixed(5)}';
+                storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(5)}-MiB';
+                storage_size = '${metrics.storage_size_mib}-MiB';
+            }
+            
+            List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
+            List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
+            
+            column_children.addAll([
                 Container(
                     padding: EdgeInsets.fromLTRB(11,0,11,17),
                     child: Center(
@@ -244,9 +265,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             ]
                         )
                     )
-                )
-            );
-            column_children.add(
+                ),
                 Padding(
                     padding: EdgeInsets.all(17),
                     child: ElevatedButton(
@@ -280,235 +299,244 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             return;                        
                         }
                     )
-                )
-            );
-            
-            if (state.user!.cycles_bank!.metrics != null) {
-                CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
-                
-                List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
-                List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
-                /*
-                for (CyclesTransferOut cto in cycles_transfers_out_reversed) {
-                    print([cto.id, cto.cycles_sent, cto.cycles_refunded, cto.fee_paid]);
-                }
-                for (CyclesTransferIn cti in cycles_transfers_in_reversed) {
-                    print([cti.id, cti.cycles]);
-                }
-                */
-                
-                
-                column_children.addAll([
-                    Container(
-                        width: double.infinity,
-                        child: Column(
-                            children: [
-                                Container(
-                                    padding: EdgeInsets.fromLTRB(7,10,7,27),
-                                    child: SelectableText('CYCLES: ${metrics.cycles_balance}', style: TextStyle(fontSize: 17)),
-                                )
-                            ]
-                        )
-                    ),
-                    Wrap(
+                ),
+                Container(
+                    width: double.infinity,
+                    child: Column(
                         children: [
                             Container(
-                                constraints: BoxConstraints(maxWidth: 450),
-                                //width: double.infinity,
-                                //alignment: Alignment.centerLeft,
-                                //padding: EdgeInsets.fromLTRB(13,7,13,7),
-                                child: Center(
-                                    child: DataTable(
-                                        headingRowHeight: 0,
-                                        showBottomBorder: true,
-                                        columns: <DataColumn>[
-                                            DataColumn(
-                                              label: Expanded(
-                                                child: Text(
-                                                  '',
-                                                  //style: TextStyle(fontStyle: FontStyle.italic),
-                                                ),
-                                              ),
-                                            ),
-                                            DataColumn(
-                                              label: Expanded(
-                                                child: Text(
-                                                  '',
-                                                  //style: TextStyle(fontStyle: FontStyle.italic),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                        rows: <DataRow>[
-                                            DataRow(
-                                                cells: <DataCell>[
-                                                    DataCell(Text('creation-timestamp: ')),
-                                                    DataCell(SelectableText('${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}')),
-                                                ],
-                                            ),
-                                            DataRow(
-                                                cells: <DataCell>[
-                                                    DataCell(Text('lifetime-termination: ')),
-                                                    DataCell(SelectableText('${metrics.lifetime_termination_timestamp_seconds}')),
-                                                ],
-                                            ),
-                                            DataRow(
-                                                cells: <DataCell>[
-                                                    DataCell(Text('ctsfuel: ')),
-                                                    DataCell(SelectableText('${metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}')),
-                                                ]
-                                            ),
-                                            DataRow(
-                                                cells: <DataCell>[
-                                                    DataCell(Text('storage-usage: ')),
-                                                    DataCell(SelectableText('${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(5)}-MiB')),
-                                                ]
-                                            ),
-                                            DataRow(
-                                                cells: <DataCell>[
-                                                    DataCell(Text('storage-size: ')),
-                                                    DataCell(SelectableText('${metrics.storage_size_mib}-MiB')),
-                                                ]
-                                            )
-                                        ]    
-                                    )
-                                )
-                            ),
-                            Container(
-                                constraints: BoxConstraints(maxWidth: 350),
-                                //width: double.infinity,
-                                //alignment: Alignment.centerLeft,
-                                //margin: EdgeInsets.fromLTRB(13,7,13,7),
-                                child: Center(
-                                    child: Column(
-                                        children: [
-                                            CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
-                                            SizedBox(
-                                                height: 20, 
-                                                width: 1
-                                            ),
-                                            GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
-                                            SizedBox(
-                                                height: 20, 
-                                                width: 1
-                                            ),
-                                            LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
-                                        ]
-                                    )
-                                )
+                                padding: EdgeInsets.fromLTRB(7,10,7,27),
+                                child: SelectableText('CYCLES: ${cycles_balance}', style: TextStyle(fontSize: 19)),
                             )
                         ]
-                    ),
-                    Container(
-                        padding: EdgeInsets.fromLTRB(13,17,13,17),
-                        child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
-                    ),
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
-                            onPressed: () async {
-                                state.loading_text = 'loading cycles-bank cycles transfers ...';
-                                state.is_loading = true;
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                try {
-                                    await Future.wait([
-                                        state.user!.cycles_bank!.fresh_cycles_transfers_in(),
-                                        state.user!.cycles_bank!.fresh_cycles_transfers_out(),
-                                    ]);
-                                } catch(e) {
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Error when loading the cycles-bank cycles transfers:'),
-                                                content: Text('${e}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
+                    )
+                ),
+                Wrap(
+                    children: [
+                        Container(
+                            constraints: BoxConstraints(maxWidth: 450),
+                            //width: double.infinity,
+                            //alignment: Alignment.centerLeft,
+                            padding: EdgeInsets.fromLTRB(0,11,0,0),
+                            child: Column(
+                                children: [
+                                    Center(
+                                        child: DataTable(
+                                            headingRowHeight: 0,
+                                            showBottomBorder: true,
+                                            columns: <DataColumn>[
+                                                DataColumn(
+                                                  label: Expanded(
+                                                    child: Text(
+                                                      '',
+                                                      //style: TextStyle(fontStyle: FontStyle.italic),
                                                     ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
-                                }
-                                state.is_loading = false;
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                            }
-                        )
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 337,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: cycles_transfers_out_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: cycles_transfers_out_scroll_controller,    
-                                        key: ValueKey('cb cycles-transfers-out'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(11),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            return CyclesTransferOutListItem(cycles_transfers_out_reversed[i]);
-                                        },
-                                        itemCount: cycles_transfers_out_reversed.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
+                                                  ),
+                                                ),
+                                                DataColumn(
+                                                  label: Expanded(
+                                                    child: Text(
+                                                      '',
+                                                      //style: TextStyle(fontStyle: FontStyle.italic),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                            rows: <DataRow>[
+                                                DataRow(
+                                                    cells: <DataCell>[
+                                                        DataCell(Text('creation-timestamp: ')),
+                                                        DataCell(SelectableText('${creation_timestamp}')),
+                                                    ],
+                                                ),
+                                                DataRow(
+                                                    cells: <DataCell>[
+                                                        DataCell(Text('lifetime-termination: ')),
+                                                        DataCell(SelectableText('${lifetime_termination}')),
+                                                    ],
+                                                ),
+                                                DataRow(
+                                                    cells: <DataCell>[
+                                                        DataCell(Text('ctsfuel: ')),
+                                                        DataCell(SelectableText('${ctsfuel}')),
+                                                    ]
+                                                ),
+                                                DataRow(
+                                                    cells: <DataCell>[
+                                                        DataCell(Text('storage-usage: ')),
+                                                        DataCell(SelectableText('${storage_usage}')),
+                                                    ]
+                                                ),
+                                                DataRow(
+                                                    cells: <DataCell>[
+                                                        DataCell(Text('storage-size: ')),
+                                                        DataCell(SelectableText('${storage_size}')),
+                                                    ]
+                                                )
+                                            ]    
+                                        )
+                                    ),
+                                    // burn icp mint cycles,  
+                                    Container(
+                                        width: double.infinity,
+                                        padding: EdgeInsets.all(17),
+                                        child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                            child: Text('BURN ICP MINT CYCLES'),
+                                            onPressed: () async {
+                                                await showDialog(
+                                                    context: context,
+                                                    builder: (BuildContext context) {
+                                                        return AlertDialog(
+                                                            title: Center(child: Text('BURN-ICP MINT-CYCLES')),
+                                                            content: Container(
+                                                                padding: EdgeInsets.all(0),
+                                                                child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
+                                                            ),
+                                                            //actions: <Widget>[]
+                                                        );
+                                                    }   
+                                                );
+                                            }
+                                        )                     
+                                    ),
+                                ]
+                            )
+                        ),
+                        Container(
+                            constraints: BoxConstraints(maxWidth: 350),
+                            //width: double.infinity,
+                            //alignment: Alignment.centerLeft,
+                            //margin: EdgeInsets.fromLTRB(13,7,13,7),
+                            child: Center(
+                                child: Column(
+                                    children: [
+                                        CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
+                                        SizedBox(
+                                            height: 20, 
+                                            width: 1
+                                        ),
+                                        GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
+                                        SizedBox(
+                                            height: 20, 
+                                            width: 1
+                                        ),
+                                        LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
+                                    ]
                                 )
                             )
                         )
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 307,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: cycles_transfers_in_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: cycles_transfers_in_scroll_controller,
-                                        key: ValueKey('cb cycles-transfers-in'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(11),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            return CyclesTransferInListItem(cycles_transfers_in_reversed[i]);
-                                        },
-                                        itemCount: cycles_transfers_in_reversed.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
-                                )   
-                            )
-                        ),
+                    ]
+                ),               
+                Container(
+                    padding: EdgeInsets.fromLTRB(13,17,13,17),
+                    child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
+                ),
+                Padding(
+                    padding: EdgeInsets.fromLTRB(7,37,7,17),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
+                        onPressed: () async {
+                            state.loading_text = 'loading cycles-bank cycles transfers ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            try {
+                                await Future.wait([
+                                    state.user!.cycles_bank!.fresh_cycles_transfers_in(),
+                                    state.user!.cycles_bank!.fresh_cycles_transfers_out(),
+                                ]);
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Error when loading the cycles-bank cycles transfers:'),
+                                            content: Text('${e}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
+                            }
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                        }
                     )
-                ]);   
-            }
+                ),
+                Container(
+                    width: double.infinity,
+                    child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
+                ),
+                LimitedBox(
+                    maxHeight: 337,
+                    child: Container(
+                        constraints: BoxConstraints(),
+                        padding: EdgeInsets.all(17),
+                        child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                            child: Scrollbar(
+                                controller: cycles_transfers_out_scroll_controller,
+                                child: ListView.builder(
+                                    controller: cycles_transfers_out_scroll_controller,    
+                                    key: ValueKey('cb cycles-transfers-out'),
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: false,
+                                    shrinkWrap: false,
+                                    padding: EdgeInsets.all(11),
+                                    itemBuilder: (BuildContext context, int i) {
+                                        return CyclesTransferOutListItem(cycles_transfers_out_reversed[i]);
+                                    },
+                                    itemCount: cycles_transfers_out_reversed.length,
+                                    addAutomaticKeepAlives: true,
+                                    addRepaintBoundaries: true,
+                                    addSemanticIndexes: true,
+                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                    clipBehavior: Clip.hardEdge
+                                )
+                            )
+                        )
+                    )
+                ),
+                Container(
+                    width: double.infinity,
+                    child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
+                ),
+                LimitedBox(
+                    maxHeight: 307,
+                    child: Container(
+                        constraints: BoxConstraints(),
+                        padding: EdgeInsets.all(17),
+                        child: ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                            child: Scrollbar(
+                                controller: cycles_transfers_in_scroll_controller,
+                                child: ListView.builder(
+                                    controller: cycles_transfers_in_scroll_controller,
+                                    key: ValueKey('cb cycles-transfers-in'),
+                                    scrollDirection: Axis.horizontal,
+                                    reverse: false,
+                                    shrinkWrap: false,
+                                    padding: EdgeInsets.all(11),
+                                    itemBuilder: (BuildContext context, int i) {
+                                        return CyclesTransferInListItem(cycles_transfers_in_reversed[i]);
+                                    },
+                                    itemCount: cycles_transfers_in_reversed.length,
+                                    addAutomaticKeepAlives: true,
+                                    addRepaintBoundaries: true,
+                                    addSemanticIndexes: true,
+                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                                    clipBehavior: Clip.hardEdge
+                                )
+                            )   
+                        )
+                    ),
+                )
+            ]);   
         }
     
         return Center(

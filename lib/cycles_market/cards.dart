@@ -9,6 +9,7 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import './forms.dart';
 import '../main.dart';
+import '../widgets.dart';
 
 
 class CyclesPositionListItem extends StatelessWidget {
@@ -247,7 +248,11 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                                             Text('on-the-market: true'),
                                                             Text('current-position: ${this.current_position!}'),    
                                                         ]
-                                                        else Text('on-the-market: false')
+                                                        else Text('on-the-market: false'),
+                                                        if (this.cm_message_void_cycles_position_positor_log != null) ...[
+                                                            Text('void-cycles: ${this.cm_message_void_cycles_position_positor_log!.void_cycles}'),
+                                                            Text('void-timestamp: ${seconds_of_the_nanos(this.cm_message_void_cycles_position_positor_log!.cm_message_void_cycles_position_positor_quest.timestamp_nanos)}'),
+                                                        ]
                                                     ]
                                                 )
                                             ),
@@ -280,7 +285,7 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                                                                     children: [
                                                                                         Text('cycles-purchase: ${purchase.cm_message_cycles_position_purchase_positor_quest.cycles_purchase}'),
                                                                                         Text('icp-payment: ${purchase.cm_message_cycles_position_purchase_positor_quest.icp_payment}'),
-                                                                                        Text('purchaser: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchaser}'),
+                                                                                        Text('purchaser: ${purchase.cm_message_cycles_position_purchase_positor_quest.purchaser.text}'),
                                                                                         Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_cycles_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
                                                                                     ]
                                                                                 )
@@ -298,29 +303,125 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                 )
                             )
                         ),
-                        if (this.cm_message_void_cycles_position_positor_log == null && current_position != null) Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('VOID POSITION'),
-                                onPressed: () async {
+                        if (this.cm_message_void_cycles_position_positor_log == null && current_position != null) Container(
+                            padding: EdgeInsets.all(17),
+                            width: double.infinity,
+                            child: OutlineButton(
+                                button_text: 'VOID POSITION',
+                                on_press_complete: () async {
+                                    
+                                    bool _continue = false;
+                                    
+                                    await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                            Widget cancelButton = TextButton(
+                                                child: Text("Cancel"),
+                                                onPressed:  () {
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            Widget continueButton = TextButton(
+                                                child: Text("Continue"),
+                                                onPressed:  () {
+                                                    _continue = true;
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            return AlertDialog(
+                                                title: Text("Confirm"),
+                                                content: Text("Confirm to void the cycles-position id: ${this.cm_cycles_position.id}, with the cycles: ${this.current_position!}"),
+                                                actions: [
+                                                    cancelButton,
+                                                    continueButton,
+                                                ],
+                                            );
+                                        }
+                                    );     
+                                    if (_continue == false) {
+                                        return;
+                                    }
+                                    
+                                    state.loading_text = 'void-position: ${this.cm_cycles_position.id} ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.cm_void_position(this.cm_cycles_position.id);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Void Position:'),
+                                                    content: Text('$e'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                                                        
+                                    Future show_success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('void-position success'),
+                                                content: Text('cycles-position: ${this.cm_cycles_position.id} is now void.'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    
+                                    state.loading_text = 'loading cycles-bank-cycles-balance and cycles-position updates ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await Future(()async{
+                                            await Future.delayed(Duration(seconds: 3));
+                                            await state.user!.cycles_bank!.fresh_metrics();
+                                            await Future.wait([
+                                                state.user!.cycles_bank!.fresh_cm_cycles_positions(),
+                                                state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_positor_logs(),
+                                                state.user!.cycles_bank!.fresh_cm_message_void_cycles_position_positor_logs(),
+                                            ]);
+                                        });
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-bank-cycles-balance and cycles-position updates:'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );       
+                                    }
+                                    
+                                    await show_success_dialog;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                 }
-                            )
-                        )
-                        else if (this.cm_message_void_cycles_position_positor_log != null) Container(
-                            child: Expanded(
-                                child: Padding(
-                                    padding: EdgeInsets.fromLTRB(17,7,17,7),
-                                    child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                            Text('void-cycles: ${this.cm_message_void_cycles_position_positor_log!.void_cycles}'),
-                                            Text('void-timestamp: ${this.cm_message_void_cycles_position_positor_log!.cm_message_void_cycles_position_positor_quest.timestamp_nanos}'),
-                                        ]
-                                    )
-                                )
                             )
                         )
                     ]
@@ -383,7 +484,11 @@ class UserIcpPositionListItem extends StatelessWidget {
                                                             Text('on-the-market: true'),
                                                             Text('current-position: ${this.current_position!}'),    
                                                         ]
-                                                        else Text('on-the-market: false') 
+                                                        else Text('on-the-market: false'),
+                                                        if (this.cm_message_void_icp_position_positor_log != null) ...[
+                                                            Text('void-icp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.void_icp}'),
+                                                            Text('void-timestamp: ${seconds_of_the_nanos(this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.timestamp_nanos)}'),
+                                                        ]
                                                     ]
                                                 )
                                             ),
@@ -416,7 +521,7 @@ class UserIcpPositionListItem extends StatelessWidget {
                                                                                     children: [
                                                                                         Text('icp-purchase: ${purchase.cm_message_icp_position_purchase_positor_quest.icp_purchase}'),
                                                                                         Text('cycles-payment: ${purchase.cycles_payment}'),
-                                                                                        Text('purchaser: ${purchase.cm_message_icp_position_purchase_positor_quest.purchaser}'),
+                                                                                        Text('purchaser: ${purchase.cm_message_icp_position_purchase_positor_quest.purchaser.text}'),
                                                                                         Text('timestamp: ${seconds_of_the_nanos(purchase.cm_message_icp_position_purchase_positor_quest.purchase_timestamp_nanos)}'),
                                                                                     ]
                                                                                 )
@@ -438,24 +543,128 @@ class UserIcpPositionListItem extends StatelessWidget {
                             width: 1,
                             height: 10,
                         ),
-                        if (this.cm_message_void_icp_position_positor_log == null && current_position != null) Padding(
-                            padding: EdgeInsets.all(7),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('VOID POSITION'),
-                                onPressed: () async {
+                        if (this.cm_message_void_icp_position_positor_log == null && current_position != null) Container(
+                            padding: EdgeInsets.all(17),
+                            width: double.infinity,
+                            child: OutlineButton(
+                                button_text: 'VOID POSITION',
+                                on_press_complete: () async {
+                                    
+                                    bool _continue = false;
+                                    
+                                    await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                            Widget cancelButton = TextButton(
+                                                child: Text("Cancel"),
+                                                onPressed:  () {
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            Widget continueButton = TextButton(
+                                                child: Text("Continue"),
+                                                onPressed:  () {
+                                                    _continue = true;
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            return AlertDialog(
+                                                title: Text("Confirm"),
+                                                content: Text("Confirm to void the icp-position id: ${this.cm_icp_position.id}, with the icp: ${this.current_position!}"),
+                                                actions: [
+                                                    cancelButton,
+                                                    continueButton,
+                                                ],
+                                            );
+                                        }
+                                    );     
+                                    if (_continue == false) {
+                                        return;
+                                    }
+                                    
+                                    state.loading_text = 'void-position: ${this.cm_icp_position.id} ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.cycles_bank!.cm_void_position(this.cm_icp_position.id);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Void Position:'),
+                                                    content: Text('$e'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );                                        
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                                                        
+                                    Future show_success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('void-position success'),
+                                                content: Text('icp-position: ${this.cm_icp_position.id} is now void.'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    
+                                    state.loading_text = 'loading cycles-market-icp-balance and icp-position updates ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await Future(()async{
+                                            await Future.delayed(Duration(seconds: 3));
+                                            await Future.wait([
+                                                state.user!.cycles_bank!.fresh_cm_icp_balance(),
+                                                state.user!.cycles_bank!.fresh_metrics(),
+                                            ]);
+                                            await Future.wait([
+                                                state.user!.cycles_bank!.fresh_cm_icp_positions(),
+                                                state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_positor_logs(),
+                                                state.user!.cycles_bank!.fresh_cm_message_void_icp_position_positor_logs(),
+                                            ]);
+                                        });
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error loading cycles-market-icp-balance and icp-position updates:'),
+                                                    content: Text(e.toString()),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );       
+                                    }
+                                    
+                                    await show_success_dialog;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                 }
-                            )
-                        )
-                        else if (this.cm_message_void_icp_position_positor_log != null) Container(
-                            child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    Text('void-icp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.void_icp}'),
-                                    Text('void-timestamp: ${this.cm_message_void_icp_position_positor_log!.cm_message_void_icp_position_positor_quest.timestamp_nanos}'),
-                                ]
                             )
                         )
                     ]
