@@ -52,7 +52,6 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         } else if (state.user!.cycles_bank == null) {
         
             column_children.addAll([
-                
                 Padding(
                     padding: EdgeInsets.fromLTRB(13,13,13,13),
                     child: OutlineButton(
@@ -66,7 +65,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         content: SingleChildScrollView(
                                             child: Text(
 ''' 
-A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the Internet-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers made by a CYCLES-BANK. 
+A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the Internet-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
 
 '''
                                             )
@@ -83,6 +82,22 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         }
                     )
                 ),
+                SizedBox(
+                    width: 3,
+                    height: 27
+                ),
+                Container(
+                    padding: EdgeInsets.fromLTRB(7,13,7,0),
+                    child: Center(
+                        child: Column(
+                            children: [
+                                Text('USER-CTS-ICP-ID: '),
+                                SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
+                            ]
+                        )
+                    )
+                ),
+                IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody PurchaseCyclesBank IcpBalanceAndLoadIcpBalance')),
                 Container(
                     width:  double.infinity,
                     padding: EdgeInsets.all(7),
@@ -121,7 +136,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             DataRow(
                                 cells: [
                                     DataCell(Text('ICP LEDGER FEES: ')),
-                                    DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                    DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'A cycles-bank-purchase uses 2 ledger transfers. 1 transfer creates the cycles-bank and 1 transfer collects the CTS-fee.')])),
                                 ]
                             ),
                             DataRow(
@@ -133,36 +148,19 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                         ]
                     )                    
                 ),
-                Container(
-                    padding: EdgeInsets.fromLTRB(7,13,7,0),
-                    child: Center(
-                        child: Column(
-                            children: [
-                                Text('USER-CTS-ICP-ID: '),
-                                SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
-                            ]
-                        )
-                    )
+                SizedBox(
+                    width: 3,
+                    height: 37
                 ),
-                IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody PurchaseCyclesBank IcpBalanceAndLoadIcpBalance')),
-                Padding(
-                    padding: EdgeInsets.all(0),//fromLTRB(17, 17, 17, 17.0),
-                    child: Container(),
-                    /*Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 34.0,
-                        endIndent: 34.0,
-                        //color: 
-                    ),*/
-                ),
+                //this is where the purchase-cycles-bank button was once                    
                 Container(
                     width: double.infinity,
                     height: 50,
-                    padding: EdgeInsets.fromLTRB(11,0,11,0),
+                    constraints: BoxConstraints(maxWidth: 550),
+                    padding: EdgeInsets.fromLTRB(11,0,11,17),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('PURCHASE CYCLES-BANK'),
+                        child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
                         onPressed: () async {  
                             state.loading_text = 'purchasing cycles-bank ...';
                             state.is_loading = true;
@@ -470,13 +468,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 ),
                 Container(
                     width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(11,0,0,0),
                     child: Text('CYCLES-TRANSFERS-OUT', style: TextStyle(fontSize: 17)),
                 ),
                 LimitedBox(
                     maxHeight: 337,
                     child: Container(
                         constraints: BoxConstraints(),
-                        padding: EdgeInsets.all(17),
+                        //padding: EdgeInsets.all(17),
                         child: ScrollConfiguration(
                             behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
                             child: Scrollbar(
@@ -504,13 +503,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                 ),
                 Container(
                     width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(11,0,0,0),
                     child: Text('CYCLES-TRANSFERS-IN', style: TextStyle(fontSize: 17)),
                 ),
                 LimitedBox(
                     maxHeight: 307,
                     child: Container(
                         constraints: BoxConstraints(),
-                        padding: EdgeInsets.all(17),
+                        //padding: EdgeInsets.all(17),
                         child: ScrollConfiguration(
                             behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
                             child: Scrollbar(
@@ -541,14 +541,14 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
     
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 900),//731),
+                constraints: BoxConstraints(maxWidth: 900),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                         ScaffoldBodyHeader('CYCLES-BANK'),
                         Expanded(
                             child: ListView(
-                                padding: EdgeInsets.all(17),
+                                padding: EdgeInsets.all(0),
                                 children: [
                                     Column(
                                         children: column_children 
@@ -556,6 +556,81 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                 ],
                                 addAutomaticKeepAlives: true
                             )
+                        ),
+                        if (state.user != null && state.user!.cycles_bank == null) Container(
+                            width: double.infinity,
+                            height: 50,
+                            constraints: BoxConstraints(maxWidth: 550),
+                            padding: EdgeInsets.fromLTRB(11,0,11,17),
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                                onPressed: () async {  
+                                    state.loading_text = 'purchasing cycles-bank ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    try {
+                                        await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Purchase cycles-bank error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );  
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;    
+                                    }
+                                    state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    try {
+                                        await state.user!.cycles_bank!.fresh_metrics();
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('load cycles-bank metrics error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );  
+                                    }
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('cycles-bank purchase success:'),
+                                                content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                             
+                                }
+                            ),
                         )
                     ]
                 )

@@ -46,7 +46,7 @@ class CyclesPositionListItem extends StatelessWidget {
                                 ),
                             )
                         ),
-                        Padding(
+                        if (state.user != null && state.user!.cycles_bank != null) Padding(
                             padding: EdgeInsets.all(11),
                             child: PurchaseCyclesPositionForm(cycles_position, key: ValueKey('PurchaseCyclesPositionForm ${cycles_position.id}')),
                         )
@@ -92,7 +92,7 @@ class IcpPositionListItem extends StatelessWidget {
                                 )
                             )
                         ),
-                        Padding(
+                        if (state.user != null && state.user!.cycles_bank != null) Padding(
                             padding: EdgeInsets.all(11),
                             child: PurchaseIcpPositionForm(icp_position, key: ValueKey('PurchaseIcpPositionForm ${icp_position.id}')),
                         )
@@ -368,7 +368,10 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                         return;
                                     }
-                                                                        
+                                    
+                                    state.loading_text = 'loading cycles-bank-cycles-balance and cycles-position updates ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
                                     Future show_success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -384,9 +387,6 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                             );
                                         }
                                     );
-                                    
-                                    state.loading_text = 'loading cycles-bank-cycles-balance and cycles-position updates ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     try {
                                         await Future(()async{
@@ -608,7 +608,10 @@ class UserIcpPositionListItem extends StatelessWidget {
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                         return;
                                     }
-                                                                        
+                                    
+                                    state.loading_text = 'loading cycles-market-icp-balance and icp-position updates ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
                                     Future show_success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -624,9 +627,6 @@ class UserIcpPositionListItem extends StatelessWidget {
                                             );
                                         }
                                     );
-                                    
-                                    state.loading_text = 'loading cycles-market-icp-balance and icp-position updates ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     try {
                                         await Future(()async{
@@ -781,192 +781,4 @@ class UserIcpPositionPurchaseListItem extends StatelessWidget {
 
 
 
-
-/*
-
-class CMCyclesPositionListItem extends StatelessWidget {
-    final CMCyclesPosition cm_cycles_position;
-    CMCyclesPositionListItem(CMCyclesPosition _cm_cycles_position): cm_cycles_position = _cm_cycles_position, super(key: ValueKey('CMCyclesPositionListItem: ${_cm_cycles_position.id}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('MARKET CYCLES POSITION'),
-                            subtitle: Text('ID: ${cm_cycles_position.id}'),
-                        ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('cycles: ${cm_cycles_position.cycles.cycles}'),
-                                Text('minimum-purchase: ${cm_cycles_position.minimum_purchase.cycles}'),
-                                Text('xdr/Tcycles per icp rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
-                                Text('market create position fee: ${cm_cycles_position.create_position_fee}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
-                            ]                            
-                        ),
-                    ]
-                )
-            )            
-        );
-    }
-}
-
-
-class CMIcpPositionListItem extends StatelessWidget {
-    final CMIcpPosition cm_icp_position;
-    CMIcpPositionListItem(CMIcpPosition _cm_icp_position): cm_icp_position = _cm_icp_position, super(key: ValueKey('CMIcpPositionListItem: ${_cm_icp_position.id}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('MARKET ICP POSITION'),
-                            subtitle: Text('ID: ${cm_icp_position.id}'),
-                        ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('icp: ${cm_icp_position.icp}'),
-                                Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
-                                Text('xdr/Tcycles per icp rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
-                                Text('market create position fee: ${cm_icp_position.create_position_fee}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
-                            ]
-                        ),
-                    ]
-                )
-            )            
-        );
-    }
-}
-
-
-
-class CMCyclesPositionPurchaseListItem extends StatelessWidget {
-    final CMCyclesPositionPurchase cm_cycles_position_purchase;
-    CMCyclesPositionPurchaseListItem(CMCyclesPositionPurchase _cm_cycles_position_purchase): cm_cycles_position_purchase = _cm_cycles_position_purchase, super(key: ValueKey('CMCyclesPositionPurchaseListItem: ${_cm_cycles_position_purchase.id}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('MARKET CYCLES POSITION PURCHASE'),
-                            subtitle: Text('ID: ${cm_cycles_position_purchase.id}'),
-                        ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('cycles-position id: ${cm_cycles_position_purchase.cycles_position_id}'),
-                                Text('cycles purchase: ${cm_cycles_position_purchase.cycles}'),
-                                Text('xdr/Tcycles per icp purchase rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
-                                Text('icp payment: ${cycles_to_icptokens(cm_cycles_position_purchase.cycles, cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
-                                Text('market purchase position fee: ${cm_cycles_position_purchase.purchase_position_fee}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position_purchase.timestamp_nanos)}'),
-                            ]
-                        ),
-                    ]
-                )
-            )            
-        );
-    }
-}
-
-
-class CMIcpPositionPurchaseListItem extends StatelessWidget {
-    final CMIcpPositionPurchase cm_icp_position_purchase;
-    CMIcpPositionPurchaseListItem(CMIcpPositionPurchase _cm_icp_position_purchase): cm_icp_position_purchase = _cm_icp_position_purchase, super(key: ValueKey('CMIcpPositionPurchaseListItem: ${_cm_icp_position_purchase.id}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('MARKET ICP POSITION PURCHASE'),
-                            subtitle: Text('ID: ${cm_icp_position_purchase.id}'),
-                        ),
-                        Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('icp-position id: ${cm_icp_position_purchase.icp_position_id}'),
-                                Text('icp purchase: ${cm_icp_position_purchase.icp}'),
-                                Text('xdr/Tcycles per icp purchase rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
-                                Text('cycles payment: ${icptokens_to_cycles(cm_icp_position_purchase.icp, cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
-                                Text('market purchase position fee: ${cm_icp_position_purchase.purchase_position_fee}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_position_purchase.timestamp_nanos)}'),
-                            ]
-                        ),
-                    ]
-                )
-            )            
-        );
-    }
-}
-
-
-
-class CMIcpTransferOutListItem extends StatelessWidget {
-    final CMIcpTransferOut cm_icp_transfer_out;
-    CMIcpTransferOutListItem(CMIcpTransferOut cm_icp_transfer_out): cm_icp_transfer_out = cm_icp_transfer_out, super(key: ValueKey('CMIcpTransferOutListItem: ${cm_icp_transfer_out.block_height}'));
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Container(
-            padding: EdgeInsets.all(11),
-            child: Card(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                        ListTile(
-                            title: Text('CYCLES-MARKET ICP BALANCE WITHDRAWAL'),
-                            subtitle: Text('BLOCK: ${cm_icp_transfer_out.block_height}'),
-                        ),
-                        Column( // datatable?
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                                Text('icp withdrawal: ${cm_icp_transfer_out.icp}'),
-                                Text('for: ${cm_icp_transfer_out.to}'),
-                                Text('icp ledger fee: ${cm_icp_transfer_out.icp_fee}'),
-                                Text('cycles-market icp-withdraw-fee: ${cm_icp_transfer_out.transfer_icp_balance_fee}'),
-                                Text('timestamp: ${seconds_of_the_nanos(cm_icp_transfer_out.timestamp_nanos)}'),
-                            ]
-                        ),
-                    ]
-                )
-            )            
-        );
-    }
-}
-
-
-*/
 

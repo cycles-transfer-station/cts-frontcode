@@ -323,16 +323,9 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     
                                     if (cycles_modulo_xdr_permyriad_per_icp != BigInt.from(0) || minimum_purchase_modulo_xdr_permyriad_per_icp != BigInt.from(0)) { 
                                         
-                                        Cycles new_cycles = Cycles(cycles: cycles_for_the_position.cycles - cycles_modulo_xdr_permyriad_per_icp); 
-                                        Cycles new_minimum_purchase = Cycles(cycles: minimum_purchase.cycles - minimum_purchase_modulo_xdr_permyriad_per_icp);
-                                        
-                                        if (new_cycles.cycles == BigInt.from(0)) {
-                                            new_cycles = Cycles(cycles: xdr_icp_rate.xdr_permyriad_per_icp);
-                                        }
-                                        if (new_minimum_purchase.cycles == BigInt.from(0)) {
-                                            new_minimum_purchase = Cycles(cycles: xdr_icp_rate.xdr_permyriad_per_icp);
-                                        }
-                                        
+                                        Cycles new_cycles = Cycles(cycles: cycles_for_the_position.cycles + ( xdr_icp_rate.xdr_permyriad_per_icp - cycles_modulo_xdr_permyriad_per_icp )); 
+                                        Cycles new_minimum_purchase = Cycles(cycles: minimum_purchase.cycles + ( xdr_icp_rate.xdr_permyriad_per_icp - minimum_purchase_modulo_xdr_permyriad_per_icp ));
+                                                                                
                                         await showDialog(
                                             context: context,
                                             builder: (BuildContext context) {
@@ -351,7 +344,7 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                                 );
                                                 return AlertDialog(
                                                     title: Text("Confirm"),
-                                                    content: Text("The cycles and minimum-purchase of the position must be a multiple of the position\'s-TCycles-per-icp-rate*10000. \nContinue with the following values for the cycles and for the minimum-purchase of the position?\ncycles: ${cycles_for_the_position} -> ${new_cycles}\nminimum_purchase: ${minimum_purchase} -> ${new_minimum_purchase}"),
+                                                    content: Text("The cycles and minimum-purchase of a cycles-position must be a multiple of the position\'s-TCycles-per-icp-rate*10000. \nContinue with the following values for the cycles and for the minimum-purchase?\ncycles: ${cycles_for_the_position} -> ${new_cycles}\nminimum_purchase: ${minimum_purchase} -> ${new_minimum_purchase}"),
                                                     actions: [
                                                         cancelButton,
                                                         continueButton,
@@ -405,6 +398,22 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     state.loading_text = 'create cycles-position success. \ncycles-position ID: ${create_cycles_position_success.position_id}\nloading cycles-market cycles-positions and cycles-bank cycles-balance ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Cycles-Market Create CYCLES-POSITION Success:'),
+                                                content: Text('cycles-position ID: ${create_cycles_position_success.position_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
+                                    
                                     try {
                                         await Future.wait([
                                             state.cycles_market_data.fresh_cycles_positions(),
@@ -428,25 +437,12 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                             }   
                                         );                                    
                                     }
+                                    
+                                    await success_dialog;
                                 
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Cycles-Market Create CYCLES-POSITION Success:'),
-                                                content: Text('cycles-position ID: ${create_cycles_position_success.position_id}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
+                                                                        
                                 }
                             }
                         )
@@ -579,6 +575,22 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                                     state.loading_text = 'create icp-position success. \icp-position ID: ${create_icp_position_success.position_id}\nloading cycles-market icp-positions, icp-balance, and cycles-balance ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Cycles-Market Create ICP-POSITION Success:'),
+                                                content: Text('icp-position ID: ${create_icp_position_success.position_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                        
+                                    
                                     try {
                                         await Future.wait([
                                             state.cycles_market_data.fresh_icp_positions(),
@@ -603,25 +615,12 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                                             }   
                                         );                                    
                                     }
+                                    
+                                    await success_dialog;
                                 
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Cycles-Market Create ICP-POSITION Success:'),
-                                                content: Text('icp-position ID: ${create_icp_position_success.position_id}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
                                 }
                             }
                         )
@@ -727,7 +726,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     
                                     if (purchase_cycles_modulo_xdr_permyriad_per_icp != BigInt.from(0)) { 
                                         
-                                        Cycles new_purchase_cycles = Cycles(cycles: purchase_cycles.cycles - purchase_cycles_modulo_xdr_permyriad_per_icp);
+                                        Cycles new_purchase_cycles = Cycles(cycles: purchase_cycles.cycles + ( this.widget.cycles_position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp - purchase_cycles_modulo_xdr_permyriad_per_icp ));
                                         
                                         if (new_purchase_cycles.cycles == BigInt.from(0)) {
                                             new_purchase_cycles = Cycles(cycles: this.widget.cycles_position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp);
@@ -751,7 +750,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                                 );
                                                 return AlertDialog(
                                                     title: Text("Confirm"),
-                                                    content: Text("The cycles-purchase must be a multiple of the position\'s-TCycles-per-icp-rate*10000. \nContinue with the following new value for the cycles-purchase?\npurchase-cycles: ${purchase_cycles} -> ${new_purchase_cycles}"),
+                                                    content: Text("A cycles-purchase must be a multiple of the cycles-position\'s-TCycles-per-icp-rate*10000. \nContinue with the following new value for the cycles-purchase?\npurchase-cycles: ${purchase_cycles} -> ${new_purchase_cycles}"),
                                                     actions: [
                                                         cancelButton,
                                                         continueButton,
@@ -799,8 +798,10 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     }
                                     
                                     form_key.currentState!.reset();
-                                                                        
-                                    await showDialog(
+                                    state.loading_text = 'loading cycles-balance and cycles-market-icp-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
@@ -816,20 +817,19 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                         }
                                     );
                                     
-                                    state.loading_text = 'loading cycles-balance and cycles-market-icp-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
                                     try {
                                         await Future.wait([
                                             state.user!.cycles_bank!.fresh_metrics(),
-                                            state.user!.cycles_bank!.fresh_cm_icp_balance()
+                                            state.user!.cycles_bank!.fresh_cm_icp_balance(),
+                                            state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
+                                            state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_purchaser_logs()
                                         ]);
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Error loading cycles-bank balance:'),
+                                                    title: Text('Error loading cycles-balance and cycles-market-icp-balance:'),
                                                     content: Text(e.toString()),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -841,6 +841,8 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                             }
                                         );       
                                     }
+                                    
+                                    await success_dialog;
                                     
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
@@ -967,8 +969,10 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                                                        
-                                    await showDialog(
+                                    state.loading_text = 'loading cycles-market-icp-balance and cycles-balance ...';
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
@@ -984,20 +988,20 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                         }
                                     );
                                     
-                                    state.loading_text = 'loading cycles-market-icp-balance and cycles-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
                                     try {
                                         await Future.wait([
                                             state.user!.cycles_bank!.fresh_metrics(),
-                                            state.user!.cycles_bank!.fresh_cm_icp_balance()
+                                            state.user!.cycles_bank!.fresh_cm_icp_balance(),
+                                            state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
+                                            state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs()
+                                        
                                         ]);
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Error loading cycles-bank balance:'),
+                                                    title: Text('Error loading cycles-market-icp-balance and cycles-balance:'),
                                                     content: Text(e.toString()),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -1009,6 +1013,8 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                             }
                                         );       
                                     }
+                                    
+                                    await success_dialog;
                                     
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);

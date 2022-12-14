@@ -117,7 +117,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     maxHeight: 307,
                     child: Container(
                         constraints: BoxConstraints(),
-                        padding: EdgeInsets.all(17),
+                        //padding: EdgeInsets.all(17),
                         child: ScrollConfiguration(
                             behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
                             child: Scrollbar(
@@ -160,7 +160,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
         
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 800),
+                constraints: BoxConstraints(maxWidth: 900),
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -193,7 +193,7 @@ class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
 
         
         return Padding(
-            padding: EdgeInsets.fromLTRB(13.0, 18, 13,13),
+            padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
             child: Column(
                 children: [
                     Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}', style: TextStyle(fontSize:17)),

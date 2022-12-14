@@ -78,7 +78,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                 DataRow(
                                     cells: [
                                         DataCell(Text('ICP LEDGER FEES: ', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                        DataCell(Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize)), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'An icp-transfer here uses 2 ledger transfers. 1 is the main transfer and 1 collects the CTS-fee.')])),
                                     ]
                                 ),
                                 DataRow(
@@ -168,6 +168,22 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                     state.loading_text = 'Icp transfer is success. Block height: ${transfer_icp_success.block_height.value}\nloading icp balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Icp Transfer Success:'),
+                                                content: Text('transfer block height: ${transfer_icp_success.block_height.value}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    ); 
+                                    
                                     try {
                                         await Future.wait([
                                             state.user!.fresh_icp_balance(),
@@ -191,21 +207,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                                         );                                    
                                     }
                                 
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Icp Transfer Success:'),
-                                                content: Text('transfer block height: ${transfer_icp_success.block_height.value}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    ); 
+                                    await success_dialog;
                                     
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);

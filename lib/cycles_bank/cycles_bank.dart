@@ -575,12 +575,11 @@ class CyclesBank extends Canister {
                                 throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for the purchase. \ncycles-bank\'s cycles-market-icp-balance: ${this.cm_icp_balance!}\npurchase_cycles: ${purchase_cycles}\nicp-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_icp_cost}, icp-ledger-transfer-fee: ${ICP_LEDGER_TRANSFER_FEE}');
                             },
                             'CyclesPositionNotFound':(nul) {
-                                throw Exception('The cycles-position is not found. perhaps it has already been purchased.');
+                                throw Exception('The cycles-position: ${cycles_position.id} is not found.');
                             },
                             'CyclesPositionCyclesIsLessThanThePurchaseQuest': (cycles_position_cycles_record) {
                                 // update the cycles-position-cycles
-                                
-                                throw Exception('This cycles-position: ${cycles_position.id} has ${Cycles.oftheNat((cycles_position_cycles_record as Record)['cycles_position_cycles']! as Nat)} for the sale.\nperhaps some cycles of the cycles-position was purchased.');
+                                throw Exception('The cycles-position: ${cycles_position.id} has ${Cycles.oftheNat((cycles_position_cycles_record as Record)['cycles_position_cycles']! as Nat)}-cycles.');
                             },
                             'CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest': (cycles_position_minimum_purchase_record) {
                                 throw Exception('File this error: CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this cycles-position is ${Cycles.oftheNat((cycles_position_minimum_purchase_record as Record)['cycles_position_minimum_purchase']!)}');
@@ -645,10 +644,10 @@ class CyclesBank extends Canister {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
                             'IcpPositionNotFound': (nul) {
-                                throw Exception('The icp-position is not found. perhaps it has already been purchased.');
+                                throw Exception('The icp-position: ${icp_position.id} is not found.');
                             },
                             'IcpPositionIcpIsLessThanThePurchaseQuest': (icp_position_icp_record) {
-                                throw Exception('This icp-position: ${icp_position.id} has ${IcpTokens.oftheRecord((icp_position_icp_record as Record)['icp_position_icp']! as Record)} for the sale.\nperhaps some icp of the icp-position was purchased.');
+                                throw Exception('This icp-position: ${icp_position.id} has ${IcpTokens.oftheRecord((icp_position_icp_record as Record)['icp_position_icp']! as Record)}-icp.');
                             },
                             'IcpPositionMinimumPurchaseIsGreaterThanThePurchaseQuest':(icp_position_minimum_purchase_record){
                                 throw Exception('File this error: IcpPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this icp-position is ${IcpTokens.oftheRecord((icp_position_minimum_purchase_record as Record)['icp_position_minimum_purchase']!)}');
@@ -696,13 +695,13 @@ class CyclesBank extends Canister {
                             },
                             'MinimumWaitTime': (rc) { 
                                 Record r = rc as Record;
-                                throw Exception('Minimum wait time to void a position is ${(r['minimum_wait_time_seconds'] as Nat).value.toInt() / 60 / 60}-hour(s). This position can void in ${ ( ( (r['position_creation_timestamp_seconds'] as Nat).value + (r['minimum_wait_time_seconds'] as Nat).value ) - get_current_time_seconds() ) / BigInt.from(60)}-minutes.');
+                                throw Exception('Minimum wait time to void a position is ${(r['minimum_wait_time_seconds'] as Nat).value.toInt() / 60 / 60}-hour(s). This position can void in ${( ( ( (r['position_creation_timestamp_seconds'] as Nat).value + (r['minimum_wait_time_seconds'] as Nat).value ) - get_current_time_seconds() ) / BigInt.from(60) ).toStringAsFixed(3)}-minutes.');
                             },
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
                             'PositionNotFound': (nul) {
-                                throw Exception('The position is not found. Perhaps it has been purchased.');
+                                throw Exception('The position-id: ${position_id} is not found.');
                             },
                         });
                     }                    

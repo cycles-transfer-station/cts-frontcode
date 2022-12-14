@@ -351,7 +351,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         column_children.add(
             SingleChildScrollView(
-                child: Text("""""")
+                child: Text("""Welcome.""")
             )
         );
         
