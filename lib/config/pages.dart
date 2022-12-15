@@ -15,9 +15,6 @@ import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart';
 
-
-import 'package:tuple/tuple.dart';
-
 import '../main.dart';
 import '../tools/ii_jslib.dart';
 import '../tools/indexdb.dart';
@@ -255,13 +252,13 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         List<Widget> column_children = [
             Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 17.0),
+                padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
                 child: Container(
                     child: Text('Purchase, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
                 )
             ),
             Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 37.0),
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 27.0),
                 child: Divider(
                     height: 13.0,   
                     thickness: 4.0,
@@ -349,18 +346,79 @@ class WelcomeScaffoldBody extends StatelessWidget {
 
         }
         
-        column_children.add(
-            SingleChildScrollView(
-                child: Text("""Welcome.""")
+        column_children.addAll([
+            Padding(
+                padding: EdgeInsets.fromLTRB(0, 17, 0, 17.0),
+                child: Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+                    indent: 34.0,
+                    endIndent: 34.0,
+                    //color: 
+                ),
+            ),
+            Expanded(
+                child: Container(
+                    padding: EdgeInsets.all(27),
+                    child: SingleChildScrollView(
+                        child: Column(
+                            children: [
+                                Text(
+"""
+Welcome. Here is the home for the world-computer's native cycles. The mainstream-usage of the native cycles as a stable-currency works on these 3 key pillars. 
+
+Pillar #1: The cycles-transfer-specification. The cycles-transfer-specification sets the communication standard between the smart-contracts (canisters) for the transfer of the cycles.
+
+Pillar #2: The cycles-bank. A cycles-bank is a smart-contract that lives on the world-computer that can cept, hold, and transfer the native cycles, and keep logs of the transfers. A cycles-bank uses the cycles-transfer-specification of Pillar #1 to transfer the cycles. For a 1-time purchase of 15-xdr (19-20 USD), the cycles-transfer-station creates a brand new cycles-bank for the purchaser, with a lifetime of 1-year (can be lengthened once purchased), a storage-size of 50-MiB (can grow once purchased), and loads it up with CTSFuel of 5.0 (CTSFuel is the fuel that the cycles-bank uses to perform transactions. 5.0 CTSFuel is good for standard usage for 1-year. The CTSFuel can be topped-up once purchased).
+
+Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and ICP both ways. People who want to liquidate cycles can sell them for ICP at a little lower rate than the current network burn-icp-mint-cycles-rate. People who want cycles can purchase them with ICP at a better rate than the network burn-icp-mint-cycles-rate. 
+
+
+
+CYCLES-TRANSFER-SPECIFICATION CANDID: 
+"""
+                                    , style: TextStyle(fontSize: 17)
+                                ),
+                                Container(
+                                    width: double.infinity,
+                                    child: SelectableText(
+"""
+type CyclesTransfer = record {
+    memo: CyclesTransferMemo;
+};
+
+type CyclesTransferMemo = variant {
+    Text: text;
+    Nat: nat;
+    Blob: blob;
+};
+
+service cycles-transfer-specification : {
+    cycles_transfer(CyclesTransfer) -> ();
+}
+
+"""
+                                        ,
+                                        style: TextStyle(fontSize: 17, fontFamily: 'NimbusMonoPS-Bold')
+                                    )
+                                )
+                            ]
+                        )
+                    )
+                )
+            )
+        ]);
+        
+        return Center(
+            child: Container(
+                constraints: BoxConstraints(maxWidth: 900),
+                child: Column(                
+                    children: column_children,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center
+                )
             )
         );
-        
-        return Column(                
-            children: column_children,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center
-        );
-    
     }
 
 }

@@ -191,7 +191,13 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                             child: Text('TRANSFER CYCLES'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
+                                    
                                     form_key.currentState!.save();
+                                    
+                                    late bool _continue;
+                                    //await showDialog(
+                                    
+                                    //);
                                     
                                     UserTransferCyclesQuest transfer_cycles_quest = UserTransferCyclesQuest(
                                         for_the_canister:for_the_canister,
@@ -230,14 +236,14 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'cycles transfer success. cycles_transfer_id: ${cycles_transfer_out_id}\nloading cycles balance and transfers list ...';
+                                    state.loading_text = 'cycles transfer sent. cycles_transfer_id: ${cycles_transfer_out_id}\nloading cycles balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                 
                                     Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
-                                                title: Text('Cycles Transfer Success:'),
+                                                title: Text('Cycles Transfer Sent:'),
                                                 content: Text('cycles_transfer_id: ${cycles_transfer_out_id}'),
                                                 actions: <Widget>[
                                                     TextButton(
