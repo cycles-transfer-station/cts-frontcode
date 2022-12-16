@@ -194,11 +194,42 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                     
                                     form_key.currentState!.save();
                                     
-                                    late bool _continue;
-                                    //await showDialog(
+                                    bool _continue = false;
                                     
-                                    //);
-                                    
+                                    await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                            Widget cancelButton = TextButton(
+                                                child: Text("Cancel"),
+                                                onPressed:  () {
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            Widget continueButton = TextButton(
+                                                child: Text("Continue"),
+                                                onPressed:  () {
+                                                    _continue = true;
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            return AlertDialog(
+                                                title: Text("Confirm"),
+                                                content: Text(
+"""Cycles transfers are sent using the cycles-transfer-specification.
+For a temporary safegaurd, cycles-transfers are routed through a safe-transferrer with a fee: 0.02-xdr and cycles-transfers sent to external (not made by the CYCLES-TRANSFER-STATION) cycles-banks (or canister-smart-contracts) will not see the cycles-bank-id as the transferrer. (Soon when the smart-contract safe-upgrades feature is complete, there will be no fee, and transfers to external smart-contracts will see the correct cycles-bank-id as the transferrer.)
+"""                                             
+                                                ),
+                                                actions: [
+                                                    cancelButton,
+                                                    continueButton,
+                                                ],
+                                            );
+                                        }
+                                    );     
+                                    if (_continue == false) {
+                                        return;
+                                    }
+                                
                                     UserTransferCyclesQuest transfer_cycles_quest = UserTransferCyclesQuest(
                                         for_the_canister:for_the_canister,
                                         cycles:cycles, 

@@ -359,7 +359,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             ),
             Expanded(
                 child: Container(
-                    padding: EdgeInsets.all(27),
+                    padding: EdgeInsets.fromLTRB(27,27,27,0),
                     child: SingleChildScrollView(
                         child: Column(
                             children: [
@@ -383,6 +383,7 @@ CYCLES-TRANSFER-SPECIFICATION CANDID:
                                     width: double.infinity,
                                     child: SelectableText(
 """
+
 type CyclesTransfer = record {
     memo: CyclesTransferMemo;
 };
@@ -396,6 +397,7 @@ type CyclesTransferMemo = variant {
 service cycles-transfer-specification : {
     cycles_transfer(CyclesTransfer) -> ();
 }
+
 
 """
                                         ,

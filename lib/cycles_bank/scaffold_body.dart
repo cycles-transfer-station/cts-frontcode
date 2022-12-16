@@ -152,7 +152,6 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     width: 3,
                     height: 37
                 ),
-                //this is where the purchase-cycles-bank button was once                    
                 Container(
                     width: double.infinity,
                     height: 50,
@@ -166,7 +165,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             try {
-                                await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
+                                await state.user!.purchase_cycles_bank(opt_referral_user_id: null); //FOR THE DO! ferral
                             } catch(e) {
                                 await showDialog(
                                     context: state.context,
@@ -189,6 +188,23 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                             }
                             state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            
+                            Future success_dialog = showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('cycles-bank purchase success:'),
+                                        content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            ); 
+                            
                             try {
                                 await state.user!.cycles_bank!.fresh_metrics();
                             } catch(e) {
@@ -208,23 +224,12 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                     }   
                                 );  
                             }
+                            
+                            await success_dialog;
+                            
                             state.is_loading = false;
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                            await showDialog(
-                                context: state.context,
-                                builder: (BuildContext context) {
-                                    return AlertDialog(
-                                        title: Text('cycles-bank purchase success:'),
-                                        content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
-                                        actions: <Widget>[
-                                            TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('OK'),
-                                            ),
-                                        ]
-                                    );
-                                }   
-                            );                             
+                                                         
                         }
                     ),
                 )
@@ -556,81 +561,6 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                 ],
                                 addAutomaticKeepAlives: true
                             )
-                        ),
-                        if (state.user != null && state.user!.cycles_bank == null) Container(
-                            width: double.infinity,
-                            height: 50,
-                            constraints: BoxConstraints(maxWidth: 550),
-                            padding: EdgeInsets.fromLTRB(11,0,11,17),
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
-                                onPressed: () async {  
-                                    state.loading_text = 'purchasing cycles-bank ...';
-                                    state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    try {
-                                        await state.user!.purchase_cycles_bank(opt_referral_user_id: null/*FOR THE DO!*/);
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Purchase cycles-bank error:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );  
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;    
-                                    }
-                                    state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    try {
-                                        await state.user!.cycles_bank!.fresh_metrics();
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('load cycles-bank metrics error:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );  
-                                    }
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('cycles-bank purchase success:'),
-                                                content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                             
-                                }
-                            ),
                         )
                     ]
                 )
