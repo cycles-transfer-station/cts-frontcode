@@ -857,7 +857,10 @@ class CyclesBank extends Canister {
             Err: (change_storage_size_error){
                 match_variant<Never>(change_storage_size_error as Variant, {
                     'NewStorageSizeMibTooLow':(r_c){
-                        throw Exception('The minimum new storage size is: ${((r_c as Record)['minimum_new_storage_size_mib'] as Nat).value} MiB');
+                        throw Exception('The minimum new storage size is: ${((r_c as Record)['minimum_new_storage_size_mib'] as Nat).value}-MiB');
+                    },
+                    'NewStorageSizeMibTooHigh': (r_c){ 
+                        throw Exception('The maximum new storage size is: ${((r_c as Record)['maximum_new_storage_size_mib'] as Nat).value}-MiB');
                     },
                     'CyclesBalanceTooLow': (r_c){
                         this.metrics!.cycles_balance = Cycles.oftheNat((r_c as Record)['cycles_balance']!);

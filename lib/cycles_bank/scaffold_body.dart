@@ -65,7 +65,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         content: SingleChildScrollView(
                                             child: Text(
 ''' 
-A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the Internet-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
+A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
 
 '''
                                             )
