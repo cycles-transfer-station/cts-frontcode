@@ -48,29 +48,38 @@ const String Ok  = 'Ok';
 const String Err = 'Err';
 
 
-//final Canister cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai'));
-/*TEST*/final Canister cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
 
-//final Canister cycles_market = Canister(Principal('woddh-aqaaa-aaaal-aazqq-cai'));
-/*TEST*/final Canister cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
+late final Canister cts;
+late final Canister cycles_market;
 
 
 
-final String cts_main_icp_id = common.icp_id(cts.principal); 
-
-
-void main() {
-    if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
-        print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
-    }
-}
-
-
+late final String cts_main_icp_id;
 
 
 
 
 class CustomState { // with ChangeNotifier  // do i want change notifier here? false.
+
+    CustomState() {
+    
+        if (window.location.hostname!.contains('thp4z-laaaa-aaaam-qaaea-cai') || window.location.hostname!.contains('cycles-transfer-station.com')) {
+            cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai')); 
+            cycles_market = Canister(Principal('woddh-aqaaa-aaaal-aazqq-cai'));
+        }
+
+        if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
+            cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
+            cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
+        }
+        
+        cts_main_icp_id = common.icp_id(cts.principal);
+        
+        if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
+            print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
+        }
+        
+    }
 
     CustomUrl current_url = CustomUrl('welcome');
     

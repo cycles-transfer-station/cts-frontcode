@@ -58,16 +58,13 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 Container(
                     width: double.infinity,
                     height: 50,
-                    constraints: BoxConstraints(maxWidth: 731),
-                    padding: EdgeInsets.all(11),
-                    child: OutlineButton(
-                        button_text: 'PURCHASE CYCLES-BANK',
-                        on_press_complete: () async {
+                    constraints: BoxConstraints(maxWidth: 550),
+                    padding: EdgeInsets.fromLTRB(11,0,11,17),
+                    child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                        onPressed: () async {  
                             state.current_url = CustomUrl('cycles_bank');
-                            state.loading_text = 'loading ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            state.is_loading = false;
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                         }
                     )
