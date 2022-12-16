@@ -359,7 +359,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             ),
             Expanded(
                 child: Container(
-                    padding: EdgeInsets.fromLTRB(27,27,27,0),
+                    padding: EdgeInsets.fromLTRB(27,27,27,17),
                     child: SingleChildScrollView(
                         child: Column(
                             children: [

@@ -115,6 +115,11 @@ class CyclesBank extends Canister {
    
     Future<void> fresh_cycles_transfers_out() async {
         if (this.metrics == null) { await this.fresh_metrics(); }
+        // re-fresh the cycles-transfers-out that still have pending callbacks.
+        int i = this.cycles_transfers_out.indexWhere((CyclesTransferOut cto)=>cto.cycles_refunded == null);
+        if (i >= 0) {
+            this.cycles_transfers_out.removeRange(i, this.cycles_transfers_out.length);
+        }
         this.cycles_transfers_out.addAll(
             await cycles_bank_download_mechanism(
                 chunk_size: this.metrics!.download_cycles_transfers_out_chunk_size.toInt(), 
