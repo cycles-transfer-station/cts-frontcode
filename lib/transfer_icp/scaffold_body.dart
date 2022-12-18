@@ -114,6 +114,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ),
                 LimitedBox(
+                    key: ValueKey(DateTime.now().millisecondsSinceEpoch.toString()),
                     maxHeight: 307,
                     child: Container(
                         constraints: BoxConstraints(),
@@ -133,7 +134,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                         return IcpTransferListItem(icp_transfers[i]);
                                     },
                                     itemCount: icp_transfers.length,
-                                    addAutomaticKeepAlives: true,
+                                    addAutomaticKeepAlives: false,
                                     addRepaintBoundaries: true,
                                     addSemanticIndexes: true,
                                     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
