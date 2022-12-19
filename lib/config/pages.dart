@@ -369,7 +369,7 @@ Welcome. Here is the home for the world-computer's native cycles. The mainstream
 
 Pillar #1: The cycles-transfer-specification. The cycles-transfer-specification sets the communication standard between the smart-contracts (canisters) for the transfer of the cycles.
 
-Pillar #2: The cycles-bank. A cycles-bank is a smart-contract that lives on the world-computer that can cept, hold, and transfer the native cycles, and keep logs of the transfers. A cycles-bank uses the cycles-transfer-specification of Pillar #1 to transfer the cycles. For a 1-time purchase of 15-xdr (19-20 USD), the cycles-transfer-station creates a brand new cycles-bank for the purchaser, with a lifetime of 1-year (can be lengthened once purchased), a storage-size of 50-MiB (can grow once purchased), and loads it up with CTSFuel of 5.0 (CTSFuel is the fuel that the cycles-bank uses to perform transactions. 5.0 CTSFuel is good for standard usage for 1-year. The CTSFuel can be topped-up once purchased).
+Pillar #2: The cycles-bank. Each user has their own personal cycles-bank that cepts, holds, and transfers the cycles, and keeps logs of the transfers. Cycles-banks use the cycles-transfer-specification of Pillar #1 to transfer the cycles.
 
 Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and ICP both ways. People who want to liquidate cycles can sell them for ICP at a little lower rate than the current network burn-icp-mint-cycles-rate. People who want cycles can purchase them with ICP at a better rate than the network burn-icp-mint-cycles-rate. 
 

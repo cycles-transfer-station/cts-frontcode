@@ -52,9 +52,11 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         } else if (state.user!.cycles_bank == null) {
         
             column_children.addAll([
-                Padding(
-                    padding: EdgeInsets.fromLTRB(13,13,13,13),
-                    child: OutlineButton(
+                Container(
+                    padding: EdgeInsets.all(27),
+                    child: Text(
+                    /*
+                    OutlineButton(
                         button_text:'HOW IT WORKS',
                         on_press_complete: () async {
                             await showDialog(
@@ -64,10 +66,16 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         title: Text('What is a CYCLES-BANK?'),
                                         content: SingleChildScrollView(
                                             child: Text(
-''' 
-A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-computer. \n\nThe CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
+                    */
+""" 
+A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
 
-'''
+The CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. This is why one needs a cycles-bank to hold or transfer the cycles currency.
+
+A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 50-MiB, and 5.0-CTSFuel. CTSFuel is fuel that the cycles-bank smart-contract uses to perform transactions on the blockchain-network. Each smart-contract transaction (like a cycles-transfer) on the world-computer-blockchain uses a little bit of fuel. A cycles-bank comes with plenty of fuel for 1-year of standard usage. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel. 
+
+"""
+                    /*
                                             )
                                         ),
                                         actions: <Widget>[
@@ -80,11 +88,13 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                 }   
                             );
                         }
+                    */
+                    , style: TextStyle(fontSize: 17)
                     )
                 ),
                 SizedBox(
                     width: 3,
-                    height: 27
+                    height: 7
                 ),
                 Container(
                     padding: EdgeInsets.fromLTRB(7,13,7,0),
@@ -98,6 +108,10 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     )
                 ),
                 IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody PurchaseCyclesBank IcpBalanceAndLoadIcpBalance')),
+                SizedBox(
+                    width: 3,
+                    height: 13
+                ),
                 Container(
                     width:  double.infinity,
                     padding: EdgeInsets.all(7),
@@ -156,7 +170,7 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                     width: double.infinity,
                     height: 50,
                     constraints: BoxConstraints(maxWidth: 550),
-                    padding: EdgeInsets.fromLTRB(11,0,11,17),
+                    padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
                         child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
@@ -232,7 +246,11 @@ A CYCLES-BANK is a bank for the native stable-currency: CYCLES on the world-comp
                                                          
                         }
                     ),
-                )
+                ),
+                SizedBox(
+                    width: 3,
+                    height: 27
+                ),
             ]);
         
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
