@@ -254,7 +254,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             Padding(
                 padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
                 child: Container(
-                    child: Text('Purchase, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
+                    child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
                 )
             ),
             Padding(
