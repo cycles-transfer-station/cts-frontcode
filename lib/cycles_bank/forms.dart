@@ -9,6 +9,7 @@ import 'package:ic_tools/tools.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/pages.dart';
+import '../config/urls.dart';
 import '../transfer_icp/forms.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../main.dart';
@@ -51,7 +52,11 @@ final String? Function(String?) cycles_transfer_memo_validator_blob = (String? v
     return null;        
 };
 
-
+final Map<CyclesTransferMemoType, String? Function(String?)> cycles_transfer_memo_validators_map = {
+    CyclesTransferMemoType.Nat: cycles_transfer_memo_validator_nat,
+    CyclesTransferMemoType.Text: cycles_transfer_memo_validator_text,
+    CyclesTransferMemoType.Blob: cycles_transfer_memo_validator_blob,
+};
 
 
 final String? Function(String?) tcycles_validator = (String? v) {
@@ -71,7 +76,24 @@ final String? Function(String?) tcycles_validator = (String? v) {
 };
 
 
-
+final String? Function(String?) cycles_bank_principal_validator = (String? v) {
+    if (v == null || v.trim() == '') {
+        return 'Write the text-principal-id of a cycles-bank';
+    }
+    late Principal p;
+    try {
+        p = Principal(v.trim());
+    } catch(e) {
+        return 'invalid cycles-bank-principal-id';
+    }
+    if (p.bytes.length == 0) {
+        return 'value must be the text-principal-id of a cycles-bank';
+    }
+    if (p.bytes.length >= 29) {
+        return 'Must be a cycles-bank princpal-id'; // Transfer cycles between canisters. Make sure that these cycles are for a canister-id.
+    }
+    return null;
+};
 
 
 
@@ -95,18 +117,50 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         
-        late String? Function(String?) cycles_transfer_memo_validator;
-        switch (cycles_transfer_memo_type) {
-            case CyclesTransferMemoType.Text: 
-                cycles_transfer_memo_validator = cycles_transfer_memo_validator_text;
-            break;
-            case CyclesTransferMemoType.Nat: 
-                cycles_transfer_memo_validator = cycles_transfer_memo_validator_nat;
-            break;
-            case CyclesTransferMemoType.Blob: 
-                cycles_transfer_memo_validator = cycles_transfer_memo_validator_blob;
-            break;
+        String? for_the_cycles_bank_initial_value;
+        String? tcycles_initial_value;
+        String? memo_initial_value;
+        
+        if (state.current_url.name == 'cycles_bank_pay') {
+            if (
+                cycles_bank_principal_validator(state.current_url.variables['for_the_cycles_bank']) == null
+                && tcycles_validator(state.current_url.variables['Tcycles']) == null
+                && CyclesTransferMemoType.values.map((mt)=>mt.name).toList().contains(state.current_url.variables['memo_type'])
+                && cycles_transfer_memo_validators_map[CyclesTransferMemoType.values.byName(state.current_url.variables['memo_type']!)]!(state.current_url.variables['memo']) == null
+            ) {
+                for_the_cycles_bank_initial_value = state.current_url.variables['for_the_cycles_bank'];
+                tcycles_initial_value = state.current_url.variables['Tcycles'];
+                cycles_transfer_memo_type = CyclesTransferMemoType.values.byName(state.current_url.variables['memo_type']!);
+                memo_initial_value = state.current_url.variables['memo'];                            
+            } else {
+                print('pre-fill payment data is invalid');
+                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                    state.current_url = CustomUrl('cycles_bank');
+                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                    Future(()async{
+                        await Future.delayed(Duration(milliseconds: 500));
+                        showDialog(
+                            context: state.context,
+                            builder: (BuildContext context) {
+                                return AlertDialog(
+                                    title: Text("Alert"),
+                                    content: Text('The pre-fill payment data is invalid.'),
+                                    actions: [
+                                        TextButton(
+                                            child: Text("OK"),
+                                            onPressed:  () {
+                                                Navigator.of(context).pop();
+                                            },
+                                        )
+                                    ],
+                                );
+                            }
+                        );
+                    });
+                });
+            }
         }
+                
         
         return Form(
             key: form_key,
@@ -123,30 +177,15 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         decoration: InputDecoration(
                             labelText: 'For the cycles-bank: ',
                         ),
-                        onSaved: (String? v) { for_the_canister = Principal(v!); },
-                        validator: (String? v) {
-                            if (v == null || v.trim() == '') {
-                                return 'Write the text-principal-id of a cycles-bank';
-                            }
-                            late Principal p;
-                            try {
-                                p = Principal(v.trim());
-                            } catch(e) {
-                                return 'invalid cycles-bank-principal-id';
-                            }
-                            if (p.bytes.length == 0) {
-                                return 'value must be the text-principal-id of a cycles-bank';
-                            }
-                            if (p.bytes.length >= 29) {
-                                return 'Must be a cycles-bank princpal-id'; // Transfer cycles between canisters. Make sure that these cycles are for a canister-id.
-                            }
-                            return null;
-                        }
+                        initialValue: for_the_cycles_bank_initial_value,
+                        onSaved: (String? v) { for_the_canister = Principal(v!.trim()); },
+                        validator: cycles_bank_principal_validator
                     ),
                     TextFormField(
                         decoration: InputDecoration(
                             labelText: 'TCycles: ',
                         ),
+                        initialValue: tcycles_initial_value,
                         onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!); },
                         validator: tcycles_validator
                     ),
@@ -169,6 +208,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         }
                     ),
                     TextFormField(
+                        initialValue: memo_initial_value,
                         onSaved: (String? v) { 
                             switch (cycles_transfer_memo_type) {
                                 case CyclesTransferMemoType.Text: 
@@ -182,7 +222,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                 break;
                             }
                         },
-                        validator: cycles_transfer_memo_validator
+                        validator: cycles_transfer_memo_validators_map[cycles_transfer_memo_type]!
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
@@ -197,7 +237,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                     bool _continue = false;
                                     
                                     await showDialog(
-                                        context: context,
+                                        context: state.context,
                                         builder: (BuildContext context) {
                                             Widget cancelButton = TextButton(
                                                 child: Text("Cancel"),
@@ -238,7 +278,8 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     
                                     state.loading_text = 'transferring cycles ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     late BigInt cycles_transfer_out_id;
                                     try {
@@ -246,7 +287,7 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     } catch(e) {
                                         print(e);
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Transfer Cycles Error:'),
@@ -263,7 +304,6 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                         state.is_loading = false;
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                         return;
-
                                     }
                                     
                                     form_key.currentState!.reset();
@@ -312,6 +352,11 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     await success_dialog;
                                     
                                     state.is_loading = false;
+                                    
+                                    if (state.current_url.name == 'cycles_bank_pay') {
+                                        state.current_url = CustomUrl('cycles_bank');
+                                    } 
+                                    
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                 }
@@ -522,7 +567,8 @@ class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
                                     form_key.currentState!.reset();
                                     state.user!.cycles_bank!.metrics!.storage_size_mib = new_storage_size_mib;
                                     state.loading_text = 'loading cycles-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
                                         context: state.context,
@@ -661,7 +707,8 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                                     form_key.currentState!.reset();
                                     state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
                                     state.loading_text = 'loading cycles-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
                                         context: state.context,

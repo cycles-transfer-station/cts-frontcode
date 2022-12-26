@@ -5,9 +5,10 @@ import '../transfer_icp/scaffold_body.dart';
 import '../cycles_bank/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
 
-//:variables of the url-path are with the syntax: <variablename> with this set by this postmaster: Levi.
+//:variables of the url-path are with the syntax: <variablename>.
 // make sure that the paths of a deep branch contain the urlvariables of the parent-paths. 
 // path branches are: __
+// one variable per pathsegment, make sure the variable is the last part of the pathsegment.
 
 final Map<String, Map> urlmap = {
     'void': {
@@ -26,6 +27,11 @@ final Map<String, Map> urlmap = {
     },
     'cycles_bank': {
         'path': '/cycles-bank',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': CyclesBankScaffoldBody.create
+    },
+    'cycles_bank_pay': {
+        'path': '/cycles-bank/pay/for=<for_the_cycles_bank>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
@@ -52,7 +58,7 @@ class CustomUrl {
 
     CustomUrl(this.name, {this.variables = const {}}) {             // variables should contain each variable for the whole path
         String urlstring = urlmap[this.name]!['path']!;
-        this.variables.forEach((key,value) => urlstring.replaceAll('<'+key+'>', value));
+        this.variables.forEach((key,value)=>urlstring = urlstring.replaceAll('<'+key+'>', value));
         this.string = urlstring;
     }
 
@@ -79,10 +85,18 @@ class CustomUrl {
                 for (int i=0; i < uriParseCustomUrlPath.pathSegments.length; i++) {
                     if (uriParseCustomUrlPath.pathSegments[i] == uriParseBrowserUrl.pathSegments[i]) {
                         samePathSegments += 1;  
-                    } else if (uriParseCustomUrlPath.pathSegments[i].startsWith('<')) { 
+                    } else if (uriParseCustomUrlPath.pathSegments[i].contains('<') && uriParseCustomUrlPath.pathSegments[i].contains('>')) { 
                         // validate the urlvariable if want
                         samePathSegments += 1;
-                        urlVariables[uriParseCustomUrlPath.pathSegments[i].replaceFirst('<', '').replaceFirst('>','')] = uriParseBrowserUrl.pathSegments[i]; 
+                        //old impl where a variable must take up a whole pathsegment // urlVariables[uriParseCustomUrlPath.pathSegments[i].replaceFirst('<', '').replaceFirst('>','')] = uriParseBrowserUrl.pathSegments[i]; 
+                        // new impl where a variable can be in the last part of a pathsegment without taking up the whole pathsegment
+                        String custom_url_path_segment = uriParseCustomUrlPath.pathSegments[i];
+                        String key = custom_url_path_segment.substring(
+                            custom_url_path_segment.indexOf('<')+1, 
+                            custom_url_path_segment.indexOf('>')
+                        );
+                        String value = uriParseBrowserUrl.pathSegments[i].substring(custom_url_path_segment.indexOf('<'));
+                        urlVariables[key] = value;                                                
                     } else {
                         break; 
                     }

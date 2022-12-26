@@ -368,7 +368,9 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     
                                     state.loading_text = 'create cycles-position ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     late CreateCyclesPositionSuccess create_cycles_position_success;
                                     try {
@@ -657,7 +659,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                 children: <Widget>[
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'Tcycles purchase:',
+                            labelText: 'purchase Tcycles:',
                         ),
                         onSaved: (String? v) { purchase_cycles = Cycles.oftheTCyclesDoubleString(v!); },
                         validator: tcycles_validator
@@ -768,7 +770,8 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     
                                     state.loading_text = 'purchasing ${purchase_cycles}-cycles ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
                                     late PurchaseCyclesPositionSuccess purchase_cycles_position_success;
                                     try {

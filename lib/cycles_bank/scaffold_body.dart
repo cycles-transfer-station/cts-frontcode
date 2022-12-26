@@ -15,6 +15,7 @@ import '../config/pages.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
 
+final GlobalKey transfer_cycles_form_container_key = GlobalKey();
 
 class CyclesBankScaffoldBody extends StatelessWidget {
     CyclesBankScaffoldBody({Key? key}) : super(key: key);
@@ -23,6 +24,8 @@ class CyclesBankScaffoldBody extends StatelessWidget {
     final ScrollController cycles_transfers_out_scroll_controller = ScrollController();
     final ScrollController cycles_transfers_in_scroll_controller = ScrollController();    
     
+    final ScrollController main_listview_scroll_controller = ScrollController();  
+
     
     @override
     Widget build(BuildContext context) {
@@ -72,7 +75,7 @@ A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that h
 
 The CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. This is why one needs a cycles-bank to hold or transfer the cycles currency.
 
-A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 50-MiB, and 5.0-CTSFuel. CTSFuel is fuel that the cycles-bank smart-contract uses to perform transactions on the blockchain-network. Each smart-contract transaction (like a cycles-transfer) on the world-computer-blockchain uses a little bit of fuel. A cycles-bank comes with plenty of fuel for 1-year of standard usage. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel. 
+Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 50-MiB, and 5.0-CTSFuel. CTSFuel is fuel that the cycles-bank smart-contract uses to perform transactions on the blockchain-network. Each smart-contract transaction (like a cycles-transfer) on the world-computer-blockchain uses a little bit of fuel. A cycles-bank comes with plenty of fuel for 1-year of standard usage. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel. 
 
 """
                     /*
@@ -150,7 +153,7 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                             DataRow(
                                 cells: [
                                     DataCell(Text('ICP LEDGER FEES: ')),
-                                    DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'A cycles-bank-purchase uses 2 ledger transfers. 1 transfer creates the cycles-bank and 1 transfer collects the CTS-fee.')])),
+                                    DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'Creating a cycles-bank uses 2 ledger transfers. 1 transfer creates the cycles-bank and 1 transfer collects the CTS-fee.')])),
                                 ]
                             ),
                             DataRow(
@@ -173,9 +176,9 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                        child: Text('CREATE CYCLES-BANK', style: TextStyle(fontSize: 21)),
                         onPressed: () async {  
-                            state.loading_text = 'purchasing cycles-bank ...';
+                            state.loading_text = 'creating cycles-bank ...';
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             try {
@@ -185,7 +188,7 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                                     context: state.context,
                                     builder: (BuildContext context) {
                                         return AlertDialog(
-                                            title: Text('Purchase cycles-bank error:'),
+                                            title: Text('create cycles-bank error:'),
                                             content: Text('${e}'),
                                             actions: <Widget>[
                                                 TextButton(
@@ -200,14 +203,14 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                 return;    
                             }
-                            state.loading_text = 'cycles-bank purchase success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
+                            state.loading_text = 'create cycles-bank success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                             
                             Future success_dialog = showDialog(
                                 context: state.context,
                                 builder: (BuildContext context) {
                                     return AlertDialog(
-                                        title: Text('cycles-bank purchase success:'),
+                                        title: Text('create cycles-bank success:'),
                                         content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
                                         actions: <Widget>[
                                             TextButton(
@@ -398,6 +401,10 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                                         )
                                     ),
                                     // burn icp mint cycles,  
+                                    SizedBox(
+                                        width: 3,
+                                        height: 10
+                                    ),
                                     Container(
                                         width: double.infinity,
                                         padding: EdgeInsets.all(17),
@@ -450,8 +457,9 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                     ]
                 ),               
                 Container(
+                    key: transfer_cycles_form_container_key,
                     padding: EdgeInsets.fromLTRB(13,17,13,17),
-                    child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm')),
+                    child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')),
                 ),
                 Padding(
                     padding: EdgeInsets.fromLTRB(7,37,7,17),
@@ -559,9 +567,17 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                         )
                     ),
                 )
-            ]);   
+            ]);
+            if (state.current_url.name == 'cycles_bank_pay') {
+                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                    RenderBox box = transfer_cycles_form_container_key.currentContext!.findRenderObject()! as RenderBox;
+                    Offset offset = box.localToGlobal(Offset.zero);
+                    double animationHeight = main_listview_scroll_controller.offset + offset.dy - MediaQuery.of(context).padding.top - 56.0/*scaffold appbar*/ - 77/*page header*/;
+                    main_listview_scroll_controller.animateTo(animationHeight, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
+                });
+            }
         }
-    
+        
         return Center(
             child: Container(
                 constraints: BoxConstraints(maxWidth: 900),
@@ -571,6 +587,7 @@ A CYCLES-BANK purchase creates a brand new personal cycles-bank for the user. A 
                         ScaffoldBodyHeader('CYCLES-BANK'),
                         Expanded(
                             child: ListView(
+                                controller: main_listview_scroll_controller,
                                 padding: EdgeInsets.all(0),
                                 children: [
                                     Column(

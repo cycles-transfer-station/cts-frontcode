@@ -313,7 +313,7 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                     bool _continue = false;
                                     
                                     await showDialog(
-                                        context: context,
+                                        context: state.context,
                                         builder: (BuildContext context) {
                                             Widget cancelButton = TextButton(
                                                 child: Text("Cancel"),
@@ -344,8 +344,8 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                     
                                     state.loading_text = 'void-position: ${this.cm_cycles_position.id} ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     try {
                                         await state.user!.cycles_bank!.cm_void_position(this.cm_cycles_position.id);
                                     } catch(e) {
@@ -370,8 +370,8 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                     }
                                     
                                     state.loading_text = 'loading cycles-bank-cycles-balance and cycles-position updates ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     Future show_success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -553,7 +553,7 @@ class UserIcpPositionListItem extends StatelessWidget {
                                     bool _continue = false;
                                     
                                     await showDialog(
-                                        context: context,
+                                        context: state.context,
                                         builder: (BuildContext context) {
                                             Widget cancelButton = TextButton(
                                                 child: Text("Cancel"),
@@ -584,8 +584,8 @@ class UserIcpPositionListItem extends StatelessWidget {
                                     
                                     state.loading_text = 'void-position: ${this.cm_icp_position.id} ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     try {
                                         await state.user!.cycles_bank!.cm_void_position(this.cm_icp_position.id);
                                     } catch(e) {
@@ -610,8 +610,8 @@ class UserIcpPositionListItem extends StatelessWidget {
                                     }
                                     
                                     state.loading_text = 'loading cycles-market-icp-balance and icp-position updates ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     Future show_success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {

@@ -62,7 +62,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(11,0,11,17),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('PURCHASE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                        child: Text('CREATE CYCLES-BANK', style: TextStyle(fontSize: 21)),
                         onPressed: () async {  
                             state.current_url = CustomUrl('cycles_bank');
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
