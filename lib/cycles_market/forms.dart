@@ -131,8 +131,8 @@ class CyclesBankCMTransferIcpFormState extends State<CyclesBankCMTransferIcpForm
                                     
                                     state.loading_text = 'withdraw icp ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     late BigInt withdraw_icp_block_height;
                                     try {
                                         withdraw_icp_block_height = await state.user!.cycles_bank!.cm_transfer_icp_balance(cm_transfer_icp_balance_quest);
@@ -296,7 +296,7 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                     
                                     if (minimum_purchase.cycles > cycles_for_the_position.cycles) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -327,7 +327,7 @@ class CyclesBankCMCreateCyclesPositionFormState extends State<CyclesBankCMCreate
                                         Cycles new_minimum_purchase = Cycles(cycles: minimum_purchase.cycles + ( xdr_icp_rate.xdr_permyriad_per_icp - minimum_purchase_modulo_xdr_permyriad_per_icp ));
                                                                                 
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 Widget cancelButton = TextButton(
                                                     child: Text("Cancel"),
@@ -514,7 +514,7 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                                     
                                     if (minimum_purchase > icp_for_the_position) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -547,7 +547,7 @@ class CyclesBankCMCreateIcpPositionFormState extends State<CyclesBankCMCreateIcp
                                     
                                     state.loading_text = 'create icp-position ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     late CreateIcpPositionSuccess create_icp_position_success;
                                     try {
@@ -676,7 +676,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     
                                     if (this.widget.cycles_position.minimum_purchase > purchase_cycles) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -696,7 +696,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     }
                                     if (this.widget.cycles_position.cycles < purchase_cycles) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -735,7 +735,7 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                         }
                                         
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 Widget cancelButton = TextButton(
                                                     child: Text("Cancel"),
@@ -802,8 +802,8 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                     
                                     form_key.currentState!.reset();
                                     state.loading_text = 'loading cycles-balance and cycles-market-icp-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        
                                     Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -825,7 +825,9 @@ class PurchaseCyclesPositionFormState extends State<PurchaseCyclesPositionForm> 
                                             state.user!.cycles_bank!.fresh_metrics(),
                                             state.user!.cycles_bank!.fresh_cm_icp_balance(),
                                             state.user!.cycles_bank!.fresh_cm_cycles_positions_purchases(),
-                                            state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_purchaser_logs()
+                                            state.user!.cycles_bank!.fresh_cm_message_cycles_position_purchase_purchaser_logs(),
+                                            state.cycles_market_data.fresh_cycles_positions_purchases(),
+                                            state.cycles_market_data.fresh_cycles_positions(),
                                         ]);
                                     } catch(e) {
                                         await showDialog(
@@ -900,7 +902,7 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                     
                                     if (this.widget.icp_position.minimum_purchase > purchase_icp) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -920,7 +922,7 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                     }
                                     if (this.widget.icp_position.icp < purchase_icp) {
                                         await showDialog(
-                                            context: context,
+                                            context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text(""),
@@ -942,7 +944,7 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                     
                                     state.loading_text = 'purchasing ${purchase_icp}-icp ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                     
                                     late PurchaseIcpPositionSuccess purchase_icp_position_success;
                                     try {
@@ -973,7 +975,7 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                     
                                     form_key.currentState!.reset();
                                     state.loading_text = 'loading cycles-market-icp-balance and cycles-balance ...';
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                     
                                     Future success_dialog = showDialog(
                                         context: state.context,
@@ -997,7 +999,8 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                             state.user!.cycles_bank!.fresh_cm_icp_balance(),
                                             state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
                                             state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs()
-                                        
+                                            state.cycles_market_data.fresh_icp_positions(),
+                                            state.cycles_market_data.fresh_icp_positions_purchases(),
                                         ]);
                                     } catch(e) {
                                         await showDialog(
