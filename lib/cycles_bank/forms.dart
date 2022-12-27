@@ -134,7 +134,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                 memo_initial_value = state.current_url.variables['memo'];                            
             } else {
                 print('pre-fill payment data is invalid');
-                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
                     state.current_url = CustomUrl('cycles_bank');
                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                     Future(()async{

@@ -569,7 +569,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                 )
             ]);
             if (state.current_url.name == 'cycles_bank_pay') {
-                WidgetsBinding.instance!.addPostFrameCallback((_) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
                     RenderBox box = transfer_cycles_form_container_key.currentContext!.findRenderObject()! as RenderBox;
                     Offset offset = box.localToGlobal(Offset.zero);
                     double animationHeight = main_listview_scroll_controller.offset + offset.dy - MediaQuery.of(context).padding.top - 56.0/*scaffold appbar*/ - 77/*page header*/;

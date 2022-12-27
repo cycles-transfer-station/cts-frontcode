@@ -998,7 +998,7 @@ class PurchaseIcpPositionFormState extends State<PurchaseIcpPositionForm> {
                                             state.user!.cycles_bank!.fresh_metrics(),
                                             state.user!.cycles_bank!.fresh_cm_icp_balance(),
                                             state.user!.cycles_bank!.fresh_cm_icp_positions_purchases(),
-                                            state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs()
+                                            state.user!.cycles_bank!.fresh_cm_message_icp_position_purchase_purchaser_logs(),
                                             state.cycles_market_data.fresh_icp_positions(),
                                             state.cycles_market_data.fresh_icp_positions_purchases(),
                                         ]);
