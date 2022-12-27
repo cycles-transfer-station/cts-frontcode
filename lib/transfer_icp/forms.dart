@@ -65,26 +65,14 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                             rows: [
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('ICP TRANSFER FEE XDR: ', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                        DataCell(Text('${state.cts_fees.cts_transfer_icp_fee.cycles/CYCLES_PER_XDR}-xdr', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                    ]
-                                ),
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('CURRENT XDR-ICP RATE: ', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                        DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate}', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Text('CTS ICP TRANSFER FEE XDR:', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                        DataCell(Row(children: [Text('${state.cts_fees.cts_transfer_icp_fee.cycles/CYCLES_PER_XDR}-XDR', style: TextStyle(fontSize: datatable_text_fontsize)), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The CTS fee is in the XDR and converts into ICP using the current network\'s xdr-per-icp-rate.'/*: ${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate}'*/)])),
                                     ]
                                 ),
                                 DataRow(
                                     cells: [
                                         DataCell(Text('ICP LEDGER FEES: ', style: TextStyle(fontSize: datatable_text_fontsize))),
                                         DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize)), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'An icp-transfer here uses 2 ledger transfers. 1 is the main transfer and 1 collects the CTS-fee.')])),
-                                    ]
-                                ),
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('ICP TRANSFER TOTAL COST: ', style: TextStyle(fontSize: datatable_text_fontsize))),
-                                        DataCell(Text('${cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp', style: TextStyle(fontSize: datatable_text_fontsize))),
                                     ]
                                 ),
                             ]

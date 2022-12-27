@@ -506,7 +506,9 @@ IcpTokens cycles_to_icptokens(Cycles cycles, XDRICPRate xdr_icp_rate) {
     );
 }
 
-
+XDRICPRate xdr_per_icp_rate_of_a_cycles_and_icp(Cycles cycles, IcpTokens icpts) {
+    return XDRICPRate(xdr_permyriad_per_icp: cycles.cycles ~/ icpts.e8s);
+}
 
 
 

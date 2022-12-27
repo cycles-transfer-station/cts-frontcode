@@ -114,7 +114,6 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     )
                 ),
                 LimitedBox(
-                    key: ValueKey(DateTime.now().millisecondsSinceEpoch.toString()),
                     maxHeight: 307,
                     child: Container(
                         constraints: BoxConstraints(),
@@ -125,7 +124,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                 controller: scroll_controller,
                                 child: ListView.builder(
                                     controller: scroll_controller,
-                                    key: ValueKey('transfer-icp icp-transfers-list-items'),
+                                    key: UniqueKey(), //ValueKey('transfer-icp icp-transfers-list-items'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,

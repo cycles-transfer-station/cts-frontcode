@@ -377,7 +377,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 controller: cycles_positions_scroll_controller,
                                 child: ListView.builder(
                                     controller: cycles_positions_scroll_controller,
-                                    key: ValueKey('cm cycles-positions'),
+                                    key: UniqueKey(), //ValueKey('cm cycles-positions'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
@@ -416,7 +416,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 controller: icp_positions_scroll_controller,
                                 child: ListView.builder(
                                     controller: icp_positions_scroll_controller,
-                                    key: ValueKey('cm icp-positions'),
+                                    key: UniqueKey(), //ValueKey('cm icp-positions'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
@@ -455,7 +455,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 controller: cycles_positions_purchases_scroll_controller,
                                 child: ListView.builder(
                                     controller: cycles_positions_purchases_scroll_controller,
-                                    key: ValueKey('cm cycles-positions-purchases'),
+                                    key: UniqueKey(), //ValueKey('cm cycles-positions-purchases'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
@@ -494,7 +494,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                 controller: icp_positions_purchases_scroll_controller,
                                 child: ListView.builder(
                                     controller: icp_positions_purchases_scroll_controller,
-                                    key: ValueKey('cm icp-positions-purchases'),
+                                    key: UniqueKey(), //ValueKey('cm icp-positions-purchases'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
@@ -583,7 +583,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                     controller: user_cycles_positions_scroll_controller,
                                     child: ListView.builder(
                                         controller: user_cycles_positions_scroll_controller,
-                                        key: ValueKey('cm user-cycles-positions'),
+                                        key: UniqueKey(), //ValueKey('cm user-cycles-positions'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
                                         shrinkWrap: false,
@@ -641,7 +641,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                     controller: user_icp_positions_scroll_controller,
                                     child: ListView.builder(
                                         controller: user_icp_positions_scroll_controller,
-                                        key: ValueKey('cm user-icp-positions'),
+                                        key: UniqueKey(), //ValueKey('cm user-icp-positions'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
                                         shrinkWrap: false,
@@ -702,7 +702,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                     controller: user_cycles_positions_purchases_scroll_controller,
                                     child: ListView.builder(
                                         controller: user_cycles_positions_purchases_scroll_controller,
-                                        key: ValueKey('cm user-cycles-positions-purchases'),
+                                        key: UniqueKey(), //ValueKey('cm user-cycles-positions-purchases'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
                                         shrinkWrap: false,
@@ -757,7 +757,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                                     controller: user_icp_positions_purchases_scroll_controller,
                                     child: ListView.builder(
                                         controller: user_icp_positions_purchases_scroll_controller,
-                                        key: ValueKey('cm user-icp-positions-purchases'),
+                                        key: UniqueKey(), //ValueKey('cm user-icp-positions-purchases'),
                                         scrollDirection: Axis.horizontal,
                                         reverse: false,
                                         shrinkWrap: false,

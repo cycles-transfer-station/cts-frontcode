@@ -513,7 +513,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                 controller: cycles_transfers_out_scroll_controller,
                                 child: ListView.builder(
                                     controller: cycles_transfers_out_scroll_controller,    
-                                    key: ValueKey('cb cycles-transfers-out'),
+                                    key: UniqueKey(), //ValueKey('cb cycles-transfers-out'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
@@ -548,7 +548,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                 controller: cycles_transfers_in_scroll_controller,
                                 child: ListView.builder(
                                     controller: cycles_transfers_in_scroll_controller,
-                                    key: ValueKey('cb cycles-transfers-in'),
+                                    key: UniqueKey(), //ValueKey('cb cycles-transfers-in'),
                                     scrollDirection: Axis.horizontal,
                                     reverse: false,
                                     shrinkWrap: false,
