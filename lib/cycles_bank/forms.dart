@@ -624,6 +624,8 @@ class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
 
 
 
+const int minimum_lengthen_days = 30;
+
 class LengthenLifetimeForm extends StatefulWidget {
     LengthenLifetimeForm({super.key});
     State createState() => LengthenLifetimeFormState();
@@ -631,7 +633,7 @@ class LengthenLifetimeForm extends StatefulWidget {
 class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
     
-    late BigInt set_lifetime_termination_timestamp_seconds;
+    late BigInt lengthen_lifetime_days;
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
@@ -643,9 +645,9 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                 children: [
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'Set Lifetime Termination Unix Timestamp Seconds',
+                            labelText: 'Lengthen Lifetime Days',
                         ),
-                        onSaved: (String? v) { set_lifetime_termination_timestamp_seconds = BigInt.parse(v!, radix: 10); },
+                        onSaved: (String? v) { lengthen_lifetime_days = BigInt.parse(v!, radix: 10); },
                         validator: (String? v) {
                             String e_s = 'Must be a whole number';
                             if (v == null || v == '') {
@@ -653,12 +655,12 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                             }
                             late BigInt bi;
                             try {
-                                bi = BigInt.parse(v);
+                                bi = BigInt.parse(v, radix: 10);
                             } catch(e) {
                                 return e_s;
                             }
-                            if (bi < state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds) {
-                                return 'Must lengthen the lifetime';
+                            if (bi < BigInt.from(minimum_lengthen_days)) {
+                                return 'Minimum ${minimum_lengthen_days} days';
                             } 
                             return null;
                         }
@@ -667,20 +669,40 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('SET LIFETIME'),
+                            child: Text('LENGTHEN LIFETIME'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
+                                    
+                                    if (state.user!.cycles_bank!.metrics == null) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Lengthen Lifetime Error:'),
+                                                    content: Text('Load Metrics before lengthening lifetime.'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }
+                                        );
+                                        return;
+                                    }
+                                    
                                     form_key.currentState!.save();
                                     
                                     state.loading_text = 'lengthening cycles-bank lifetime ...';
                                     state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                     
                                     late BigInt new_lifetime_termination_timestamp_seconds;
                                     try {
                                         new_lifetime_termination_timestamp_seconds = await state.user!.cycles_bank!.lengthen_lifetime( 
                                             LengthenLifetimeQuest(
-                                                set_lifetime_termination_timestamp_seconds: set_lifetime_termination_timestamp_seconds
+                                                set_lifetime_termination_timestamp_seconds: state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds + lengthen_lifetime_days*BigInt.from(Duration.secondsPerDay)
                                             )
                                         );
                                     } catch(e) {
@@ -688,7 +710,7 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Grow Storage Error:'),
+                                                    title: Text('Lengthen Lifetime Error:'),
                                                     content: Text('${e}'),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -715,7 +737,7 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
                                         builder: (BuildContext context) {
                                             return AlertDialog(
                                                 title: Text('Lengthen Lifetime Success.'),
-                                                content: Text('New cycles-bank lifetime-termination-timestamp: ${state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds}'),
+                                                content: Text('cycles-bank lifetime-remaining: ${DateTime.fromMillisecondsSinceEpoch((new_lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days'),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),

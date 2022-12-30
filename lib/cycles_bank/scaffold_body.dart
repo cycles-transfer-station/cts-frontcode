@@ -144,12 +144,14 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                     DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr')),
                                 ]
                             ),
+                            /*
                             DataRow(
                                 cells: [
                                     DataCell(Text('CURRENT XDR-ICP RATE: ')),
                                     DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}')),
                                 ]
                             ),
+                            */
                             DataRow(
                                 cells: [
                                     DataCell(Text('ICP LEDGER FEES: ')),
@@ -260,7 +262,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
             
             String cycles_balance = 'unknown';
             String creation_timestamp = 'unknown';
-            String lifetime_termination = 'unknown';
+            String lifetime_remaining = 'unknown';
             String ctsfuel = 'unknown';
             String storage_usage = 'unknown';
             String storage_size = 'unknown';
@@ -268,8 +270,9 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 cycles_balance = '${metrics.cycles_balance}';
-                creation_timestamp = '${seconds_of_the_nanos(metrics.user_canister_creation_timestamp_nanos)}';
-                lifetime_termination = '${metrics.lifetime_termination_timestamp_seconds}';
+                DateTime creation_datetime = DateTime.fromMillisecondsSinceEpoch((metrics.user_canister_creation_timestamp_nanos/BigInt.from(Duration.microsecondsPerSecond)).toInt());
+                creation_timestamp = '${creation_datetime.year}-${creation_datetime.month}-${creation_datetime.day}\n${creation_datetime.hour}:${creation_datetime.minute}';
+                lifetime_remaining = '${DateTime.fromMillisecondsSinceEpoch((metrics.lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days';
                 ctsfuel = '${(metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY).toStringAsFixed(5)}';
                 storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(5)}-MiB';
                 storage_size = '${metrics.storage_size_mib}-MiB';
@@ -375,8 +378,8 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                                 ),
                                                 DataRow(
                                                     cells: <DataCell>[
-                                                        DataCell(Text('lifetime-termination: ')),
-                                                        DataCell(SelectableText('${lifetime_termination}')),
+                                                        DataCell(Text('lifetime-remaining: ')),
+                                                        DataCell(SelectableText('${lifetime_remaining}')),
                                                     ],
                                                 ),
                                                 DataRow(
