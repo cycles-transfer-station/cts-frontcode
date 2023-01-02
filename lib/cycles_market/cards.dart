@@ -39,7 +39,7 @@ class CyclesPositionListItem extends StatelessWidget {
                                     children: [
                                         Text('cycles: ${cycles_position.cycles}'),
                                         Text('minimum-purchase: ${cycles_position.minimum_purchase}'),
-                                        Text('xdr-icp-rate: ${cycles_position.xdr_permyriad_per_icp_rate}'),
+                                        Text('cycles-per-icp-rate: ${cycles_position.xdr_permyriad_per_icp_rate}T'),
                                         Text('positor: ${cycles_position.positor.text}'),
                                         Text('timestamp: ${seconds_of_the_nanos(cycles_position.timestamp_nanos)}'),
                                     ]
@@ -85,7 +85,7 @@ class IcpPositionListItem extends StatelessWidget {
                                     children: [
                                         Text('icp: ${icp_position.icp}'),
                                         Text('minimum-purchase: ${icp_position.minimum_purchase}'),
-                                        Text('xdr-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate}'),
+                                        Text('cycles-per-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate}T'),
                                         Text('positor: ${icp_position.positor.text}'),
                                         Text('timestamp: ${seconds_of_the_nanos(icp_position.timestamp_nanos)}'),
                                     ]
@@ -134,7 +134,7 @@ class CyclesPositionPurchaseListItem extends StatelessWidget {
                                     children: [
                                         Text('cycles-purchase: ${cycles_position_purchase.cycles}'),
                                         Text('icp-payment: ${cycles_to_icptokens(cycles_position_purchase.cycles, cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
-                                        Text('xdr-icp-rate: ${cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
+                                        Text('cycles-per-icp-rate: ${cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}T'),
                                         Text('purchaser: ${cycles_position_purchase.purchaser.text}'),
                                         Text('positor: ${cycles_position_purchase.cycles_position_positor.text}'),
                                         Text('cycles-position-id: ${cycles_position_purchase.cycles_position_id}'),
@@ -179,7 +179,7 @@ class IcpPositionPurchaseListItem extends StatelessWidget {
                                     children: [
                                         Text('icp-purchase: ${icp_position_purchase.icp}'),
                                         Text('cycles-payment: ${icptokens_to_cycles(icp_position_purchase.icp, icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
-                                        Text('xdr-icp-rate: ${icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
+                                        Text('cycles-per-icp-rate: ${icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}T'),
                                         Text('purchaser: ${icp_position_purchase.purchaser.text}'),
                                         Text('positor: ${icp_position_purchase.icp_position_positor.text}'),
                                         Text('icp-position-id: ${icp_position_purchase.icp_position_id}'),
@@ -241,7 +241,7 @@ class UserCyclesPositionListItem extends StatelessWidget {
                                                     children: [
                                                         Text('original posit: ${cm_cycles_position.cycles}'),
                                                         Text('minimum-purchase: ${cm_cycles_position.minimum_purchase}'),
-                                                        Text('xdr-icp-rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}'),
+                                                        Text('cycles-per-icp-rate: ${cm_cycles_position.xdr_permyriad_per_icp_rate}T'),
                                                         Text('create_position_fee: ${cm_cycles_position.create_position_fee}'),
                                                         Text('timestamp: ${seconds_of_the_nanos(cm_cycles_position.timestamp_nanos)}'),
                                                         if (current_position != null) ...[
@@ -477,7 +477,7 @@ class UserIcpPositionListItem extends StatelessWidget {
                                                     children: [
                                                         Text('original posit: ${cm_icp_position.icp}'),
                                                         Text('minimum-purchase: ${cm_icp_position.minimum_purchase}'),
-                                                        Text('xdr-icp-rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}'),
+                                                        Text('cycles-per-icp-rate: ${cm_icp_position.xdr_permyriad_per_icp_rate}T'),
                                                         Text('create_position_fee: ${cm_icp_position.create_position_fee}'),
                                                         Text('timestamp: ${seconds_of_the_nanos(cm_icp_position.timestamp_nanos)}'),
                                                         if (current_position != null) ...[
@@ -707,7 +707,7 @@ class UserCyclesPositionPurchaseListItem extends StatelessWidget {
                                         children: [
                                             Text('cycles-purchase: ${cm_cycles_position_purchase.cycles}'),
                                             Text('icp-payment: ${cycles_to_icptokens(cm_cycles_position_purchase.cycles, cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate)}'),
-                                            Text('xdr-icp-rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}'),
+                                            Text('cycles-per-icp-rate: ${cm_cycles_position_purchase.cycles_position_xdr_permyriad_per_icp_rate}T'),
                                             Text('cycles-position-positor: ${cm_cycles_position_purchase.cycles_position_positor.text}'),
                                             Text('cycles-position-id: ${cm_cycles_position_purchase.cycles_position_id}'),
                                             Text('purchase-position-fee: ${cm_cycles_position_purchase.purchase_position_fee}'),
@@ -760,7 +760,7 @@ class UserIcpPositionPurchaseListItem extends StatelessWidget {
                                         children: [
                                             Text('icp-purchase: ${cm_icp_position_purchase.icp}'),
                                             Text('cycles-payment: ${icptokens_to_cycles(cm_icp_position_purchase.icp, cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate)}'),
-                                            Text('xdr-icp-rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}'),
+                                            Text('cycles-per-icp-rate: ${cm_icp_position_purchase.icp_position_xdr_permyriad_per_icp_rate}T'),
                                             Text('icp-position-positor: ${cm_icp_position_purchase.icp_position_positor.text}'),
                                             Text('icp-position-id: ${cm_icp_position_purchase.icp_position_id}'),
                                             Text('purchase-position-fee: ${cm_icp_position_purchase.purchase_position_fee}'),

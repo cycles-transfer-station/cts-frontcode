@@ -38854,7 +38854,7 @@ s=A.k("CYCLES POSITION",o,o,o,o,o,o)
 r=this.c
 q=r.a
 p=t.p
-p=A.a([A.ek(o,o,o,!1,A.k("ID: "+q.i(0),o,o,o,o,o,o),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("cycles: "+r.c.i(0),o,o,o,o,o,o),A.k("minimum-purchase: "+r.d.i(0),o,o,o,o,o,o),A.k("xdr-icp-rate: "+r.e.i(0),o,o,o,o,o,o),A.k("positor: "+r.b.c,o,o,o,o,o,o),A.k("timestamp: "+A.hd(r.f).i(0),o,o,o,o,o,o)],p),B.as,B.l,B.o),o))],p)
+p=A.a([A.ek(o,o,o,!1,A.k("ID: "+q.i(0),o,o,o,o,o,o),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("cycles: "+r.c.i(0),o,o,o,o,o,o),A.k("minimum-purchase: "+r.d.i(0),o,o,o,o,o,o),A.k("cycles-per-icp-rate: "+r.e.i(0)+"T",o,o,o,o,o,o),A.k("positor: "+r.b.c,o,o,o,o,o,o),A.k("timestamp: "+A.hd(r.f).i(0),o,o,o,o,o,o)],p),B.as,B.l,B.o),o))],p)
 s=n.w
 if(s!=null&&s.z!=null)p.push(new A.b0(new A.J(11,11,11,11),new A.zT(r,new A.b3("PurchaseCyclesPositionForm "+q.i(0),t.O)),o))
 return A.a9(o,A.hh(A.aR(p,B.p,B.l,B.ai),o,o,o,o,o),B.f,o,new A.a4(0,320,0,1/0),o,o,o,o,o,new A.J(11,11,11,11),o,o,o)}}
@@ -38865,7 +38865,7 @@ s=A.k("ICP POSITION",o,o,o,o,o,o)
 r=this.c
 q=r.a
 p=t.p
-p=A.a([A.ek(o,o,o,!1,A.k("ID: "+q.i(0),o,o,o,o,o,o),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("icp: "+r.c.i(0),o,o,o,o,o,o),A.k("minimum-purchase: "+r.d.i(0),o,o,o,o,o,o),A.k("xdr-icp-rate: "+r.e.i(0),o,o,o,o,o,o),A.k("positor: "+r.b.c,o,o,o,o,o,o),A.k("timestamp: "+A.hd(r.f).i(0),o,o,o,o,o,o)],p),B.as,B.l,B.o),o))],p)
+p=A.a([A.ek(o,o,o,!1,A.k("ID: "+q.i(0),o,o,o,o,o,o),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("icp: "+r.c.i(0),o,o,o,o,o,o),A.k("minimum-purchase: "+r.d.i(0),o,o,o,o,o,o),A.k("cycles-per-icp-rate: "+r.e.i(0)+"T",o,o,o,o,o,o),A.k("positor: "+r.b.c,o,o,o,o,o,o),A.k("timestamp: "+A.hd(r.f).i(0),o,o,o,o,o,o)],p),B.as,B.l,B.o),o))],p)
 s=n.w
 if(s!=null&&s.z!=null)p.push(new A.b0(new A.J(11,11,11,11),new A.zU(r,new A.b3("PurchaseIcpPositionForm "+q.i(0),t.O)),o))
 return A.a9(o,A.hh(A.aR(p,B.p,B.l,B.ai),o,o,o,o,o),B.f,o,new A.a4(0,320,0,1/0),o,o,o,o,o,new A.J(11,11,11,11),o,o,o)}}
@@ -38878,7 +38878,7 @@ r=this.c
 q=r.f
 p=r.c
 o=t.p
-return A.a9(n,A.hh(A.aR(A.a([A.ek(n,n,n,!1,A.k("ID: "+r.d.i(0),n,n,n,n,n,n),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("cycles-purchase: "+q.i(0),n,n,n,n,n,n),A.k("icp-payment: "+A.FT(q,p).i(0),n,n,n,n,n,n),A.k("xdr-icp-rate: "+p.i(0),n,n,n,n,n,n),A.k("purchaser: "+r.e.c,n,n,n,n,n,n),A.k("positor: "+r.b.c,n,n,n,n,n,n),A.k("cycles-position-id: "+r.a.i(0),n,n,n,n,n,n),A.k("timestamp: "+A.hd(r.r).i(0),n,n,n,n,n,n)],o),B.as,B.l,B.o),n))],o),B.p,B.l,B.ai),n,n,n,n,n),B.f,n,new A.a4(0,320,0,1/0),n,n,n,n,n,new A.J(11,11,11,11),n,n,n)}}
+return A.a9(n,A.hh(A.aR(A.a([A.ek(n,n,n,!1,A.k("ID: "+r.d.i(0),n,n,n,n,n,n),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("cycles-purchase: "+q.i(0),n,n,n,n,n,n),A.k("icp-payment: "+A.FT(q,p).i(0),n,n,n,n,n,n),A.k("cycles-per-icp-rate: "+p.i(0)+"T",n,n,n,n,n,n),A.k("purchaser: "+r.e.c,n,n,n,n,n,n),A.k("positor: "+r.b.c,n,n,n,n,n,n),A.k("cycles-position-id: "+r.a.i(0),n,n,n,n,n,n),A.k("timestamp: "+A.hd(r.r).i(0),n,n,n,n,n,n)],o),B.as,B.l,B.o),n))],o),B.p,B.l,B.ai),n,n,n,n,n),B.f,n,new A.a4(0,320,0,1/0),n,n,n,n,n,new A.J(11,11,11,11),n,n,n)}}
 A.t5.prototype={
 H(a){var s,r,q,p,o,n=null
 A.co(a,t.A)
@@ -38888,7 +38888,7 @@ r=this.c
 q=r.f
 p=r.c
 o=t.p
-return A.a9(n,A.hh(A.aR(A.a([A.ek(n,n,n,!1,A.k("ID: "+r.d.i(0),n,n,n,n,n,n),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("icp-purchase: "+q.i(0),n,n,n,n,n,n),A.k("cycles-payment: "+A.avX(q,p).i(0),n,n,n,n,n,n),A.k("xdr-icp-rate: "+p.i(0),n,n,n,n,n,n),A.k("purchaser: "+r.e.c,n,n,n,n,n,n),A.k("positor: "+r.b.c,n,n,n,n,n,n),A.k("icp-position-id: "+r.a.i(0),n,n,n,n,n,n),A.k("timestamp: "+A.hd(r.r).i(0),n,n,n,n,n,n)],o),B.as,B.l,B.o),n))],o),B.p,B.l,B.ai),n,n,n,n,n),B.f,n,new A.a4(0,320,0,1/0),n,n,n,n,n,new A.J(11,11,11,11),n,n,n)}}
+return A.a9(n,A.hh(A.aR(A.a([A.ek(n,n,n,!1,A.k("ID: "+r.d.i(0),n,n,n,n,n,n),s),A.ct(new A.b0(new A.J(17,7,17,7),A.aR(A.a([A.k("icp-purchase: "+q.i(0),n,n,n,n,n,n),A.k("cycles-payment: "+A.avX(q,p).i(0),n,n,n,n,n,n),A.k("cycles-per-icp-rate: "+p.i(0)+"T",n,n,n,n,n,n),A.k("purchaser: "+r.e.c,n,n,n,n,n,n),A.k("positor: "+r.b.c,n,n,n,n,n,n),A.k("icp-position-id: "+r.a.i(0),n,n,n,n,n,n),A.k("timestamp: "+A.hd(r.r).i(0),n,n,n,n,n,n)],o),B.as,B.l,B.o),n))],o),B.p,B.l,B.ai),n,n,n,n,n),B.f,n,new A.a4(0,320,0,1/0),n,n,n,n,n,new A.J(11,11,11,11),n,n,n)}}
 A.uN.prototype={
 H(a){var s,r,q,p,o,n,m,l=this,k=null,j="VOID POSITION",i=A.co(a,t.A),h=a.K(t.R)
 h.toString
@@ -38896,7 +38896,7 @@ s=A.k("USER CYCLES POSITION",k,k,k,k,k,k)
 r=l.c
 s=A.ek(k,k,k,!1,A.k("ID: "+r.a.i(0),k,k,k,k,k,k),s)
 q=t.p
-r=A.a([A.k("original posit: "+r.b.i(0),k,k,k,k,k,k),A.k("minimum-purchase: "+r.c.i(0),k,k,k,k,k,k),A.k("xdr-icp-rate: "+r.d.i(0),k,k,k,k,k,k),A.k("create_position_fee: "+r.e.i(0),k,k,k,k,k,k),A.k("timestamp: "+A.hd(r.f).i(0),k,k,k,k,k,k)],q)
+r=A.a([A.k("original posit: "+r.b.i(0),k,k,k,k,k,k),A.k("minimum-purchase: "+r.c.i(0),k,k,k,k,k,k),A.k("cycles-per-icp-rate: "+r.d.i(0)+"T",k,k,k,k,k,k),A.k("create_position_fee: "+r.e.i(0),k,k,k,k,k,k),A.k("timestamp: "+A.hd(r.f).i(0),k,k,k,k,k,k)],q)
 p=l.e
 o=p!=null
 if(o)B.b.A(r,A.a([A.k("on-the-market: true",k,k,k,k,k,k),A.k("current-position: "+p.i(0),k,k,k,k,k,k)],q))
@@ -39033,7 +39033,7 @@ s=A.k("USER ICP POSITION",k,k,k,k,k,k)
 r=l.c
 s=A.ek(k,k,k,!1,A.k("ID: "+r.a.i(0),k,k,k,k,k,k),s)
 q=t.p
-r=A.a([A.k("original posit: "+r.b.i(0),k,k,k,k,k,k),A.k("minimum-purchase: "+r.c.i(0),k,k,k,k,k,k),A.k("xdr-icp-rate: "+r.d.i(0),k,k,k,k,k,k),A.k("create_position_fee: "+r.e.i(0),k,k,k,k,k,k),A.k("timestamp: "+A.hd(r.f).i(0),k,k,k,k,k,k)],q)
+r=A.a([A.k("original posit: "+r.b.i(0),k,k,k,k,k,k),A.k("minimum-purchase: "+r.c.i(0),k,k,k,k,k,k),A.k("cycles-per-icp-rate: "+r.d.i(0)+"T",k,k,k,k,k,k),A.k("create_position_fee: "+r.e.i(0),k,k,k,k,k,k),A.k("timestamp: "+A.hd(r.f).i(0),k,k,k,k,k,k)],q)
 p=l.e
 o=p!=null
 if(o)B.b.A(r,A.a([A.k("on-the-market: true",k,k,k,k,k,k),A.k("current-position: "+p.i(0),k,k,k,k,k,k)],q))
@@ -39176,7 +39176,7 @@ q=r.e
 p=A.k("cycles-purchase: "+q.i(0),j,j,j,j,j,j)
 o=r.b
 q=A.k("icp-payment: "+A.FT(q,o).i(0),j,j,j,j,j,j)
-o=A.k("xdr-icp-rate: "+o.i(0),j,j,j,j,j,j)
+o=A.k("cycles-per-icp-rate: "+o.i(0)+"T",j,j,j,j,j,j)
 n=A.k("cycles-position-positor: "+r.c.c,j,j,j,j,j,j)
 m=A.k("cycles-position-id: "+r.a.i(0),j,j,j,j,j,j)
 l=A.k("purchase-position-fee: "+r.f.i(0),j,j,j,j,j,j)
@@ -39194,7 +39194,7 @@ q=r.e
 p=A.k("icp-purchase: "+q.i(0),j,j,j,j,j,j)
 o=r.b
 q=A.k("cycles-payment: "+A.avX(q,o).i(0),j,j,j,j,j,j)
-o=A.k("xdr-icp-rate: "+o.i(0),j,j,j,j,j,j)
+o=A.k("cycles-per-icp-rate: "+o.i(0)+"T",j,j,j,j,j,j)
 n=A.k("icp-position-positor: "+r.c.c,j,j,j,j,j,j)
 m=A.k("icp-position-id: "+r.a.i(0),j,j,j,j,j,j)
 l=A.k("purchase-position-fee: "+r.f.i(0),j,j,j,j,j,j)
