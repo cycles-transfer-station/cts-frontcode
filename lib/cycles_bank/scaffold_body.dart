@@ -1,7 +1,6 @@
 import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
-
 import 'package:ic_tools/tools.dart';
 
 import '../config/state.dart';
@@ -10,7 +9,8 @@ import 'forms.dart';
 import 'cards.dart';
 import 'cycles_bank.dart';
 import '../main.dart';
-import '../widgets.dart';
+import '../tools/widgets.dart';
+import '../tools/ii_login.dart';
 import '../config/pages.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
@@ -46,10 +46,13 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             
             column_children.addAll([
                 Text('Log in for the cycles-bank.'),
-                Center(child: OutlineButton(
-                    button_text: 'ii login',
-                    on_press_complete: () async { await ii_login(context); }
-                )) 
+                Container(
+                    padding: EdgeInsets.all(11),
+                    child: Center(child: OutlineButton(
+                        button_text: 'ii login',
+                        on_press_complete: () async { await ii_login(context); }
+                    ))
+                )
             ]);
         
         } else if (state.user!.cycles_bank == null) {

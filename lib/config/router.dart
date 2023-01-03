@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
-import '../widgets.dart';
 import 'pages.dart';
+import '../tools/widgets.dart';
 
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {

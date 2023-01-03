@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'config/state.dart';
-import 'config/state_bind.dart';
+import '../config/state.dart';
+import '../config/state_bind.dart';
 
 
 
@@ -50,6 +50,39 @@ class OutlineButton extends StatelessWidget {
             onPressed: on_press_complete
         );
     }
-    
-    
+       
 }
+
+
+
+
+
+class ScaffoldBodyHeader extends StatelessWidget {
+    final String header_text;
+    ScaffoldBodyHeader(this.header_text);
+    Widget build(BuildContext context) {
+        return Column(
+            children: [
+                Padding(
+                    padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
+                    child: Container(
+                        child: Text(header_text, style: TextStyle(fontSize: 19))
+                    )
+                ),
+                Divider(
+                    height: 13.0,   
+                    thickness: 4.0,
+//                    indent: 34.0,
+//                    endIndent: 34.0,
+                    //color: 
+                )
+            ]
+        ); 
+    }
+    
+
+}
+
+
+
+

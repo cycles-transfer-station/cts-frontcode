@@ -9,7 +9,8 @@ import 'icp_ledger.dart';
 import 'forms.dart';
 import 'cards.dart';
 import '../main.dart';
-import '../widgets.dart';
+import '../tools/widgets.dart';
+import '../tools/ii_login.dart';
 import '../config/pages.dart';
 
 
@@ -149,10 +150,13 @@ class TransferIcpScaffoldBody extends StatelessWidget {
             
             column_children.addAll([
                 Text('Log in for the icp-transfers.'),
-                Center(child: OutlineButton(
-                    button_text: 'ii login',
-                    on_press_complete: () async { await ii_login(context); }
-                )) 
+                Container(
+                    padding: EdgeInsets.all(11),
+                    child: Center(child: OutlineButton(
+                        button_text: 'ii login',
+                        on_press_complete: () async { await ii_login(context); }
+                    )) 
+                )
             ]);
             
         }        

@@ -12,7 +12,8 @@ import 'cards.dart';
 import 'cycles_market_data.dart';
 import '../cycles_bank/cycles_bank.dart';
 import '../main.dart';
-import '../widgets.dart';
+import '../tools/widgets.dart';
+import '../tools/ii_login.dart';
 import '../config/pages.dart';
 import '../config/urls.dart';
 
@@ -48,16 +49,16 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         
         if (state.user == null) {
             column_children.addAll([
-                OutlineButton(
+                Container(padding: EdgeInsets.all(17), child: OutlineButton(
                     button_text: 'ii login',
                     on_press_complete: () async { await ii_login(context); }
-                )       
+                ))       
             ]);
         } else if (state.user!.cycles_bank == null) {
             column_children.addAll([
                 Container(
                     width: double.infinity,
-                    height: 50,
+                    height: 55,
                     constraints: BoxConstraints(maxWidth: 550),
                     padding: EdgeInsets.fromLTRB(11,0,11,17),
                     child: ElevatedButton(

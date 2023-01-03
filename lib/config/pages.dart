@@ -16,12 +16,12 @@ import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart';
 
 import '../main.dart';
-import '../tools/ii_jslib.dart';
 import '../tools/indexdb.dart';
+import '../tools/widgets.dart';
+import '../tools/ii_login.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
-import '../widgets.dart';
 import '../user.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
@@ -29,7 +29,8 @@ import '../cycles_bank/cycles_bank.dart';
 import '../cycles_bank/scaffold_body.dart';
 import '../cycles_market/cycles_market_data.dart';
 import '../cycles_market/scaffold_body.dart';
-
+import '../about/scaffold_body.dart';
+import '../welcome/scaffold_body.dart';
 
 
 // most state can be held in the MainState and can re-build with MainStateBind.set_state.tifyListeners so the page widgets can be StatelessWidget s
@@ -128,7 +129,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: Column(
                             children: [
                                 DrawerHeader(
-                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : SelectableText('USER ID: ${state.user!.principal.text}')
+                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : SelectableText('USER-ID: ${state.user!.principal.text}')
                                 ),
                                 Expanded(
                                     child: ListView(
@@ -167,9 +168,14 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     Navigator.pop(context);
                                                 },
                                             ),
-                                            AboutListTile(
-                                                applicationVersion: '0.1.0',
-                                            ),
+                                            ListTile(
+                                                title: const Text('ABOUT CTS'),
+                                                onTap: () {
+                                                    state.current_url = CustomUrl('about');
+                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    Navigator.pop(context);
+                                                },
+                                            )
                                         ]
                                     )
                                 ),
@@ -235,363 +241,6 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
         /*)*/;
     }
 }
-
-
-
-
-
-
-class WelcomeScaffoldBody extends StatelessWidget {
-    WelcomeScaffoldBody({super.key});
-    static WelcomeScaffoldBody create({Key? key}) => WelcomeScaffoldBody(key: key);
-    @override
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        
-        List<Widget> column_children = [
-            Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
-                child: Container(
-                    child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
-                )
-            ),
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 27.0),
-                child: Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-                    indent: 34.0,
-                    endIndent: 34.0,
-                    //color: 
-                ),
-            )
-        
-        ];
-        
-        
-        if (state.user == null) {
-            if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
-                column_children.add(
-                    OutlineButton(
-                        button_text: 'test user login',
-                        on_press_complete: () async {
-                            /*test*/
-                            state.is_loading = true;
-                            state.loading_text = 'loading test';
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            
-                            
-                            SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-                            
-                            state.user = User(
-                                state: state,
-                                caller: test_caller,
-                                legations: [],
-                            );
-                            
-                            await state.save_state_in_the_browser_storage();
-                            
-                            try {
-                                await state.loadfirststate();
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Error:'),
-                                            content: Text('$e'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );
-                                state.loading_text = 'Error: ${e}';
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
-                                return;
-                            }
-                            
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
-                );
-            }
-            
-            column_children.add(   
-                Center(child: OutlineButton(
-                    button_text: 'ii login',
-                    on_press_complete: () async { await ii_login(context); }
-                ))
-            );
-        }
-        
-        else /*if (state.user != null)*/ {
-            
-            column_children.addAll(
-                [
-                    Padding(
-                        padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
-                        child: Container(
-                            child: SelectableText('USER ID: ${state.user!.principal.text}')
-                        )
-                    ),
-                ]
-            );
-
-        }
-        
-        column_children.addAll([
-            Padding(
-                padding: EdgeInsets.fromLTRB(0, 17, 0, 17.0),
-                child: Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-                    indent: 34.0,
-                    endIndent: 34.0,
-                    //color: 
-                ),
-            ),
-            Expanded(
-                child: Container(
-                    padding: EdgeInsets.fromLTRB(27,27,27,17),
-                    child: SingleChildScrollView(
-                        child: Column(
-                            children: [
-                                Text(
-"""
-Welcome. Here is the home for the world-computer's native cycles. The mainstream-usage of the native cycles as a stable-currency works on these 3 key pillars. 
-
-Pillar #1: The cycles-transfer-specification. The cycles-transfer-specification sets the communication standard between the smart-contracts (canisters) for the transfer of the cycles.
-
-Pillar #2: The cycles-bank. Each user has their own personal cycles-bank that cepts, holds, and transfers the cycles, and keeps logs of the transfers. Cycles-banks use the cycles-transfer-specification of Pillar #1 to transfer the cycles.
-
-Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and ICP both ways. People who want to liquidate cycles can sell them for ICP at a little lower rate than the current network burn-icp-mint-cycles-rate. People who want cycles can purchase them with ICP at a better rate than the network burn-icp-mint-cycles-rate. 
-
-
-
-CYCLES-TRANSFER-SPECIFICATION CANDID: 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Container(
-                                    width: double.infinity,
-                                    child: SelectableText(
-"""
-
-type CyclesTransfer = record {
-    memo: CyclesTransferMemo;
-};
-
-type CyclesTransferMemo = variant {
-    Text: text;
-    Nat: nat;
-    Blob: blob;
-};
-
-service cycles-transfer-specification : {
-    cycles_transfer(CyclesTransfer) -> ();
-}
-
-
-"""
-                                        ,
-                                        style: TextStyle(fontSize: 17, fontFamily: 'NimbusMonoPS-Bold')
-                                    )
-                                )
-                            ]
-                        )
-                    )
-                )
-            )
-        ]);
-        
-        return Center(
-            child: Container(
-                constraints: BoxConstraints(maxWidth: 900),
-                child: Column(                
-                    children: column_children,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center
-                )
-            )
-        );
-    }
-
-}
-
-
-
-
-
-
-
-
-
-
-// -----------------------------------------------------------
-
-
-
-class ScaffoldBodyHeader extends StatelessWidget {
-    final String header_text;
-    ScaffoldBodyHeader(this.header_text);
-    Widget build(BuildContext context) {
-        return Column(
-            children: [
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                    child: Container(
-                        child: Text(header_text, style: TextStyle(fontSize: 19))
-                    )
-                ),
-                Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-//                    indent: 34.0,
-//                    endIndent: 34.0,
-                    //color: 
-                )
-            ]
-        ); 
-    }
-    
-
-}
-
-
-ii_login(BuildContext context) async {
-    CustomState state = MainStateBind.get_state<CustomState>(context);
-    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    
-    
-    SubtleCryptoECDSAP256Caller legatee_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-    
-    
-    late WindowBase identityWindow;
-    
-    window.addEventListener('message', (Event event) async {
-        
-        late MessageEvent message_event;
-        if (event is MessageEvent) {
-            message_event = event as MessageEvent;
-        } else { throw Exception('message event?'); }
-        
-        if (message_event.origin == 'https://identity.ic0.app') {
-        
-            if (message_event.data['kind'] == 'authorize-ready') {
-            
-                identityWindow.postMessage(
-                    InternetIdentityAuthorize(
-                        kind: "authorize-client", 
-                        sessionPublicKey: legatee_caller.public_key_DER,
-                        maxTimeToLive: 1000000000*60*60*24*30
-                    ),
-                    "https://identity.ic0.app"
-                );
-            }
-            
-            if (message_event.data['kind'] == 'authorize-client-success') {
-                identityWindow.close();
-                //window.console.log(message_event.data);
-                List<Legation> user_legations = List<Legation>.generate(message_event.data['delegations'].length, (int i) {
-                    var sl = message_event.data['delegations'][i];
-                    js.context.callMethod('start_logMessages');
-                    window.console.log(sl['delegation']['expiration']);
-                    String expiration_string = js.context.callMethod('get_last_logMessage_toString').replaceAll('n', ''); 
-                    print(expiration_string);
-                    return Legation(
-                        legator_public_key_DER: i == 0 ? Uint8List.fromList(message_event.data['userPublicKey'].toList()) : Uint8List.fromList(message_event.data['delegations'][i-1]['delegation']['pubkey'].toList()), 
-                        legator_signature: Uint8List.fromList(sl['signature'].toList()),
-                        legatee_public_key_DER: Uint8List.fromList(sl['delegation']['pubkey'].toList()),
-                        expiration_unix_timestamp_nanoseconds: BigInt.parse(expiration_string), 
-                        target_canisters_ids: sl['delegation']['targets'] != null ? sl['delegation']['targets'].toList().map<Principal>((String ps)=>Principal(ps)).toList() : null 
-                    );
-                });
-
-                state.loading_text = 'loading user ...';
-                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                
-                state.user = User(
-                    state: state,
-                    caller: legatee_caller,
-                    legations: user_legations,
-                );
-                
-                await state.save_state_in_the_browser_storage();
-                
-                try {
-                    await state.loadfirststate();
-                } catch(e) {
-                    state.loading_text = 'Error: ${e}';
-                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
-                    await showDialog(
-                        context: state.context,
-                        builder: (BuildContext context) {
-                            return AlertDialog(
-                                title: Text('Error:'),
-                                content: Text('$e'),
-                                actions: <Widget>[
-                                    TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('OK'),
-                                    ),
-                                ]
-                            );
-                        }   
-                    );
-                    return;
-                }
-                
-                state.is_loading = false;
-                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-            }
-            
-            if (message_event.data['kind'] == 'authorize-client-failure') {
-                print('authorize-client-failure:\n${message_event.data['text']}');
-                state.loading_text = 'Error: authorize-client-failure:\n${message_event.data['text']}';
-                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                await showDialog(
-                    context: state.context,
-                    builder: (BuildContext context) {
-                        return AlertDialog(
-                            title: Text('Error: ii-authorize-client-failure:'),
-                            content: Text('${message_event.data['text']}'),
-                            actions: <Widget>[
-                                TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('OK'),
-                                ),
-                            ]
-                        );
-                    }   
-                );
-                return;
-            }
-        }
-    });
-    
-    identityWindow = window.open('https://identity.ic0.app/#authorize', 'identityWindow');  
-
-    state.is_loading = true;
-    state.loading_text = 'ii login ...';
-    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-}
-
-
-
-
-
-
-
-
-
-
 
 
 

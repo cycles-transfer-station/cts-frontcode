@@ -4,6 +4,9 @@ import 'pages.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../cycles_bank/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
+import '../welcome/scaffold_body.dart';
+import '../about/scaffold_body.dart';
+
 
 //:variables of the url-path are with the syntax: <variablename>.
 // make sure that the paths of a deep branch contain the urlvariables of the parent-paths. 
@@ -40,13 +43,11 @@ final Map<String, Map> urlmap = {
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesMarketScaffoldBody.create
     },
-    
-    /*
-    'welcome__buy_this': {
-        'path': '/buy-this',
-        'page': BuyThisPage.create,
-    },
-    */
+    'about': {
+        'path': '/about',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': AboutScaffoldBody.create
+    }
 };
 
 

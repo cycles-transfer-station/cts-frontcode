@@ -9,7 +9,7 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import './forms.dart';
 import '../main.dart';
-import '../widgets.dart';
+import '../tools/widgets.dart';
 
 
 class CyclesPositionListItem extends StatelessWidget {
