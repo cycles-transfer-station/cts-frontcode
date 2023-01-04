@@ -164,7 +164,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                             DataRow(
                                 cells: [
                                     DataCell(Text('CYCLES-BANK TOTAL COST ICP: ')),
-                                    DataCell(Text('${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp')),
+                                    DataCell(Row(children: [Text('${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')])),
                                 ]
                             ),
                         ]

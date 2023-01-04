@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/candid.dart' show Nat, Blob;
+import 'package:ic_tools/candid.dart' show Nat, Int, Blob;
 import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/common.dart';
 import 'package:ic_tools/tools.dart';
@@ -20,7 +20,8 @@ import './cycles_bank.dart';
 enum CyclesTransferMemoType {
     Text,
     Nat,
-    Blob
+    Blob,
+    Int
 }
 
 final String? Function(String?) cycles_transfer_memo_validator_text = (String? value) {
@@ -34,6 +35,17 @@ final String? Function(String?) cycles_transfer_memo_validator_nat = (String? va
         Nat nat = Nat(BigInt.parse(value, radix: 10));
     } catch(e) {
         return 'Must be a number >= 0 and without decimal places';
+    }
+    return null;
+};
+final String? Function(String?) cycles_transfer_memo_validator_int = (String? value) {
+    if (value == null || value == '') {
+        return 'Must be a number';
+    }
+    try {
+        Int int_ = Int(BigInt.parse(value, radix: 10));
+    } catch(e) {
+        return 'Must be a number and without decimal places';
     }
     return null;
 };
@@ -56,6 +68,7 @@ final Map<CyclesTransferMemoType, String? Function(String?)> cycles_transfer_mem
     CyclesTransferMemoType.Nat: cycles_transfer_memo_validator_nat,
     CyclesTransferMemoType.Text: cycles_transfer_memo_validator_text,
     CyclesTransferMemoType.Blob: cycles_transfer_memo_validator_blob,
+    CyclesTransferMemoType.Int: cycles_transfer_memo_validator_int,
 };
 
 
@@ -195,6 +208,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                         ),
                         items: const [
                             DropdownMenuItem<CyclesTransferMemoType>(child: Text('Text'), value: CyclesTransferMemoType.Text ),
+                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Int'), value: CyclesTransferMemoType.Int ),
                             DropdownMenuItem<CyclesTransferMemoType>(child: Text('Nat'), value: CyclesTransferMemoType.Nat ),
                             DropdownMenuItem<CyclesTransferMemoType>(child: Text('Blob'), value: CyclesTransferMemoType.Blob ),                            
                         ],
@@ -213,6 +227,9 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                             switch (cycles_transfer_memo_type) {
                                 case CyclesTransferMemoType.Text: 
                                     cycles_transfer_memo = CyclesTransferMemo.text(candid.Text(v ?? ''));
+                                break;
+                                case CyclesTransferMemoType.Int: 
+                                    cycles_transfer_memo = CyclesTransferMemo.int_(Int(BigInt.parse((v == null || v.trim() == '') ? '0' : v, radix: 10)));
                                 break;
                                 case CyclesTransferMemoType.Nat: 
                                     cycles_transfer_memo = CyclesTransferMemo.nat(Nat(BigInt.parse((v == null || v.trim() == '') ? '0' : v, radix: 10)));

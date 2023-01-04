@@ -15,6 +15,7 @@ import 'package:ic_tools/candid.dart' show
     c_forwards,
     CandidType,
     Nat,
+    Int,
     Nat64,
     Option,
     Vector,
@@ -625,11 +626,17 @@ class CyclesTransferMemo extends Variant {
         ctm['Nat'] = nat;
         return ctm;
     }
+    static CyclesTransferMemo int_(Int int_) {
+        CyclesTransferMemo ctm = CyclesTransferMemo._();
+        ctm['Int'] = int_;
+        return ctm;
+    }
     static CyclesTransferMemo oftheVariant(Variant ctmvariant) {
         match_variant<void>(ctmvariant, {
             'Blob': (c) { if (c is! Blob) { throw Exception('CyclesTransferMemo Blob must be with the value of the Blob.'); } },
             'Text': (c) { if (c is! candid.Text) { throw Exception('CyclesTransferMemo Text must be with the value of the Text.'); } },
-            'Nat': (c) { if (c is! Nat) { throw Exception('CyclesTransferMemo Nat must be with the value of the Nat.'); } }
+            'Nat': (c) { if (c is! Nat) { throw Exception('CyclesTransferMemo Nat must be with the value of the Nat.'); } },
+            'Int': (c) { if (c is! Int) { throw Exception('CyclesTransferMemo Int must be with the value of the Int.'); } } 
         });
         CyclesTransferMemo ctm = CyclesTransferMemo._();
         ctm[ctmvariant.keys.first] = ctmvariant.values.first;
@@ -645,6 +652,9 @@ class CyclesTransferMemo extends Variant {
         }
         if (this.keys.first == candid_text_hash('Nat')) {
             return 'Nat: ${(this.values.first as Nat).value}';
+        }
+        if (this.keys.first == candid_text_hash('Int')) {
+            return 'Int: ${(this.values.first as Int).value}';
         }
         throw Exception('');
     }
