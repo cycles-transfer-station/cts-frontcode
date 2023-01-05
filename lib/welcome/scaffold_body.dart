@@ -29,9 +29,9 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 )
             ),
             Padding(
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 27.0),
+                padding: EdgeInsets.fromLTRB(0, 4.5, 0, 17.0),
                 child: Divider(
-                    height: 13.0,   
+                    height: 4.0,   
                     thickness: 4.0,
                     indent: 34.0,
                     endIndent: 34.0,
@@ -95,22 +95,23 @@ class WelcomeScaffoldBody extends StatelessWidget {
             }
             
             column_children.add(   
-                Center(child: OutlineButton(
-                    button_text: 'ii login',
-                    on_press_complete: () async { await ii_login(context); }
-                ))
+                Container(
+                    padding: EdgeInsets.all(17.0),
+                    child: OutlineButton(
+                        button_text: 'ii login',
+                        on_press_complete: () async { await ii_login(context); }
+                    )
+                )
             );
         }
         
         else /*if (state.user != null)*/ {
             
             column_children.addAll([
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17.0, 17.0, 17.0, 17.0), //EdgeInsets.all(17.0),
-                    child: Container(
-                        child: SelectableText('USER-ID: ${state.user!.principal.text}')
-                    )
-                ),    
+                Container(
+                    padding: EdgeInsets.all(17.0),
+                    child: SelectableText('USER-ID: ${state.user!.principal.text}')
+                ) 
             ]);
 
         }
@@ -120,8 +121,8 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 constraints: BoxConstraints(maxWidth: 570),
                 padding: EdgeInsets.fromLTRB(0, 17, 0, 0),
                 child: Divider(
-                    height: 13.0,   
-                    thickness: 2.0,
+                    height: 4.0,  
+                    thickness: 4.0,
                     indent: 54.0,
                     endIndent: 54.0,
                     //color: 
@@ -131,48 +132,55 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 child: Container(
                     padding: EdgeInsets.all(0),
                     child: SingleChildScrollView(
-                        child: Padding(padding: EdgeInsets.all(27), child: Column(
-                            children: [
-                                /*Text(
-"""
-Welcome, here is the home for the world-computer's native CYCLES. 
+                        child: Padding(
+                            padding: EdgeInsets.all(27), 
+                            child: Column(
+                                children: [
+                                    SizedBox(
+                                        width: 3,
+                                        height: 25
+                                    ),
+                                    /*Text(
+    """
+    Welcome, here is the home for the world-computer's native CYCLES. 
 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),*/
-                                Text(
-//"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
-"""Store your money on the blockchain in your own personal CYCLES-BANK! 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Text(
-"""Send money between friends, or make payments in stores! 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Text(
-"""Hedge against fiat inflation and crypto-volatility! 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Text(
-"""Trade or liquidate through the CYCLES-MARKET! 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Text(
-"""\nThe CYCLES are here!
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                                Text(
-"""\n\n\n\nUse the menu-button in the bottom-left corner for the navigation. 
-"""
-                                    , style: TextStyle(fontSize: 17)
-                                ),
-                            ]
-                        ))
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),*/
+                                    Text(
+    //"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
+    """Store your money on the blockchain in your own personal CYCLES-BANK! 
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                    Text(
+    """Send money between friends, or make payments in stores! 
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                    Text(
+    """Hedge against fiat inflation and crypto-volatility! 
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                    Text(
+    """Trade or liquidate through the CYCLES-MARKET! 
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                    Text(
+    """\nThe CYCLES are here!
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                    Text(
+    """\n\n\n\nUse the menu-button in the bottom-left corner for the navigation. 
+    """
+                                        , style: TextStyle(fontSize: 17)
+                                    ),
+                                ]
+                            )
+                        )
                     )
                 )
             )
