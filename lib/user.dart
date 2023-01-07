@@ -232,7 +232,7 @@ class User {
             IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
             try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${e}'); }
-            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         }, 
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
             match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map);
@@ -289,11 +289,13 @@ class User {
 
 
     Future<void> purchase_cycles_bank({required Principal? opt_referral_user_id}) async {
-        await this.fresh_icp_balance();
-        await state.fresh_xdr_icp_rate();
-        IcpTokens cycles_bank_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate); 
-        if (this.icp_balance!.icp < cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
-            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ cycles_bank_cost_icp + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO }\ncurrent user icp balance: ${this.icp_balance!.icp}');
+        await Future.wait([
+            this.fresh_icp_balance(),
+            state.fresh_xdr_icp_rate()
+        ]);
+        IcpTokens cycles_bank_total_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO; 
+        if (this.icp_balance!.icp < cycles_bank_total_cost_icp) {
+            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${cycles_bank_total_cost_icp.round_decimal_places(1)}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
         }
         Variant purchase_cycles_bank_result = c_backwards(
             await call(

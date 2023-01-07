@@ -73,12 +73,11 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         content: SingleChildScrollView(
                                             child: Text(
                     */
-""" 
-A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that holds CYCLES, transfers CYCLES, and takes in-coming CYCLES-transfers. 
+"""A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that can hold CYCLES, transfer CYCLES, and receive CYCLES. 
 
-The CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. This is why one needs a cycles-bank to hold or transfer the cycles currency.
+The CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. This is why one needs a cycles-bank to hold or transfer the CYCLES currency.
 
-Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 50-MiB, and 5.0-CTSFuel. CTSFuel is fuel that the cycles-bank smart-contract uses to perform transactions on the blockchain-network. Each smart-contract transaction (like a cycles-transfer) on the world-computer-blockchain uses a little bit of fuel. A cycles-bank comes with plenty of fuel for 1-year of standard usage. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel. 
+Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 10-MiB, and 2.0-CTSFuel. For each cycles-transfer, the world-computer-blockchain charges some fuel, in the cycles-bank that fuel is labeled as the CTSFuel. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel.
 
 """
                     /*
@@ -143,7 +142,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                         rows: [
                             DataRow(
                                 cells: [
-                                    DataCell(Text('CYCLES-BANK COST XDR: ')),
+                                    DataCell(Text('CYCLES-BANK COST XDR:')),
                                     DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr')),
                                 ]
                             ),
@@ -154,17 +153,17 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                     DataCell(Text('${state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate.xdr_permyriad_per_icp/BigInt.from(10000)}')),
                                 ]
                             ),
-                            */
                             DataRow(
                                 cells: [
                                     DataCell(Text('ICP LEDGER FEES: ')),
                                     DataCell(Row(children: [Text('${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'Creating a cycles-bank uses 2 ledger transfers. 1 transfer creates the cycles-bank and 1 transfer collects the CTS-fee.')])),
                                 ]
                             ),
+                            */
                             DataRow(
                                 cells: [
-                                    DataCell(Text('CYCLES-BANK TOTAL COST ICP: ')),
-                                    DataCell(Row(children: [Text('${cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')])),
+                                    DataCell(Text('CYCLES-BANK COST ICP:')),
+                                    DataCell(Row(children: [Text('${(cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO).round_decimal_places(1)}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')])),
                                 ]
                             ),
                         ]
@@ -277,7 +276,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                 creation_timestamp = '${creation_datetime.year}-${creation_datetime.month}-${creation_datetime.day}\n${creation_datetime.hour}:${creation_datetime.minute}';
                 lifetime_remaining = '${DateTime.fromMillisecondsSinceEpoch((metrics.lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days';
                 ctsfuel = '${(metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY).toStringAsFixed(5)}';
-                storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(5)}-MiB';
+                storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(1)}-MiB';
                 storage_size = '${metrics.storage_size_mib}-MiB';
             }
             
