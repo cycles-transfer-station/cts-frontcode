@@ -89,7 +89,7 @@ service cycles-transfer-specification : {
 
 """
                     ,
-                    style: TextStyle(fontSize: 17, fontFamily: 'NimbusMonoPS-Bold')
+                    style: TextStyle(fontSize: 17, fontFamily: 'NotoSansMono')
                 )
             ),
             Container(
@@ -107,7 +107,7 @@ Use the following cycles-transfer pre-fill payment url for a simple way to colle
                 child: SelectableText(
 """https://${cts.principal.text}.ic0.app/#/cycles-bank/pay/for=<canister_principal_id_text>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>
 """
-                    , style: TextStyle(fontSize: 17, fontFamily: 'NimbusMonoPS-Bold')
+                    , style: TextStyle(fontSize: 17, fontFamily: 'NotoSansMono')
                 )
             ),
             Container(

@@ -25,7 +25,13 @@ class _BaseState extends State<Base> {
             theme: ThemeData(
                 brightness: Brightness.dark,
                 backgroundColor: grey_background, 
-                fontFamily: 'AxaxaxBold',
+                fontFamily: 'NotoSans-Bold',
+                /* try this on a child widget of this materialapp
+                textTheme: Theme.of(context).textTheme.apply(
+                    fontSizeFactor: 1.1,
+                    fontSizeDelta: 1.0,
+                ),
+                */
                 //typography: Typography.material2018(platform: platform)
                 appBarTheme: AppBarTheme(
                     color: blue, 
