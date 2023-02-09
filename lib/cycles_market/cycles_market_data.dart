@@ -33,10 +33,16 @@ class CyclesMarketData {
     }
 
     Future<void> fresh_cycles_positions_purchases() async {
+        this.cycles_positions_purchases = await cycles_market_download_mechanism_rchunks(
+            download_method_name: 'download_cycles_positions_purchases_rchunks',
+            function: CyclesPositionPurchase.oftheRecord
+        );
+        /*
         this.cycles_positions_purchases = await cycles_market_download_mechanism(
             download_method_name: 'see_cycles_positions_purchases',
             function: CyclesPositionPurchase.oftheRecord
         );
+        */
     }
 
     Future<void> fresh_icp_positions_purchases() async {
@@ -82,11 +88,72 @@ Future<List<T>> cycles_market_download_mechanism<T>({
 }
 
 
+Future<List<T>> cycles_market_download_mechanism_rchunks<T>({
+    required String download_method_name,
+    required T Function(Record) function
+}) async {
+    List<T> list = [];
+    int chunk_size = 500;
+    Record r = c_backwards(
+        await cycles_market.call(
+            method_name: download_method_name,
+            calltype: CallType.query,
+            put_bytes: c_forwards([
+                Record.oftheMap({ 
+                    'chunk_size': Nat64(BigInt.from(chunk_size)),
+                    'chunk_i': Nat64(BigInt.from(0)),
+                    'opt_height': Option<Nat64>(value: null, value_type: Nat64())
+                })
+            ])
+        )
+    )[0] as Record;
+    Option<Vector> opt_data = (r['data'] as Option).cast_option<Vector>(); 
+    if (opt_data.value != null) {
+        list.addAll(opt_data.value!.cast_vector<Record>().map<T>(function));
+    } 
+    BigInt height = (r['latest_height'] as Nat64).value;
+    int chunks_len = (height.toInt() / chunk_size).ceil();
+    List<List<T>> chunks = await Future.wait([
+        for (int i=1; i < chunks_len; i++) 
+            Future(()async{
+                Record r = c_backwards(
+                    await cycles_market.call(
+                        method_name: download_method_name,
+                        calltype: CallType.query,
+                        put_bytes: c_forwards([
+                            Record.oftheMap({ 
+                                'chunk_size': Nat64(BigInt.from(chunk_size)),
+                                'chunk_i': Nat64(BigInt.from(i)),
+                                'opt_height': Option<Nat64>(value: Nat64(height), value_type: Nat64())
+                            })
+                        ])
+                    )
+                )[0] as Record;
+                List<T> chunk = [];
+                Option<Vector> opt_data = (r['data'] as Option).cast_option<Vector>(); 
+                if (opt_data.value != null) {
+                    chunk.addAll(opt_data.value!.cast_vector<Record>().map<T>(function));
+                } 
+                return chunk;
+            }),    
+    ]);
+    
+    for (int i=0; i<chunks.length; i++) {
+        list = [...chunks[i], ...list];
+    }
+    
+    return list;
+}
+
+
+
 abstract class CyclesMarketDataPosition {
     BigInt get id;
     Principal get positor;
     XDRICPRate get xdr_permyriad_per_icp_rate;
     BigInt get timestamp_nanos;
+    Cycles get cycles_quantity;
+    IcpTokens get icp_quantity;
 }
 
 
@@ -97,6 +164,8 @@ class CyclesPosition implements CyclesMarketDataPosition {
     final Cycles minimum_purchase;
     final XDRICPRate xdr_permyriad_per_icp_rate;
     final BigInt timestamp_nanos;
+    Cycles get cycles_quantity => this.cycles;
+    IcpTokens get icp_quantity => cycles_to_icptokens(this.cycles, this.xdr_permyriad_per_icp_rate);
     CyclesPosition._({
         required this.id,   
         required this.positor,
@@ -124,6 +193,8 @@ class IcpPosition implements CyclesMarketDataPosition {
     final IcpTokens minimum_purchase;
     final XDRICPRate xdr_permyriad_per_icp_rate;
     final BigInt timestamp_nanos;
+    Cycles get cycles_quantity => icptokens_to_cycles(this.icp, this.xdr_permyriad_per_icp_rate);
+    IcpTokens get icp_quantity => this.icp;
     IcpPosition._({
         required this.id,
         required this.positor,
@@ -152,9 +223,12 @@ abstract class CyclesMarketDataPositionPurchase {
     BigInt get id;
     Principal get purchaser;
     BigInt get timestamp_nanos;
+    IcpTokens get icp_quantity;
+    Cycles get cycles_quantity;
+    DateTime datetime() => DateTime.fromMillisecondsSinceEpoch((timestamp_nanos ~/ BigInt.from(1000000)).toInt());
 }
 
-class CyclesPositionPurchase implements CyclesMarketDataPositionPurchase {
+class CyclesPositionPurchase extends CyclesMarketDataPositionPurchase {
     final BigInt cycles_position_id;
     final Principal cycles_position_positor;
     final XDRICPRate cycles_position_xdr_permyriad_per_icp_rate;
@@ -170,6 +244,8 @@ class CyclesPositionPurchase implements CyclesMarketDataPositionPurchase {
     BigInt get position_id => cycles_position_id;
     Principal get position_positor => cycles_position_positor; 
     XDRICPRate get position_xdr_permyriad_per_icp_rate => cycles_position_xdr_permyriad_per_icp_rate;
+    IcpTokens get icp_quantity => cycles_to_icptokens(cycles, cycles_position_xdr_permyriad_per_icp_rate);
+    Cycles get cycles_quantity => cycles;
     
     CyclesPositionPurchase._({
         required this.cycles_position_id,
@@ -202,7 +278,7 @@ class CyclesPositionPurchase implements CyclesMarketDataPositionPurchase {
 }
 
 
-class IcpPositionPurchase implements CyclesMarketDataPositionPurchase {
+class IcpPositionPurchase extends CyclesMarketDataPositionPurchase {
     final BigInt icp_position_id;
     final Principal icp_position_positor;
     final XDRICPRate icp_position_xdr_permyriad_per_icp_rate;
@@ -218,6 +294,8 @@ class IcpPositionPurchase implements CyclesMarketDataPositionPurchase {
     BigInt get position_id => icp_position_id;
     Principal get position_positor => icp_position_positor; 
     XDRICPRate get position_xdr_permyriad_per_icp_rate => icp_position_xdr_permyriad_per_icp_rate;
+    IcpTokens get icp_quantity => icp;
+    Cycles get cycles_quantity => icptokens_to_cycles(icp, icp_position_xdr_permyriad_per_icp_rate);
     
     IcpPositionPurchase._({
         required this.icp_position_id,

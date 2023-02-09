@@ -1,6 +1,7 @@
 import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
+import 'package:data_table_2/data_table_2.dart';
 
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
@@ -16,11 +17,16 @@ import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import '../config/pages.dart';
 import '../config/urls.dart';
+import './chart.dart';
 
 
-class CyclesMarketScaffoldBody extends StatelessWidget {
+class CyclesMarketScaffoldBody extends StatefulWidget {
     CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
+    
+    State createState() => CyclesMarketScaffoldBodyState();
+}
+class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     
     final ScrollController user_cycles_positions_scroll_controller = ScrollController();
     final ScrollController user_icp_positions_scroll_controller = ScrollController();    
@@ -31,7 +37,11 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
     final ScrollController cycles_positions_purchases_scroll_controller = ScrollController();
     final ScrollController icp_positions_purchases_scroll_controller = ScrollController();    
     
+    final ScrollController main_listview_scroll_controller = ScrollController();
     
+    
+    
+    bool stop_scroll = false; 
     
     @override
     Widget build(BuildContext context) {
@@ -46,6 +56,36 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 height: 21
             )
         );
+        
+        column_children.add(
+            Wrap(
+                children: [
+                    Container(
+                        child: MarketTrades(key: ValueKey('CyclesMarketScaffoldBody MarketTrades')) 
+                    ),
+                    MouseRegion(
+                        child: Container(
+                            child: Chart(key: ValueKey('CyclesMarketScaffoldBody Candlestick Chart')),
+                            constraints: BoxConstraints(maxHeight: 500, maxWidth: 900, minWidth: 300)
+                        ),
+                        onEnter: (event) {
+                            setState((){
+                                stop_scroll = true;
+                            });
+                        },
+                        onExit: (event) {
+                            setState((){
+                                stop_scroll = false;
+                            });
+                        }
+                    ),
+                    Container(
+                        child: PositionBook(key: ValueKey('CyclesMarketScaffoldBody PositionBook'))
+                    ),  
+                ]
+            )
+        );
+                
         
         if (state.user == null) {
             column_children.addAll([
@@ -796,19 +836,25 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 900),
+                constraints: BoxConstraints(maxWidth: double.infinity), // 900
                 child: Column(
                     children: [
                         ScaffoldBodyHeader('CYCLES-MARKET'),
                         Expanded(
-                            child: ListView(
-                                padding: EdgeInsets.all(0),
-                                children: [
-                                    Column(
-                                        children: column_children 
-                                    )
-                                ],
-                                addAutomaticKeepAlives: true
+                            child: ScrollConfiguration(
+                                behavior: ScrollConfiguration.of(context).copyWith(
+                                    physics: this.stop_scroll ?  NeverScrollableScrollPhysics() : AlwaysScrollableScrollPhysics()
+                                ),
+                                child: ListView(
+                                    controller: main_listview_scroll_controller,
+                                    padding: EdgeInsets.all(0),
+                                    children: [
+                                        Column(
+                                            children: column_children 
+                                        )
+                                    ],
+                                    addAutomaticKeepAlives: true
+                                )
                             )
                         )
                     ]
@@ -817,5 +863,140 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         );
     }
 }
+
+
+
+
+
+
+class MarketTrades extends StatelessWidget {
+    MarketTrades({super.key});
+    
+    String timestamp_format(DateTime t) {
+        return '${t.hour}:${t.minute}:${t.second}';
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+        return Container(
+            padding: EdgeInsets.fromLTRB(10,17,10,17),
+            constraints: BoxConstraints(
+                maxHeight: 400,
+                maxWidth: 400
+            ),
+            //decoration: BoxDecoration(border: Border.all()),
+            child: DataTable2(
+                //headingRowHeight: 0,
+                showBottomBorder: true,
+                columns: <DataColumn>[
+                    DataColumn(label: Text('Quantity')),
+                    DataColumn(label: Text('Rate')),
+                    DataColumn(label: Text('Time'))
+                ],
+                rows: [
+                    for (CyclesMarketDataPositionPurchase trade in 
+                    [   ...state.cycles_market_data.cycles_positions_purchases, 
+                        ...state.cycles_market_data.icp_positions_purchases
+                    ]..sort((a,b){return b.timestamp_nanos.compareTo(a.timestamp_nanos);})
+                    ) DataRow(
+                        cells: [
+                            DataCell(Text('${trade.icp_quantity}')),
+                            DataCell(Text('${trade.position_xdr_permyriad_per_icp_rate}T', style: TextStyle(color: trade is CyclesPositionPurchase ? red : green ))),
+                            DataCell(Text('${timestamp_format(DateTime.fromMillisecondsSinceEpoch((trade.timestamp_nanos ~/ BigInt.from(1000000)).toInt()))}'))
+                        ]
+                    ),
+                ]
+            )
+        );
+    }
+}
+
+
+class PositionBook extends StatelessWidget {
+    PositionBook({super.key});
+    
+    List<DataRow> create_position_book_data_rows(List<CyclesMarketDataPosition> positions) {
+        positions = positions..sort((a,b){return b.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp.compareTo(a.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp);}); 
+        
+        if (positions.length == 0) { return <DataRow>[]; }
+        
+        List<DataRow> datarows = [];
+
+        IcpTokens quantity = IcpTokens(e8s: BigInt.from(0)); 
+        XDRICPRate rate = positions.first.xdr_permyriad_per_icp_rate;
+        Cycles total = Cycles(cycles: BigInt.from(0));
+        
+        bool is_buy_positions = positions.first is CyclesPosition ? true : false; 
+        
+        for (CyclesMarketDataPosition position in positions ) {    
+            if (position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp == rate) {
+                quantity += position.icp_quantity;
+                total += position.cycles_quantity;
+            } else {
+                datarows.add(
+                    DataRow(
+                        cells: [
+                            DataCell(Text('${quantity}')),
+                            DataCell(Text('${rate}T', style: TextStyle(color: is_buy_positions ? green : red ))),
+                            DataCell(Text('${total}'))
+                        ]
+                    )
+                );
+                quantity = position.icp_quantity; 
+                rate = position.xdr_permyriad_per_icp_rate;
+                total = position.cycles_quantity;
+            }
+        }
+        return datarows;
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            constraints: BoxConstraints(maxHeight: 540, maxWidth: 400),
+            child: Column(
+                children: [
+                    Flexible(
+                        flex: 2,
+                        child: DataTable2(
+                            //headingRowHeight: 0,
+                            // reverse: true,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(label: Text('Quantity')),
+                                DataColumn(label:Text('Rate')),
+                                DataColumn(label:  Text('Total'))
+                            ],
+                            rows: create_position_book_data_rows(state.cycles_market_data.icp_positions)
+                        )    
+                    ),
+                    Text('middle widget, current/latest trade price'),
+                    Flexible(
+                        flex: 2,
+                        child: DataTable2(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[                                 
+                                DataColumn(label: Text('Quantity')),
+                                DataColumn(label:Text('Rate')),
+                                DataColumn(label:  Text('Total'))
+                            ],
+                            rows: create_position_book_data_rows(state.cycles_market_data.cycles_positions)
+                        )
+                    ),
+                ]
+            )
+        );
+    }
+}
+
+
+const Color green = const Color(0xFF26a69a);
+const Color red = const Color(0xFFef5350);
+
 
 
