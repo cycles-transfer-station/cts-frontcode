@@ -931,7 +931,7 @@ class PositionBook extends StatelessWidget {
         bool is_buy_positions = positions.first is CyclesPosition ? true : false; 
         
         for (CyclesMarketDataPosition position in positions ) {    
-            if (position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp == rate) {
+            if (position.xdr_permyriad_per_icp_rate.xdr_permyriad_per_icp == rate.xdr_permyriad_per_icp) {
                 quantity += position.icp_quantity;
                 total += position.cycles_quantity;
             } else {
@@ -949,6 +949,16 @@ class PositionBook extends StatelessWidget {
                 total = position.cycles_quantity;
             }
         }
+        // for the last positon
+        datarows.add(
+            DataRow(
+                cells: [
+                    DataCell(Text('${quantity}')),
+                    DataCell(Text('${rate}T', style: TextStyle(color: is_buy_positions ? green : red ))),
+                    DataCell(Text('${total}'))
+                ]
+            )
+        );
         return datarows;
     }
     
@@ -963,7 +973,6 @@ class PositionBook extends StatelessWidget {
                     Flexible(
                         flex: 2,
                         child: DataTable2(
-                            //headingRowHeight: 0,
                             // reverse: true,
                             showBottomBorder: true,
                             columns: <DataColumn>[

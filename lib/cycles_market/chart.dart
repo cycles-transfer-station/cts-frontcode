@@ -105,6 +105,15 @@ List<Candle> cycles_market_data_candlesticks(CyclesMarketData cmd, CandleTimeDur
             close = trade_xdr_icp_rate_double;
         }
     }
+    // for the last candlestick
+    candlesticks.add(Candle(
+        date: time_mark,
+        open: open,
+        high: high,
+        low: low,
+        close: close,
+        volume: volume
+    ));
     return candlesticks; 
 }
 
@@ -113,54 +122,71 @@ class Chart extends StatefulWidget {
     State<Chart> createState() => ChartState();
 }
 class ChartState extends State<Chart> {
+    
+    CandleTimeDurationType candle_time_duration = DurationHours(1);
+
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
+        
+        
         return Container(
             //decoration: BoxDecoration(border: Border.all()),
             child: Candlesticks(
-                candles: cycles_market_data_candlesticks(state.cycles_market_data, DurationDays(7)) //MockDataTesla.candles, 
-                /*
-                <CandleData>[
-                     CandleData(
-                        timestamp: DateTime.now().millisecondsSinceEpoch, 
-                        open: 17.0, 
-                        close: 19.0, 
-                        volume: 200, 
-                        high: 25.0, 
-                        low: 17, 
-                        //List<double?>? trends
-                    ), 
-                    CandleData(
-                        timestamp: DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch, 
-                        open: 17.0, 
-                        close: 19.0, 
-                        volume: 200, 
-                        high: 25.0, 
-                        low: 17, 
-                        //List<double?>? trends
-                    ), 
-                    CandleData(
-                        timestamp: DateTime.now().subtract(Duration(days: 2)).millisecondsSinceEpoch, 
-                        open: 17.0, 
-                        close: 19.0, 
-                        volume: 200, 
-                        high: 25.0, 
-                        low: 17, 
-                        //List<double?>? trends
-                    ), 
-                ],
-                */
-                //initialVisibleCandleCount: 90,
-                /*
-                ChartStyle? style, 
-                TimeLabelGetter? timeLabel, 
-                PriceLabelGetter? priceLabel, 
-                OverlayInfoGetter? overlayInfo, 
-                ValueChanged<CandleData>? onTap, 
-                ValueChanged<double>? onCandleResize
-                */
+                key: ValueKey(candle_time_duration),
+                candles: cycles_market_data_candlesticks(state.cycles_market_data, candle_time_duration), //MockDataTesla.candles, 
+                actions: <ToolBarAction>[
+                    ToolBarAction(
+                        child: Text('5m'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationMinutes(5);
+                            });
+                        }
+                    ),
+                    ToolBarAction(
+                        child: Text('15m'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationMinutes(15);
+                            });
+                        }
+                    ),
+                    ToolBarAction(
+                        child: Text('30m'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationMinutes(30);
+                            });
+                        }
+                    ),
+                    ToolBarAction(
+                        child: Text('1H'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationHours(1);
+                            });
+                        }
+                    ),
+                    ToolBarAction(
+                        child: Text('1D'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationDays(1);
+                            });
+                        }
+                    ),
+                    ToolBarAction(
+                        child: Text('1W'),
+                        onPressed: () {
+                            setState((){
+                                candle_time_duration = DurationDays(7);
+                            });
+                        }
+                    ),
+
+                ]
             )
         );
     }

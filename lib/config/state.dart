@@ -580,6 +580,11 @@ class XDRICPRate extends Nat64 {
     
     static int DECIMAL_PLACES = 4;
     static BigInt DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES));
+    
+    @override
+    operator ==(covariant XDRICPRate other) {
+        return this.xdr_permyriad_per_icp == other.xdr_permyriad_per_icp;
+  }
 }
 
 
