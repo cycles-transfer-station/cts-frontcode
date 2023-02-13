@@ -25,7 +25,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
     final ScrollController cycles_transfers_in_scroll_controller = ScrollController();    
     
     final ScrollController main_listview_scroll_controller = ScrollController();  
-
+    
     
     @override
     Widget build(BuildContext context) {
@@ -294,6 +294,9 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                             ]
                         )
                     )
+                ),
+                Container(
+                    child: BankTokenSwitcher(key: ValueKey('CyclesBankScaffoldBody BankTokenSwitcher'))
                 ),
                 Padding(
                     padding: EdgeInsets.all(17),

@@ -986,3 +986,28 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
 }
 
 
+
+class BankTokenSwitcher extends StatelessWidget {
+    BankTokenSwitcher({super.key});
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return DropdownButtonFormField<Icrc1Ledger>(
+            decoration: InputDecoration(
+                labelText: state.user!.cycles_bank!.current_icrc1_ledger.symbol,
+            ),
+            items: [
+                for (Icrc1Ledger icrc1_ledger in state.user!.cycles_bank!.known_icrc1_ledgers)                 
+                    DropdownMenuItem<Icrc1Ledger>(child: Text(icrc1_ledger.symbol), value: icrc1_ledger),
+            ],
+            value: state.user!.cycles_bank!.current_icrc1_ledger,
+            onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
+                if (select_icrc1_ledger is Icrc1Ledger) { 
+                    state.user!.cycles_bank!.current_icrc1_ledger = select_icrc1_ledger;
+                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                }
+            }
+        );
+    }
+}

@@ -15,6 +15,8 @@ class CyclesMarketData {
     List<CyclesPositionPurchase> cycles_positions_purchases = [];
     List<IcpPositionPurchase> icp_positions_purchases = [];
     
+    List<Icrc1Ledger> icrc1_ledgers = [];
+    
     CyclesMarketData();
     
     
@@ -53,6 +55,15 @@ class CyclesMarketData {
             this.fresh_cycles_positions_purchases(),
             this.fresh_icp_positions_purchases(),
         ]);
+    }
+    
+    Future<void> fresh_icrc1_ledgers() async {
+        List<Icrc1Ledger> ls = this.icrc1_ledgers.toList();
+        for (Icrc1Ledger l in []) {
+            if (ls.contains(l) == false) {
+                ls.add(l);
+            }
+        }
     }
 
 

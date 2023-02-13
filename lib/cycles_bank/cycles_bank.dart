@@ -46,6 +46,11 @@ class CyclesBank extends Canister {
     List<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs = [];
     List<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs = [];
     
+    List<Icrc1Ledger> known_icrc1_ledgers = [...Icrc1Ledgers.all, ];
+    Icrc1Ledger current_icrc1_ledger = Icrc1Ledgers.ICP;
+    Map<Principal, BigInt> icrc1_balances_cache = {};
+    
+    
     CyclesBank(
         super.principal,
         this.user,
@@ -65,6 +70,43 @@ class CyclesBank extends Canister {
         //print('cm_message_cycles_position_purchase_positor_logs_len: ${this.metrics!.cm_message_cycles_position_purchase_positor_logs_len}');
     }
     
+    Future<void> fresh_known_icrc1_ledgers() async {
+        if (this.metrics == null) { await this.fresh_metrics(); }
+        List<Icrc1Ledger> icrc1_ledgers = [...this.known_icrc1_ledgers, ];
+        for (Icrc1Ledger l in this.user.state.cycles_market_data.icrc1_ledgers) {
+            if (icrc1_ledgers.contains(l) == false) {
+                icrc1_ledgers.add(l);
+            }
+        }
+        for (Principal ledger_id in this.metrics!.known_icrc1_ledgers) {
+            if (icrc1_ledgers.map<Principal>((l)=>l.ledger_id).toList().contains(ledger_id) == false) {
+                print('fetching ${ledger_id.text} icrc1-data');
+                icrc1_ledgers.add(await Icrc1Ledger.load(ledger_id));
+            }
+        }
+        this.known_icrc1_ledgers = icrc1_ledgers;
+    }
+    
+    Future<void> fresh_icrc1_balances([Principal? icrc1_ledger_id]) async {
+        List<BigInt> balances = await Future.wait(
+            this.known_icrc1_ledgers.map<Future<BigInt>>((l)=>Future(()async{
+                BigInt balance = (c_backwards(await Canister(l.ledger_id).call(
+                    method_name: 'icrc1_balance_of',
+                    put_bytes: c_forwards([
+                        Record.oftheMap({
+                            'owner': this.principal,
+                        })
+                    ]),
+                    calltype: CallType.query
+                ))[0] as Nat).value;
+                return balance;
+            }))    
+        );
+        for (int i=0; i<this.known_icrc1_ledgers.length;i++) {
+            this.icrc1_balances_cache[this.known_icrc1_ledgers[i].ledger_id] = balances[i];
+        }
+        print(this.icrc1_balances_cache);
+    }
 
     Future<Iterable<T>> cycles_bank_download_mechanism<T>({
         required int chunk_size, 
@@ -925,7 +967,8 @@ class CyclesBankMetrics {
     BigInt cm_message_icp_position_purchase_positor_logs_len;
     BigInt cm_message_icp_position_purchase_purchaser_logs_len;
     BigInt cm_message_void_cycles_position_positor_logs_len;
-    BigInt cm_message_void_icp_position_positor_logs_len;         
+    BigInt cm_message_void_icp_position_positor_logs_len;   
+    List<Principal> known_icrc1_ledgers;
     
     CyclesBankMetrics._({
         required this.cycles_balance,
@@ -962,7 +1005,8 @@ class CyclesBankMetrics {
         required this.cm_message_icp_position_purchase_positor_logs_len,
         required this.cm_message_icp_position_purchase_purchaser_logs_len,
         required this.cm_message_void_cycles_position_positor_logs_len,
-        required this.cm_message_void_icp_position_positor_logs_len,            
+        required this.cm_message_void_icp_position_positor_logs_len,   
+        required this.known_icrc1_ledgers,
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
@@ -1001,7 +1045,7 @@ class CyclesBankMetrics {
             cm_message_icp_position_purchase_purchaser_logs_len: (r['cm_message_icp_position_purchase_purchaser_logs_len'] as Nat).value,
             cm_message_void_cycles_position_positor_logs_len: (r['cm_message_void_cycles_position_positor_logs_len'] as Nat).value,
             cm_message_void_icp_position_positor_logs_len: (r['cm_message_void_icp_position_positor_logs_len'] as Nat).value,
-            
+            known_icrc1_ledgers: (r['known_icrc1_ledgers'] as Vector).cast_vector<Principal>(),
         );
     }
 }

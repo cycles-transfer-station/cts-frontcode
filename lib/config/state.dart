@@ -29,7 +29,7 @@ import 'package:ic_tools/candid.dart' show
     candid_text_hash
     ;
 import 'package:ic_tools/candid.dart' as candid;
-import 'package:ic_tools/common.dart' show IcpTokens;
+import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger;
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
@@ -120,11 +120,14 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         print('load cts_fees');
         print('fresh_xdr_icp_rate');
         print('load cycles-market-data');
-
+        
+        Future cycles_market_fresh_icrc1_ledgers_future = this.cycles_market_data.fresh_icrc1_ledgers();
+        
         await Future.wait([
             this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
             this.cycles_market_data.load_data(),
+            cycles_market_fresh_icrc1_ledgers_future,
             Future(()async{ 
                 print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
@@ -148,16 +151,20 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                     print('loading cycles-bank-metrics');
                                     // await this before reading the cb-logs
                                     await this.user!.cycles_bank!.fresh_metrics();
-                    
-                                    print('loading cycles-transfers-in-out, and cm-data');
+                                    
+                                    print('loading cycles-transfers-in-out, and cm-data, icrc1-tokens');
                                     await Future.wait([
                                         this.user!.cycles_bank!.fresh_cycles_transfers_out(),
                                         this.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         this.user!.cycles_bank!.load_cm_data(),
+                                        Future(()async{
+                                            await cycles_market_fresh_icrc1_ledgers_future;
+                                            await this.user!.cycles_bank!.fresh_known_icrc1_ledgers();
+                                            await this.user!.cycles_bank!.fresh_icrc1_balances();
+                                        }),
                                     ]);
-                                
                                 } catch(e) {
-                                    print('cycles-bank load metrics, cycles-transfers-in-out, and cm-data error: ${e}');
+                                    print('cycles-bank load metrics, cycles-transfers-in-out, cm-data, and icrc1-tokens error: ${e}');
                                 }
                             }        
                         }),
@@ -295,8 +302,9 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                 }
                 
                 idb.shutdown();
-            } catch(e) {
-                window.alert('idb error saving the user state: ${e}');                        
+            } catch(e, s) {
+                print('error saving user state: $s');
+                window.alert('idb error saving the user state: ${e}\n${s}');                        
             }
         }
         
@@ -353,9 +361,10 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
             }
             
             
-        } catch(e) {
+        } catch(e, s) {
             // no error, let the user log in
-            window.console.log('get state of the browser storage idb error: $e');
+            window.console.log('load state of the browser storage idb error: $e');
+            print('load state of the browser storage error: $e\n$s');
         }
 
     }
