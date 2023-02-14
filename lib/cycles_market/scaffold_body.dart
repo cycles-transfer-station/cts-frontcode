@@ -799,7 +799,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 constraints: BoxConstraints(maxWidth: 900),
                 child: Column(
                     children: [
-                        ScaffoldBodyHeader('CYCLES-MARKET'),
+                        ScaffoldBodyHeader(Text('CYCLES-MARKET', style: TextStyle(fontSize: 19))),
                         Expanded(
                             child: ListView(
                                 padding: EdgeInsets.all(0),

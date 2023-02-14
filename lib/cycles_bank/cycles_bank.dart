@@ -47,7 +47,7 @@ class CyclesBank extends Canister {
     List<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs = [];
     
     List<Icrc1Ledger> known_icrc1_ledgers = [...Icrc1Ledgers.all, ];
-    Icrc1Ledger current_icrc1_ledger = Icrc1Ledgers.ICP;
+    Icrc1Ledger? current_icrc1_ledger = null;
     Map<Principal, BigInt> icrc1_balances_cache = {};
     
     

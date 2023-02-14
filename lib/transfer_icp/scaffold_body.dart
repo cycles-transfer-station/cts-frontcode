@@ -168,7 +168,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader('TRANSFER-ICP'),
+                        ScaffoldBodyHeader(Text('TRANSFER-ICP', style: TextStyle(fontSize: 19))),
                         Expanded(
                             child: ListView(
                                 padding: EdgeInsets.all(0),

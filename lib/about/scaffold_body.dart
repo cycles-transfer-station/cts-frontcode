@@ -126,7 +126,7 @@ Use the following cycles-transfer pre-fill payment url for a simple way to colle
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader('ABOUT CTS'),
+                        ScaffoldBodyHeader(Text('ABOUT CTS', style: TextStyle(fontSize: 19))),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,

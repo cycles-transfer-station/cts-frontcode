@@ -2,12 +2,14 @@ import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/common.dart' show Icrc1Ledger;
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import 'forms.dart';
 import 'cards.dart';
 import 'cycles_bank.dart';
+import 'configure.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
@@ -124,20 +126,8 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                         headingRowHeight: 0,
                         showBottomBorder: true,
                         columns: <DataColumn>[
-                            DataColumn(
-                                label: Expanded(
-                                    child: Text(
-                                        '',
-                                    ),
-                                ),
-                            ),
-                            DataColumn(
-                                label: Expanded(
-                                    child: Text(
-                                        '',
-                                    )
-                                )
-                            )
+                            DataColumn(label: Text('')),
+                            DataColumn(label: Text('')),
                         ],
                         rows: [
                             DataRow(
@@ -263,29 +253,18 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
         } else /* if (state.user != null && state.user!.cycles_bank != null) */{
             
             String cycles_balance = 'unknown';
-            String creation_timestamp = 'unknown';
-            String lifetime_remaining = 'unknown';
-            String ctsfuel = 'unknown';
-            String storage_usage = 'unknown';
-            String storage_size = 'unknown';
-            
             if (state.user!.cycles_bank!.metrics != null) {
                 CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
                 cycles_balance = '${metrics.cycles_balance}';
-                DateTime creation_datetime = DateTime.fromMillisecondsSinceEpoch((metrics.user_canister_creation_timestamp_nanos/BigInt.from(Duration.microsecondsPerSecond)).toInt());
-                creation_timestamp = '${creation_datetime.year}-${creation_datetime.month}-${creation_datetime.day}\n${creation_datetime.hour}:${creation_datetime.minute}';
-                lifetime_remaining = '${DateTime.fromMillisecondsSinceEpoch((metrics.lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days';
-                ctsfuel = '${(metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY).toStringAsFixed(5)}';
-                storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(1)}-MiB';
-                storage_size = '${metrics.storage_size_mib}-MiB';
             }
+
             
             List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
             List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
             
             column_children.addAll([
                 Container(
-                    padding: EdgeInsets.fromLTRB(11,0,11,17),
+                    padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: Center(
                         child: Column(
                             children: [
@@ -296,39 +275,65 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                     )
                 ),
                 Container(
-                    child: BankTokenSwitcher(key: ValueKey('CyclesBankScaffoldBody BankTokenSwitcher'))
-                ),
-                Padding(
                     padding: EdgeInsets.all(17),
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('LOAD METRICS'),
+                    child: IconButton(
+                        icon: const Icon(Icons.settings_sharp, size: 30.0),
+                        tooltip: 'settings', 
                         onPressed: () async {
-                            state.loading_text = 'loading cycles-bank metrics ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            try {
-                                await state.user!.cycles_bank!.fresh_metrics();
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('cycles-bank load metrics error:'),
-                                            content: Text('${e}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );                                    
-                            }
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                            showDialog<void>(
+                                barrierDismissible: false,
+                                context: context,
+                                builder: (BuildContext context) => Dialog(
+                                    child: Container(
+                                        constraints: BoxConstraints(maxWidth: 700),
+                                        width: double.infinity,
+                                        margin: EdgeInsets.all(11.0),
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank')),
+                                    )
+                                )
+                            );
                             return;                        
+                        }
+                    )
+                ),
+                SizedBox(
+                    width: 3,
+                    height: 17
+                ),
+                Container(
+                    child: DropdownButton<Icrc1Ledger?>(
+                        //decoration: InputDecoration(
+                        //    labelText: 'Token'//state.user!.cycles_bank!.current_icrc1_ledger.symbol,
+                        //),
+                        underline: Container(
+                            height: 0,
+                            color: Colors.deepPurpleAccent,
+                        ),
+                        isExpanded: false,
+                        items: [
+                            DropdownMenuItem<Icrc1Ledger?>(
+                                child: Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: Text('CYCLES', style: TextStyle(fontSize: 22)), 
+                                ),
+                                value: null
+                            ),  
+                            for (Icrc1Ledger icrc1_ledger in state.user!.cycles_bank!.known_icrc1_ledgers)                 
+                                DropdownMenuItem<Icrc1Ledger?>(
+                                    child: Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: Text(icrc1_ledger.symbol, style: TextStyle(fontSize: 22)), 
+                                    ),
+                                    value: icrc1_ledger
+                                ),
+                        ],
+                        value: state.user!.cycles_bank!.current_icrc1_ledger,
+                        onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
+                            //if (select_icrc1_ledger is Icrc1Ledger) { 
+                                state.user!.cycles_bank!.current_icrc1_ledger = select_icrc1_ledger;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            //}
                         }
                     )
                 ),
@@ -343,127 +348,6 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                         ]
                     )
                 ),
-                Wrap(
-                    children: [
-                        Container(
-                            constraints: BoxConstraints(maxWidth: 450),
-                            //width: double.infinity,
-                            //alignment: Alignment.centerLeft,
-                            padding: EdgeInsets.fromLTRB(0,11,0,0),
-                            child: Column(
-                                children: [
-                                    Center(
-                                        child: DataTable(
-                                            headingRowHeight: 0,
-                                            showBottomBorder: true,
-                                            columns: <DataColumn>[
-                                                DataColumn(
-                                                  label: Expanded(
-                                                    child: Text(
-                                                      '',
-                                                      //style: TextStyle(fontStyle: FontStyle.italic),
-                                                    ),
-                                                  ),
-                                                ),
-                                                DataColumn(
-                                                  label: Expanded(
-                                                    child: Text(
-                                                      '',
-                                                      //style: TextStyle(fontStyle: FontStyle.italic),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                            rows: <DataRow>[
-                                                DataRow(
-                                                    cells: <DataCell>[
-                                                        DataCell(Text('creation-timestamp: ')),
-                                                        DataCell(SelectableText('${creation_timestamp}')),
-                                                    ],
-                                                ),
-                                                DataRow(
-                                                    cells: <DataCell>[
-                                                        DataCell(Text('lifetime-remaining: ')),
-                                                        DataCell(SelectableText('${lifetime_remaining}')),
-                                                    ],
-                                                ),
-                                                DataRow(
-                                                    cells: <DataCell>[
-                                                        DataCell(Text('ctsfuel: ')),
-                                                        DataCell(SelectableText('${ctsfuel}')),
-                                                    ]
-                                                ),
-                                                DataRow(
-                                                    cells: <DataCell>[
-                                                        DataCell(Text('storage-usage: ')),
-                                                        DataCell(SelectableText('${storage_usage}')),
-                                                    ]
-                                                ),
-                                                DataRow(
-                                                    cells: <DataCell>[
-                                                        DataCell(Text('storage-size: ')),
-                                                        DataCell(SelectableText('${storage_size}')),
-                                                    ]
-                                                )
-                                            ]    
-                                        )
-                                    ),
-                                    // burn icp mint cycles,  
-                                    SizedBox(
-                                        width: 3,
-                                        height: 10
-                                    ),
-                                    Container(
-                                        width: double.infinity,
-                                        padding: EdgeInsets.all(17),
-                                        child: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                            child: Text('BURN ICP MINT CYCLES'),
-                                            onPressed: () async {
-                                                await showDialog(
-                                                    context: context,
-                                                    builder: (BuildContext context) {
-                                                        return AlertDialog(
-                                                            title: Center(child: Text('BURN-ICP MINT-CYCLES')),
-                                                            content: Container(
-                                                                padding: EdgeInsets.all(0),
-                                                                child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
-                                                            ),
-                                                            //actions: <Widget>[]
-                                                        );
-                                                    }   
-                                                );
-                                            }
-                                        )                     
-                                    ),
-                                ]
-                            )
-                        ),
-                        Container(
-                            constraints: BoxConstraints(maxWidth: 350),
-                            //width: double.infinity,
-                            //alignment: Alignment.centerLeft,
-                            //margin: EdgeInsets.fromLTRB(13,7,13,7),
-                            child: Center(
-                                child: Column(
-                                    children: [
-                                        CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
-                                        SizedBox(
-                                            height: 20, 
-                                            width: 1
-                                        ),
-                                        GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
-                                        SizedBox(
-                                            height: 20, 
-                                            width: 1
-                                        ),
-                                        LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
-                                    ]
-                                )
-                            )
-                        )
-                    ]
-                ),               
                 Container(
                     key: transfer_cycles_form_container_key,
                     padding: EdgeInsets.fromLTRB(13,17,13,17),
@@ -592,7 +476,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader('CYCLES-BANK'),
+                        ScaffoldBodyHeader(Text('CYCLES-BANK', style: TextStyle(fontSize: 19))),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,

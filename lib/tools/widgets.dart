@@ -35,15 +35,20 @@ class Loading extends StatelessWidget {
 
 class OutlineButton extends StatelessWidget {
     Function()? on_press_complete;
-    String button_text;
+    String? button_text;
+    Widget? child;
     
-    OutlineButton({required this.button_text, required this.on_press_complete}) : super(key: ValueKey(button_text));
+    OutlineButton({this.child, this.button_text, required this.on_press_complete}) : super(key: ValueKey(button_text)) {
+        if ((this.child == null && this.button_text == null) || (this.child != null && this.button_text != null)) {
+            throw Exception('OutlineButton, must take one of a button_text or a child');        
+        }    
+    }
     
     
     Widget build(BuildContext context) {    
         
         return OutlinedButton(
-            child: Text(this.button_text),
+            child: this.button_text != null ? Text(this.button_text!) : child!,
             style: ButtonStyle(
                 foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
             ),
@@ -58,23 +63,26 @@ class OutlineButton extends StatelessWidget {
 
 
 class ScaffoldBodyHeader extends StatelessWidget {
-    final String header_text;
-    ScaffoldBodyHeader(this.header_text);
+    final Widget header;
+    ScaffoldBodyHeader(this.header);
     Widget build(BuildContext context) {
         return Column(
             children: [
                 Padding(
                     padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
                     child: Container(
-                        child: Text(header_text, style: TextStyle(fontSize: 19))
+                        child: header,
                     )
                 ),
-                Divider(
-                    height: 13.0,   
-                    thickness: 4.0,
-//                    indent: 34.0,
-//                    endIndent: 34.0,
-                    //color: 
+                Padding(
+                    padding: EdgeInsets.fromLTRB(0,4.5,0,0),
+                    child: Divider(
+                        height: 4.0,   
+                        thickness: 4.0,
+    //                    indent: 34.0,
+    //                    endIndent: 34.0,
+                        //color: 
+                    )
                 )
             ]
         ); 
