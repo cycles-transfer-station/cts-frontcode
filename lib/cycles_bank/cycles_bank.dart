@@ -87,9 +87,10 @@ class CyclesBank extends Canister {
         this.known_icrc1_ledgers = icrc1_ledgers;
     }
     
-    Future<void> fresh_icrc1_balances([Principal? icrc1_ledger_id]) async {
+    Future<void> fresh_icrc1_balances([Icrc1Ledger? icrc1_ledger]) async {
+        List<Icrc1Ledger> ledgers = icrc1_ledger != null ? [icrc1_ledger] : this.known_icrc1_ledgers;
         List<BigInt> balances = await Future.wait(
-            this.known_icrc1_ledgers.map<Future<BigInt>>((l)=>Future(()async{
+            ledgers.map<Future<BigInt>>((l)=>Future(()async{
                 BigInt balance = (c_backwards(await Canister(l.ledger_id).call(
                     method_name: 'icrc1_balance_of',
                     put_bytes: c_forwards([
@@ -102,10 +103,10 @@ class CyclesBank extends Canister {
                 return balance;
             }))    
         );
-        for (int i=0; i<this.known_icrc1_ledgers.length;i++) {
-            this.icrc1_balances_cache[this.known_icrc1_ledgers[i].ledger_id] = balances[i];
+        for (int i=0; i<ledgers.length;i++) {
+            this.icrc1_balances_cache[ledgers[i].ledger_id] = balances[i];
         }
-        print(this.icrc1_balances_cache);
+        //print(this.icrc1_balances_cache);
     }
 
     Future<Iterable<T>> cycles_bank_download_mechanism<T>({
@@ -914,6 +915,60 @@ class CyclesBank extends Canister {
                 });    
             }
         });
+    }
+    
+    Future<BigInt/*block_height*/> transfer_icrc1(Icrc1Ledger icrc1_ledger, Uint8List icrc1_transfer_arg_raw) async {
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'transfer_icrc1',
+                calltype: CallType.call,
+                put_bytes: c_forwards([icrc1_ledger.ledger_id, Blob(icrc1_transfer_arg_raw)])
+            )
+        ).first as Variant;
+        BigInt block_height = match_variant<BigInt>(sponse, {
+            Ok: (n){
+                Variant ledger_transfer_sponse = c_backwards((n as Blob).bytes).first as Variant;
+                return match_variant<BigInt>(ledger_transfer_sponse, {
+                    Ok: (block_height) {
+                        return (block_height as Nat).value;
+                    },
+                    Err: (icrc1_transfer_error) {
+                        return match_variant<Never>(icrc1_transfer_error as Variant, {
+                            'BadFee' : (r) {
+                                throw Exception('Fee must be: ${Tokens(token_quantums: ((r as Record)['expected_fee'] as Nat).value, decimal_places: icrc1_ledger.decimals)}');
+                            },
+                            'BadBurn' : (r) {   
+                                throw Exception('BadBurn: min_burn_amount: ${Tokens(token_quantums: ((r as Record)['min_burn_amount'] as Nat).value, decimal_places: icrc1_ledger.decimals)} ');
+                            },
+                            'InsufficientFunds' : (r) {
+                                throw Exception('InsufficientFunds. current-balance: ${Tokens(token_quantums: ((r as Record)['balance'] as Nat).value, decimal_places: icrc1_ledger.decimals)}');
+                            },
+                            'TooOld': (n) {
+                                throw Exception('transaction too old');
+                            },
+                            'CreatedInFuture' : (r) {
+                                throw Exception('transaction created in the future.\ncurrent_time: ${datetime_of_the_nanoseconds(((r as Record)['ledger_time'] as Nat64).value)}');
+                            },
+                            'Duplicate' : (r) {
+                                throw Exception('Transaction duplicate found: ${((r as Record)['duplicate_of'] as Nat).value}');
+                            },
+                            'TemporarilyUnavailable': (n) {
+                                throw Exception('The ${icrc1_ledger.symbol} ledger is busy.');
+                            },
+                            'GenericError' : (rc) {
+                                Record r = rc as Record;
+                                throw Exception('GenericError. \nerror_code: ${(r['error_code'] as Nat).value}\nmessage: ${(r['message'] as Text).value}');
+                            }
+                        });
+                    }
+                });
+            },
+            Err: (call_error){
+                throw Exception('ledger transfer call error: ${CallError.oftheRecord(call_error as Record)}');        
+            },
+        });
+        return block_height;
     }
 
     

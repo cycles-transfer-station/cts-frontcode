@@ -2,7 +2,7 @@ import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
-import 'package:ic_tools/common.dart' show Icrc1Ledger;
+import 'package:ic_tools/common.dart' show Icrc1Ledger, Tokens;
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
@@ -263,6 +263,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
             List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
             
             column_children.addAll([
+                /*
                 Container(
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: Center(
@@ -274,29 +275,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                         )
                     )
                 ),
-                Container(
-                    padding: EdgeInsets.all(17),
-                    child: IconButton(
-                        icon: const Icon(Icons.settings_sharp, size: 30.0),
-                        tooltip: 'settings', 
-                        onPressed: () async {
-                            showDialog<void>(
-                                barrierDismissible: false,
-                                context: context,
-                                builder: (BuildContext context) => Dialog(
-                                    child: Container(
-                                        constraints: BoxConstraints(maxWidth: 700),
-                                        width: double.infinity,
-                                        margin: EdgeInsets.all(11.0),
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank')),
-                                    )
-                                )
-                            );
-                            return;                        
-                        }
-                    )
-                ),
+                */
                 SizedBox(
                     width: 3,
                     height: 17
@@ -341,17 +320,38 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                     width: double.infinity,
                     child: Column(
                         children: [
-                            Container(
+                            SizedBox(
+                                width: 3,
+                                height: 17
+                            ),
+                            if (state.user!.cycles_bank!.current_icrc1_ledger == null) Container(
                                 padding: EdgeInsets.fromLTRB(7,10,7,27),
-                                child: SelectableText('CYCLES: ${cycles_balance}', style: TextStyle(fontSize: 19)),
-                            )
+                                child: SelectableText('CYCLES: ${cycles_balance}', style: TextStyle(fontSize: 27)),
+                            ) else TokenBalance(
+                                symbol: state.user!.cycles_bank!.current_icrc1_ledger!.symbol, 
+                                tokens: Tokens(
+                                    token_quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!.ledger_id]!,
+                                    decimal_places: state.user!.cycles_bank!.current_icrc1_ledger!.decimals 
+                                ), 
+                                key: ValueKey('CyclesBankScaffoldBody Icrc1TokenBalance')
+                            ),
+                            SizedBox(
+                                width: 3,
+                                height: 17
+                            ),
                         ]
                     )
                 ),
                 Container(
                     key: transfer_cycles_form_container_key,
                     padding: EdgeInsets.fromLTRB(13,17,13,17),
-                    child: CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')),
+                    child: state.user!.cycles_bank!.current_icrc1_ledger == null ? CyclesBankTransferCyclesForm(
+                        key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')
+                    ) : 
+                    BankTransferIcrc1Form(
+                        key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger_id.bytes}'),
+                        icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
+                    )
                 ),
                 Padding(
                     padding: EdgeInsets.fromLTRB(7,37,7,17),
@@ -476,7 +476,35 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader(Text('CYCLES-BANK', style: TextStyle(fontSize: 19))),
+                        ScaffoldBodyHeader(Center(child:Column(children: [
+                            Text('CYCLES-BANK', style: TextStyle(fontSize: 19)),
+                            if (state.user != null && state.user!.cycles_bank != null) ...[
+                                SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 20)),
+                                Container(
+                                    padding: EdgeInsets.all(17),
+                                    child: IconButton(
+                                        icon: const Icon(Icons.settings_sharp, size: 30.0),
+                                        tooltip: 'settings', 
+                                        onPressed: () async {
+                                            showDialog<void>(
+                                                barrierDismissible: false,
+                                                context: context,
+                                                builder: (BuildContext context) => Dialog(
+                                                    child: Container(
+                                                        constraints: BoxConstraints(maxWidth: 700),
+                                                        width: double.infinity,
+                                                        margin: EdgeInsets.all(11.0),
+                                                        padding: const EdgeInsets.all(8.0),
+                                                        child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank')),
+                                                    )
+                                                )
+                                            );
+                                            return;                        
+                                        }
+                                    )
+                                ),
+                            ],
+                        ]))),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,
@@ -496,3 +524,16 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
     }
 }
 
+
+
+class TokenBalance extends StatelessWidget {
+    final String symbol;
+    final Tokens tokens;
+    TokenBalance({required this.symbol, required this.tokens, super.key});
+    Widget build(BuildContext context) {
+        return Container(
+            padding: EdgeInsets.all(11),
+            child: SelectableText('${this.symbol}: ${this.tokens}', style: TextStyle(fontSize: 27))
+        );
+    }
+}

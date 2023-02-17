@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/candid.dart' show Nat, Int, Blob;
+import 'package:ic_tools/candid.dart' show Nat, Int, Blob, Record, Option, Nat64, Nat8, Vector;
 import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/common.dart';
 import 'package:ic_tools/tools.dart';
@@ -385,6 +387,263 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
         );  
     }
 }
+
+
+
+class BankTransferIcrc1Form extends StatefulWidget {
+    final Icrc1Ledger icrc1_ledger;
+    BankTransferIcrc1Form({super.key, required this.icrc1_ledger});
+    State createState() => BankTransferIcrc1FormState();
+}
+class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late Principal for_the_icrc1_id;
+    late Tokens tokens;
+    late Uint8List memo;    
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(7,11,7,11),
+                        child: Center(
+                            child: Text('TRANSFER-${widget.icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
+                        ),
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'For: ',
+                        ),
+                        onSaved: (String? v) { for_the_icrc1_id = Principal(v!.trim()); },
+                        validator: (String? v) {
+                            if (v == null || v.trim() == '') {
+                                return 'type the account-id';
+                            }
+                            late Principal p;
+                            try {
+                                p = Principal(v);
+                            } catch(e) {
+                                return 'must be a valid principal-id.';
+                            }
+                            return null;
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Tokens: ',
+                        ),
+                        onSaved: (String? v) { tokens = Tokens.oftheDoubleString(v!, decimal_places: widget.icrc1_ledger.decimals); },
+                        validator: (String? v) {
+                            if (v == null || v == '') {
+                                return 'Must be a number';
+                            }
+                            late Tokens t;
+                            try {
+                                t = Tokens.oftheDoubleString(v, decimal_places: widget.icrc1_ledger.decimals);
+                            } catch(e) {
+                                return 'Must be a number > 0, max ${widget.icrc1_ledger.decimals} decimal places';
+                            }
+                            if (t.token_quantums == BigInt.from(0)) {
+                                return 'Must be a number > 0';
+                            }
+                            return null;
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'Memo: ',
+                        ),
+                        onSaved: (String? v) { 
+                            if (v == null || v.trim() == '') {
+                                memo = Uint8List(0);
+                                return;
+                            } else {
+                                memo = hexstringasthebytes(v);
+                            }
+                        },
+                        validator: (String? value) {
+                            if (value == null || value.trim().length == 0) {
+                                return null;
+                            }
+                            for (String char in value.trim().toLowerCase().split('')) {
+                                if (lower_case_hex_chars.contains(char) == false && number_chars.contains(char) == false) {
+                                    return 'An Icrc1 transfer memo is in the hex format. hex format characters are 0-9 a-f.';
+                                }
+                            }
+                            if (value.trim().length > 64) {
+                                return 'Max 32-bytes (64 hex characters)';
+                            }
+                            if (value.trim().length % 2 != 0) {
+                                return 'Must be even amount of hexidecimal characters';
+                            }
+                            return null;                            
+                        }
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('TRANSFER ${widget.icrc1_ledger.symbol}'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    bool _continue = false;
+                                    
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            Widget cancelButton = TextButton(
+                                                child: Text("Cancel"),
+                                                onPressed:  () {
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            Widget continueButton = TextButton(
+                                                child: Text("Continue"),
+                                                onPressed:  () {
+                                                    _continue = true;
+                                                    Navigator.of(context).pop();
+                                                },
+                                            );
+                                            return AlertDialog(
+                                                title: Text("Confirm"),
+                                                content: Text(
+"""Transfer ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id.text}?
+"""                                             
+                                                ),
+                                                actions: [
+                                                    cancelButton,
+                                                    continueButton,
+                                                ],
+                                            );
+                                        }
+                                    );     
+                                    if (_continue == false) {
+                                        return;
+                                    }
+                                
+                                    Uint8List icrc1_transfer_arg_raw = candid.c_forwards([
+                                        Record.oftheMap({
+                                            //'from_subaccount' : opt Subaccount;
+                                            'to' : Record.oftheMap({
+                                                'owner' : for_the_icrc1_id,
+                                                //'subaccount' : opt Subaccount;
+                                            }),
+                                            'amount' : tokens,
+                                            'fee' : Option<Nat>(value: widget.icrc1_ledger.fee_tokens),
+                                            'memo' : Option<Vector<Nat8>>(value: memo != null ? Blob(memo) : null, value_type: Vector(isTypeStance: true, values_type: Nat8())),
+                                            'created_at_time' : Option<Nat64>(value: Nat64(BigInt.from(DateTime.now().millisecondsSinceEpoch) * BigInt.from(1000000)), value_type: Nat64()),
+                                        })
+                                    ]);
+                                
+                                    state.loading_text = 'transferring ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id.text} ...';
+                                    state.is_loading = true;
+                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    late BigInt transfer_block_i;
+                                    try {
+                                        transfer_block_i = await state.user!.cycles_bank!.transfer_icrc1(widget.icrc1_ledger, icrc1_transfer_arg_raw);
+                                    } catch(e,s) {
+                                        print(e);
+                                        print(s);
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Transfer error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'transfer sent. transfer block: ${transfer_block_i}\nloading current balance ...'; // and loading transfer-logs
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Transfer Success:'),
+                                                content: Text('Block: ${transfer_block_i}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
+                                
+                                    try {
+                                        await Future.wait([
+                                            state.user!.cycles_bank!.fresh_icrc1_balances(widget.icrc1_ledger),
+                                            // fresh transfer logs
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading ${widget.icrc1_ledger.symbol} balance:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                    
+                                    await success_dialog;
+                                    
+                                    state.is_loading = false;
+                                                                        
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );  
+    }
+}
+
+
+
+
+
+
+
+
+
+
 
 
 class CTSFuelForTheCyclesBalanceForm extends StatefulWidget {

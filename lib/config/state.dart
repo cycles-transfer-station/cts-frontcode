@@ -671,6 +671,10 @@ class CyclesTransferMemo extends Variant {
 }
 
 
+DateTime datetime_of_the_nanoseconds(BigInt nanoseconds) {
+    return DateTime.fromMillisecondsSinceEpoch((nanoseconds ~/ BigInt.from(1000000)).toInt());
+}
+
 
 
 
