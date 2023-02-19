@@ -174,7 +174,9 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                                             title: Center(child: Text('BURN-ICP MINT-CYCLES')),
                                                                                             content: Container(
                                                                                                 padding: EdgeInsets.all(0),
-                                                                                                child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
+                                                                                                child: SingleChildScrollView(
+                                                                                                    child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
+                                                                                                )
                                                                                             ),
                                                                                             //actions: <Widget>[]
                                                                                         );
