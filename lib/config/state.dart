@@ -57,15 +57,15 @@ late final Canister cycles_market;
 
 late final String cts_main_icp_id;
 
-
+const String thp4z_id = 'thp4z-laaaa-aaaam-qaaea-cai';
 
 
 class CustomState { // with ChangeNotifier  // do i want change notifier here? false.
 
     CustomState() {
     
-        if (window.location.hostname!.contains('thp4z-laaaa-aaaam-qaaea-cai') || window.location.hostname!.contains('cycles-transfer-station.com')) {
-            cts = Canister(Principal('thp4z-laaaa-aaaam-qaaea-cai')); 
+        if (window.location.hostname!.contains(thp4z_id) || window.location.hostname!.contains('cycles-transfer-station.com')) {
+            cts = Canister(Principal(thp4z_id)); 
             cycles_market = Canister(Principal('woddh-aqaaa-aaaal-aazqq-cai'));
         }
 
@@ -76,7 +76,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         
         cts_main_icp_id = common.icp_id(cts.principal);
         
-        if (cts.principal.text != 'thp4z-laaaa-aaaam-qaaea-cai') {
+        if (cts.principal.text != thp4z_id) {
             print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
         }
         

@@ -37,10 +37,11 @@ ii_login(BuildContext context) async {
             if (message_event.data['kind'] == 'authorize-ready') {
             
                 identityWindow.postMessage(
-                    InternetIdentityAuthorize(
+                    create_ii_auth_quest(
                         kind: "authorize-client", 
                         sessionPublicKey: legatee_caller.public_key_DER,
-                        maxTimeToLive: 1000000000*60*60*24*30
+                        maxTimeToLive: 1000000000*60*60*24*30,
+                        derivationOrigin: window.location.hostname!.contains('cycles-transfer-station.com') ? 'https://${thp4z_id}.ic0.app' : null
                     ),
                     "https://identity.ic0.app"
                 );
