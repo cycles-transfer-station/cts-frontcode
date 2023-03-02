@@ -7,6 +7,8 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/common.dart';
+import 'package:ic_tools/common.dart' as common;
+
 
 import '../user.dart';
 import '../config/state.dart';
@@ -48,7 +50,8 @@ class CyclesBank extends Canister {
     
     List<Icrc1Ledger> known_icrc1_ledgers = [...Icrc1Ledgers.all, ];
     Icrc1Ledger? current_icrc1_ledger = null;
-    Map<Principal, BigInt> icrc1_balances_cache = {};
+    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
+    Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     
     
     CyclesBank(
@@ -79,7 +82,7 @@ class CyclesBank extends Canister {
             }
         }
         for (Principal ledger_id in this.metrics!.known_icrc1_ledgers) {
-            if (icrc1_ledgers.map<Principal>((l)=>l.ledger_id).toList().contains(ledger_id) == false) {
+            if (icrc1_ledgers.map<Principal>((l)=>l.ledger.principal).toList().contains(ledger_id) == false) {
                 print('fetching ${ledger_id.text} icrc1-data');
                 icrc1_ledgers.add(await Icrc1Ledger.load(ledger_id));
             }
@@ -91,7 +94,7 @@ class CyclesBank extends Canister {
         List<Icrc1Ledger> ledgers = icrc1_ledger != null ? [icrc1_ledger] : this.known_icrc1_ledgers;
         List<BigInt> balances = await Future.wait(
             ledgers.map<Future<BigInt>>((l)=>Future(()async{
-                BigInt balance = (c_backwards(await Canister(l.ledger_id).call(
+                BigInt balance = (c_backwards(await l.ledger.call(
                     method_name: 'icrc1_balance_of',
                     put_bytes: c_forwards([
                         Record.oftheMap({
@@ -104,9 +107,79 @@ class CyclesBank extends Canister {
             }))    
         );
         for (int i=0; i<ledgers.length;i++) {
-            this.icrc1_balances_cache[ledgers[i].ledger_id] = balances[i];
+            this.icrc1_balances_cache[ledgers[i]] = balances[i];
         }
         //print(this.icrc1_balances_cache);
+    }
+    // helper for fresh_icrc1_transactions_cache
+    Future<Variant> _call_icrc1_index_transactions(Icrc1Ledger l, [Nat? start]) async {
+        return c_backwards(await l.index!.call(
+            calltype: CallType.call,
+            method_name: 'get_account_transactions',
+            put_bytes: c_forwards([
+                Record.oftheMap({
+                    'account' : Icrc1Account(owner: this.principal),
+                    'start' : Option<Nat>(value: start, value_type: Nat()),
+                    'max_results' : Nat(BigInt.from(500)),
+                })
+            ])
+        )).first as Variant;
+    } 
+    
+    Future<void> fresh_icrc1_transactions([Icrc1Ledger? icrc1_ledger]) {
+        List<Icrc1Ledger> ledgers = icrc1_ledger != null ? [icrc1_ledger] : this.known_icrc1_ledgers;
+        return Future.wait(
+            ledgers.map<Future<void>>((l)=>Future(()async{
+                print('fresh icrc1 transactions future ${l.name}');
+                if (l.ledger.principal == common.ledger.principal) {
+                
+                } else /*tokens besides icp*/ {
+                    if (this.icrc1_transactions_cache[l] == null) { 
+                        this.icrc1_transactions_cache[l] = []; 
+                    }
+                    if (this.icrc1_transactions_cache[l]!.length == 0) {
+                        print('first load');
+                        Nat? last_tx_seen = null;
+                        late BigInt oldest_tx_id;
+                        while (this.icrc1_transactions_cache[l]!.length == 0 || this.icrc1_transactions_cache[l]!.last.block > oldest_tx_id) {
+                            print('first load loop');
+                            Record data = match_variant(await _call_icrc1_index_transactions(l, last_tx_seen), {
+                                Ok: (tr) => tr as Record,
+                                Err: (er) => throw Exception('get transactions error: ${((er as Record)['message'] as Text).value}')
+                            });
+                            BigInt? oldest_tx_id_r = data.find_option<Nat>('oldest_tx_id').nullmap((n)=>n.value);
+                            if (oldest_tx_id_r == null) { break; } else { oldest_tx_id = oldest_tx_id_r!; }
+                            Vector<Record> ts = (data['transactions'] as Vector).cast_vector<Record>();
+                            last_tx_seen = ts.length == 0 ? null : ts.last['id'] as Nat;
+                            this.icrc1_transactions_cache[l]!.addAll(ts.map<Icrc1Transaction>(Icrc1Transaction.oftheRecord).toList());
+                        
+                        }
+                    } else /*get new*/ {
+                        print('load new');
+                        Nat? last_tx_seen = null;
+                        List<Icrc1Transaction> new_transactions = [];
+                        while (true) {
+                            print('load new loop');
+                            Record data = match_variant(await _call_icrc1_index_transactions(l, last_tx_seen), {
+                                Ok: (tr) => tr as Record,
+                                Err: (er) => throw Exception('get transactions error: ${((er as Record)['message'] as Text).value}'),
+                            });
+                            Vector<Record> ts = (data['transactions'] as Vector).cast_vector<Record>();
+                            last_tx_seen = ts.length == 0 ? null : ts.last['id'] as Nat;
+                            List<Icrc1Transaction> new_ts = ts.map<Icrc1Transaction>(Icrc1Transaction.oftheRecord).takeWhile((Icrc1Transaction t)=>t.block > this.icrc1_transactions_cache[l]!.first.block).toList(); 
+                            new_transactions.addAll(new_ts);
+                            if (new_ts.length != ts.length) {
+                                break;
+                            }
+                        }
+                        this.icrc1_transactions_cache[l] = [
+                            ...new_transactions,
+                            ...this.icrc1_transactions_cache[l]!
+                        ];
+                    }
+                }
+            }))
+        );
     }
 
     Future<Iterable<T>> cycles_bank_download_mechanism<T>({
@@ -923,7 +996,7 @@ class CyclesBank extends Canister {
                 this,
                 method_name: 'transfer_icrc1',
                 calltype: CallType.call,
-                put_bytes: c_forwards([icrc1_ledger.ledger_id, Blob(icrc1_transfer_arg_raw)])
+                put_bytes: c_forwards([icrc1_ledger.ledger.principal, Blob(icrc1_transfer_arg_raw)])
             )
         ).first as Variant;
         BigInt block_height = match_variant<BigInt>(sponse, {

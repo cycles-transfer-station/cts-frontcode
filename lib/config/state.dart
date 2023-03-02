@@ -29,7 +29,7 @@ import 'package:ic_tools/candid.dart' show
     candid_text_hash
     ;
 import 'package:ic_tools/candid.dart' as candid;
-import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger;
+import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Account;
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
 
@@ -45,8 +45,6 @@ import '../cycles_bank/cycles_bank.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../tests/test.dart' as t;
 
-const String Ok  = 'Ok';
-const String Err = 'Err';
 
 
 
@@ -160,11 +158,43 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                         Future(()async{
                                             await cycles_market_fresh_icrc1_ledgers_future;
                                             await this.user!.cycles_bank!.fresh_known_icrc1_ledgers();
-                                            await this.user!.cycles_bank!.fresh_icrc1_balances();
+                                            await Future.wait([
+                                                this.user!.cycles_bank!.fresh_icrc1_balances(),
+                                                this.user!.cycles_bank!.fresh_icrc1_transactions()
+                                            ]);
+                                            //test
+                                            /*
+                                            while (true) {
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                                await Future.delayed(Duration(seconds: 30));
+                                                await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                            }
+                                            */
+                                            /*
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                            print('testing!');
+                                            CyclesBank cb = this.user!.cycles_bank!;
+                                            this.user!.cycles_bank = CyclesBank(Principal('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
+                                            await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                            print('await this.user!.cycles_bank!.fresh_icrc1_transactions()');
+                                            await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                            this.user!.cycles_bank = cb;
+                                            */
                                         }),
                                     ]);
-                                } catch(e) {
-                                    print('cycles-bank load metrics, cycles-transfers-in-out, cm-data, and icrc1-tokens error: ${e}');
+                                } catch(e,s) {
+                                    print('cycles-bank load metrics, cycles-transfers-in-out, cm-data, and icrc1-tokens error: \n${e}\n${s}');
                                 }
                             }        
                         }),
@@ -676,11 +706,67 @@ DateTime datetime_of_the_nanoseconds(BigInt nanoseconds) {
 }
 
 
+extension NullMap<T> on T? {
+    F? nullmap<F>(F Function(T) f) {
+        if (this != null) {
+            return f(this!);
+        } else {
+            return null;
+        }
+    }
+}
 
 
 
 
+class Icrc1Transaction {
+    final BigInt block;
+    final Icrc1TransactionKind icrc1_transaction_kind;
+    final BigInt tokens;
+    final Icrc1Account? to;  // null on a burn
+    final Icrc1Account? from; // null on a mint
+    final BigInt? created_at_time_nanos; 
+    final BigInt timestamp_nanos; 
+    final Uint8List? memo; // max 32 bytes
+    final BigInt? fee; // null on a mint or a burn
+    Icrc1Transaction({
+        required this.block,
+        required this.icrc1_transaction_kind,
+        required this.tokens,
+        required this.to,
+        required this.from,
+        required this.created_at_time_nanos,
+        required this.timestamp_nanos,
+        required this.memo,
+        required this.fee,
+    });
+    static Icrc1Transaction oftheRecord(Record tr) {
+        Record tk = tr['transaction'] as Record;
+        String kind = (tk['kind'] as candid.Text).value;
+        Record t = tk.find_option<Record>(kind)!;
+        return Icrc1Transaction(
+            block: (tr['id'] as Nat).value,
+            icrc1_transaction_kind: Icrc1TransactionKind.values.byName(kind),
+            tokens: (t['amount'] as Nat).value, 
+            to: t.find_option<Record>('to').nullmap(Icrc1Account.oftheRecord), 
+            from: t.find_option<Record>('from').nullmap(Icrc1Account.oftheRecord),
+            created_at_time_nanos: t.find_option<Nat64>('created_at_time').nullmap((n)=>n.value), 
+            timestamp_nanos: (tk['timestamp'] as Nat64).value,
+            memo: t.find_option<Blob>('memo').nullmap((b)=>b.bytes),
+            fee: t.find_option<Nat>('fee').nullmap((m)=>m.value)
+        );
+    }
+    String toString() {
+        return '$block';
+    }
+}
 
+
+enum Icrc1TransactionKind {
+    mint,
+    burn,
+    transfer
+}
 
 
 

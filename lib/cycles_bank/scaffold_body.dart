@@ -262,6 +262,8 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
             List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
             List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
             
+            //List<CyclesTransfer> cycles_transfers = [];
+            
             column_children.addAll([
                 /*
                 Container(
@@ -330,7 +332,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                             ) else TokenBalance(
                                 symbol: state.user!.cycles_bank!.current_icrc1_ledger!.symbol, 
                                 tokens: Tokens(
-                                    token_quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!.ledger_id]!,
+                                    token_quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!]!,
                                     decimal_places: state.user!.cycles_bank!.current_icrc1_ledger!.decimals 
                                 ), 
                                 key: ValueKey('CyclesBankScaffoldBody Icrc1TokenBalance')
@@ -349,7 +351,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                         key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')
                     ) : 
                     BankTransferIcrc1Form(
-                        key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger_id.bytes}'),
+                        key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal.bytes}'),
                         icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
                     )
                 ),
@@ -457,7 +459,7 @@ Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A 
                                 )
                             )   
                         )
-                    ),
+                    )
                 )
             ]);
             if (state.current_url.name == 'cycles_bank_pay') {
