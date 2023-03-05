@@ -163,6 +163,10 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                                 this.user!.cycles_bank!.fresh_icrc1_transactions()
                                             ]);
                                             //test
+                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                            
                                             /*
                                             while (true) {
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache);
@@ -223,7 +227,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         // call the cmc
         //query call with the certification-data
         
-        Uint8List sponse = await common.cycles_mint.call(
+        Uint8List sponse = await common.SYSTEM_CANISTERS.cycles_mint.call(
             calltype: CallType.query,
             method_name: 'get_icp_xdr_conversion_rate',
         );
@@ -235,7 +239,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
         BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
         if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
-        Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.cycles_mint.principal.bytes, 'certified_data']);
+        Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.SYSTEM_CANISTERS.cycles_mint.principal.bytes, 'certified_data']);
         List canister_hash_tree = cbor.cborbytesasadart((rc['hash_tree'] as Blob).bytes);
         Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
         if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }

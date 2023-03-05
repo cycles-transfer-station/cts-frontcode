@@ -15,6 +15,10 @@ import '../config/state.dart';
 import '../cycles_market/cycles_market_data.dart';
 import '../transfer_icp/icp_ledger.dart';
 
+
+
+typedef UserBank = CyclesBank;
+
 class CyclesBank extends Canister {
     User user;
 
@@ -81,12 +85,15 @@ class CyclesBank extends Canister {
                 icrc1_ledgers.add(l);
             }
         }
-        for (Principal ledger_id in this.metrics!.known_icrc1_ledgers) {
-            if (icrc1_ledgers.map<Principal>((l)=>l.ledger.principal).toList().contains(ledger_id) == false) {
+        List<Icrc1Ledger> bank_known_icrc1_ledgers = await Future.wait(
+            this.metrics!.known_icrc1_ledgers.where((Principal ledger_id){
+                return icrc1_ledgers.map<Principal>((l)=>l.ledger.principal).toList().contains(ledger_id) == false;
+            }).map<Future<Icrc1Ledger>>((Principal ledger_id) {
                 print('fetching ${ledger_id.text} icrc1-data');
-                icrc1_ledgers.add(await Icrc1Ledger.load(ledger_id));
-            }
-        }
+                return Icrc1Ledger.load(ledger_id);
+            })
+        );
+        icrc1_ledgers.addAll(bank_known_icrc1_ledgers);
         this.known_icrc1_ledgers = icrc1_ledgers;
     }
     
@@ -131,12 +138,13 @@ class CyclesBank extends Canister {
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 print('fresh icrc1 transactions future ${l.name}');
-                if (l.ledger.principal == common.ledger.principal) {
+                if (this.icrc1_transactions_cache[l] == null) { 
+                    this.icrc1_transactions_cache[l] = []; 
+                }
+                if (l.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) {
+                    // for the do! hook up with the dashboard icp-ledger-api
                 
                 } else /*tokens besides icp*/ {
-                    if (this.icrc1_transactions_cache[l] == null) { 
-                        this.icrc1_transactions_cache[l] = []; 
-                    }
                     if (this.icrc1_transactions_cache[l]!.length == 0) {
                         print('first load');
                         Nat? last_tx_seen = null;

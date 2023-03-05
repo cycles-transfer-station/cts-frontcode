@@ -28,6 +28,9 @@ class User {
     List<IcpTransfer> icp_transfers = [];
     CyclesBank? cycles_bank;
     
+    UserBank? get bank => this.cycles_bank;
+    void set bank(UserBank? b) { this.cycles_bank = b; } 
+    
     User({
         required this.state,
         required this.caller,
@@ -51,7 +54,7 @@ class User {
     
     Future<void> fresh_icp_balance() async {
     
-        Record icptokens_record = (c_backwards(await ledger.call(
+        Record icptokens_record = (c_backwards(await SYSTEM_CANISTERS.ledger.call(
             calltype: CallType.query,
             method_name: 'account_balance',
             put_bytes: c_forwards([
