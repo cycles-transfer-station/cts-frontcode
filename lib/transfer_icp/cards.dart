@@ -7,16 +7,15 @@ import '../config/state.dart';
 
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
-    IcpTransferListItem(IcpTransfer icp_transfer_): icp_transfer = icp_transfer_, super(key: ValueKey('IcpTransferListItem: ${icp_transfer_.block_height}'));
+    late final String self_icp_id;
+    IcpTransferListItem(IcpTransfer icp_transfer_, String self_icp_id_): icp_transfer = icp_transfer_, self_icp_id = self_icp_id_, super(key: ValueKey('IcpTransferListItem: ${icp_transfer_.block_height}, self_icp_id: ${self_icp_id_}'));
     
     Widget build(BuildContext context) {        
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        bool is_cts_transfer_icp_fee = icp_transfer.memo == '4851594152738179398' && icp_transfer.from_account_identifier == state.user!.user_icp_id && icp_transfer.to_account_identifier == cts_main_icp_id;
+        bool is_cts_transfer_icp_fee = icp_transfer.memo == '4851594152738179398' && icp_transfer.from_account_identifier == self_icp_id && icp_transfer.to_account_identifier == cts_main_icp_id;
 
-        bool is_out = icp_transfer.from_account_identifier == state.user!.user_icp_id;
-        bool is_in = icp_transfer.to_account_identifier == state.user!.user_icp_id;
+        bool is_out = icp_transfer.from_account_identifier == self_icp_id;
+        bool is_in = icp_transfer.to_account_identifier == self_icp_id;
         
         late String listtile_title;
         if (is_cts_transfer_icp_fee) {

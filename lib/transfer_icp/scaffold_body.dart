@@ -72,10 +72,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                     ]
                 )
             ]);
-    
-    
-            List<IcpTransfer> icp_transfers = state.user!.icp_transfers.toList();
-            
+                
             column_children.addAll([
                 SizedBox(
                     width: 1,
@@ -131,9 +128,9 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                     shrinkWrap: false,
                                     padding: EdgeInsets.all(11),
                                     itemBuilder: (BuildContext context, int i) {
-                                        return IcpTransferListItem(icp_transfers[i]);
+                                        return IcpTransferListItem(state.user!.icp_transfers[i], state.user!.user_icp_id);
                                     },
-                                    itemCount: icp_transfers.length,
+                                    itemCount: state.user!.icp_transfers.length,
                                     addAutomaticKeepAlives: false,
                                     addRepaintBoundaries: true,
                                     addSemanticIndexes: true,

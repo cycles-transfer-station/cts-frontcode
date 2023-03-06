@@ -70,12 +70,13 @@ class User {
     }
 
     Future<void> fresh_icp_transfers() async {
-        this.icp_transfers.addAll(
-            await get_icp_transfers(
+        this.icp_transfers = [
+            ...await get_icp_transfers(
                 this.user_icp_id, 
                 already_have: this.icp_transfers.length
-            )
-        );
+            ),
+            ...this.icp_transfers
+        ];
     }
         
 
