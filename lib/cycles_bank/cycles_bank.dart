@@ -56,12 +56,13 @@ class CyclesBank extends Canister {
     Icrc1Ledger? current_icrc1_ledger = null;
     Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
-    
+    List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs
+    final String icp_id; // so we dont hash everytime
     
     CyclesBank(
         super.principal,
         this.user,
-    ): cm_icp_id = icp_id(cycles_market.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(principal));
+    ): cm_icp_id = common.icp_id(cycles_market.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(principal)), icp_id = common.icp_id(principal);
     
     Future<void> fresh_metrics() async {
         Record metrics_record = c_backwards(
@@ -118,7 +119,7 @@ class CyclesBank extends Canister {
         }
         //print(this.icrc1_balances_cache);
     }
-    // helper for fresh_icrc1_transactions_cache
+    // helper for fresh_icrc1_transactions
     Future<Variant> _call_icrc1_index_transactions(Icrc1Ledger l, [Nat? start]) async {
         return c_backwards(await l.index!.call(
             calltype: CallType.call,
@@ -138,13 +139,18 @@ class CyclesBank extends Canister {
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 print('fresh icrc1 transactions future ${l.name}');
-                if (this.icrc1_transactions_cache[l] == null) { 
-                    this.icrc1_transactions_cache[l] = []; 
-                }
                 if (l.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) {
                     // for the do! hook up with the dashboard icp-ledger-api
-                
+                    print('get_icp_transfers');
+                    print(this.icp_id);
+                    this.icp_transfers = [
+                        ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
+                        ...this.icp_transfers
+                    ];
                 } else /*tokens besides icp*/ {
+                    if (this.icrc1_transactions_cache[l] == null) { 
+                        this.icrc1_transactions_cache[l] = []; 
+                    }
                     if (this.icrc1_transactions_cache[l]!.length == 0) {
                         print('first load');
                         Nat? last_tx_seen = null;

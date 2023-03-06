@@ -3,6 +3,8 @@ import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show Icrc1Ledger, Tokens;
+import 'package:ic_tools/common.dart' as common;
+
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
@@ -17,6 +19,8 @@ import '../tools/ii_login.dart';
 import '../config/pages.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
+import '../transfer_icp/cards.dart';
+
 
 final GlobalKey transfer_cycles_form_container_key = GlobalKey();
 
@@ -180,12 +184,16 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             try {
-                                await Future.wait([
-                                    if (state.user!.cycles_bank!.current_icrc1_ledger == null) ...<Future<void>>[
+                                List<Future<void>> futures = [];
+                                if (state.user!.cycles_bank!.current_icrc1_ledger == null) {
+                                    futures.addAll([
                                         state.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         state.user!.cycles_bank!.fresh_cycles_transfers_out(),
-                                    ] else state.user!.bank!.fresh_icrc1_transactions(state.user!.bank!.current_icrc1_ledger!)
-                                ]);
+                                    ]); 
+                                } else {
+                                    futures.add(state.user!.bank!.fresh_icrc1_transactions(state.user!.bank!.current_icrc1_ledger!));
+                                }
+                                await Future.wait(futures);
                             } catch(e) {
                                 await showDialog(
                                     context: state.context,
@@ -208,12 +216,15 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                Container(
+                if (state.user!.bank!.current_icrc1_ledger != null) Container(
                     width: double.infinity,
                     padding: EdgeInsets.fromLTRB(11,0,0,0),
                     child: Text('${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),
                 ),                
-                if (state.user!.cycles_bank!.current_icrc1_ledger != null) BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.bank!.current_icrc1_ledger}'))
+                if (state.user!.cycles_bank!.current_icrc1_ledger != null) ...[
+                    if (state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) IcpTransfersLogs(key: ValueKey('CyclesBankScaffoldBody IcpTransfersLogs'))
+                    else BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.bank!.current_icrc1_ledger}'))
+                ]
                 else ...[
                     Container(
                         width: double.infinity,
@@ -455,3 +466,39 @@ class Icrc1TransactionCard extends StatelessWidget {
 }
 
 
+
+class IcpTransfersLogs extends StatelessWidget {
+    IcpTransfersLogs({super.key});
+    
+    final ScrollController icp_transfers_log_scroll_controller = ScrollController();
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return LimitedBox(
+            maxHeight: 307,
+            child: Container(
+                child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                    child: Scrollbar(
+                        controller: icp_transfers_log_scroll_controller,
+                        child: ListView.builder(
+                            controller: icp_transfers_log_scroll_controller,
+                            key: UniqueKey(),
+                            scrollDirection: Axis.horizontal,
+                            reverse: false,
+                            shrinkWrap: false,
+                            padding: EdgeInsets.all(11),
+                            itemBuilder: (BuildContext context, int i) {
+                                return IcpTransferListItem(state.user!.bank!.icp_transfers[i], state.user!.bank!.icp_id);
+                            },
+                            itemCount: state.user!.bank!.icp_transfers.length,
+                            addAutomaticKeepAlives: true,
+                        )
+                    )
+                )
+            )
+        );
+    }
+}
