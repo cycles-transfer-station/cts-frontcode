@@ -70,7 +70,7 @@ class ScaffoldBodyHeader extends StatelessWidget {
             children: [
                 Padding(
                     padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                    child: Container(
+                    child: Center(
                         child: header,
                     )
                 ),

@@ -1058,8 +1058,52 @@ class CyclesBank extends Canister {
         return block_height;
     }
 
-    
-    
+    Future<BigInt> transfer_icp(Uint8List transfer_arg_raw) async {
+        Variant sponse = c_backwards(
+            await user.call(
+                this,
+                method_name: 'transfer_icp',
+                calltype: CallType.call,
+                put_bytes: c_forwards([Blob(transfer_arg_raw)])
+            )
+        ).first as Variant;
+        BigInt block_height = match_variant<BigInt>(sponse, {
+            Ok: (n){
+                return match_variant<BigInt>(c_backwards((n as Blob).bytes).first as Variant, {
+                    Ok: (n64) {
+                        return (n64 as Nat64).value;
+                    },
+                    Err: (icp_transfer_error) {
+                        match_variant<Never>(icp_transfer_error as Variant, {
+                            'BadFee': (expected_fee_record) {
+                                throw Exception('Bad Fee set on the transfer. expected_fee: ${IcpTokens.oftheRecord((expected_fee_record as Record)['expected_fee']!)}');
+                            },
+                            'InsufficientFunds': (balance_record) {
+                                IcpTokens current_balance = IcpTokens.oftheRecord((balance_record as Record)['balance']!);
+                                this.icrc1_balances_cache[Icrc1Ledgers.ICP] = current_balance.e8s;
+                                throw Exception('Icp balance is too low. current balance: ${current_balance}');
+                            },
+                            'TxTooOld': (allowed_window_nanos_record) {
+                                throw Exception('Icp Transfer created_at_time field is too old');
+                            },
+                            'TxCreatedInFuture': (n) {
+                                throw Exception('Icp Transfer created_at_time field is too far in the future.');
+                            },
+                            'TxDuplicate': (duplicate_of_record) {
+                                throw Exception('The Icp Transfer is a duplicate of the transfer: ${((duplicate_of_record as Record)['duplicate_of'] as Nat64).value}');
+                            }
+                        });
+                    }
+                
+                });    
+            },
+            Err: (call_error){
+                throw Exception('ledger transfer call error: ${CallError.oftheRecord(call_error as Record)}');        
+            },
+        });
+        return block_height;    
+    }
+
 }
 
 

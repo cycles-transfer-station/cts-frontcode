@@ -14,6 +14,7 @@ import '../config/pages.dart';
 import '../config/urls.dart';
 import '../transfer_icp/forms.dart';
 import '../transfer_icp/scaffold_body.dart';
+import '../transfer_icp/icp_ledger.dart';
 import '../main.dart';
 import '../user.dart';
 import './cycles_bank.dart';
@@ -180,6 +181,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
         return Form(
             key: form_key,
             child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                     Container(
                         width: double.infinity,
@@ -409,6 +411,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
         return Form(
             key: form_key,
             child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                     Container(
                         width: double.infinity,
@@ -636,6 +639,187 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
 }
 
 
+
+
+
+class BankTransferIcpForm extends StatefulWidget {
+    BankTransferIcpForm({super.key});
+    @override 
+    State createState() => BankTransferIcpFormState(); 
+}
+class BankTransferIcpFormState extends State<BankTransferIcpForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late IcpTokens icp;
+    late String to;
+    late Nat64 memo;
+    
+
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        const double datatable_text_fontsize = 13.0;
+        
+        return Form(
+            key: form_key,
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(11,7,11,17),
+                        child: DataTable(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            //dataRowHeight: 14,
+                            dividerThickness: 0.0,
+                            columns: <DataColumn>[
+                                DataColumn(label: Text('')),
+                                DataColumn(label: Text(''))
+                            ],
+                            rows: [
+                                DataRow(cells: [
+                                    DataCell(Text('LEDGER-FEE: ', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                    DataCell(Text('${ICP_LEDGER_TRANSFER_FEE}-icp', style: TextStyle(fontSize: datatable_text_fontsize))),
+                                ]),
+                            ]
+                        )
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'for: ',
+                        ),
+                        onSaved: (String? value) { to = value!.trim().toLowerCase(); },
+                        validator: icp_id_string_validator          
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'icp: '
+                        ),
+                        onSaved: (String? value) { icp = IcpTokens.oftheDoubleString(value!); },
+                        validator: icp_validator
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'memo: '
+                        ),
+                        onSaved: (String? value) { memo = value == null || value == '' ? Nat64(BigInt.from(0)) : Nat64(BigInt.parse(value)); },
+                        validator: (String? value) {
+                            String error_string = 'Invalid memo. An icp memo is a number between 0 and 2^64 - 1';
+                            try {
+                                Nat64 n = Nat64(value == null || value == '' ? BigInt.from(0) : BigInt.parse(value, radix: 10));
+                            } catch(e) {
+                                return error_string;
+                            }
+                            return null;
+                        }                        
+                    ),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(7, 17, 7,7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('TRANSFER ICP'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    Uint8List transfer_icp_quest = candid.c_forwards([
+                                        Record.oftheMap({
+                                            'memo': memo,
+                                            'amount': icp,
+                                            'fee': ICP_LEDGER_TRANSFER_FEE,
+                                            'from_subaccount': Option<Blob>(value: null, value_type: Blob([], isTypeStance: true)),
+                                            'to': Blob(hexstringasthebytes(to)),
+                                            'created_at_time': Option<Record>(value: Record.oftheMap({'timestamp_nanos': Nat64(get_current_time_nanoseconds())})),
+                                        })
+                                    ]);
+                                    
+                                    state.loading_text = 'transferring icp ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late BigInt block;
+                                    try {
+                                        block = await state.user!.bank!.transfer_icp(transfer_icp_quest);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Transfer Icp Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'Icp transfer is success. Block height: ${block}\nloading icp balance and transfers list ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Icp Transfer Success:'),
+                                                content: Text('transfer block height: ${block}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    ); 
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP),
+                                            state.user!.bank!.fresh_icrc1_transactions(Icrc1Ledgers.ICP),
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the icp balance and the transfers list:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    await success_dialog;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );
+    }
+}
 
 
 

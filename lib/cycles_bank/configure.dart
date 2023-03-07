@@ -45,13 +45,22 @@ class ConfigureCyclesBank extends StatelessWidget {
                     mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader(Row(
-                            children: [
-                                Icon(Icons.settings_sharp, size: 11.0),
-                                Text('SETTINGS'),
-                                Icon(Icons.settings_sharp, size: 11.0)
-                            ]
-                        )),
+                        Center(child: Container(
+                            width: double.infinity,
+                            child: Center(child: ScaffoldBodyHeader(Center(child: Row(
+                                children: [
+                                    Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 5),
+                                        child: Icon(Icons.settings_sharp, size: 11.0),
+                                    ),
+                                    Text('SETTINGS', style: TextStyle(fontSize: 17)),
+                                    Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 5),
+                                        child: Icon(Icons.settings_sharp, size: 11.0)
+                                    )
+                                ]
+                            ))
+                        )))),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,

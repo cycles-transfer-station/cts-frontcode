@@ -215,6 +215,8 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
 
 
 
+
+
 final String? Function(String?) icp_id_string_validator = (String? value) {
     if (value == null || value.trim().length != 64) {
         return 'Icp ids are 64 characters long';

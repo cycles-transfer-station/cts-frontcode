@@ -161,8 +161,43 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     )
                 ),
                 Container(
-                    child: Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol} Button'), 
+                    child: Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}'),
+                            onPressed: () async {
+                                showDialog<void>(
+                                    barrierDismissible: true,
+                                    context: context,
+                                    builder: (BuildContext context) => AlertDialog(
+                                        title: null,//Center(child: Text('')),
+                                        content: Container(
+                                            constraints: BoxConstraints(
+                                                maxWidth: 700
+                                            ),
+                                            //width: double.infinity,
+                                            //margin: EdgeInsets.all(11.0),
+                                            //padding: const EdgeInsets.all(8.0),
+                                            child: SingleChildScrollView(
+                                                child: state.user!.cycles_bank!.current_icrc1_ledger == null ? 
+                                                    CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')) 
+                                                : state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal ? 
+                                                    BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
+                                                : BankTransferIcrc1Form(
+                                                    key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal.bytes}'),
+                                                    icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
+                                                )
+                                            )
+                                        )
+                                    )
+                                );
+                            }
+                        )
+                    ),
+                    //Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol} Button'), 
                 ),
+                /*
                 Container(
                     key: transfer_cycles_form_container_key,
                     padding: EdgeInsets.fromLTRB(13,17,13,17),
@@ -174,6 +209,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
                     )
                 ),
+                */
                 Padding(
                     padding: EdgeInsets.fromLTRB(7,37,7,17),
                     child: ElevatedButton(
@@ -333,7 +369,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                         width: double.infinity,
                                                         margin: EdgeInsets.all(11.0),
                                                         padding: const EdgeInsets.all(8.0),
-                                                        child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank')),
+                                                        child: Center(child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank'))),
                                                     )
                                                 )
                                             );
