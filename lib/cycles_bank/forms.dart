@@ -6,6 +6,7 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart' show Nat, Int, Blob, Record, Option, Nat64, Nat8, Vector;
 import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/common.dart';
+import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/tools.dart';
 
 import '../config/state.dart';
@@ -183,6 +184,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
+                    /*
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(7,11,7,11),
@@ -190,6 +192,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                             child: Text('TRANSFER-CYCLES', style: TextStyle(fontSize:17))
                         ),
                     ),
+                    */
                     TextFormField(
                         decoration: InputDecoration(
                             labelText: 'For the cycles-bank: ',
@@ -392,6 +395,127 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
 
 
 
+
+
+class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
+    final Icrc1Ledger icrc1_ledger;
+    Icrc1TokenBalanceAndLoadIcrc1TokenBalance(this.icrc1_ledger, {super.key});
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        
+        return Padding(
+            padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
+            child: Column(
+                children: [
+                    Text('BALANCE: ${state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(token_quantums: state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
+                    //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(7,13,7,7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('LOAD BALANCE', style: TextStyle(fontSize:11)),
+                            onPressed: () async {
+                                state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await state.user!.bank!.fresh_icrc1_balances(this.icrc1_ledger);
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
+                                                content: Text('${e}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            }
+                        )
+                    ),   
+                ]
+            )
+        );
+    }
+}
+
+
+
+class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
+    final Icrc1Ledger icrc1_ledger;
+    BankIcrc1IdAndBalanceAndLoadBalanceAndFee(this.icrc1_ledger, {super.key});
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        String bank_icrc1_account_id = this.icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal ? state.user!.bank!.icp_id : state.user!.bank!.principal.text;
+        return Column(
+            children: [
+                Container(
+                    padding: EdgeInsets.all(7),
+                    child: Column(
+                        children: [
+                            Center(
+                                child: SelectableText('BANK-${icrc1_ledger.symbol}-ID:', style: TextStyle(fontSize: 13)),
+                            ),
+                            Center(
+                                child: SelectableText('${bank_icrc1_account_id}', style: TextStyle(fontSize: 11)),
+                            ),
+                            SizedBox(
+                                height: 11,
+                                width: 3,
+                            ),
+                            Icrc1TokenBalanceAndLoadIcrc1TokenBalance(this.icrc1_ledger, key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Tokens Icrc1TokenBalanceAndLoadIcrc1TokenBalance'))
+                        ]
+                    )
+                ),
+                SizedBox(
+                    width: 1,
+                    height: 11
+                ),
+                Container(
+                    width: double.infinity,
+                    child: Text('ledger-transfer-fee: ${Tokens(token_quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize: 13))
+                ),
+                /*
+                Container(
+                    width: double.infinity,
+                    child: DataTable(
+                        headingRowHeight: 0,
+                        showBottomBorder: true,
+                        columns: <DataColumn>[
+                            DataColumn(label: Text('')),
+                            DataColumn(label: Text('')),
+                        ],
+                        rows: [
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('ledger-transfer-fee:', )),
+                                    DataCell(Text('${Tokens(token_quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}-${this.icrc1_ledger.symbol}')),
+                                ]
+                            ),
+                        ]
+                    )
+                ),
+                */
+            ]
+        );  
+    }
+}
+
+
+
 class BankTransferIcrc1Form extends StatefulWidget {
     final Icrc1Ledger icrc1_ledger;
     BankTransferIcrc1Form({super.key, required this.icrc1_ledger});
@@ -413,13 +537,6 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(7,11,7,11),
-                        child: Center(
-                            child: Text('TRANSFER-${widget.icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
-                        ),
-                    ),
                     TextFormField(
                         decoration: InputDecoration(
                             labelText: 'For: ',
@@ -666,6 +783,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
+                    /*
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(11,7,11,17),
@@ -686,6 +804,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                             ]
                         )
                     ),
+                    */
                     TextFormField(
                         decoration: InputDecoration(
                             labelText: 'for: ',

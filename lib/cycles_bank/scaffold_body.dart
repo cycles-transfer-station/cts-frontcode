@@ -180,13 +180,35 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                             //margin: EdgeInsets.all(11.0),
                                             //padding: const EdgeInsets.all(8.0),
                                             child: SingleChildScrollView(
-                                                child: state.user!.cycles_bank!.current_icrc1_ledger == null ? 
-                                                    CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}')) 
-                                                : state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal ? 
-                                                    BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
-                                                : BankTransferIcrc1Form(
-                                                    key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal.bytes}'),
-                                                    icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
+                                                child: Column(
+                                                    children: [
+                                                        Container(
+                                                            width: double.infinity,
+                                                            padding: EdgeInsets.fromLTRB(7,11,7,11),
+                                                            child: Center(
+                                                                child: Text('TRANSFER-${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}', style: TextStyle(fontSize:17))
+                                                            ),
+                                                        ),
+                                                        SizedBox(
+                                                            height: 11,
+                                                            width: 3,
+                                                        ),
+                                                        if (state.user!.bank!.current_icrc1_ledger != null) ...[ 
+                                                            BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.user!.bank!.current_icrc1_ledger!, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.user!.bank!.current_icrc1_ledger!.symbol}')),
+                                                            SizedBox(
+                                                                width: 1,
+                                                                height: 11
+                                                            )
+                                                        ],
+                                                        if (state.user!.cycles_bank!.current_icrc1_ledger == null) 
+                                                            CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}'))
+                                                        else if (state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
+                                                            BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
+                                                        else BankTransferIcrc1Form(
+                                                            key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal.bytes}'),
+                                                            icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
+                                                        )
+                                                    ]
                                                 )
                                             )
                                         )
@@ -350,35 +372,51 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader(Center(child:Column(children: [
-                            Text('CYCLES-BANK', style: TextStyle(fontSize: 19)),
-                            if (state.user != null && state.user!.cycles_bank != null) ...[
-                                SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 20)),
-                                Container(
-                                    padding: EdgeInsets.all(3),
-                                    child: IconButton(
-                                        icon: const Icon(Icons.settings_sharp, size: 11.0),
-                                        tooltip: 'settings', 
-                                        onPressed: () async {
-                                            showDialog<void>(
-                                                barrierDismissible: false,
-                                                context: context,
-                                                builder: (BuildContext context) => Dialog(
-                                                    child: Container(
-                                                        constraints: BoxConstraints(maxWidth: 700),
-                                                        width: double.infinity,
-                                                        margin: EdgeInsets.all(11.0),
-                                                        padding: const EdgeInsets.all(8.0),
-                                                        child: Center(child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank'))),
-                                                    )
-                                                )
-                                            );
-                                            return;                        
-                                        }
+                        ScaffoldBodyHeader(Row(
+                            mainAxisSize: MainAxisSize.max, 
+                            children: [
+                                Flexible(flex: 1,  fit: FlexFit.tight, child: Container(width: double.infinity, child: Text(''))),
+                                Flexible(flex: 11, fit: FlexFit.tight, child: Center(
+                                    child: Column(
+                                        children: [
+                                            Text('CYCLES-BANK', style: TextStyle(fontSize: 19)),
+                                            if (state.user != null && state.user!.cycles_bank != null) ...[
+                                                SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 17)),
+                                            ]
+                                        ]
                                     )
-                                ),
-                            ],
-                        ]))),
+                                )),
+                                Flexible(flex:1, fit: FlexFit.tight, child:Container(
+                                    width: double.infinity, 
+                                    child: Align(
+                                        alignment: Alignment.topRight, 
+                                        child: Container(
+                                            padding: EdgeInsets.all(3),
+                                            child: IconButton(
+                                                icon: const Icon(Icons.settings_sharp, size: 17.0),
+                                                tooltip: 'Settings', 
+                                                onPressed: () async {
+                                                    showDialog<void>(
+                                                        barrierDismissible: false,
+                                                        context: context,
+                                                        builder: (BuildContext context) => Dialog(
+                                                            child: Container(
+                                                                constraints: BoxConstraints(maxWidth: 500),
+                                                                //width: double.infinity,
+                                                                margin: EdgeInsets.all(11.0),
+                                                                padding: const EdgeInsets.all(8.0),
+                                                                child: Center(child: ConfigureCyclesBank(key: ValueKey('ConfigureCyclesBank'))),
+                                                            )
+                                                        )
+                                                    );
+                                                    return;                        
+                                                }
+                                            )
+                                        ) 
+                                    )
+                                )),
+                            ]
+                        )),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,

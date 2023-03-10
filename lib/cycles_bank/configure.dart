@@ -45,22 +45,10 @@ class ConfigureCyclesBank extends StatelessWidget {
                     mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        Center(child: Container(
-                            width: double.infinity,
-                            child: Center(child: ScaffoldBodyHeader(Center(child: Row(
-                                children: [
-                                    Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 5),
-                                        child: Icon(Icons.settings_sharp, size: 11.0),
-                                    ),
-                                    Text('SETTINGS', style: TextStyle(fontSize: 17)),
-                                    Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 5),
-                                        child: Icon(Icons.settings_sharp, size: 11.0)
-                                    )
-                                ]
-                            ))
-                        )))),
+                        ScaffoldBodyHeader(Center(child:Column(children: [
+                            Text('BANK-SETTINGS', style: TextStyle(fontSize: 17)),
+                            SelectableText('BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 14)),
+                        ]))),
                         Expanded(
                             child: ListView(
                                 controller: main_listview_scroll_controller,
@@ -72,17 +60,6 @@ class ConfigureCyclesBank extends StatelessWidget {
                                             SizedBox(
                                                 width: 2.0,
                                                 height: 13.0
-                                            ),
-                                            Container(
-                                                padding: EdgeInsets.fromLTRB(11,0,11,17),
-                                                child: Center(
-                                                    child: Column(
-                                                        children: [
-                                                            Text('CYCLES-BANK-ID: '),
-                                                            SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 20)),
-                                                        ]
-                                                    )
-                                                )
                                             ),
                                             Padding(
                                                 padding: EdgeInsets.all(17),
@@ -151,6 +128,12 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                                 ),
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
+                                                                                        DataCell(Text('\$CYCLES: ')),
+                                                                                        DataCell(SelectableText('${cycles_balance}')),
+                                                                                    ]
+                                                                                ),
+                                                                                DataRow(
+                                                                                    cells: <DataCell>[
                                                                                         DataCell(Text('ctsfuel: ')),
                                                                                         DataCell(SelectableText('${ctsfuel}')),
                                                                                     ]
@@ -170,35 +153,9 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             ]    
                                                                         )
                                                                     ),
-                                                                    // burn icp mint cycles,  
                                                                     SizedBox(
                                                                         width: 3,
-                                                                        height: 10
-                                                                    ),
-                                                                    Container(
-                                                                        width: double.infinity,
-                                                                        padding: EdgeInsets.all(17),
-                                                                        child: ElevatedButton(
-                                                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                            child: Text('BURN ICP MINT CYCLES'),
-                                                                            onPressed: () async {
-                                                                                await showDialog(
-                                                                                    context: context,
-                                                                                    builder: (BuildContext context) {
-                                                                                        return AlertDialog(
-                                                                                            title: Center(child: Text('BURN-ICP MINT-CYCLES')),
-                                                                                            content: Container(
-                                                                                                padding: EdgeInsets.all(0),
-                                                                                                child: SingleChildScrollView(
-                                                                                                    child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
-                                                                                                )
-                                                                                            ),
-                                                                                            //actions: <Widget>[]
-                                                                                        );
-                                                                                    }   
-                                                                                );
-                                                                            }
-                                                                        )                     
+                                                                        height: 27
                                                                     ),
                                                                 ]
                                                             )
@@ -224,6 +181,36 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             width: 1
                                                                         ),
                                                                         LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
+                                                                        // burn icp mint cycles,  
+                                                                        SizedBox(
+                                                                            width: 1,
+                                                                            height: 20
+                                                                        ),
+                                                                        Container(
+                                                                            width: double.infinity,
+                                                                            padding: EdgeInsets.all(17),
+                                                                            child: ElevatedButton(
+                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                                                                child: Text('BURN ICP MINT CYCLES'),
+                                                                                onPressed: () async {
+                                                                                    await showDialog(
+                                                                                        context: context,
+                                                                                        builder: (BuildContext context) {
+                                                                                            return AlertDialog(
+                                                                                                title: Center(child: Text('BURN-ICP MINT-CYCLES')),
+                                                                                                content: Container(
+                                                                                                    padding: EdgeInsets.all(0),
+                                                                                                    child: SingleChildScrollView(
+                                                                                                        child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
+                                                                                                    )
+                                                                                                ),
+                                                                                                //actions: <Widget>[]
+                                                                                            );
+                                                                                        }   
+                                                                                    );
+                                                                                }
+                                                                            )                     
+                                                                        ),
                                                                     ]
                                                                 )
                                                             )
@@ -236,7 +223,9 @@ class ConfigureCyclesBank extends StatelessWidget {
                                 ]
                             )
                         ),
-                        Divider(),
+                        Divider(
+                            
+                        ),
                         OutlineButton(
                             button_text: 'Done',
                             on_press_complete: () {
