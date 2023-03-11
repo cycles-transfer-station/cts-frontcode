@@ -163,38 +163,41 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                                 this.user!.cycles_bank!.fresh_icrc1_transactions()
                                             ]);
                                             //test
-                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            
-                                            /*
-                                            while (true) {
+                                            if (cts.principal.text != thp4z_id) {
+                                                print('TESTING!');
+                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                
+                                                /*
+                                                while (true) {
+                                                    print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                                    print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                                    await Future.delayed(Duration(seconds: 30));
+                                                    await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                                }
+                                                */
+                                                /*
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache);
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                await Future.delayed(Duration(seconds: 30));
+                                                print('testing!');
+                                                CyclesBank cb = this.user!.cycles_bank!;
+                                                this.user!.cycles_bank = CyclesBank(Principal('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
                                                 await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                                print('await this.user!.cycles_bank!.fresh_icrc1_transactions()');
+                                                await this.user!.cycles_bank!.fresh_icrc1_transactions();
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
+                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
+                                                this.user!.cycles_bank = cb;
+                                                */
                                             }
-                                            */
-                                            /*
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                            print('testing!');
-                                            CyclesBank cb = this.user!.cycles_bank!;
-                                            this.user!.cycles_bank = CyclesBank(Principal('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
-                                            await this.user!.cycles_bank!.fresh_icrc1_transactions();
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                            print('await this.user!.cycles_bank!.fresh_icrc1_transactions()');
-                                            await this.user!.cycles_bank!.fresh_icrc1_transactions();
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                            print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                            this.user!.cycles_bank = cb;
-                                            */
                                         }),
                                     ]);
                                 } catch(e,s) {

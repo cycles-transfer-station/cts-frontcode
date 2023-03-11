@@ -155,7 +155,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             ),
                             SizedBox(
                                 width: 3,
-                                height: 17
+                                height: 7
                             ),
                         ]
                     )
@@ -232,6 +232,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     )
                 ),
                 */
+                SizedBox(width: 1, height: 11),
                 Padding(
                     padding: EdgeInsets.fromLTRB(7,37,7,17),
                     child: ElevatedButton(
@@ -284,6 +285,8 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     else BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.bank!.current_icrc1_ledger}'))
                 ]
                 else ...[
+                    BankCyclesTransfersLog(key: ValueKey('BankScaffoldBody BankCyclesTransfersLog')),
+                    /*
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(11,0,0,0),
@@ -354,6 +357,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             )
                         )
                     )
+                    */
                 ]
             ]);
             if (state.current_url.name == 'cycles_bank_pay') {
@@ -576,3 +580,66 @@ class IcpTransfersLogs extends StatelessWidget {
         );
     }
 }
+
+
+/*
+class BankCyclesTransfersLog extends StatefulWidget {
+    BankCyclesTransfersLog({super.key});
+    State createState => BankCyclesTransfersLogState();
+}
+class BankCyclesTransfersLogState extends State<BankCyclesTransfersLog> {
+    
+    Widget build(BuildContext context) {
+    
+    } 
+}
+*/
+class BankCyclesTransfersLog extends StatelessWidget {
+    BankCyclesTransfersLog({super.key});
+    
+    final ScrollController token_transfers_log_scroll_controller = ScrollController();
+    
+    Widget build(BuildContext context) {
+        
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+        List<CyclesTransfer> cycles_transfers = <CyclesTransfer>[
+            ...state.user!.bank!.cycles_transfers_out,
+            ...state.user!.bank!.cycles_transfers_in,
+        ]
+        ..sort((t1, t2)=>t1.id.compareTo(t2.id));
+    
+        return LimitedBox(
+            maxHeight: 307,
+            child: Container(
+                child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+                    child: Scrollbar(
+                        controller: token_transfers_log_scroll_controller,
+                        child: ListView.builder(
+                            controller: token_transfers_log_scroll_controller,    
+                            key: UniqueKey(),
+                            scrollDirection: Axis.horizontal,
+                            reverse: false,
+                            shrinkWrap: true,
+                            padding: EdgeInsets.all(11),
+                            itemBuilder: (BuildContext context, int i) {
+                                CyclesTransfer t = cycles_transfers.elementAt(cycles_transfers.length -1 -i);
+                                if (t is CyclesTransferOut) {
+                                    return CyclesTransferOutListItem(t as CyclesTransferOut);
+                                } else if (t is CyclesTransferIn) {
+                                    return CyclesTransferInListItem(t as CyclesTransferIn);
+                                }
+                                return null;
+                            },
+                            itemCount: cycles_transfers.length,
+                        )
+                    )
+                )
+            )
+        );    
+    } 
+}
+
+

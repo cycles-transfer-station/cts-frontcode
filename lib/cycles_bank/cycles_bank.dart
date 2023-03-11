@@ -1237,9 +1237,14 @@ class CyclesBankMetrics {
 }
 
 
+abstract class CyclesTransfer {
+    BigInt get id;
+    BigInt get timestamp_nanos;
+}
 
 
-class CyclesTransferIn {
+
+class CyclesTransferIn implements CyclesTransfer {
     final BigInt id;
     final Principal by_the_canister;
     final Cycles cycles;
@@ -1266,7 +1271,7 @@ class CyclesTransferIn {
 }
 
 
-class CyclesTransferOut {
+class CyclesTransferOut implements CyclesTransfer {
     final BigInt id;
     final Principal for_the_canister;
     final Cycles cycles_sent;

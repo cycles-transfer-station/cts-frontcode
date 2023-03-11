@@ -32,22 +32,21 @@ class CyclesTransferInListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER IN'),
                             subtitle: Text('ID: ${cycles_transfer_in.id}'),
                         ),
-                        Expanded(
-                            child: Container(
-                                padding: EdgeInsets.fromLTRB(17,7,17,7),
-                                width: double.infinity, 
-                                child: SingleChildScrollView(
-                                    child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                            SelectableText('cycles: ${cycles_transfer_in.cycles}'),
-                                            SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
-                                            SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
-                                            SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
-                                        ]
-                                    ),
-                                )
+                        Container(
+                            padding: EdgeInsets.fromLTRB(17,7,17,7),
+                            width: double.infinity, 
+                            child: SingleChildScrollView(
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                        SelectableText('cycles: ${cycles_transfer_in.cycles}'),
+                                        SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
+                                        SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
+                                        SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
+                                    ]
+                                ),
                             )
                         )
                     ]
@@ -75,25 +74,24 @@ class CyclesTransferOutListItem extends StatelessWidget {
                             title: Text('CYCLES TRANSFER OUT'),
                             subtitle: Text('ID: ${cycles_transfer_out.id}'),
                         ),
-                        Expanded(
-                            child: Container(
-                                padding: EdgeInsets.fromLTRB(17,7,17,7),
-                                width: double.infinity, 
-                                child: SingleChildScrollView(
-                                    child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                            SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
-                                            SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
-                                            SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
-                                            SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
-                                            SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
-                                            SelectableText('safe-transferrer-fee: ${cycles_transfer_out.fee_paid}'),
-                                            SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
-                                        ]                            
-                                    ),
-                                )
+                        Container(
+                            padding: EdgeInsets.fromLTRB(17,7,17,7),
+                            width: double.infinity, 
+                            child: SingleChildScrollView(
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                        SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
+                                        SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
+                                        SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
+                                        SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
+                                        SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
+                                        SelectableText('safe-transferrer-fee: ${cycles_transfer_out.fee_paid}'),
+                                        SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
+                                    ]                            
+                                ),
                             )
                         )
                     ]
