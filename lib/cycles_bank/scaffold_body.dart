@@ -275,7 +275,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         }
                     )
                 ),
-                if (state.user!.bank!.current_icrc1_ledger != null) Container(
+                Container(
                     width: double.infinity,
                     padding: EdgeInsets.fromLTRB(11,0,0,0),
                     child: Text('${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),

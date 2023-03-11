@@ -164,7 +164,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                             ]);
                                             //test
                                             if (cts.principal.text != thp4z_id) {
-                                                print('TESTING!');
+                                                //print('TESTING!');
                                                 //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
                                                 //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
                                                 //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);

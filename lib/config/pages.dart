@@ -144,6 +144,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     
                                                 },
                                             ),
+                                            /*
                                             ListTile(
                                                 title: const Text('TRANSFER-ICP'),
                                                 onTap: () {
@@ -152,6 +153,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     Navigator.pop(context);
                                                 },
                                             ),
+                                            */
                                             ListTile(
                                                 title: const Text('CYCLES-BANK'),
                                                 onTap: () {
