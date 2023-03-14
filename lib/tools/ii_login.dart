@@ -41,7 +41,11 @@ ii_login(BuildContext context) async {
                         kind: "authorize-client", 
                         sessionPublicKey: legatee_caller.public_key_DER,
                         maxTimeToLive: 1000000000*60*60*24*30,
-                        derivationOrigin: window.location.hostname!.contains('cycles-transfer-station.com') ? 'https://${thp4z_id}.ic0.app' : null
+                        derivationOrigin: [
+                            'cycles-transfer-station.com',
+                        ].contains(window.location.hostname!) ? 'https://${thp4z_id}.ic0.app' 
+                        : window.location.hostname!.contains('.icp0.io') ? 'https://${window.location.hostname!.replaceFirst('.icp0.io','.ic0.app')}'
+                        : null
                     ),
                     "https://identity.ic0.app"
                 );
