@@ -155,7 +155,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                             ),
                                             */
                                             ListTile(
-                                                title: const Text('CYCLES-BANK'),
+                                                title: const Text('BANK'),
                                                 onTap: () {
                                                     state.current_url = CustomUrl('cycles_bank');
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
@@ -163,7 +163,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                 },
                                             ),
                                             ListTile(
-                                                title: const Text('CYCLES-MARKET'),
+                                                title: const Text('MARKET'),
                                                 onTap: () {
                                                     state.current_url = CustomUrl('cycles_market');
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
@@ -171,7 +171,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                 },
                                             ),
                                             ListTile(
-                                                title: const Text('ABOUT CTS'),
+                                                title: const Text('ABOUT'),
                                                 onTap: () {
                                                     state.current_url = CustomUrl('about');
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);

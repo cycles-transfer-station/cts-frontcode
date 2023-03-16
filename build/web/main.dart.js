@@ -37421,7 +37421,7 @@ if(r==null)r=A.bE(A.lA("ii login",new A.an9(a)),n,n)
 else{r=r.f
 r===$&&A.b()
 r=A.bH("USER-ID: "+r.c,n)}q=t.p
-p=A.dl(A.tR(!0,A.a([A.eK(new A.ana(m,a),n,B.N0),A.eK(new A.anb(m,a),n,B.MZ),A.eK(new A.anc(m,a),n,B.N1),A.eK(new A.and(m,a),n,B.MW)],q),n,B.aq,n,!1))
+p=A.dl(A.tR(!0,A.a([A.eK(new A.ana(m,a),n,B.N1),A.eK(new A.anb(m,a),n,B.MV),A.eK(new A.anc(m,a),n,B.N0),A.eK(new A.and(m,a),n,B.MZ)],q),n,B.aq,n,!1))
 o=A.a([A.yb(n,n,n,n)],q)
 if(m.w!=null)o.push(A.a6(n,A.lA("LOG-OUT",new A.ane(m,a)),B.f,n,n,n,n,n,n,new A.L(17,17,17,17),n,n,n))
 else o.push(A.bC(n,20,n))
@@ -40720,7 +40720,9 @@ if(e.a.a==="cycles_bank_pay")$.H.ax$.push(new A.a1H(this,a))}}d=A.a6(g,A.j("",g,
 q=A.a([A.j("CYCLES-BANK",g,g,g,A.aI(g,g,g,g,g,g,g,g,g,g,g,19,g,g,g,g,g,!0,g,g,g,g,g,g,g,g),g,g)],s)
 o=e.w
 if(o!=null&&o.z!=null)B.b.B(q,A.a([A.bH(o.z.a.c,A.aI(g,g,g,g,g,g,g,g,g,g,g,17,g,g,g,g,g,!0,g,g,g,g,g,g,g,g))],s))
-return A.bE(A.a6(g,A.aJ(A.a([new A.nB(A.qa(A.a([new A.mT(1,B.ds,d,g),new A.mT(11,B.ds,A.bE(A.aJ(q,B.n,B.k,B.o),g,g),g),new A.mT(1,B.ds,A.a6(g,new A.fh(B.xq,g,g,A.a6(g,A.aaw(g,B.BP,g,new A.a1I(a),"Settings"),B.f,g,g,g,g,g,g,new A.L(3,3,3,3),g,g,g),g),B.f,g,g,g,g,g,g,g,g,g,1/0),g)],s),B.n,B.k,B.o,g),g),A.dl(A.tR(!0,A.a([A.aJ(r,B.n,B.k,B.o)],s),this.e,new A.L(0,0,0,0),g,!1))],s),B.n,B.k,B.o),B.f,g,new A.a5(0,900,0,1/0),g,g,g,g,g,g,g,g),g,g)}}
+q=A.bE(A.aJ(q,B.n,B.k,B.o),g,g)
+o=e.w
+return A.bE(A.a6(g,A.aJ(A.a([new A.nB(A.qa(A.a([new A.mT(1,B.ds,d,g),new A.mT(11,B.ds,q,g),new A.mT(1,B.ds,A.a6(g,o!=null&&o.z!=null?new A.fh(B.xq,g,g,A.a6(g,A.aaw(g,B.BP,g,new A.a1I(a),"Settings"),B.f,g,g,g,g,g,g,new A.L(3,3,3,3),g,g,g),g):A.j("",g,g,g,g,g,g),B.f,g,g,g,g,g,g,g,g,g,1/0),g)],s),B.n,B.k,B.o,g),g),A.dl(A.tR(!0,A.a([A.aJ(r,B.n,B.k,B.o)],s),this.e,new A.L(0,0,0,0),g,!1))],s),B.n,B.k,B.o),B.f,g,new A.a5(0,900,0,1/0),g,g,g,g,g,g,g,g),g,g)}}
 A.a1D.prototype={
 $0(){var s=0,r=A.y(t.P),q=this
 var $async$$0=A.z(function(a,b){if(a===1)return A.v(b,r)
@@ -85800,8 +85802,8 @@ B.N_=new A.fB("Int",null,null,null,null,null,null,null,null)
 B.AK=new A.f2(B.hc,B.N_,B.b2,null,t.vp)
 B.MY=new A.fB("Nat",null,null,null,null,null,null,null,null)
 B.AM=new A.f2(B.ha,B.MY,B.b2,null,t.vp)
-B.MV=new A.fB("Blob",null,null,null,null,null,null,null,null)
-B.AL=new A.f2(B.hb,B.MV,B.b2,null,t.vp)
+B.MW=new A.fB("Blob",null,null,null,null,null,null,null,null)
+B.AL=new A.f2(B.hb,B.MW,B.b2,null,t.vp)
 B.DY=A.a(s([B.AN,B.AK,B.AM,B.AL]),A.at("B<f2<eH>>"))
 B.x0=new A.qL(0,"topLeft")
 B.x3=new A.qL(3,"bottomRight")
@@ -87375,11 +87377,11 @@ B.LK=new A.C(!0,B.m,null,"Roboto",null,null,null,null,null,null,null,null,null,n
 B.MT=new A.eP(B.Lu,B.MC,B.Ml,B.Ke,B.Md,B.Ln,B.MG,B.KF,B.L6,B.M8,B.K9,B.Mn,B.Mb,B.M5,B.LK)
 B.wJ=new A.Cp(1,"longestLine")
 B.MU=new A.fB(":CYCLES-TRANSFER-STATION.",null,null,null,null,null,null,null,null)
-B.MW=new A.fB("ABOUT CTS",null,null,null,null,null,null,null,null)
-B.MZ=new A.fB("CYCLES-BANK",null,null,null,null,null,null,null,null)
+B.MV=new A.fB("BANK",null,null,null,null,null,null,null,null)
+B.MZ=new A.fB("ABOUT",null,null,null,null,null,null,null,null)
 B.p=new A.fB("OK",null,null,null,null,null,null,null,null)
-B.N0=new A.fB("HOME",null,null,null,null,null,null,null,null)
-B.N1=new A.fB("CYCLES-MARKET",null,null,null,null,null,null,null,null)
+B.N0=new A.fB("MARKET",null,null,null,null,null,null,null,null)
+B.N1=new A.fB("HOME",null,null,null,null,null,null,null,null)
 B.Q9=new A.P9(0,"system")
 B.wK=new A.Cr(0)
 B.N2=new A.Cr(0.5)

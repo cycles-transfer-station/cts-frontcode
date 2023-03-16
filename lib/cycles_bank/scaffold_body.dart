@@ -392,7 +392,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                 )),
                                 Flexible(flex:1, fit: FlexFit.tight, child:Container(
                                     width: double.infinity, 
-                                    child: Align(
+                                    child: state.user != null && state.user!.bank != null ? Align(
                                         alignment: Alignment.topRight, 
                                         child: Container(
                                             padding: EdgeInsets.all(3),
@@ -417,7 +417,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                 }
                                             )
                                         ) 
-                                    )
+                                    ) : Text('')
                                 )),
                             ]
                         )),
