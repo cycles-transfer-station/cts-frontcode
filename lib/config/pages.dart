@@ -13,7 +13,6 @@ import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
-import 'package:ic_tools/common_web.dart';
 
 import '../main.dart';
 import '../tools/indexdb.dart';

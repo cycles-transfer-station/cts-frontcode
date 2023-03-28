@@ -2,7 +2,7 @@ import 'dart:html';
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/common_web.dart';
+import 'package:ic_tools_web/ic_tools_web.dart';
 
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';

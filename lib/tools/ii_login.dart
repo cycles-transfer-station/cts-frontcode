@@ -5,7 +5,7 @@ import 'dart:js_util';
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/common_web.dart';
+import 'package:ic_tools_web/ic_tools_web.dart';
 
 import '../user.dart';
 import '../config/state.dart';

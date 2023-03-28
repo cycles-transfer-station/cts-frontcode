@@ -6,7 +6,7 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
-import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
+import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller;
 
 import 'transfer_icp/icp_ledger.dart';
 import 'cycles_bank/cycles_bank.dart';

@@ -31,7 +31,7 @@ import 'package:ic_tools/candid.dart' show
 import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Account;
 import 'package:ic_tools/common.dart' as common;
-import 'package:ic_tools/common_web.dart' show SubtleCryptoECDSAP256Caller;
+import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller;
 
 
 import 'package:flutter/material.dart';
