@@ -121,7 +121,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
             child: */Scaffold(
                     key: scaffold_key,
                     appBar: AppBar(
-                        title: Center(child: const Text(':CYCLES-TRANSFER-STATION.')),
+                        title: Center(child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold'),)),
                         automaticallyImplyLeading: false,
                     ),
                     drawer: Drawer(

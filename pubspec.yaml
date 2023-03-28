@@ -86,7 +86,11 @@ flutter:
     - family: AxaxaxBold
       fonts:
         - asset: fonts/axaxax_bd.otf
-    
+   
+    - family: NimbusMonoPS-Bold
+      fonts: 
+        - asset: fonts/NimbusMonoPS-Bold.otf 
+     
     - family: NotoSans-Bold
       fonts: 
         - asset: fonts/NotoSans-Bold.ttf 
