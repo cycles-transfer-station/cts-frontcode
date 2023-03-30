@@ -38,7 +38,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        
+        /*        
         List<Widget> column_children = [];
                 
         column_children.add(
@@ -815,6 +815,9 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                 )
             )
         );
+        */
+        
+        return Center(child: Text('Construction ...'));
     }
 }
 
