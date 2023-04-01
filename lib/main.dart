@@ -21,10 +21,10 @@ class _BaseState extends State<Base> {
             routeInformationParser : _routeParser,
             routerDelegate         : _routeLegate,
             backButtonDispatcher   : RootBackButtonDispatcher(),
-            title: 'CTS',//':C.-T.-S.',
+            title: ':CTS.',//':C.-T.-S.',
             theme: ThemeData(
                 brightness: Brightness.dark,
-                backgroundColor: grey_background, 
+                backgroundColor: blue2, 
                 fontFamily: 'AxaxaxBold',
                 /* try this on a child widget of this materialapp
                 textTheme: Theme.of(context).textTheme.apply(
@@ -34,11 +34,11 @@ class _BaseState extends State<Base> {
                 */
                 //typography: Typography.material2018(platform: platform)
                 appBarTheme: AppBarTheme(
-                    color: blue, 
-                    //backgroundColor Color?, 
+                    //color: blue, 
+                    backgroundColor: blue2, 
                     //foregroundColor: double?, 
-                    elevation: 1.5,  
-                    //shadowColor: Color?,  
+                    elevation: 0.0,  
+                    shadowColor: null,  
                 )
             )
         );
@@ -49,6 +49,10 @@ class _BaseState extends State<Base> {
 
 const Color grey_background = Color.fromRGBO(30, 30, 31, 0.9);
 const Color blue = Color.fromRGBO(76,97,145, 0.9);
+
+
+
+const Color blue2 = Color(0xFF506CBF);
 
 
 

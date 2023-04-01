@@ -6,12 +6,18 @@ import '../cycles_bank/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
 import '../welcome/scaffold_body.dart';
 import '../about/scaffold_body.dart';
+import '../feedback/scaffold_body.dart';
+import '../business_tegrations/scaffold_body.dart';
+
 
 
 //:variables of the url-path are with the syntax: <variablename>.
 // make sure that the paths of a deep branch contain the urlvariables of the parent-paths. 
 // path branches are: __
 // one variable per pathsegment, make sure the variable is the last part of the pathsegment.
+
+const String path_branches_separator = '__';
+
 
 final Map<String, Map> urlmap = {
     'void': {
@@ -20,34 +26,44 @@ final Map<String, Map> urlmap = {
     },
     'welcome': {
         'path': '/',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': WelcomeScaffoldBody.create
     },
     'transfer_icp': {
         'path': '/transfer-icp',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': TransferIcpScaffoldBody.create
     },
     'cycles_bank': {
         'path': '/cycles-bank',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
     'cycles_bank_pay': {
         'path': '/cycles-bank/pay/for=<for_the_cycles_bank>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
     'cycles_market': {
         'path': '/cycles-market',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': CyclesMarketScaffoldBody.create
     },
     'about': {
         'path': '/about',
-        'page': WelcomePage.create,
+        'page': MainPage.create,
         'main_page_scaffold_body': AboutScaffoldBody.create
-    }
+    },
+    'feedback': {
+        'path': '/feedback',
+        'page': MainPage.create,
+        'main_page_scaffold_body': FeedbackScaffoldBody.create
+    },
+    'business_tegrations': {
+        'path': '/business-integrations',
+        'page': MainPage.create,
+        'main_page_scaffold_body': BusinessTegrationsScaffoldBody.create
+    },
 };
 
 

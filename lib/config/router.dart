@@ -58,7 +58,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         // does this re-build the state?
     }
 
-    CustomUrl get currentConfiguration {/*print('get currentconfiguration'); */return state.current_url; }
+    CustomUrl get currentConfiguration { return state.current_url; }
 
     CustomState _getState() {
         return state;
@@ -73,10 +73,10 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     @override
     Widget build(BuildContext context) {
         
-        List<String> page_branches = state.current_url.name.split('__');
+        List<String> page_branches = state.current_url.name.split(path_branches_separator);
         
         // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
-        List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() );
+        List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join(path_branches_separator), variables: state.current_url.variables).get_page() );
     
         late bool Function(Route route, dynamic sult) onPopPage; 
         
@@ -86,7 +86,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         } else {
             onPopPage = (route, sult) {
                 if (route.didPop(sult)==false) { return false; }
-                state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
+                state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join(path_branches_separator), variables: state.current_url.variables);
                 //_changeState(state, tifyListeners: true);
                 return true;
             };

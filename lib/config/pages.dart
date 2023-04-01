@@ -81,10 +81,9 @@ class VoidPageWidget extends StatelessWidget {
 }
 
 
-
-class WelcomePage extends Page {
-    WelcomePage({LocalKey? key}) : super(key: key);
-    static WelcomePage create({LocalKey? key}) => WelcomePage(key: key);
+class MainPage extends Page {
+    MainPage({LocalKey? key}) : super(key: key);
+    static MainPage create({LocalKey? key}) => MainPage(key: key);
 
     Route createRoute(BuildContext context) {
         
@@ -95,19 +94,60 @@ class WelcomePage extends Page {
                 final curve_tween = CurveTween(curve: Curves.easeOutSine);
                 return FadeTransition(
                     opacity: animation.drive(tween).drive(curve_tween),
-                    child: WelcomePageWidget(key: ValueKey('WelcomePageWidget'))
+                    child: MainPageWidget(key: ValueKey('MainPageWidget'))
                 );
             }
         );
     }
 }
-class WelcomePageWidget extends StatefulWidget {
-    const WelcomePageWidget({super.key});
-    State createState() => WelcomePageWidgetState();
+class MainPageWidget extends StatefulWidget {
+    const MainPageWidget({super.key});
+    State createState() => MainPageWidgetState();
 }
-class WelcomePageWidgetState extends State<WelcomePageWidget> {
+class MainPageWidgetState extends State<MainPageWidget> with TickerProviderStateMixin {
 
     GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
+    late TabController tab_controller;
+    
+    List tabs = [
+        {
+            'showname': 'HOME',
+            'urlname': 'welcome',
+        },
+        {
+            'showname': 'MY-BANK',
+            'urlname': 'cycles_bank',
+        },
+        {
+            'showname': 'MARKET',
+            'urlname': 'cycles_market',
+        },
+        {
+            'showname': 'BUSINESS-INTEGRATION',
+            'urlname': 'business_tegrations',
+        },
+        {
+            'showname': 'ABOUT',
+            'urlname': 'about',
+        },
+        {
+            'showname': 'FEEDBACK',
+            'urlname': 'feedback',
+        },   
+    ];
+    
+    
+    @override
+    void initState() {
+        super.initState();
+        tab_controller = TabController(length: tabs.length, vsync: this);
+    }
+    
+    @override
+    void dispose() {
+        tab_controller.dispose();
+        super.dispose();
+    }
     
     
     @override
@@ -117,127 +157,165 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
+        tab_controller.addListener(() {
+            if (!tab_controller.indexIsChanging) {
+                state.current_url = CustomUrl(tabs[tab_controller.index]['urlname']!);
+                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+            }
+        });
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+            tab_controller.animateTo(tabs.indexWhere((e)=>e['urlname']! == state.current_url.name));            
+        });
+        
+        
         return /*SelectionArea(
             child: */Scaffold(
-                    key: scaffold_key,
-                    appBar: AppBar(
-                        title: Center(child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold'),)),
-                        automaticallyImplyLeading: false,
+                key: scaffold_key,
+                backgroundColor: blue2,
+                appBar: AppBar(
+                    toolbarHeight: 120,
+                    title: Container(
+                        child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold', fontSize: 25)),
                     ),
-                    drawer: Drawer(
-                        child: Column(
-                            children: [
-                                DrawerHeader(
-                                    child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : SelectableText('USER-ID: ${state.user!.principal.text}')
-                                ),
-                                Expanded(
-                                    child: ListView(
-                                        padding: EdgeInsets.zero,
-                                        children: [
-                                            ListTile(
-                                                title: const Text('HOME'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('welcome');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                    
-                                                },
-                                            ),
-                                            /*
-                                            ListTile(
-                                                title: const Text('TRANSFER-ICP'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('transfer_icp');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
-                                            ),
-                                            */
-                                            ListTile(
-                                                title: const Text('BANK'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('cycles_bank');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
-                                            ),
-                                            ListTile(
-                                                title: const Text('MARKET'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('cycles_market');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
-                                            ),
-                                            ListTile(
-                                                title: const Text('ABOUT'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('about');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
+                    leading: TextButton(
+                        child: Text('CTS', style: TextStyle(fontSize: 70, color: Theme.of(context).colorScheme.onPrimary)),
+                        onPressed: () {
+                            tab_controller.animateTo(tabs.indexWhere((e)=>e['urlname']! == 'welcome'));            
+                        }
+                    ),
+                    leadingWidth: 200,
+                    centerTitle: true,
+                    automaticallyImplyLeading: false,
+                    bottom: TabBar(
+                        controller: tab_controller,
+                        indicator:  UnderlineTabIndicator(
+                            borderSide: const BorderSide(width: 0.0, color: Colors.white),
+                            borderRadius: BorderRadius.all(Radius.zero)
+                        ),
+                        tabs: tabs.map((t)=>Tab(text: t['showname']!)).toList(),
+                    ),
+                ),
+                body: TabBarView(
+                    controller: tab_controller,
+                    children: tabs.map<Widget>((t){
+                        String urlname = t['urlname']!;
+                        return urlmap[urlname]!['main_page_scaffold_body']!(key: ValueKey('${urlname} main-page-body'));
+                    }).toList(),
+                ),
+                drawer: Drawer(
+                    child: Column(
+                        children: [
+                            DrawerHeader(
+                                child: state.user==null ? Center(child: OutlineButton(button_text: 'ii login', on_press_complete: () async { await ii_login(context); })) : SelectableText('USER-ID: ${state.user!.principal.text}')
+                            ),
+                            Expanded(
+                                child: ListView(
+                                    padding: EdgeInsets.zero,
+                                    children: [
+                                        ListTile(
+                                            title: const Text('HOME'),
+                                            onTap: () {
+                                                state.current_url = CustomUrl('welcome');
+                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                Navigator.pop(context);
+                                                
+                                            },
+                                        ),
+                                        /*
+                                        ListTile(
+                                            title: const Text('TRANSFER-ICP'),
+                                            onTap: () {
+                                                state.current_url = CustomUrl('transfer_icp');
+                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                Navigator.pop(context);
+                                            },
+                                        ),
+                                        */
+                                        ListTile(
+                                            title: const Text('BANK'),
+                                            onTap: () {
+                                                state.current_url = CustomUrl('cycles_bank');
+                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                Navigator.pop(context);
+                                            },
+                                        ),
+                                        ListTile(
+                                            title: const Text('MARKET'),
+                                            onTap: () {
+                                                state.current_url = CustomUrl('cycles_market');
+                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                Navigator.pop(context);
+                                            },
+                                        ),
+                                        ListTile(
+                                            title: const Text('ABOUT'),
+                                            onTap: () {
+                                                state.current_url = CustomUrl('about');
+                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                Navigator.pop(context);
+                                            },
+                                        )
+                                    ]
+                                )
+                            ),
+                            Container(
+                                child: Align(
+                                    alignment: FractionalOffset.bottomCenter,
+                                    child: Column(
+                                        children: <Widget>[
+                                            Divider(),
+                                            if (state.user != null) Container(
+                                                padding: EdgeInsets.all(17),
+                                                child: OutlineButton(
+                                                    button_text: 'LOG-OUT',
+                                                    on_press_complete: () {
+                                                        state.user = null;
+                                                        IndexDB.delete_database('cts');
+                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
+                                                        Navigator.pop(context);
+                                                    }
+                                                )
                                             )
+                                            else/*if (state.user == null)*/ SizedBox(height: 20) 
                                         ]
                                     )
-                                ),
-                                Container(
-                                    child: Align(
-                                        alignment: FractionalOffset.bottomCenter,
-                                        child: Column(
-                                            children: <Widget>[
-                                                Divider(),
-                                                if (state.user != null) Container(
-                                                    padding: EdgeInsets.all(17),
-                                                    child: OutlineButton(
-                                                        button_text: 'LOG-OUT',
-                                                        on_press_complete: () {
-                                                            state.user = null;
-                                                            IndexDB.delete_database('cts');
-                                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
-                                                            Navigator.pop(context);
-                                                        }
-                                                    )
-                                                )
-                                                else/*if (state.user == null)*/ SizedBox(height: 20) 
-                                            ]
-                                        )
-                                    )
-                                ),
-                            ]
-                        )
-                    ),
-                    body: state.current_url.main_page_scaffold_body(), 
-                    bottomNavigationBar: BottomAppBar(
-                        //color: Colors.blue,
-                        child: IconTheme(
-                            data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-                            child: Row(
-                                children: <Widget>[
-                                    IconButton(
-                                        tooltip: 'Navigation',
-                                        icon: const Icon(Icons.menu),
-                                        onPressed: () {
-                                            scaffold_key.currentState!.openDrawer();
-                                        },
-                                    ),
-                                    /*
-                                    if (true) const Spacer(),
-                                    IconButton(
-                                        tooltip: 'Search',
-                                        icon: const Icon(Icons.search),
-                                        onPressed: () {},
-                                    ),
-                                    IconButton(
-                                        tooltip: 'Favorite',
-                                        icon: const Icon(Icons.favorite),
-                                        onPressed: () {},
-                                    ),
-                                    */
-                                ]
-                            ) 
-                        )       
+                                )
+                            ),
+                        ]
                     )
-                
+                ),
+                bottomNavigationBar: BottomAppBar(
+                    color: blue2,
+                    elevation: 0.0,
+                    child: IconTheme(
+                        data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+                        child: Row(
+                            children: <Widget>[
+                                IconButton(
+                                    tooltip: 'Navigation',
+                                    icon: const Icon(Icons.menu),
+                                    onPressed: () {
+                                        scaffold_key.currentState!.openDrawer();
+                                    },
+                                ),
+                                /*
+                                if (true) const Spacer(),
+                                IconButton(
+                                    tooltip: 'Search',
+                                    icon: const Icon(Icons.search),
+                                    onPressed: () {},
+                                ),
+                                IconButton(
+                                    tooltip: 'Favorite',
+                                    icon: const Icon(Icons.favorite),
+                                    onPressed: () {},
+                                ),
+                                */
+                            ]
+                        ) 
+                    )       
+                )
             )
         /*)*/;
     }
