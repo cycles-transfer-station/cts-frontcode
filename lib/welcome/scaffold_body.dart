@@ -33,6 +33,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             Container(
                 width: double.infinity,
                 child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                         Container(
                             decoration: BoxDecoration(
