@@ -98,7 +98,9 @@ flutter:
     - family: NotoSansMono
       fonts: 
         - asset: fonts/NotoSansMono-VF.ttf 
-    
+    - family: impact
+      fonts: 
+        - asset: fonts/impact.ttf
     
 
         

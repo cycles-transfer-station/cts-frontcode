@@ -81,6 +81,9 @@ class VoidPageWidget extends StatelessWidget {
 }
 
 
+
+const double appbar_bottom_toolbar_height = 120.0;
+
 class MainPage extends Page {
     MainPage({LocalKey? key}) : super(key: key);
     static MainPage create({LocalKey? key}) => MainPage(key: key);
@@ -174,12 +177,15 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
                 key: scaffold_key,
                 backgroundColor: blue2,
                 appBar: AppBar(
-                    toolbarHeight: 120,
+                    toolbarHeight: appbar_bottom_toolbar_height,
                     title: Container(
                         child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold', fontSize: 25)),
                     ),
                     leading: TextButton(
-                        child: Text('CTS', style: TextStyle(fontSize: 70, color: Theme.of(context).colorScheme.onPrimary)),
+                        child: Container(
+                            child: Text('CTS', style: TextStyle(fontSize: 70, color: Theme.of(context).colorScheme.onPrimary)),
+                            margin: EdgeInsets.fromLTRB(13,13,0,0), 
+                        ),
                         onPressed: () {
                             tab_controller.animateTo(tabs.indexWhere((e)=>e['urlname']! == 'welcome'));            
                         }
@@ -187,14 +193,58 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
                     leadingWidth: 200,
                     centerTitle: true,
                     automaticallyImplyLeading: false,
-                    bottom: TabBar(
-                        controller: tab_controller,
-                        indicator:  UnderlineTabIndicator(
-                            borderSide: const BorderSide(width: 0.0, color: Colors.white),
-                            borderRadius: BorderRadius.all(Radius.zero)
-                        ),
-                        tabs: tabs.map((t)=>Tab(text: t['showname']!)).toList(),
-                    ),
+                    bottom: PreferredSize(
+                        preferredSize: Size.fromHeight(50), 
+                        child: ListView(
+                            shrinkWrap: true,
+                            children: [
+                                Row(
+                                    children: [
+                                        Expanded(
+                                            child: TabBar(
+                                                controller: tab_controller,
+                                                indicator:  UnderlineTabIndicator(
+                                                    borderSide: const BorderSide(width: 0.0, color: Colors.white),
+                                                    borderRadius: BorderRadius.all(Radius.zero)
+                                                ),
+                                                tabs: tabs.map((t)=>Tab(text: t['showname']!)).toList(),
+                                            ),
+                                        ),
+                                        //Spacer(),
+                                        Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 20),
+                                            margin: EdgeInsets.symmetric(horizontal: 20),
+                                            //height: 40,
+                                            //width: 70,
+                                            constraints: BoxConstraints(
+                                                minWidth: 130,
+                                                minHeight: 80
+                                            ),
+                                            child: FilledButton(
+                                                child: state.user == null ? Text('LOGIN', style: TextStyle()) : const Icon(Icons.settings_sharp, size: 27.0),
+                                                onPressed: state.user == null ? () async { await ii_login(context); } : () async {
+                                                    
+                                                },
+                                                style: FilledButton.styleFrom(
+                                                    backgroundColor: purple,
+                                                    side: BorderSide(
+                                                        color: const Color(0xFFFFFFFF),
+                                                        width: 2.5,
+                                                        style: BorderStyle.solid,
+                                                    ),
+                                                    //minimumSize: Size(70, 40),
+                                                    //padding: EdgeInsets.symmetric(horizontal: 20),
+                                                    shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(25) 
+                                                    )
+                                                ),
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
+                        )
+                    )
                 ),
                 body: TabBarView(
                     controller: tab_controller,

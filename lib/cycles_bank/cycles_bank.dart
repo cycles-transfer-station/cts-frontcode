@@ -138,11 +138,11 @@ class CyclesBank extends Canister {
         List<Icrc1Ledger> ledgers = icrc1_ledger != null ? [icrc1_ledger] : this.known_icrc1_ledgers;
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
-                print('fresh icrc1 transactions future ${l.name}');
+                //print('fresh icrc1 transactions future ${l.name}');
                 if (l.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) {
                     // for the do! hook up with the dashboard icp-ledger-api
-                    print('get_icp_transfers');
-                    print(this.icp_id);
+                    //print('get_icp_transfers');
+                    //print(this.icp_id);
                     this.icp_transfers = [
                         ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
                         ...this.icp_transfers
@@ -152,11 +152,11 @@ class CyclesBank extends Canister {
                         this.icrc1_transactions_cache[l] = []; 
                     }
                     if (this.icrc1_transactions_cache[l]!.length == 0) {
-                        print('first load');
+                        //print('first load');
                         Nat? last_tx_seen = null;
                         late BigInt oldest_tx_id;
                         while (this.icrc1_transactions_cache[l]!.length == 0 || this.icrc1_transactions_cache[l]!.last.block > oldest_tx_id) {
-                            print('first load loop');
+                            //print('first load loop');
                             Record data = match_variant(await _call_icrc1_index_transactions(l, last_tx_seen), {
                                 Ok: (tr) => tr as Record,
                                 Err: (er) => throw Exception('get transactions error: ${((er as Record)['message'] as Text).value}')
@@ -169,11 +169,11 @@ class CyclesBank extends Canister {
                         
                         }
                     } else /*get new*/ {
-                        print('load new');
+                        //print('load new');
                         Nat? last_tx_seen = null;
                         List<Icrc1Transaction> new_transactions = [];
                         while (true) {
-                            print('load new loop');
+                            //print('load new loop');
                             Record data = match_variant(await _call_icrc1_index_transactions(l, last_tx_seen), {
                                 Ok: (tr) => tr as Record,
                                 Err: (er) => throw Exception('get transactions error: ${((er as Record)['message'] as Text).value}'),

@@ -10,7 +10,7 @@ import '../user.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/urls.dart';
-
+import '../main.dart';
 
 class WelcomeScaffoldBody extends StatelessWidget {
     WelcomeScaffoldBody({super.key});
@@ -22,10 +22,27 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         
         List<Widget> column_children = [
-            Padding(
-                padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
-                child: Container(
-                    child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
+            Container(
+                margin: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
+                constraints: BoxConstraints(maxWidth: 650),
+                child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', 
+                    style: TextStyle(color: red, fontSize: 49, fontFamily: 'impact'),
+                    textAlign: TextAlign.center,
+                )
+            ),
+            Container(
+                width: double.infinity,
+                child: Column(
+                    children: [
+                        Container(
+                            decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: purple,
+                            ),
+                            height: 17,
+                            width: 17
+                        )
+                    ]
                 )
             ),
             Padding(
