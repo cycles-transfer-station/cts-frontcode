@@ -13,6 +13,10 @@ import '../config/urls.dart';
 import '../main.dart';
 
 
+const double word_lines_font_size = 17;
+const double word_lines_space_between = 17;
+const String word_lines_font_family = 'DejaVuSans-Bold';
+
 class WelcomeScaffoldBody extends StatelessWidget {
     WelcomeScaffoldBody({super.key});
     static WelcomeScaffoldBody create({Key? key}) => WelcomeScaffoldBody(key: key);
@@ -32,54 +36,68 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 )
             ),
             SizedBox(height: 25),
-            Container(
-                width: double.infinity,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                        Row(children: [ 
-                            PurpleCircle(), 
-                            Text(
-"""Store your money on the blockchain in your own personal CYCLES-BANK!""",
-                                style: TextStyle(fontSize: 17),
-                            )
-                        ]),
-                        SizedBox(height: 17),
-                        Row(children: [ 
-                            PurpleCircle(), 
-                            Text(
-"""Send money between friends, or make payments in stores! """,
-                                style: TextStyle(fontSize: 17),
-                            )
-                        ]),
-                        SizedBox(height: 17),
-                        Row(children: [ 
-                            PurpleCircle(), 
-                            Text(
-"""Hedge against fiat inflation and crypto-volatility! """,
-                                style: TextStyle(fontSize: 17),
-                            )
-                        ]),
-                        SizedBox(height: 17),
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.center, 
+            Stack(
+                children: [
+                    Container(
+                        margin: EdgeInsets.fromLTRB(0,0,11,0),
+                        child: Align(
+                            alignment: Alignment.bottomRight,
+                            child: Image.asset(
+                                'graphics/final image of coins clear tops transparent background.png',
+                                scale: 8
+                            ),
+                        )
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                                Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [ 
-                                        PurpleCircle(), 
-                                        Text(
-"""Trade or liquidate through the CYCLES-MARKET! """,
-                                            style: TextStyle(fontSize: 17),
-                                        )
+                                Row(children: [ 
+                                    PurpleCircle(), 
+                                    Text(
+        """Store your money on the blockchain in your own personal BANK!""",
+                                        style: TextStyle(fontSize: word_lines_font_size, fontFamily: word_lines_font_family),
+                                    )
+                                ]),
+                                SizedBox(height: word_lines_space_between),
+                                Row(children: [ 
+                                    PurpleCircle(), 
+                                    Text(
+        """Send money between friends, or make payments in stores! """,
+                                        style: TextStyle(fontSize: word_lines_font_size, fontFamily: word_lines_font_family),
+                                    )
+                                ]),
+                                SizedBox(height: word_lines_space_between),
+                                Row(children: [ 
+                                    PurpleCircle(), 
+                                    Text(
+        """Hedge against fiat inflation and crypto-volatility! """,
+                                        style: TextStyle(fontSize: word_lines_font_size, fontFamily: word_lines_font_family),
+                                    )
+                                ]),
+                                SizedBox(height: word_lines_space_between),
+                                Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center, 
+                                    children: [
+                                        Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [ 
+                                                PurpleCircle(), 
+                                                Text(
+        """Trade or liquidate through the CYCLES-MARKET! """,
+                                                    style: TextStyle(fontSize: word_lines_font_size, fontFamily: word_lines_font_family),
+                                                )
+                                            ]
+                                        ),
+                                        SizedBox(height: word_lines_space_between),
+                                        Text('\nThe CYCLES are here!', style: TextStyle(fontSize: word_lines_font_size, fontFamily: word_lines_font_family))
                                     ]
-                                ),
-                                SizedBox(height: 17),
-                                Text('\nThe CYCLES are here!', style: TextStyle(fontSize: 17))
+                                )
                             ]
                         )
-                    ]
-                )
+                    ),
+                ]
             ),
             /*
             Padding(
