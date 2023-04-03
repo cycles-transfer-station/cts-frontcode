@@ -12,6 +12,7 @@ import '../config/state_bind.dart';
 import '../config/urls.dart';
 import '../main.dart';
 
+
 class WelcomeScaffoldBody extends StatelessWidget {
     WelcomeScaffoldBody({super.key});
     static WelcomeScaffoldBody create({Key? key}) => WelcomeScaffoldBody(key: key);
@@ -30,22 +31,57 @@ class WelcomeScaffoldBody extends StatelessWidget {
                     textAlign: TextAlign.center,
                 )
             ),
+            SizedBox(height: 25),
             Container(
                 width: double.infinity,
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        Container(
-                            decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: purple,
-                            ),
-                            height: 17,
-                            width: 17
+                        Row(children: [ 
+                            PurpleCircle(), 
+                            Text(
+"""Store your money on the blockchain in your own personal CYCLES-BANK!""",
+                                style: TextStyle(fontSize: 17),
+                            )
+                        ]),
+                        SizedBox(height: 17),
+                        Row(children: [ 
+                            PurpleCircle(), 
+                            Text(
+"""Send money between friends, or make payments in stores! """,
+                                style: TextStyle(fontSize: 17),
+                            )
+                        ]),
+                        SizedBox(height: 17),
+                        Row(children: [ 
+                            PurpleCircle(), 
+                            Text(
+"""Hedge against fiat inflation and crypto-volatility! """,
+                                style: TextStyle(fontSize: 17),
+                            )
+                        ]),
+                        SizedBox(height: 17),
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.center, 
+                            children: [
+                                Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [ 
+                                        PurpleCircle(), 
+                                        Text(
+"""Trade or liquidate through the CYCLES-MARKET! """,
+                                            style: TextStyle(fontSize: 17),
+                                        )
+                                    ]
+                                ),
+                                SizedBox(height: 17),
+                                Text('\nThe CYCLES are here!', style: TextStyle(fontSize: 17))
+                            ]
                         )
                     ]
                 )
             ),
+            /*
             Padding(
                 padding: EdgeInsets.fromLTRB(0, 4.5, 0, 17.0),
                 child: Divider(
@@ -56,10 +92,11 @@ class WelcomeScaffoldBody extends StatelessWidget {
                     //color: 
                 ),
             )
+            */
         
         ];
         
-        
+        /*
         if (state.user == null) {
             if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
                 column_children.add(
@@ -167,27 +204,27 @@ class WelcomeScaffoldBody extends StatelessWidget {
                                     ),*/
                                     Text(
     //"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
-    """Store your money on the blockchain in your own personal CYCLES-BANK! 
+    """
     """
                                         , style: TextStyle(fontSize: 17)
                                     ),
                                     Text(
-    """Send money between friends, or make payments in stores! 
+    """
     """
                                         , style: TextStyle(fontSize: 17)
                                     ),
                                     Text(
-    """Hedge against fiat inflation and crypto-volatility! 
+    """
     """
                                         , style: TextStyle(fontSize: 17)
                                     ),
                                     Text(
-    """Trade or liquidate through the CYCLES-MARKET! 
+    """ 
     """
                                         , style: TextStyle(fontSize: 17)
                                     ),
                                     Text(
-    """\nThe CYCLES are here!
+    """
     """
                                         , style: TextStyle(fontSize: 17)
                                     ),
@@ -203,10 +240,10 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 )
             )
         ]);
-        
+        */
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 900),
+                constraints: BoxConstraints(maxWidth: 1100),
                 child: Column(                
                     children: column_children,
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -216,6 +253,29 @@ class WelcomeScaffoldBody extends StatelessWidget {
         );
     }
 
+}
+
+
+
+
+
+class PurpleCircle extends StatelessWidget {
+    PurpleCircle();
+    Widget build(BuildContext context) {
+        return Container(
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: purple,
+                border: Border.all(
+                    width: 3, 
+                    color: Colors.white
+                ),
+            ),
+            height: 23,
+            width: 23,
+            margin: EdgeInsets.symmetric(horizontal: 11, vertical: 0)
+        );
+    }
 }
 
 

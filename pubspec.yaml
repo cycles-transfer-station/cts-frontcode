@@ -101,6 +101,10 @@ flutter:
     - family: impact
       fonts: 
         - asset: fonts/impact.ttf
+        
+    - family: verdanabold
+      fonts:
+        - asset: fonts/verdanab.ttf
     
 
         

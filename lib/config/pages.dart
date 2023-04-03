@@ -83,6 +83,7 @@ class VoidPageWidget extends StatelessWidget {
 
 
 const double appbar_bottom_toolbar_height = 120.0;
+const String tabs_fontfamily = 'verdanabold';
 
 class MainPage extends Page {
     MainPage({LocalKey? key}) : super(key: key);
@@ -126,17 +127,13 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
             'urlname': 'cycles_market',
         },
         {
-            'showname': 'BUSINESS-INTEGRATION',
-            'urlname': 'business_tegrations',
-        },
-        {
             'showname': 'ABOUT',
             'urlname': 'about',
         },
         {
-            'showname': 'FEEDBACK',
-            'urlname': 'feedback',
-        },   
+            'showname': 'BUSINESS-INTEGRATION',
+            'urlname': 'business_tegrations',
+        },
     ];
     
     
@@ -207,7 +204,15 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
                                                     borderSide: const BorderSide(width: 0.0, color: Colors.white),
                                                     borderRadius: BorderRadius.all(Radius.zero)
                                                 ),
-                                                tabs: tabs.map((t)=>Tab(text: t['showname']!)).toList(),
+                                                tabs: tabs.map((t){
+                                                    return Tab(
+                                                        child: Text(
+                                                            t['showname']!, 
+                                                            style: TextStyle(fontFamily: tabs_fontfamily),
+                                                            textAlign: TextAlign.center,
+                                                        )
+                                                    );
+                                                }).toList(),
                                             ),
                                         ),
                                         //Spacer(),
@@ -221,7 +226,7 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
                                                 minHeight: 80
                                             ),
                                             child: FilledButton(
-                                                child: state.user == null ? Text('LOGIN', style: TextStyle()) : const Icon(Icons.settings_sharp, size: 27.0),
+                                                child: state.user == null ? Text('LOGIN', style: TextStyle(fontFamily: tabs_fontfamily)) : /*Text('MY\nBANK', style: TextStyle(fontFamily: tabs_fontfamily), textAlign: TextAlign.center)*/ const Icon(Icons.settings_sharp, size: 27.0),
                                                 onPressed: state.user == null ? () async { await ii_login(context); } : () async {
                                                     
                                                 },
@@ -235,7 +240,7 @@ class MainPageWidgetState extends State<MainPageWidget> with TickerProviderState
                                                     //minimumSize: Size(70, 40),
                                                     //padding: EdgeInsets.symmetric(horizontal: 20),
                                                     shape: RoundedRectangleBorder(
-                                                        borderRadius: BorderRadius.circular(25) 
+                                                        borderRadius: BorderRadius.circular(25)
                                                     )
                                                 ),
                                             )

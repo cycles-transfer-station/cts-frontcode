@@ -24,11 +24,13 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     CustomState state = CustomState();
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
+        state.is_loading = false;// tests only!!
+        /*
         state.loadfirststate().then((x){
             state.is_loading = false;
             notifyListeners();
         }).catchError((e) async {
-            state.is_loading = false;/*TAKE THIS LINE OUT WHEN SET FOR THE GO.*/
+            state.is_loading = false;
             state.loading_text = 'Error loading the first state: ${e}';
             await showDialog(
                 context: state.context,
@@ -49,6 +51,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             
             //throw e; // for the debugging,
         });
+        */
     }
 
     @override

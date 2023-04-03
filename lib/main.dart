@@ -55,8 +55,8 @@ const Color blue = Color.fromRGBO(76,97,145, 0.9);
 
 const Color blue2 = Color(0xFF506CBF);
 const Color purple = Color(0xFF7C3FCB);
-const Color red = Color(0xFF8c3a11);
-
+//const Color red = Color(0xFF8c3a11);
+const Color red = Color(0xFF953905);
 
 /*
 
