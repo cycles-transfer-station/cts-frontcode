@@ -80,23 +80,11 @@ class CyclesBank extends Canister {
     }
     
     Future<void> fresh_known_icrc1_ledgers() async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        List<Icrc1Ledger> icrc1_ledgers = [...this.known_icrc1_ledgers, ];
         for (Icrc1Ledger l in this.user.state.cycles_market_data.icrc1_ledgers) {
-            if (icrc1_ledgers.contains(l) == false) {
-                icrc1_ledgers.add(l);
+            if (this.known_icrc1_ledgers.contains(l) == false) {
+                this.known_icrc1_ledgers.add(l);
             }
         }
-        List<Icrc1Ledger> bank_known_icrc1_ledgers = await Future.wait(
-            this.metrics!.known_icrc1_ledgers.where((Principal ledger_id){
-                return icrc1_ledgers.map<Principal>((l)=>l.ledger.principal).toList().contains(ledger_id) == false;
-            }).map<Future<Icrc1Ledger>>((Principal ledger_id) {
-                print('fetching ${ledger_id.text} icrc1-data');
-                return Icrc1Ledger.load(ledger_id);
-            })
-        );
-        icrc1_ledgers.addAll(bank_known_icrc1_ledgers);
-        this.known_icrc1_ledgers = icrc1_ledgers;
     }
     
     Future<void> fresh_icrc1_balances([Icrc1Ledger? icrc1_ledger]) async {
@@ -1155,7 +1143,6 @@ class CyclesBankMetrics {
     BigInt cm_message_icp_position_purchase_purchaser_logs_len;
     BigInt cm_message_void_cycles_position_positor_logs_len;
     BigInt cm_message_void_icp_position_positor_logs_len;   
-    List<Principal> known_icrc1_ledgers;
     
     CyclesBankMetrics._({
         required this.cycles_balance,
@@ -1193,7 +1180,6 @@ class CyclesBankMetrics {
         required this.cm_message_icp_position_purchase_purchaser_logs_len,
         required this.cm_message_void_cycles_position_positor_logs_len,
         required this.cm_message_void_icp_position_positor_logs_len,   
-        required this.known_icrc1_ledgers,
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
@@ -1232,7 +1218,6 @@ class CyclesBankMetrics {
             cm_message_icp_position_purchase_purchaser_logs_len: (r['cm_message_icp_position_purchase_purchaser_logs_len'] as Nat).value,
             cm_message_void_cycles_position_positor_logs_len: (r['cm_message_void_cycles_position_positor_logs_len'] as Nat).value,
             cm_message_void_icp_position_positor_logs_len: (r['cm_message_void_icp_position_positor_logs_len'] as Nat).value,
-            known_icrc1_ledgers: (r['known_icrc1_ledgers'] as Vector).cast_vector<Principal>(),
         );
     }
 }
