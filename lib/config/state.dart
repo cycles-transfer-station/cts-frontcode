@@ -39,7 +39,7 @@ import 'package:cbor/simple.dart' as cbor_simple;
 
 
 import 'urls.dart';
-import '../cycles_market/cycles_market_data.dart';
+import '../cycles_market/cycles_market.dart';
 import '../user.dart';
 import '../cycles_bank/cycles_bank.dart';
 import '../transfer_icp/icp_ledger.dart';
@@ -58,7 +58,7 @@ late final String cts_main_icp_id;
 const String thp4z_id = 'thp4z-laaaa-aaaam-qaaea-cai';
 
 
-class CustomState { // with ChangeNotifier  // do i want change notifier here? false.
+class CustomState {
 
     CustomState() {
     
@@ -97,7 +97,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
     
     XDRICPRateWithATimestamp? xdr_icp_rate_with_a_timestamp;
     
-    CyclesMarketData cycles_market_data = CyclesMarketData();
+    CyclesMarketMain cm_main = CyclesMarketMain();
     
     User? user;
         
@@ -119,13 +119,13 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         print('fresh_xdr_icp_rate');
         print('load cycles-market-data');
         
-        Future cycles_market_fresh_icrc1_ledgers_future = this.cycles_market_data.fresh_icrc1_ledgers();
+        Future cycles_market_main_fresh_icrc1token_trade_contracts_future = this.cm_main.fresh_icrc1token_trade_contracts();
         
         await Future.wait([
             this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
             this.cycles_market_data.load_data(),
-            cycles_market_fresh_icrc1_ledgers_future,
+            cycles_market_main_fresh_icrc1token_trade_contracts_future,
             Future(()async{ 
                 print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
@@ -156,7 +156,7 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
                                         this.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         this.user!.cycles_bank!.load_cm_data(),
                                         Future(()async{
-                                            await cycles_market_fresh_icrc1_ledgers_future;
+                                            await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                                             await this.user!.cycles_bank!.fresh_known_icrc1_ledgers();
                                             await Future.wait([
                                                 this.user!.cycles_bank!.fresh_icrc1_balances(),
