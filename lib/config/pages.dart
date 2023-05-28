@@ -13,9 +13,9 @@ import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
+import 'package:ic_tools_web/ic_tools_web.dart' show IndexDB;
 
 import '../main.dart';
-import '../tools/indexdb.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import 'urls.dart';

@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import 'package:ic_tools/ic_tools.dart';
+import 'package:ic_tools_web/ic_tools_web.dart' show NullMap;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/common.dart';
@@ -162,7 +163,7 @@ class CyclesBank extends Canister {
                                 Err: (er) => throw Exception('get transactions error: ${((er as Record)['message'] as Text).value}')
                             });
                             BigInt? oldest_tx_id_r = data.find_option<Nat>('oldest_tx_id').nullmap((n)=>n.value);
-                            if (oldest_tx_id_r == null) { break; } else { oldest_tx_id = oldest_tx_id_r!; }
+                            if (oldest_tx_id_r == null) { break; } else { oldest_tx_id = oldest_tx_id_r; }
                             Vector<Record> ts = (data['transactions'] as Vector).cast_vector<Record>();
                             last_tx_seen = ts.length == 0 ? null : ts.last['id'] as Nat;
                             this.icrc1_transactions_cache[l]!.addAll(ts.map<Icrc1Transaction>(Icrc1Transaction.oftheRecord).toList());

@@ -31,13 +31,13 @@ import 'package:ic_tools/candid.dart' show
 import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Account;
 import 'package:ic_tools/common.dart' as common;
-import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller;
-
+import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller, IndexDB, jslegation_of_a_legation, legation_of_a_jslegation, JSLegation, NullMap;
 
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
+import 'package:cbor/simple.dart' as cbor_simple;
 
-import '../tools/indexdb.dart';
+
 import 'urls.dart';
 import '../cycles_market/cycles_market_data.dart';
 import '../user.dart';
@@ -237,13 +237,13 @@ class CustomState { // with ChangeNotifier  // do i want change notifier here? f
         List<CandidType> cs = c_backwards(sponse);
         Record rc = cs[0] as Record;
         Uint8List certificate_bytes = Blob.oftheVector((rc['certificate'] as Vector).cast_vector<Nat8>()).bytes;
-        Map certificate = cbor.cborbytesasadart(certificate_bytes);
+        Map certificate = cbor_simple.cbor.decode(certificate_bytes) as Map;
         await verify_certificate(certificate);
         dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
         BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
         if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
         Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.SYSTEM_CANISTERS.cycles_mint.principal.bytes, 'certified_data']);
-        List canister_hash_tree = cbor.cborbytesasadart((rc['hash_tree'] as Blob).bytes);
+        List canister_hash_tree = cbor_simple.cbor.decode((rc['hash_tree'] as Blob).bytes) as List;
         Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
         if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }
         Record certified_icpxdrrate = c_backwards(lookuppathvalueinaniccertificatetree(canister_hash_tree, ["ICP_XDR_CONVERSION_RATE"], 'blob'))[0] as Record;
@@ -713,15 +713,7 @@ DateTime datetime_of_the_nanoseconds(BigInt nanoseconds) {
 }
 
 
-extension NullMap<T> on T? {
-    F? nullmap<F>(F Function(T) f) {
-        if (this != null) {
-            return f(this!);
-        } else {
-            return null;
-        }
-    }
-}
+
 
 
 
@@ -778,70 +770,6 @@ enum Icrc1TransactionKind {
 
 
 // ------------------------------------------------------------
-
-@JS()
-@anonymous
-class JSLegation  {
-    external Uint8List get legatee_public_key_DER;
-    external String get expiration_unix_timestamp_nanoseconds;
-    external List<String>? get target_canisters_ids;  
-    external Uint8List get legator_public_key_DER;
-    external Uint8List get legator_signature; 
-    
-    external factory JSLegation({
-        Uint8List legatee_public_key_DER,
-        String expiration_unix_timestamp_nanoseconds,
-        List<String>? target_canisters_ids,
-        Uint8List legator_public_key_DER,
-        Uint8List legator_signature,
-        
-    });
-    
-    /*
-    static JSLegation ofaLegation(Legation legation) {
-        return JSLegation(
-            legatee_public_key_DER: legation.legatee_public_key_DER,
-            expiration_unix_timestamp_nanoseconds: legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
-            target_canisters_ids: legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,
-            legator_public_key_DER: legation.legator_public_key_DER,
-            legator_signature: legation.legator_signature, 
-        );
-    }
-    
-    static Legation asaLegation(JSLegation jslegation) {
-        return Legation(
-            legatee_public_key_DER: jslegation.legatee_public_key_DER,
-            expiration_unix_timestamp_nanoseconds: BigInt.parse(jslegation.expiration_unix_timestamp_nanoseconds, radix:10),
-            target_canisters_ids: jslegation.target_canisters_ids != null ? jslegation.target_canisters_ids!.map<Principal>((String ps)=>Principal(ps)).toList() : null,
-            legator_public_key_DER: jslegation.legator_public_key_DER,
-            legator_signature: jslegation.legator_signature, 
-        );
-    }
-    */
-}
-
-JSLegation jslegation_of_a_legation(Legation legation) {
-    return JSLegation(
-        legatee_public_key_DER: legation.legatee_public_key_DER,
-        expiration_unix_timestamp_nanoseconds: legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
-        target_canisters_ids: legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,
-        legator_public_key_DER: legation.legator_public_key_DER,
-        legator_signature: legation.legator_signature, 
-    );
-}
-
-Legation legation_of_a_jslegation(JSLegation jslegation) {
-    return Legation(
-        legatee_public_key_DER: jslegation.legatee_public_key_DER,
-        expiration_unix_timestamp_nanoseconds: BigInt.parse(jslegation.expiration_unix_timestamp_nanoseconds, radix:10),
-        target_canisters_ids: jslegation.target_canisters_ids != null ? jslegation.target_canisters_ids!.map<Principal>((String ps)=>Principal(ps)).toList() : null,
-        legator_public_key_DER: jslegation.legator_public_key_DER,
-        legator_signature: jslegation.legator_signature, 
-    );
-}
-
-
-
 
 
 
