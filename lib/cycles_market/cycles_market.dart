@@ -1,4 +1,4 @@
-
+import 'dart:math';
 
 
 import '../config/state.dart';
@@ -6,7 +6,9 @@ import '../config/state.dart';
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/common.dart';
+import 'package:ic_tools/tools.dart';
 
+const int TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE = 157; 
 
 
 class CyclesMarketMain {
@@ -72,12 +74,6 @@ class Icrc1TokenTradeContract {
         ]);
     }
 
-    Future<void> load_trade_logs() async {
-        // START HERE!
-    }
-    
-    
-
     Future<List<T>> _load_positions_mechanism<T>({
         required String method_name,
         required T Function(Record) function
@@ -90,7 +86,7 @@ class Icrc1TokenTradeContract {
                 method_name: method_name,
                 put_bytes: c_forwards([
                     Record.oftheMap({
-                        'opt_start_after_position_id': Option<Nat>(value: start_after_position, value_type: Nat())
+                        'opt_start_after_position_id': Option<Nat>(value: start_after_position.nullmap((n)=>Nat(n)), value_type: Nat())
                     })
                 ])
             )).first as Record;
@@ -107,10 +103,128 @@ class Icrc1TokenTradeContract {
         return list;
     }
     
+    Future<void> load_trade_logs() async {
+        // take into the count logs that are saved in this class
+        // call to make sure to get new logs but stop when logs catch up with what we have by the last time.
+        // as of now the function overwrites any logs saved
+        // 
+        
+        List<StorageCanister> storage_canisters = [];
+        List<TradeLog> trade_logs_on_the_trade_contract_canister = [];
+        // call trade_contract_canister_id
+        BigInt? opt_start_before_id;
+        while (true) {
+            Record s = c_backwards(await this.trade_contract_canister_id.call(
+                calltype: CallType.query,
+                method_name: 'view_trade_logs',
+                put_bytes: c_forwards([
+                    Record.oftheMap({
+                        'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((n)=>Nat(n)), value_type: Nat());
+                    })
+                ]),
+            )).first;
+            
+            //BigInt latest_trade_log_id = (s['trade_logs_len'] as Nat).value - BigInt.from(1);
+            
+            storage_canisters = ((s['storage_canisters'] as Vector).cast_vector<Record>()).map(StorageCanister.oftheRecord).toList();
+            
+            Uint8List logs = (s['logs'] as Blob).bytes;
+            
+            if (logs.length == 0) {
+                break;
+            }
+            
+            trade_logs_on_the_trade_contract_canister = [
+                ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map(TradeLog.oftheStableMemorySerialization), 
+                ...trade_logs_on_the_trade_contract_canister
+            ];
+            
+            opt_start_before_id = trade_logs_on_the_trade_contract_canister.first.id;
+            
+            if (
+                storage_canisters.isNotEmpty 
+                && storage_canisters.last.first_log_id + storage_canisters.last.length == trade_logs_on_the_trade_contract_canister.first.id
+            ) {
+                break;
+            }
+        }
+        
+        // call the storage canisters
+        const int quest_for_the_logs_general_chunk_length = (1024*1024 + 1024*512) ~/ TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE; 
+        
+        List<TradeLog> storage_canisters_trade_logs = [];
+
+        for (StorageCanister storage_canister in storage_canisters.reverse) {
+
+            int checkpoint_length = storage_canister.length.toInt();
+            while (true) {
+                int quest_length = min(quest_for_the_logs_chunk_length, checkpoint_length);
+                BigInt start_at_id = (storage_canister.first_log_id + BigInt.from(checkpoint_length)) - BigInt.from(quest_length);
+                
+                Record s = c_backwards(await storage_canister.call(
+                    calltype: CallType.query,
+                    method_name: storage_canister.view_trade_logs_method_name,
+                    put_bytes: c_forwards([
+                        Record.oftheMap({
+                            'start_id': Nat(start_at_id),
+                            'length': Nat(BigInt.from(quest_length)),
+                        })
+                    ])
+                )).first as Record;
+                
+                Uint8List logs = (s['logs'] as Blob).bytes;
+                
+                storage_canisters_trade_logs = [
+                    ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map(TradeLog.oftheStableMemorySerialization), 
+                    ...storage_canisters_trade_logs
+                ];
+                
+                checkpoint_length -= quest_length;
+                
+                if (start_at_id == storage_canister.first_log_id /*checkpoint_length == 0*/) {
+                    break;
+                }
+            
+            }
+            
+        }
+        
+        this.trade_logs = [
+            ...storage_canisters_trade_logs,
+            ...trade_logs_on_the_trade_contract_canister
+        ];
+        
+           
+    }
+    
     
 }
 
 
+class StorageCanister {
+    final BigInt first_log_id;
+    final BigInt length;
+    final int log_size;
+    final Principal canister_id;
+    final String view_trade_logs_method_name;
+    StorageCanister._({
+        required this.first_log_id,
+        required this.length,
+        required this.log_size,
+        required this.canister_id,
+        required this.view_trade_logs_method_name,
+    })
+    static StorageCanister oftheRecord(Record r) {
+        FunctionReference callback = r['callback'] as FunctionReference;
+        return StorageCanister._(
+            first_log_id: (r['first_log_id'] as Nat).value,
+            length: (r['length'] as Nat).value,
+            log_size: (r['log_size'] as Nat32).value,
+            canister_id: Principal.oftheBytes(callback.service!.id!.bytes)
+            view_trade_logs_method_name: callback.method_name!.value
+        );
+    }
+}
 
 
 
@@ -191,12 +305,12 @@ class TradeLog {
     final BigInt cycles_per_token_rate;
     final PositionKind position_kind;
     final BigInt timestamp_nanos;
-    final bool cycles_payout_lock;
-    final bool token_payout_lock;
-    final Record cycles_payout_data;
-    final Record token_payout_data;
+    final bool? cycles_payout_lock;
+    final bool? token_payout_lock;
+    final Record? cycles_payout_data;
+    final Record? token_payout_data;
     
-    CyclesPositionPurchase._({
+    TradeLog._({
         required this.position_id,
         required this.id,
         required this.positor,
@@ -206,13 +320,13 @@ class TradeLog {
         required this.cycles_per_token_rate,
         required this.position_kind,
         required this.timestamp_nanos,
-        required this.cycles_payout_lock,
-        required this.icp_payout_lock,
-        required this.cycles_payout_data,
-        required this.icp_payout_data,
+        this.cycles_payout_lock,
+        this.icp_payout_lock,
+        this.cycles_payout_data,
+        this.icp_payout_data,
     });
-    static CyclesPositionPurchase oftheRecord(Record r) {
-        return CyclesPositionPurchase._(
+    static TradeLog oftheRecord(Record r) {
+        return TradeLog._(
             position_id: (r['position_id'] as Nat).value,
             id: (r['id'] as Nat).value,
             positor: (r['positor'] as Principal),
@@ -228,10 +342,52 @@ class TradeLog {
             icp_payout_data: (r['icp_payout_data'] as Record),
         );
     }
+    static TradeLog oftheStableMemorySerialization(Uint8List bytes) {
+        return TradeLog._(
+            position_id: u128_of_the_be_bytes(bytes.getRange(0, 16)),
+            id: u128_of_the_be_bytes(bytes.getRange(16, 32)),
+            positor: principal_of_the_30_bytes(bytes.getRange(32, 62)),
+            purchaser: principal_of_the_30_bytes(bytes.getRange(62, 92)),
+            tokens: u128_of_the_be_bytes(bytes.getRange(92, 108)),
+            cycles: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(108, 124))),
+            cycles_per_token_rate: u128_of_the_be_bytes(bytes.getRange(124, 140)),
+            position_kind: bytes[140] == 0 ? PositionKind.Cycles : PositionKind.Token,
+            timestamp_nanos: u128_of_the_be_bytes(bytes.getRange(141, 157)),
+        );
+    }
 }
 
 
 enum PositionKind {
     Cycles,
     Token
+}
+
+// helpers
+
+Principal principal_of_the_30_bytes(Iterable<int> b) {
+    return Principal.oftheBytes(Uint8List.fromList(b.toList().getRange(1, b[0] + 1).toList()));
+}
+
+BigInt u128_of_the_be_bytes(Iterable<int> bytes) {
+    return BigInt.parse(bytes_as_the_bitstring(bytes), radix: 2);
+}
+
+String bytes_as_the_bitstring(Iterable<int> bytes) {
+    String bitstring = '';
+    for (int byte in bytes) {
+        String byte_bitstring = byte.toRadixString(2);
+        while (byte_bitstring.length < 8) { byte_bitstring = '0' + byte_bitstring; }
+        bitstring = bitstring + byte_bitstring;
+    }
+    return bitstring;
+}
+
+List<Uint8List> chunks(Uint8List b, int chunk_size) {
+    var b_len = b.length;
+    List<Uint8List> chunks = [];
+    for(int i = 0; i < b_len; i += chunk_size) {    
+        chunks.add(letters.sublist(i,min(i+chunk_size, b_len)));
+    }
+    return chunks;
 }
