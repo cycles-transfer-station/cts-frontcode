@@ -124,8 +124,10 @@ class CustomState {
         await Future.wait([
             this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
-            this.cycles_market_data.load_data(),
-            cycles_market_main_fresh_icrc1token_trade_contracts_future,
+            Future(()async{ 
+                await cycles_market_main_fresh_icrc1token_trade_contracts_future;
+                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_positions_and_trade_logs()));
+            }),
             Future(()async{ 
                 print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
@@ -162,6 +164,8 @@ class CustomState {
                                                 this.user!.cycles_bank!.fresh_icrc1_balances(),
                                                 this.user!.cycles_bank!.fresh_icrc1_transactions()
                                             ]);
+                                            
+                                            
                                             //test
                                             if (cts.principal.text != thp4z_id) {
                                                 //print('TESTING!');
