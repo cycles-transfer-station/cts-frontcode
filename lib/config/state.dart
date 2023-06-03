@@ -438,7 +438,7 @@ class CTSFees {
 }
 
 
-
+typedef Tokens = BigInt;
 
 
 Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {

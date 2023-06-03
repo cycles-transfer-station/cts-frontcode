@@ -30,7 +30,7 @@ class CyclesMarketMain {
 }
     
 
-class Icrc1TokenTradeContract {
+class Icrc1TokenTradeContract extends Record {
     final Principal icrc1_ledger_canister_id;
     final Principal trade_contract_canister_id;
     final Principal? opt_cm_caller;
@@ -38,7 +38,11 @@ class Icrc1TokenTradeContract {
         required this.icrc1_ledger_canister_id,
         required this.trade_contract_canister_id,
         required this.opt_cm_caller
-    });
+    }) {
+        this['icrc1_ledger_canister_id'] = this.icrc1_ledger_canister_id; 
+        this['trade_contract_canister_id'] = this.trade_contract_canister_id;
+        this['opt_cm_caller'] = Option(value: this.opt_cm_caller, value_type: PrincipalReference(isTypeStance:true));
+    }
     static Icrc1TokenTradeContract oftheRecord(Record r) {
         return Icrc1TokenTradeContract(
             icrc1_ledger_canister_id: r['icrc1_ledger_canister_id'] as Principal,
@@ -46,6 +50,8 @@ class Icrc1TokenTradeContract {
             opt_cm_caller: r.find_option<PrincipalReference>('opt_cm_caller').nullmap((pr)=>pr.principal!)
         );
     }
+    
+    Canister get canister => Canister(this.trade_contract_canister_id);
     
     // ------
     
