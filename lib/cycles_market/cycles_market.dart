@@ -24,7 +24,7 @@ class CyclesMarketMain {
             method_name: 'view_icrc1_token_trade_contracts',  
         ));
         Vector<Record> cs = (s.first as Vector).cast_vector<Record>();
-        this.icrc1token_trade_contracts = cs.map(Icrc1TokenTradeContract.oftheRecord).toList();
+        this.icrc1token_trade_contracts = await Future.wait(cs.map(Icrc1TokenTradeContract.oftheRecord));
     }
 
 }
@@ -34,20 +34,28 @@ class Icrc1TokenTradeContract extends Record {
     final Principal icrc1_ledger_canister_id;
     final Principal trade_contract_canister_id;
     final Principal? opt_cm_caller;
+    
+    final Icrc1Ledger ledger_data;
+    
     Icrc1TokenTradeContract({
         required this.icrc1_ledger_canister_id,
         required this.trade_contract_canister_id,
-        required this.opt_cm_caller
+        required this.opt_cm_caller,
+        required this.ledger_data,
     }) {
         this['icrc1_ledger_canister_id'] = this.icrc1_ledger_canister_id; 
         this['trade_contract_canister_id'] = this.trade_contract_canister_id;
         this['opt_cm_caller'] = Option(value: this.opt_cm_caller, value_type: PrincipalReference(isTypeStance:true));
     }
-    static Icrc1TokenTradeContract oftheRecord(Record r) {
+    static Future<Icrc1TokenTradeContract> oftheRecord(Record r) async {
+        Principal icrc1_ledger_canister_id = r['icrc1_ledger_canister_id'] as Principal; 
+        // call ledger for the fee and decimals
+        Icrc1Ledger ledger_data = await Icrc1Ledger.load(icrc1_ledger_canister_id);        
         return Icrc1TokenTradeContract(
-            icrc1_ledger_canister_id: r['icrc1_ledger_canister_id'] as Principal,
+            icrc1_ledger_canister_id: icrc1_ledger_canister_id,
             trade_contract_canister_id: r['trade_contract_canister_id'] as Principal,
-            opt_cm_caller: r.find_option<PrincipalReference>('opt_cm_caller').nullmap((pr)=>pr.principal!)
+            opt_cm_caller: r.find_option<PrincipalReference>('opt_cm_caller').nullmap((pr)=>pr.principal!),
+            ledger_data: ledger_data
         );
     }
     

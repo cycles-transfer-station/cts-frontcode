@@ -221,46 +221,64 @@ class CyclesBank extends Canister {
     }
     
 
-    Future<Iterable<T>> cycles_bank_download_mechanism<T>({
-        required int chunk_size, 
+    Future<List<T>> cb_download_mechanism<T>({
+        Icrc1TokenTradeContract? icrc1token_trade_contract, // use for the cm-logs download methods 
+        required String download_method_name,
         required int len_so_far,
-        required String download_method_name,  
-        required T Function(Record) function,
+        required T Function(Record) fn
     }) async {
-        List<T> list = [];
-        int start_chunk = (len_so_far / chunk_size).toDouble().floor();
-        int start_chunk_position = len_so_far >= chunk_size ? (len_so_far % chunk_size) : len_so_far;
-        for (int i=start_chunk; true; i++) {
-            Option opt_records = (c_backwards(
-                await this.user.call(
-                    this,
-                    method_name: download_method_name,
-                    calltype: CallType.query,
-                    put_bytes: c_forwards([Nat(BigInt.from(i))])
-                )
-            )[0] as Option);
-            Vector<Record>? records = opt_records.value != null ? (opt_records.value! as Vector).cast_vector<Record>() : null;
-            if (records != null) {
-                list.addAll(records.sublist(i==start_chunk ? start_chunk_position : 0).map<T>(function));
-                if (records.length < chunk_size) {
-                    break;
-                }
-            } else {
+        int? opt_start_before_i;
+        List<T> gather_logs = [];
+        int? logs_len; // set once on the first call.
+        while (true) {
+            
+            Record download_sponse = c_backwards(await this.user.call(
+                this,
+                method_name: download_method_name,
+                calltype: CallType.query,
+                put_bytes: c_forwards([
+                    if (icrc1token_trade_contract != null) icrc1token_trade_contract,
+                    Record.oftheMap({
+                        'opt_start_before_i': Option<Nat64>(value: opt_start_before_i.nullmap((n)=>Nat64(BigInt.from(n))), value_type: Nat64()),
+                        'chunk_size': Nat64(500)
+                    })
+                ])
+            )).first as Record;
+            
+            if (logs_len == null) { // only set once on the first call
+                logs_len = (download_sponse['logs_len'] as Nat64).value.toInt();
+            }
+            
+            List<T>? logs = download_sponse.find_option<Vector>('logs').nullmap((v)=>v.cast_vector<Record>().map(fn).toList());
+            
+            if (logs == null) {
                 break;
-            }      
+            }
+            
+            gather_logs = [
+                ...logs,
+                ...gather_logs
+            ];
+            
+            if (len_so_far + gather_logs.length > logs_len) {
+                gather_logs.removeRange(0, len_so_far + gather_logs.length - logs_len);
+                break;
+            }
+            if (len_so_far + gather_logs.length == logs_len) {
+                break;
+            }
+            opt_start_before_i = logs_len - gather_logs.length;
+            
         }
-        return list;
+        return gather_logs;   
     }
 
 
 
 
     Future<void> fresh_cycles_transfers_in() async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-
         this.cycles_transfers_in.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cycles_transfers_in_chunk_size.toInt(), 
+            await cb_download_mechanism(
                 len_so_far: this.cycles_transfers_in.length,
                 download_method_name: 'download_cycles_transfers_in', 
                 function: CyclesTransferIn.oftheRecord,
@@ -269,20 +287,25 @@ class CyclesBank extends Canister {
     }
     
     Future<void> fresh_cycles_transfers_out() async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
         // re-fresh the cycles-transfers-out that still have pending callbacks.
+        List<CyclesTransferOut> backup_transfers_with_pending_callbacks = [];// backup in case re-fresh fails
         int i = this.cycles_transfers_out.indexWhere((CyclesTransferOut cto)=>cto.cycles_refunded == null);
         if (i >= 0) {
+            backup_transfers_with_pending_callbacks = this.cycles_transfers_out.sublist(i, this.cycles_transfers_out.length);
             this.cycles_transfers_out.removeRange(i, this.cycles_transfers_out.length);
         }
-        this.cycles_transfers_out.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cycles_transfers_out_chunk_size.toInt(), 
-                len_so_far: this.cycles_transfers_out.length,
-                download_method_name: 'download_cycles_transfers_out', 
-                function: CyclesTransferOut.oftheRecord,
-            )
-        ); 
+        try {
+            this.cycles_transfers_out.addAll(
+                await cb_download_mechanism(
+                    len_so_far: this.cycles_transfers_out.length,
+                    download_method_name: 'download_cycles_transfers_out', 
+                    function: CyclesTransferOut.oftheRecord,
+                )
+            );
+        } catch(e) {
+            this.cycles_transfers_out.addAll(backup_transfers_with_pending_callbacks);
+            throw e;
+        }
     }
     
     
@@ -531,6 +554,7 @@ class CyclesBank extends Canister {
     
     // is this backwards? the fresh icp transactions part in the fresh_icrc1ledger_transactions function does prepend? test
     Future<void> fresh_cm_icp_transfers() async {
+        throw Unimplemented();
         this.cm_icp_transfers.addAll(
             await get_icp_transfers(
                 this.cm_icp_id, 
@@ -539,155 +563,213 @@ class CyclesBank extends Canister {
         );
     }
     
-    Future<void> fresh_cm_cycles_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_cycles_positions.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cm_cycles_positions_chunk_size.toInt(), 
-                len_so_far: this.cm_cycles_positions.length,
-                download_method_name: 'download_cm_cycles_positions', 
-                function: CMCyclesPosition.oftheRecord,
-            )
-        ); 
+    // use future locks on the load/fresh logs fns like for the cm trade logs
+    /*
+    Future<void> load_trade_logs() async {
+        if (this.load_trade_logs_future != null) {
+            await this.load_trade_logs_future!;
+        } else {
+            this.load_trade_logs_future = create_load_trade_logs_future();
+            await this.load_trade_logs_future!;
+            this.load_trade_logs_future == null;
+        } 
     }
     
-    Future<void> fresh_cm_icp_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_icp_positions.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cm_icp_positions_chunk_size.toInt(), 
-                len_so_far: this.cm_icp_positions.length,
-                download_method_name: 'download_cm_icp_positions', 
-                function: CMIcpPosition.oftheRecord,
-            )
-        );  
+    Future<void> create_load_trade_logs_future() async {
+     
+    */
+    
+    Future<void> fresh_cm_cycles_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_cycles_positions.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_cycles_positions.length,
+                        download_method_name: 'download_cm_cycles_positions', 
+                        function: CMCyclesPosition.oftheRecord,
+                    )
+                );
+            }))   
+        );
+    }             
+    
+    Future<void> fresh_cm_token_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_token_positions.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_positions.length,
+                        download_method_name: 'download_cm_token_positions', 
+                        function: CMTokenPosition.oftheRecord,
+                    )
+                );
+            }))   
+        );        
     }
     
     Future<void> fresh_cm_cycles_positions_purchases([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_cycles_positions_purchases.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cm_cycles_positions_purchases_chunk_size.toInt(), 
-                len_so_far: this.cm_cycles_positions_purchases.length,
-                download_method_name: 'download_cm_cycles_positions_purchases', 
-                function: CMCyclesPositionPurchase.oftheRecord,
-            )
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_cycles_positions_purchases.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_cycles_positions_purchases.length,
+                        download_method_name: 'download_cm_cycles_positions_purchases', 
+                        function: CMCyclesPositionPurchase.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
-    Future<void> fresh_cm_icp_positions_purchases([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_icp_positions_purchases.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cm_icp_positions_purchases_chunk_size.toInt(), 
-                len_so_far: this.cm_icp_positions_purchases.length,
-                download_method_name: 'download_cm_icp_positions_purchases', 
-                function: CMIcpPositionPurchase.oftheRecord,
-            )
-        ); 
-    }
-    
-    Future<void> fresh_cm_icp_transfers_out([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_icp_transfers_out.addAll(
-            await cycles_bank_download_mechanism(
-                chunk_size: this.metrics!.download_cm_icp_transfers_out_chunk_size.toInt(), 
-                len_so_far: this.cm_icp_transfers_out.length,
-                download_method_name: 'download_cm_icp_transfers_out', 
-                function: CMIcpTransferOut.oftheRecord,
-            )
+    Future<void> fresh_cm_token_positions_purchases([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_token_positions_purchases.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_positions_purchases.length,
+                        download_method_name: 'download_cm_token_positions_purchases', 
+                        function: CMTokenPositionPurchase.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
-    
-
+    Future<void> fresh_cm_token_transfers_out([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_token_transfers_out.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_transfers_out.length,
+                        download_method_name: 'download_cm_token_transfers_out', 
+                        function: CMTokenTransferOut.oftheRecord,
+                    )
+                );
+            }))   
+        );
+    }
     
     
     Future<void> fresh_cm_message_cycles_position_purchase_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_cycles_position_purchase_positor_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageCyclesPositionPurchasePositorLog>(
-                chunk_size: this.metrics!.download_cm_message_cycles_position_purchase_positor_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_cycles_position_purchase_positor_logs.length,
-                download_method_name: 'download_cm_message_cycles_position_purchase_positor_logs', 
-                function: CMMessageCyclesPositionPurchasePositorLog.oftheRecord,
-            )
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_cycles_position_purchase_positor_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_cycles_position_purchase_positor_logs.length,
+                        download_method_name: 'download_cm_message_cycles_position_purchase_positor_logs', 
+                        function: CMMessageCyclesPositionPurchasePositorLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
     Future<void> fresh_cm_message_cycles_position_purchase_purchaser_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_cycles_position_purchase_purchaser_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageCyclesPositionPurchasePurchaserLog>(
-                chunk_size: this.metrics!.download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_cycles_position_purchase_purchaser_logs.length,
-                download_method_name: 'download_cm_message_cycles_position_purchase_purchaser_logs', 
-                function: CMMessageCyclesPositionPurchasePurchaserLog.oftheRecord,
-            )
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_cycles_position_purchase_purchaser_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_cycles_position_purchase_purchaser_logs.length,
+                        download_method_name: 'download_cm_message_cycles_position_purchase_purchaser_logs', 
+                        function: CMMessageCyclesPositionPurchasePurchaserLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
-    Future<void> fresh_cm_message_icp_position_purchase_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_icp_position_purchase_positor_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageIcpPositionPurchasePositorLog>(
-                chunk_size: this.metrics!.download_cm_message_icp_position_purchase_positor_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_icp_position_purchase_positor_logs.length,
-                download_method_name: 'download_cm_message_icp_position_purchase_positor_logs', 
-                function: CMMessageIcpPositionPurchasePositorLog.oftheRecord,
-            )
+    Future<void> fresh_cm_message_token_position_purchase_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_token_position_purchase_positor_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_token_position_purchase_positor_logs.length,
+                        download_method_name: 'download_cm_message_token_position_purchase_positor_logs', 
+                        function: CMMessageTokenPositionPurchasePositorLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
-    Future<void> fresh_cm_message_icp_position_purchase_purchaser_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_icp_position_purchase_purchaser_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageIcpPositionPurchasePurchaserLog>(
-                chunk_size: this.metrics!.download_cm_message_icp_position_purchase_purchaser_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_icp_position_purchase_purchaser_logs.length,
-                download_method_name: 'download_cm_message_icp_position_purchase_purchaser_logs', 
-                function: CMMessageIcpPositionPurchasePurchaserLog.oftheRecord,
-            )
+    Future<void> fresh_cm_message_token_position_purchase_purchaser_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_token_position_purchase_purchaser_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_token_position_purchase_purchaser_logs.length,
+                        download_method_name: 'download_cm_message_token_position_purchase_purchaser_logs', 
+                        function: CMMessageTokenPositionPurchasePurchaserLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
     Future<void> fresh_cm_message_void_cycles_position_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_void_cycles_position_positor_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageVoidCyclesPositionPositorLog>(
-                chunk_size: this.metrics!.download_cm_message_void_cycles_position_positor_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_void_cycles_position_positor_logs.length,
-                download_method_name: 'download_cm_message_void_cycles_position_positor_logs', 
-                function: CMMessageVoidCyclesPositionPositorLog.oftheRecord,
-            )
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_void_cycles_position_positor_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_void_cycles_position_positor_logs.length,
+                        download_method_name: 'download_cm_message_void_cycles_position_positor_logs', 
+                        function: CMMessageVoidCyclesPositionPositorLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
 
-    Future<void> fresh_cm_message_void_icp_position_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        this.cm_message_void_icp_position_positor_logs.addAll(
-            await cycles_bank_download_mechanism<CMMessageVoidIcpPositionPositorLog>(
-                chunk_size: this.metrics!.download_cm_message_void_icp_position_positor_logs_chunk_size.toInt(), 
-                len_so_far: this.cm_message_void_icp_position_positor_logs.length,
-                download_method_name: 'download_cm_message_void_icp_position_positor_logs', 
-                function: CMMessageVoidIcpPositionPositorLog.oftheRecord,
-            )
+    Future<void> fresh_cm_message_void_token_position_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((tc)=>Future(()async{
+                this.cm_trade_contracts[tc]!.logs.cm_message_void_token_position_positor_logs.addAll(
+                    await cb_download_mechanism(
+                        icrc1token_trade_contract: tc,
+                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_message_void_token_position_positor_logs.length,
+                        download_method_name: 'download_cm_message_void_token_position_positor_logs', 
+                        function: CMMessageVoidTokenPositionPositorLog.oftheRecord,
+                    )
+                );
+            }))   
         );
     }
     
     Future<void> load_cm_data() async {
         await Future.wait([
-            this.fresh_cm_icp_balance(),
+            this.fresh_cm_trade_contracts_token_balances(),
             this.fresh_cm_cycles_positions(),
-            this.fresh_cm_icp_positions(),
+            this.fresh_cm_token_positions(),
             this.fresh_cm_cycles_positions_purchases(),
-            this.fresh_cm_icp_positions_purchases(),
+            this.fresh_cm_token_positions_purchases(),
+            this.fresh_cm_token_transfers_out(),
             this.fresh_cm_message_cycles_position_purchase_positor_logs(),
             this.fresh_cm_message_cycles_position_purchase_purchaser_logs(),
-            this.fresh_cm_message_icp_position_purchase_positor_logs(),
-            this.fresh_cm_message_icp_position_purchase_purchaser_logs(),
+            this.fresh_cm_message_token_position_purchase_positor_logs(),
+            this.fresh_cm_message_token_position_purchase_purchaser_logs(),
             this.fresh_cm_message_void_cycles_position_positor_logs(),
-            this.fresh_cm_message_void_icp_position_positor_logs(),
+            this.fresh_cm_message_void_token_position_positor_logs(),
         ]);
     }
 
@@ -699,7 +781,7 @@ class CyclesBank extends Canister {
             await user.call(
                 this,
                 method_name: 'cm_create_cycles_position',
-                put_bytes: c_forwards([q]),
+                put_bytes: c_forwards([icrc1token_trade_contract, q]),
                 calltype: CallType.call
             )
         )[0] as Variant;
@@ -739,7 +821,7 @@ class CyclesBank extends Canister {
                             },
                             'CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump': (r_ctype) {
                                 Record r = r_ctype as Record;
-                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum xdr-icp-rate: ${XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['minimum_rate_for_a_bump'] as Nat64)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
+                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum cycles-per-token-rate: ${Cycles.oftheNat(r['minimum_rate_for_a_bump'] as Nat)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
                             },
                             'MinimumCyclesPosition': (cycles_nat) {
                                 throw Exception('The minimum cycles for a cycles-position is: ${Cycles.oftheNat(cycles_nat)}');
@@ -747,37 +829,36 @@ class CyclesBank extends Canister {
                             'MinimumPurchaseCannotBeZero': (nul) {
                                 throw Exception('The position minimum-purchase must greater than 0.');
                             },
-                            'CyclesMustBeAMultipleOfTheXdrPerMyriadPerIcpRate': (nul) {
-                                throw Exception('The positon\'s-cycles must be a multiple of the xdr_permyriad_per_icp_rate or the xdr/icp-rate * 10000');
+                            'CyclesMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
+                                throw Exception('The positon\'s-cycles must be a multiple of the cycles_per_token_rate');
                             },
-                            'MinimumPurchaseMustBeAMultipleOfTheXdrPerMyriadPerIcpRate': (nul) {
-                                throw Exception('The positon\'s-minimum-purchase must be a multiple of the xdr_permyriad_per_icp_rate or the xdr/icp-rate * 10000');
+                            'MinimumPurchaseMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
+                                throw Exception('The positon\'s-minimum-purchase must be a multiple of the cycles_per_token_rate');
                             },
                         });
                     }
                 });           
             }
         });   
-        this.metrics!.cm_cycles_positions_len = this.metrics!.cm_cycles_positions_len + BigInt.from(1);
-        await this.fresh_cm_cycles_positions();
+        await this.fresh_cm_cycles_positions(icrc1token_trade_contract);
         return create_cycles_position_success;
     }
     
-    Future<CreateIcpPositionSuccess> cm_create_icp_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateIcpPositionQuest q) async {
+    Future<CreateTokenPositionSuccess> cm_create_token_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateTokenPositionQuest q) async {
         Variant sponse = c_backwards(
             await user.call(
                 this,
-                method_name: 'cm_create_icp_position',
+                method_name: 'cm_create_token_position',
                 calltype: CallType.call,
-                put_bytes: c_forwards([q])
+                put_bytes: c_forwards([icrc1token_trade_contract, q])
             )
         )[0] as Variant;
-        CreateIcpPositionSuccess create_icp_position_success = match_variant<CreateIcpPositionSuccess>(sponse, {
+        CreateTokenPositionSuccess create_token_position_success = match_variant<CreateTokenPositionSuccess>(sponse, {
             Ok: (ok_record) {
-                return CreateIcpPositionSuccess.oftheRecord(ok_record as Record);
+                return CreateTokenPositionSuccess.oftheRecord(ok_record as Record);
             },
-            Err: (user_cm_create_icp_position_error) {
-                return match_variant<Never>(user_cm_create_icp_position_error as Variant, {
+            Err: (user_cm_create_token_position_error) {
+                return match_variant<Never>(user_cm_create_token_position_error as Variant, {
                     'CTSFuelTooLow': (nul) {
                         throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
                     },
@@ -789,12 +870,16 @@ class CyclesBank extends Canister {
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
                         throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee']!)}');
                     },
-                    'CyclesMarketCreateIcpPositionCallError': (call_error_record) {
+                    'CyclesMarketCreateTokenPositionCallError': (call_error_record) {
                         throw Exception('cycles-market create_icp_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');    
                     },
-                    'CyclesMarketCreateIcpPositionError': (cycles_market_create_icp_position_error) {
-                        return match_variant<Never>(cycles_market_create_icp_position_error as Variant, {
-                            'MinimumPurchaseMustBeEqualOrLessThanTheIcpPosition': (nul) {
+                    'CyclesMarketCreateTokenPositionCallSponseCandidDecodeError': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        throw Exception('Error decoding cycles-market create_token_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
+                    },
+                    'CyclesMarketCreateTokenPositionError': (cycles_market_create_token_position_error) {
+                        return match_variant<Never>(cycles_market_create_token_position_error as Variant, {
+                            'MinimumPurchaseMustBeEqualOrLessThanTheTokenPosition': (nul) {
                                 throw Exception('The minimum-purchase of the position must be equal or less than the position.');
                             },
                             'MsgCyclesTooLow': (fee_record) {
@@ -806,22 +891,22 @@ class CyclesBank extends Canister {
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
-                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul) {
+                            'CallerIsInTheMiddleOfACreateTokenPositionOrPurchaseCyclesPositionOrTransferTokenBalanceCall': (nul) {
                                 throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
                             },
-                            'CheckUserCyclesMarketIcpLedgerBalanceError':(call_error_record) {
-                                throw Exception('Error calling the icp-ledger for the cycles-bank\'s cycles-market-icp-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
+                            'CheckUserCyclesMarketTokenLedgerBalanceError':(call_error_record) {
+                                throw Exception('Error calling the token-ledger for the cycles-market-token-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
                             },
-                            'UserIcpBalanceTooLow': (user_icp_balance_record) {
-                                this.cm_icp_balance = IcpTokens.oftheRecord((user_icp_balance_record as Record)['user_icp_balance']!);
-                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low. The icp-balance must be enough to cover the icp-position + icp-position ~/ icp-position-minimum_purchase * ICP_LEDGER_TRANSFER_FEE[${ICP_LEDGER_TRANSFER_FEE}]\nicp-balance: ${this.cm_icp_balance!}\n');
+                            'UserTokenBalanceTooLow': (user_token_balance_record) {
+                                this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance = ((user_token_balance_record as Record)['user_token_balance'] as Nat).value;
+                                throw Exception('The cycles-market-token-balance is too low. The token-balance must be enough to cover the token-position (${q.tokens}) plus the token-ledger-transfer-fees for each possible purchase according to the minimum-purchase (${Tokens(token_quantums: (q.tokens.token_quantums ~/ q.minimum_purchase.token_quantums) * icrc1token_trade_contract.ledger_data.fee, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}). \ncurrent-token-balance: ${Tokens(token_quantums: this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
                             },
-                            'CyclesMarketIsFull_MaximumRateAndMinimumIcpPositionForABump': (r_ctype) {
+                            'CyclesMarketIsFull_MaximumRateAndMinimumTokenPositionForABump': (r_ctype) {
                                 Record r = r_ctype as Record;
-                                throw Exception('The cycles-market icp-positions are full. If you create an icp-position with a maximum xdr-icp-rate: ${XDRICPRate.oftheXdrPerMyriadPerIcpNat64(r['maximum_rate_for_a_bump']!)} and with a minimum icp-position: ${IcpTokens.oftheRecord(r['minimum_icp_position_for_a_bump']!)} then you will bump the most expensive icp-position and take its place.');
+                                throw Exception('The cycles-market token-positions are full. If you create a token-position with a maximum cycles-per-token-rate: ${Cycles.oftheNat(r['maximum_rate_for_a_bump'] as Nat)} and with a minimum token-position: ${Tokens.oftheNat(r['minimum_token_position_for_a_bump'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)} then you will bump the most expensive token-position and take its place.');
                             },
-                            'MinimumIcpPosition': (icptokens_record) {
-                                throw Exception('The minimum icp for an icp-position is: ${IcpTokens.oftheRecord(icptokens_record as Record)}');
+                            'MinimumTokenPosition': (tokens) {
+                                throw Exception('The minimum tokens for a token-position is: ${Tokens.oftheNat(tokens, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
                             },
                             'MinimumPurchaseCannotBeZero': (nul) {
                                 throw Exception('The position minimum-purchase must greater than 0.');
@@ -831,9 +916,8 @@ class CyclesBank extends Canister {
                 });
             }
         });        
-        this.metrics!.cm_icp_positions_len = this.metrics!.cm_icp_positions_len + BigInt.from(1);
-        await this.fresh_cm_icp_positions();
-        return create_icp_position_success;    
+        await this.fresh_cm_token_positions(icrc1token_trade_contract);
+        return create_token_position_success;    
     }
     
     
@@ -844,12 +928,13 @@ class CyclesBank extends Canister {
                 method_name: 'cm_purchase_cycles_position',
                 calltype: CallType.call,
                 put_bytes: c_forwards([
+                    icrc1token_trade_contract,
                     CyclesBankCMPurchaseCyclesPositionQuest(
                         cycles_market_purchase_cycles_position_quest: CyclesMarketPurchaseCyclesPositionQuest(
                             cycles_position_id: cycles_position.id,
                             cycles: purchase_cycles,
                         ),
-                        cycles_position_xdr_permyriad_per_icp_rate: cycles_position.xdr_permyriad_per_icp_rate,
+                        cycles_position_cycles_per_token_rate: cycles_position.cycles_per_token_rate,
                         cycles_position_positor: cycles_position.positor
                     )
                 ])
@@ -875,6 +960,10 @@ class CyclesBank extends Canister {
                     'CyclesMarketPurchaseCyclesPositionCallError': (call_error_record) {
                         throw Exception('cycles-market purchase_cycles_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');                    
                     },
+                    'CyclesMarketPurchaseCyclesPositionCallSponseCandidDecodeError': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        throw Exception('Error decoding cycles-market purchase_cycles_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
+                    },
                     'CyclesMarketPurchaseCyclesPositionError': (cycles_market_purchase_cycles_position_error) {
                         return match_variant<Never>(cycles_market_purchase_cycles_position_error as Variant, {
                             'MsgCyclesTooLow': (fee_record) {
@@ -883,16 +972,19 @@ class CyclesBank extends Canister {
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
-                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul) {
+                            'CallerIsInTheMiddleOfACreateTokenPositionOrPurchaseCyclesPositionOrTransferTokenBalanceCall': (nul) {
                                 throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
                             },
-                            'CheckUserCyclesMarketIcpLedgerBalanceError': (call_error_record) {
-                                throw Exception('Error calling the icp-ledger for the cycles-bank\'s cycles-market-icp-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
+                            'CheckUserCyclesMarketTokenLedgerBalanceError': (call_error_record) {
+                                throw Exception('Error calling the ${icrc1token_trade_contract.ledger_data.symbol}-ledger for the cycles-market-token-balance.\n${CallError.oftheRecord(call_error_record as Record)}');
                             },
-                            'UserIcpBalanceTooLow': (user_icp_balance_record) {
-                                this.cm_icp_balance = IcpTokens.oftheRecord((user_icp_balance_record as Record)['user_icp_balance']!);
-                                IcpTokens cycles_position_purchase_cycles_icp_cost = cycles_to_icptokens(purchase_cycles, cycles_position.xdr_permyriad_per_icp_rate); 
-                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for the purchase. \ncycles-bank\'s cycles-market-icp-balance: ${this.cm_icp_balance!}\npurchase_cycles: ${purchase_cycles}\nicp-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_icp_cost}, icp-ledger-transfer-fee: ${ICP_LEDGER_TRANSFER_FEE}');
+                            'UserTokenBalanceTooLow': (user_token_balance_record) {
+                                this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance = ((user_token_balance_record as Record)['user_token_balance'] as Nat).value;
+                                Tokens cycles_position_purchase_cycles_token_cost = Tokens(
+                                    token_quantums: cycles_transform_tokens(purchase_cycles, cycles_position.cycles_per_token_rate),
+                                    decimal_places: icrc1token_trade_contract.ledger_data.decimals
+                                ); 
+                                throw Exception('The user\'s-cycles-market-${icrc1token_trade_contract.ledger_data.symbol}-balance is too low for the purchase. \ncycles-market-${icrc1token_trade_contract.ledger_data.symbol}-balance: ${Tokens(token_quantums: this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}\npurchase_cycles: ${purchase_cycles}\n${icrc1token_trade_contract.ledger_data.symbol}-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_token_cost}, ${icrc1token_trade_contract.ledger_data.symbol}-ledger-transfer-fee: ${icrc1token_trade_contract.ledger_data.fee_tokens}');
                             },
                             'CyclesPositionNotFound':(nul) {
                                 throw Exception('The cycles-position: ${cycles_position.id} is not found.');
@@ -904,43 +996,43 @@ class CyclesBank extends Canister {
                             'CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest': (cycles_position_minimum_purchase_record) {
                                 throw Exception('File this error: CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this cycles-position is ${Cycles.oftheNat((cycles_position_minimum_purchase_record as Record)['cycles_position_minimum_purchase']!)}');
                             },
-                            'PurchaseCyclesMustBeAMultipleOfTheXdrPerMyriadPerIcpRate': (nul) {
-                                throw Exception('The purchase-cycles must be a multiple of the xdr_permyriad_per_icp_rate or the xdr/icp-rate * 10000');
+                            'PurchaseCyclesMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
+                                throw Exception('The purchase-cycles must be a multiple of the cycles_per_token_rate');
                             }
                         });
                     }
                 });
             }
         });
-        this.metrics!.cm_cycles_positions_purchases_len = this.metrics!.cm_cycles_positions_purchases_len + BigInt.from(1);
-        await this.fresh_cm_cycles_positions_purchases();
+        await this.fresh_cm_cycles_positions_purchases(icrc1token_trade_contract);
         return purchase_cycles_position_success;
     }
     
-    Future<PurchaseIcpPositionSuccess> cm_purchase_icp_position(Icrc1TokenTradeContract icrc1token_trade_contract, IcpPosition icp_position, IcpTokens purchase_icp) async {
+    Future<PurchaseTokenPositionSuccess> cm_purchase_token_position(Icrc1TokenTradeContract icrc1token_trade_contract, TokenPosition token_position, Tokens purchase_tokens) async {
         Variant sponse = c_backwards(
             await user.call(
                 this,
-                method_name: 'cm_purchase_icp_position',
+                method_name: 'cm_purchase_token_position',
                 calltype: CallType.call,
                 put_bytes: c_forwards([
-                    CyclesBankCMPurchaseIcpPositionQuest(
-                        cycles_market_purchase_icp_position_quest: CyclesMarketPurchaseIcpPositionQuest(
-                            icp_position_id: icp_position.id, 
-                            icp: purchase_icp
+                    icrc1token_trade_contract,
+                    CyclesBankCMPurchaseTokenPositionQuest(
+                        cycles_market_purchase_token_position_quest: CyclesMarketPurchaseTokenPositionQuest(
+                            token_position_id: token_position.id, 
+                            tokens: purchase_tokens
                         ),
-                        icp_position_xdr_permyriad_per_icp_rate: icp_position.xdr_permyriad_per_icp_rate,
-                        icp_position_positor: icp_position.positor
+                        token_position_cycles_per_token_rate: token_position.cycles_per_token_rate,
+                        token_position_positor: token_position.positor
                     )
                 ])
             )
         ).first as Variant;
-        PurchaseIcpPositionSuccess purchase_icp_position_success = match_variant<PurchaseIcpPositionSuccess>(sponse, {
+        PurchaseTokenPositionSuccess purchase_token_position_success = match_variant<PurchaseTokenPositionSuccess>(sponse, {
             Ok:(ok){
-                return PurchaseIcpPositionSuccess.oftheRecord(ok as Record);
+                return PurchaseTokenPositionSuccess.oftheRecord(ok as Record);
             },
-            Err: (cycles_bank_cm_purchase_icp_position_error){
-                return match_variant<Never>(cycles_bank_cm_purchase_icp_position_error as Variant, {
+            Err: (cycles_bank_cm_purchase_token_position_error){
+                return match_variant<Never>(cycles_bank_cm_purchase_token_position_error as Variant, {
                     'CTSFuelTooLow': (nul) {
                         throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
                     },
@@ -950,36 +1042,39 @@ class CyclesBank extends Canister {
                     'CyclesBalanceTooLow': (r_ctype) {
                         Record r = r_ctype as Record;
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}\ncost for a purchase of the ${purchase_icp}-icp of the icp-position: ${icp_position.id} with the xdr-icp-rate: ${icp_position.xdr_permyriad_per_icp_rate} is: ${icptokens_to_cycles(purchase_icp, icp_position.xdr_permyriad_per_icp_rate)}');
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}\ncost for a purchase of the ${purchase_tokens}-${icrc1token_trade_contract.ledger_data.symbol} of the token-position: ${token_position.id} with the cycles_per_token-rate: ${token_position.cycles_per_token_rate} is: ${tokens_transform_cycles(purchase_tokens.token_quantums, token_position.cycles_per_token_rate.cycles)}');
                     },
-                    'CyclesMarketPurchaseIcpPositionCallError': (call_error_record) {
-                        throw Exception('cycles-market purchase_icp_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');                    
+                    'CyclesMarketPurchaseTokenPositionCallError': (call_error_record) {
+                        throw Exception('cycles-market purchase_token_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');                    
                     },
-                    'CyclesMarketPurchaseIcpPositionError': (cycles_market_purchase_icp_position_error) {
-                        return match_variant<Never>(cycles_market_purchase_icp_position_error as Variant, {
+                    'CyclesMarketPurchaseTokenPositionCallSponseCandidDecodeError': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        throw Exception('Error decoding cycles-market purchase_token_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
+                    },
+                    'CyclesMarketPurchaseTokenPositionError': (cycles_market_purchase_token_position_error) {
+                        return match_variant<Never>(cycles_market_purchase_token_position_error as Variant, {
                             'MsgCyclesTooLow': (fee_record) {
                                 throw Exception('File this error: \nMsgCyclesTooLow purchase_position_fee: ${Cycles.oftheNat((fee_record as Record)['purchase_position_fee']!)}');
                             },
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
-                            'IcpPositionNotFound': (nul) {
-                                throw Exception('The icp-position: ${icp_position.id} is not found.');
+                            'TokenPositionNotFound': (nul) {
+                                throw Exception('The token-position: ${token_position.id} is not found.');
                             },
-                            'IcpPositionIcpIsLessThanThePurchaseQuest': (icp_position_icp_record) {
-                                throw Exception('This icp-position: ${icp_position.id} has ${IcpTokens.oftheRecord((icp_position_icp_record as Record)['icp_position_icp']! as Record)}-icp.');
+                            'TokenPositionTokensIsLessThanThePurchaseQuest': (token_position_tokens_record) {
+                                throw Exception('This token-position: ${token_position.id} has ${Tokens.oftheNat((token_position_tokens_record as Record)['token_position_tokens'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}-tokens.');
                             },
-                            'IcpPositionMinimumPurchaseIsGreaterThanThePurchaseQuest':(icp_position_minimum_purchase_record){
-                                throw Exception('File this error: IcpPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this icp-position is ${IcpTokens.oftheRecord((icp_position_minimum_purchase_record as Record)['icp_position_minimum_purchase']!)}');
+                            'TokenPositionMinimumPurchaseIsGreaterThanThePurchaseQuest':(token_position_minimum_purchase_record){
+                                throw Exception('File this error: TokenPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this token-position is ${Tokens.oftheNat((token_position_minimum_purchase_record as Record)['token_position_minimum_purchase'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
                             }
                         });
                     }
                 });
             }
         });
-        this.metrics!.cm_icp_positions_purchases_len = this.metrics!.cm_icp_positions_purchases_len + BigInt.from(1);
-        await this.fresh_cm_icp_positions_purchases();
-        return purchase_icp_position_success;
+        await this.fresh_cm_token_positions_purchases(icrc1token_trade_contract);
+        return purchase_token_position_success;
     }
     
     
@@ -990,6 +1085,7 @@ class CyclesBank extends Canister {
                 method_name: 'cm_void_position',
                 calltype: CallType.call,
                 put_bytes: c_forwards([
+                    icrc1token_trade_contract,
                     CyclesMarketVoidPositionQuest(
                         position_id: position_id
                     )
@@ -1030,21 +1126,21 @@ class CyclesBank extends Canister {
         });
     }
 
-    Future<BigInt/*block_height*/> cm_transfer_icp_balance(Icrc1TokenTradeContract icrc1token_trade_contract, CyclesMarketTransferIcpBalanceQuest q) async {
+    Future<BigInt/*block_height*/> cm_transfer_token_balance(Icrc1TokenTradeContract icrc1token_trade_contract, CyclesMarketTransferTokenBalanceQuest q) async {
         Variant sponse = c_backwards(
             await user.call(
                 this,
-                method_name: 'cm_transfer_icp_balance',
+                method_name: 'cm_transfer_token_balance',
                 calltype: CallType.call,
-                put_bytes: c_forwards([q])
+                put_bytes: c_forwards([icrc1token_trade_contract, q])
             )
         ).first as Variant;
         BigInt block_height = match_variant<BigInt>(sponse, {
-            Ok: (block_height_nat64) {
-                return (block_height_nat64 as Nat64).value;
+            Ok: (block_height_nat) {
+                return (block_height_nat as Nat).value;
             },
-            Err: (transfer_icp_balance_error) {
-                return match_variant<Never>(transfer_icp_balance_error as Variant, {
+            Err: (transfer_token_balance_error) {
+                return match_variant<Never>(transfer_token_balance_error as Variant, {
                     'CTSFuelTooLow': (nul) {
                         throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
                     },
@@ -1054,41 +1150,45 @@ class CyclesBank extends Canister {
                     'CyclesBalanceTooLow': (r_ctype){
                         Record r = r_ctype as Record;
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance'] as Nat);
-                        throw Exception('The cycles-balance is too low on this cycles-bank.\ncycles_balance: ${Cycles.oftheNat(r['cycles_balance'] as Nat)}\ncycles_market_transfer_icp_balance_fee: ${Cycles.oftheNat(r['cycles_market_transfer_icp_balance_fee']!)}');
+                        throw Exception('The cycles-balance is too low on this cycles-bank.\ncycles_balance: ${Cycles.oftheNat(r['cycles_balance'] as Nat)}\ncycles_market_transfer_token_balance_fee: ${Cycles.oftheNat(r['cycles_market_transfer_token_balance_fee']!)}');
                     },
-                    'CyclesMarketTransferIcpBalanceCallError': (call_error_record) {
-                        throw Exception('cycles_market transfer_icp_balance call_error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                    'CyclesMarketTransferTokenBalanceCallError': (call_error_record) {
+                        throw Exception('cycles_market transfer_token_balance call_error: \n${CallError.oftheRecord(call_error_record as Record)}');
                     },
-                    'CyclesMarketTransferIcpBalanceError': (cycles_market_transfer_icp_balance_error) {
-                        return match_variant<Never>(cycles_market_transfer_icp_balance_error as Variant, {
+                    'CyclesMarketTransferTokenBalanceCallSponseCandidDecodeError': (r_ctype) {
+                        Record r = r_ctype as Record;
+                        throw Exception('Error decoding cycles-market transfer_token_balance response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
+                    },
+                    'CyclesMarketTransferTokenBalanceError': (cycles_market_transfer_token_balance_error) {
+                        return match_variant<Never>(cycles_market_transfer_token_balance_error as Variant, {
                             'MsgCyclesTooLow': (r){
                                 throw Exception('File this error: MsgCyclesTooLow \n${r}');
                             },
                             'CyclesMarketIsBusy': (nul) {
                                 throw Exception('The cycles-market is busy. try soon.');
                             },
-                            'CallerIsInTheMiddleOfACreateIcpPositionOrPurchaseCyclesPositionOrTransferIcpBalanceCall': (nul){
+                            'CallerIsInTheMiddleOfACreateTokenPositionOrPurchaseCyclesPositionOrTransferTokenBalanceCall': (nul){
                                 throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');
                             },
-                            'CheckUserCyclesMarketIcpLedgerBalanceCallError': (call_error_record) {
-                                throw Exception('Icp-ledger balance call error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                            'CheckUserCyclesMarketTokenLedgerBalanceCallError': (call_error_record) {
+                                throw Exception('${icrc1token_trade_contract.ledger_data.symbol}-ledger token-balance call error: \n${CallError.oftheRecord(call_error_record as Record)}');
                             },
-                            'UserIcpBalanceTooLow': (r) {
-                                this.cm_icp_balance = IcpTokens.oftheRecord((r as Record)['user_icp_balance']!);
-                                throw Exception('The cycles-bank\'s cycles-market-icp-balance is too low for this transfer.\nicp_balance: ${this.cm_icp_balance}');
+                            'UserTokenBalanceTooLow': (user_token_balance_record) {
+                                this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance = ((user_token_balance_record as Record)['user_token_balance'] as Nat).value;
+                                throw Exception('The cycles-market-${icrc1token_trade_contract.ledger_data.symbol}-balance is too low for this transfer.\n${icrc1token_trade_contract.ledger_data.symbol}-balance: ${Tokens(token_quantums: this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
                             },
-                            'IcpTransferCallError':(call_error_record) {
-                                throw Exception('Icp-ledger transfer call error: \n${CallError.oftheRecord(call_error_record as Record)}');
+                            'TokenTransferCallError':(call_error_record) {
+                                throw Exception('${icrc1token_trade_contract.ledger_data.symbol}-ledger transfer call error: \n${CallError.oftheRecord(call_error_record as Record)}');
                             },
-                            'IcpTransferError': (icp_transfer_error){
-                                return match_variant<Never>(icp_transfer_error as Variant, this.user.icp_transfer_error_match_map);
+                            'TokenTransferError': (token_transfer_error){
+                                return match_variant<Never>(token_transfer_error as Variant, token_transfer_error_match_map(icrc1token_trade_contract.ledger_data.decimals));
                             }
                         });
                     }                
                 });
             }
         });
-        this.metrics!.cm_icp_transfers_out_len = this.metrics!.cm_icp_transfers_out_len + BigInt.from(1);
+        this.fresh_cm_token_transfers_out(icrc1token_trade_contract);
         return block_height;
     }
 
@@ -1096,6 +1196,33 @@ class CyclesBank extends Canister {
 
 }
 
+
+Map<String, Never Function(CandidType)> token_transfer_error_match_map({required int token_decimal_places}) {
+    'BadFee': (expected_fee_record) {
+        throw Exception('Bad Fee set on the transfer. expected_fee: ${Tokens.oftheNat((expected_fee_record as Record)['expected_fee'] as Nat, decimal_places: token_decimal_places)}');
+    },
+    'InsufficientFunds': (balance_record) {
+        // this error does not happen on a cycles-market cm_transfer_token_balance
+        Tokens current_balance = Tokens.oftheNat((balance_record as Record)['balance'] as Nat, decimal_places: token_decimal_places);
+        throw Exception('Token balance is too low. current balance: ${current_balance}');
+    },
+    'TooOld': (nul) {
+        throw Exception('Token transfer created_at_time field is too old');
+    },
+    'CreatedInFuture': (n) {
+        throw Exception('Token transfer created_at_time field is too far in the future.');
+    },
+    'Duplicate': (duplicate_of_record) {
+        throw Exception('The Token transfer is a duplicate of the transfer at the block: ${((duplicate_of_record as Record)['duplicate_of'] as Nat).value}');
+    },
+    'TemporarilyUnavailable': (nul) {
+        throw Exception('The ledger is busy, try soon.');
+    },
+    'GenericError': (rc) {
+        Record r = rc as Record;
+        throw Exception('Ledger error. error-code: ${(r['error_code'] as Nat).value}, error-message: ${(r['message'] as Text).value}');
+    }
+};
 
 
 
@@ -1536,15 +1663,15 @@ class CMIcpTransferOut{
 class CreateCyclesPositionQuest extends Record {
     final Cycles cycles;
     final Cycles minimum_purchase;
-    final XDRICPRate xdr_icp_rate;
+    final Cycles cycles_per_token_rate;
     CreateCyclesPositionQuest({
         required this.cycles,
         required this.minimum_purchase,
-        required this.xdr_icp_rate
+        required this.cycles_per_token_rate
     }) {
         this['cycles']= this.cycles;
         this['minimum_purchase']= this.minimum_purchase;
-        this['xdr_permyriad_per_icp_rate']= this.xdr_icp_rate;
+        this['cycles_per_token_rate']= this.cycles_per_token_rate;
     }
 
 }
@@ -1564,18 +1691,18 @@ class CreateCyclesPositionSuccess {
 
 
 
-class CreateIcpPositionQuest extends Record {
-    final IcpTokens icp;
-    final IcpTokens minimum_purchase;
-    final XDRICPRate xdr_icp_rate;
-    CreateIcpPositionQuest({
-        required this.icp,
+class CreateTokenPositionQuest extends Record {
+    final Tokens tokens;
+    final Tokens minimum_purchase;
+    final Cycles cycles_per_token_rate;
+    CreateTokenPositionQuest({
+        required this.tokens,
         required this.minimum_purchase,
-        required this.xdr_icp_rate
+        required this.cycles_per_token_rate
     }) {
-        this['icp']= this.icp;
+        this['tokens']= this.tokens;
         this['minimum_purchase']= this.minimum_purchase;
-        this['xdr_permyriad_per_icp_rate']= this.xdr_icp_rate;
+        this['cycles_per_token_rate']= this.cycles_per_token_rate;
     }
 }
 

@@ -438,8 +438,6 @@ class CTSFees {
 }
 
 
-typedef Tokens = BigInt;
-
 
 Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
     List<int> bytes = []; // an icp subaccount is 32 bytes
@@ -534,9 +532,17 @@ class Cycles extends Nat {
 } 
 
 
+Cycles tokens_transform_cycles(BigInt tokens, BigInt cycles_per_token) {
+    return Cycles(cycles: tokens * cycles_per_token);
+}
+
+BigInt cycles_transform_tokens(Cycles cycles, BigInt cycles_per_token) {
+    cycles ~/ cycles_per_token
+}
 
 
 
+/*
 final BigInt CYCLES_PER_XDR = Cycles.T_CYCLES_DIVIDABLE_BY;
 
 Cycles icptokens_to_cycles(IcpTokens icpts, XDRICPRate xdr_icp_rate) {
@@ -560,6 +566,8 @@ IcpTokens cycles_to_icptokens(Cycles cycles, XDRICPRate xdr_icp_rate) {
 XDRICPRate xdr_per_icp_rate_of_a_cycles_and_icp(Cycles cycles, IcpTokens icpts) {
     return XDRICPRate(xdr_permyriad_per_icp: cycles.cycles ~/ icpts.e8s);
 }
+*/
+
 
 
 
