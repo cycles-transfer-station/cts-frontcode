@@ -65,9 +65,12 @@ class CyclesBank extends Canister {
     }
     
     Future<void> fresh_known_icrc1_ledgers() async {
-        for (Icrc1Ledger l in this.user.state.cycles_market_data.icrc1_ledgers) {
-            if (this.known_icrc1_ledgers.contains(l) == false) {
-                this.known_icrc1_ledgers.add(l);
+        for (Icrc1TokenTradeContract tc in this.user.state.cm_main.icrc1_token_trade_contracts) {
+            if (this.known_icrc1_ledgers.contains(tc.ledger_data) == false) {
+                this.known_icrc1_ledgers.add(tc.ledger_data);
+            }
+            if (this.cm_trade_contracts.containsKey(tc) == false) {
+                this.cm_trade_contracts[tc] = CyclesBankCMTradeContractData();
             }
         }
     }
