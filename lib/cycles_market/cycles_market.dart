@@ -294,7 +294,7 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
     final Principal positor;
     final Cycles cycles;
     final Cycles minimum_purchase;
-    final BigInt cycles_per_token_rate;
+    final Cycles cycles_per_token_rate;
     final BigInt timestamp_nanos;
     CyclesPosition._({
         required this.id,   
@@ -310,7 +310,7 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
             positor: r['positor'] as Principal,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
-            cycles_per_token_rate: (r['cycles_per_token_rate'] as Nat).value, 
+            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -322,7 +322,7 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
     final Principal positor;
     final BigInt tokens;
     final BigInt minimum_purchase;
-    final BigInt cycles_per_token_rate;
+    final Cycles cycles_per_token_rate;
     final BigInt timestamp_nanos;
     TokenPosition._({
         required this.id,
@@ -338,7 +338,7 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
             positor: r['positor'] as Principal,
             tokens: (r['tokens'] as Nat).value,
             minimum_purchase: (r['minimum_purchase'] as Nat).value,
-            cycles_per_token_rate: (r['cycles_per_token_rate'] as Nat).value, 
+            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -354,7 +354,7 @@ class TradeLog {
     final Principal purchaser;
     final BigInt tokens;
     final Cycles cycles;
-    final BigInt cycles_per_token_rate;
+    final Cycles cycles_per_token_rate;
     final PositionKind position_kind;
     final BigInt timestamp_nanos;
     final bool? cycles_payout_lock;
@@ -385,7 +385,7 @@ class TradeLog {
             purchaser: r['purchaser'] as Principal,
             tokens: (r['tokens'] as Nat).value,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
-            cycles_per_token_rate: (r['cycles_per_token_rate'] as Nat).value,
+            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat),
             position_kind: (r['position_kind'] as Variant).containsKey(PositionKind.Cycles.name) ? PositionKind.Cycles : PositionKind.Token,
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
             cycles_payout_lock: (r['cycles_payout_lock'] as Bool).value,
@@ -402,7 +402,7 @@ class TradeLog {
             purchaser: principal_of_the_30_bytes(bytes.getRange(62, 92)),
             tokens: u128_of_the_be_bytes(bytes.getRange(92, 108)),
             cycles: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(108, 124))),
-            cycles_per_token_rate: u128_of_the_be_bytes(bytes.getRange(124, 140)),
+            cycles_per_token_rate: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(124, 140))),
             position_kind: bytes[140] == 0 ? PositionKind.Cycles : PositionKind.Token,
             timestamp_nanos: u128_of_the_be_bytes(bytes.getRange(141, 157)),
         );

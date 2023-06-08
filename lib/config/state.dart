@@ -536,8 +536,8 @@ Cycles tokens_transform_cycles(BigInt tokens, BigInt cycles_per_token) {
     return Cycles(cycles: tokens * cycles_per_token);
 }
 
-BigInt cycles_transform_tokens(Cycles cycles, BigInt cycles_per_token) {
-    cycles ~/ cycles_per_token
+BigInt cycles_transform_tokens(Cycles cycles, Cycles cycles_per_token) {
+    return cycles.cycles ~/ cycles_per_token.cycles;
 }
 
 
