@@ -159,7 +159,7 @@ class CustomState {
                                         this.user!.cycles_bank!.load_cm_data(),
                                         Future(()async{
                                             await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                                            await this.user!.cycles_bank!.fresh_known_icrc1_ledgers();
+                                            await this.user!.cycles_bank!.fresh_known_cm_trade_contracts_of_the_cm_main();
                                             await Future.wait([
                                                 this.user!.cycles_bank!.fresh_icrc1_balances(),
                                                 this.user!.cycles_bank!.fresh_icrc1_transactions()
