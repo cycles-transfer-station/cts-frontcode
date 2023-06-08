@@ -1250,6 +1250,7 @@ typedef CTSFuel = Cycles;
 
 
 class CyclesBankMetrics {
+    BigInt global_allocator_counter;
     Cycles cycles_balance;
     CTSFuel ctsfuel_balance;
     BigInt storage_size_mib;
@@ -1261,32 +1262,10 @@ class CyclesBankMetrics {
     BigInt cycles_transfers_id_counter;
     BigInt cycles_transfers_in_len;
     BigInt cycles_transfers_out_len;
-    BigInt download_cycles_transfers_in_chunk_size;
-    BigInt download_cycles_transfers_out_chunk_size;
-    BigInt cm_cycles_positions_len;
-    BigInt cm_icp_positions_len;
-    BigInt cm_cycles_positions_purchases_len;
-    BigInt cm_icp_positions_purchases_len;
-    BigInt cm_icp_transfers_out_len;
-    BigInt download_cm_cycles_positions_chunk_size;
-    BigInt download_cm_icp_positions_chunk_size;
-    BigInt download_cm_cycles_positions_purchases_chunk_size;
-    BigInt download_cm_icp_positions_purchases_chunk_size;
-    BigInt download_cm_icp_transfers_out_chunk_size;
-    BigInt download_cm_message_cycles_position_purchase_positor_logs_chunk_size;
-    BigInt download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size;
-    BigInt download_cm_message_icp_position_purchase_positor_logs_chunk_size;
-    BigInt download_cm_message_icp_position_purchase_purchaser_logs_chunk_size;
-    BigInt download_cm_message_void_cycles_position_positor_logs_chunk_size;
-    BigInt download_cm_message_void_icp_position_positor_logs_chunk_size;
-    BigInt cm_message_cycles_position_purchase_positor_logs_len;
-    BigInt cm_message_cycles_position_purchase_purchaser_logs_len;
-    BigInt cm_message_icp_position_purchase_positor_logs_len;
-    BigInt cm_message_icp_position_purchase_purchaser_logs_len;
-    BigInt cm_message_void_cycles_position_positor_logs_len;
-    BigInt cm_message_void_icp_position_positor_logs_len;   
+    Map<Principal/*icrc1tokentradecontractcanisterid*/, CMTradeContractLogsLengths> cm_trade_contracts_logs_lengths;
     
     CyclesBankMetrics._({
+        required this.global_allocator_counter,
         required this.cycles_balance,
         required this.ctsfuel_balance,
         required this.storage_size_mib,
@@ -1298,33 +1277,11 @@ class CyclesBankMetrics {
         required this.cycles_transfers_id_counter,
         required this.cycles_transfers_in_len,
         required this.cycles_transfers_out_len,
-        required this.download_cycles_transfers_in_chunk_size,
-        required this.download_cycles_transfers_out_chunk_size,
-        required this.cm_cycles_positions_len,
-        required this.cm_icp_positions_len,
-        required this.cm_cycles_positions_purchases_len,
-        required this.cm_icp_positions_purchases_len,
-        required this.cm_icp_transfers_out_len,
-        required this.download_cm_cycles_positions_chunk_size,
-        required this.download_cm_icp_positions_chunk_size,
-        required this.download_cm_cycles_positions_purchases_chunk_size,
-        required this.download_cm_icp_positions_purchases_chunk_size,
-        required this.download_cm_icp_transfers_out_chunk_size,
-        required this.download_cm_message_cycles_position_purchase_positor_logs_chunk_size,
-        required this.download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size,
-        required this.download_cm_message_icp_position_purchase_positor_logs_chunk_size,
-        required this.download_cm_message_icp_position_purchase_purchaser_logs_chunk_size,
-        required this.download_cm_message_void_cycles_position_positor_logs_chunk_size,
-        required this.download_cm_message_void_icp_position_positor_logs_chunk_size,
-        required this.cm_message_cycles_position_purchase_positor_logs_len,
-        required this.cm_message_cycles_position_purchase_purchaser_logs_len,
-        required this.cm_message_icp_position_purchase_positor_logs_len,
-        required this.cm_message_icp_position_purchase_purchaser_logs_len,
-        required this.cm_message_void_cycles_position_positor_logs_len,
-        required this.cm_message_void_icp_position_positor_logs_len,   
+        required this.cm_trade_contracts_logs_lengths,
     });
     static CyclesBankMetrics oftheRecord(Record r) {
         return CyclesBankMetrics._(
+            global_allocator_counter: (r['global_allocator_counter'] as Nat64).value,
             cycles_balance: Cycles.oftheNat(r['cycles_balance'] as Nat),
             ctsfuel_balance: CTSFuel.oftheNat(r['ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,
@@ -1336,33 +1293,81 @@ class CyclesBankMetrics {
             cycles_transfers_id_counter: (r['cycles_transfers_id_counter'] as Nat).value,
             cycles_transfers_in_len: (r['cycles_transfers_in_len'] as Nat).value,
             cycles_transfers_out_len: (r['cycles_transfers_out_len'] as Nat).value,
-            download_cycles_transfers_in_chunk_size: (r['download_cycles_transfers_in_chunk_size'] as Nat).value,
-            download_cycles_transfers_out_chunk_size: (r['download_cycles_transfers_out_chunk_size'] as Nat).value,
-            cm_cycles_positions_len: (r['cm_cycles_positions_len'] as Nat).value,
-            cm_icp_positions_len: (r['cm_icp_positions_len'] as Nat).value,
-            cm_cycles_positions_purchases_len: (r['cm_cycles_positions_purchases_len'] as Nat).value,
-            cm_icp_positions_purchases_len: (r['cm_icp_positions_purchases_len'] as Nat).value,
-            cm_icp_transfers_out_len: (r['cm_icp_transfers_out_len'] as Nat).value,
-            download_cm_cycles_positions_chunk_size: (r['download_cm_cycles_positions_chunk_size'] as Nat).value,
-            download_cm_icp_positions_chunk_size: (r['download_cm_icp_positions_chunk_size'] as Nat).value,
-            download_cm_cycles_positions_purchases_chunk_size: (r['download_cm_cycles_positions_purchases_chunk_size'] as Nat).value,
-            download_cm_icp_positions_purchases_chunk_size: (r['download_cm_icp_positions_purchases_chunk_size'] as Nat).value,
-            download_cm_icp_transfers_out_chunk_size: (r['download_cm_icp_transfers_out_chunk_size'] as Nat).value,
-            download_cm_message_cycles_position_purchase_positor_logs_chunk_size: (r['download_cm_message_cycles_position_purchase_positor_logs_chunk_size'] as Nat).value,
-            download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size: (r['download_cm_message_cycles_position_purchase_purchaser_logs_chunk_size'] as Nat).value,
-            download_cm_message_icp_position_purchase_positor_logs_chunk_size: (r['download_cm_message_icp_position_purchase_positor_logs_chunk_size'] as Nat).value,
-            download_cm_message_icp_position_purchase_purchaser_logs_chunk_size: (r['download_cm_message_icp_position_purchase_purchaser_logs_chunk_size'] as Nat).value,
-            download_cm_message_void_cycles_position_positor_logs_chunk_size: (r['download_cm_message_void_cycles_position_positor_logs_chunk_size'] as Nat).value,
-            download_cm_message_void_icp_position_positor_logs_chunk_size: (r['download_cm_message_void_icp_position_positor_logs_chunk_size'] as Nat).value,
-            cm_message_cycles_position_purchase_positor_logs_len: (r['cm_message_cycles_position_purchase_positor_logs_len'] as Nat).value,
-            cm_message_cycles_position_purchase_purchaser_logs_len: (r['cm_message_cycles_position_purchase_purchaser_logs_len'] as Nat).value,
-            cm_message_icp_position_purchase_positor_logs_len: (r['cm_message_icp_position_purchase_positor_logs_len'] as Nat).value,
-            cm_message_icp_position_purchase_purchaser_logs_len: (r['cm_message_icp_position_purchase_purchaser_logs_len'] as Nat).value,
-            cm_message_void_cycles_position_positor_logs_len: (r['cm_message_void_cycles_position_positor_logs_len'] as Nat).value,
-            cm_message_void_icp_position_positor_logs_len: (r['cm_message_void_icp_position_positor_logs_len'] as Nat).value,
+            cm_trade_contracts_logs_lengths: { 
+                for (Record c in (r['cm_trade_contracts_logs_lengths'] as Vector).cast_vector<Record>()) 
+                    (c[0] as Record)['trade_contract_canister_id'] as Principal: CMTradeContractLogsLengths.oftheRecord(c)
+            },
         );
     }
 }
+
+
+
+class CMTradeContractLogsLengths {
+    CMCallsOutLengths cm_calls_out_lengths;
+    CMMessageLogsLengths cm_message_logs_lengths;
+    CMTradeContractLogsLengths._({
+        required this.cm_calls_out_lengths,
+        required this.cm_message_logs_length,
+    });
+    static CMTradeContractLogsLengths oftheRecord(Record r) {
+        CMTradeContractLogsLengths._(
+            cm_calls_out_lengths: CMCallsOutLengths.oftheRecord(r['cm_calls_out_lengths'] as Record),
+            cm_message_logs_length: CMMessageLogsLengths.oftheRecord(r['cm_message_logs_length'] as Record),    
+        );
+    }
+}
+
+class CMCallsOutLengths {
+    BigInt cm_cycles_positions_length;
+    BigInt cm_token_positions_length;
+    BigInt cm_cycles_positions_purchases_length;
+    BigInt cm_token_positions_purchases_length;    
+    BigInt cm_token_transfers_out_length;
+    CMCallsOutLengths._(
+        required this.cm_cycles_positions_length,
+        required this.cm_token_positions_length,
+        required this.cm_cycles_positions_purchases_length,
+        required this.cm_token_positions_purchases_length,   
+        required this.cm_token_transfers_out_length,
+    );
+    static CMCallsOutLengths oftheRecord(Record r) {
+        cm_cycles_positions_length: (r['cm_cycles_positions_length'] as Nat64).value,
+        cm_token_positions_length: (r['cm_token_positions_length'] as Nat64).value,
+        cm_cycles_positions_purchases_length: (r['cm_cycles_positions_purchases_length'] as Nat64).value,
+        cm_token_positions_purchases_length: (r['cm_token_positions_purchases_length'] as Nat64).value,   
+        cm_token_transfers_out_length: (r['cm_token_transfers_out_length'] as Nat64).value,
+    }
+}
+
+class CMMessageLogsLengths {
+    BigInt cm_message_cycles_position_purchase_positor_logs_length;
+    BigInt cm_message_cycles_position_purchase_purchaser_logs_length;
+    BigInt cm_message_token_position_purchase_positor_logs_length;
+    BigInt cm_message_token_position_purchase_purchaser_logs_length;
+    BigInt cm_message_void_cycles_position_positor_logs_length;
+    BigInt cm_message_void_token_position_positor_logs_length;
+    CMMessageLogsLengths._(
+        required this.cm_message_cycles_position_purchase_positor_logs_length,
+        required this.cm_message_cycles_position_purchase_purchaser_logs_length,
+        required this.cm_message_token_position_purchase_positor_logs_length,
+        required this.cm_message_token_position_purchase_purchaser_logs_length,
+        required this.cm_message_void_cycles_position_positor_logs_length,
+        required this.cm_message_void_token_position_positor_logs_length,
+    );    
+    static CMMessageLogsLengths oftheRecord(Record r) {
+        cm_message_cycles_position_purchase_positor_logs_length: (r['cm_message_cycles_position_purchase_positor_logs_length'] as Nat64).value,
+        cm_message_cycles_position_purchase_purchaser_logs_length: (r['cm_message_cycles_position_purchase_purchaser_logs_length'] as Nat64).value,
+        cm_message_token_position_purchase_positor_logs_length: (r['cm_message_token_position_purchase_positor_logs_length'] as Nat64).value,
+        cm_message_token_position_purchase_purchaser_logs_length: (r['cm_message_token_position_purchase_purchaser_logs_length'] as Nat64).value,
+        cm_message_void_cycles_position_positor_logs_length: (r['cm_message_void_cycles_position_positor_logs_length'] as Nat64).value,
+        cm_message_void_token_position_positor_logs_length: (r['cm_message_void_token_position_positor_logs_length'] as Nat64).value,
+    }
+}
+
+
+
+
 
 
 abstract class CyclesTransfer {
