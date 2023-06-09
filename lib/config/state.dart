@@ -222,7 +222,7 @@ class CustomState {
     Future<void> load_cts_fees() async {
         Record cts_fees_record = c_backwards(
             await cts.call(
-                method_name: 'see_fees',
+                method_name: 'view_fees',
                 calltype: CallType.query,
                 put_bytes: c_forwards([])
             )
