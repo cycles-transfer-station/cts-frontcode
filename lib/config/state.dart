@@ -29,7 +29,7 @@ import 'package:ic_tools/candid.dart' show
     candid_text_hash
     ;
 import 'package:ic_tools/candid.dart' as candid;
-import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Account;
+import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Ledgers, Icrc1Account, Tokens;
 import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller, IndexDB, jslegation_of_a_legation, legation_of_a_jslegation, JSLegation, NullMap;
 
@@ -588,7 +588,7 @@ class CyclesPerTokenRate extends Cycles {
             token_decimal_places: token_decimal_places
         );
     }
-    String toString => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
+    String toString() => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
     
        
 }
