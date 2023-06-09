@@ -1045,7 +1045,7 @@ class CyclesBank extends Canister {
                     'CyclesBalanceTooLow': (r_ctype) {
                         Record r = r_ctype as Record;
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}\ncost for a purchase of the ${purchase_tokens}-${icrc1token_trade_contract.ledger_data.symbol} of the token-position: ${token_position.id} with the cycles_per_token-rate: ${token_position.cycles_per_token_rate} is: ${tokens_transform_cycles(purchase_tokens.token_quantums, token_position.cycles_per_token_rate.cycles)}');
+                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}\ncost for a purchase of the ${purchase_tokens}-${icrc1token_trade_contract.ledger_data.symbol} of the token-position: ${token_position.id} with the cycles_per_token-rate: ${token_position.cycles_per_token_rate} is: ${tokens_transform_cycles(purchase_tokens.token_quantums, token_position.cycles_per_token_rate)}');
                     },
                     'CyclesMarketPurchaseTokenPositionCallError': (call_error_record) {
                         throw Exception('cycles-market purchase_token_position call error:\n${CallError.oftheRecord(call_error_record as Record)}');                    

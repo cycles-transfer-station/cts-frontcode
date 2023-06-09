@@ -1,9 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:ic_tools/common.dart' show Tokens, Icrc1Ledgers;
 import '../main.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../transfer_icp/icp_ledger.dart';
+
 
 
 
@@ -93,7 +96,7 @@ class CreateBank extends StatelessWidget {
                             DataRow(
                                 cells: [
                                     DataCell(Text('CYCLES-BANK COST XDR:')),
-                                    DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/CYCLES_PER_XDR}-xdr')),
+                                    DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}-xdr')),
                                 ]
                             ),
                             /*
@@ -113,7 +116,12 @@ class CreateBank extends StatelessWidget {
                             DataRow(
                                 cells: [
                                     DataCell(Text('CYCLES-BANK COST ICP:')),
-                                    DataCell(Row(children: [Text('${(cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO).round_decimal_places(1)}-icp'), Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')])),
+                                    DataCell(Row(
+                                        children: [
+                                            Text('${Tokens(token_quantums: cycles_transform_tokens(state.cts_fees.cycles_bank_cost_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals).round_decimal_places(1)}-icp'), 
+                                            Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')
+                                        ]
+                                    )),
                                 ]
                             ),
                         ]

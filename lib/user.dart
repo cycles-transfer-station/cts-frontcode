@@ -297,7 +297,7 @@ class User {
             this.fresh_icp_balance(),
             state.fresh_xdr_icp_rate()
         ]);
-        IcpTokens cycles_bank_total_cost_icp = cycles_to_icptokens(state.cts_fees.cycles_bank_cost_cycles, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO; 
+        IcpTokens cycles_bank_total_cost_icp = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.cycles_bank_cost_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s);
         if (this.icp_balance!.icp < cycles_bank_total_cost_icp) {
             throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${cycles_bank_total_cost_icp.round_decimal_places(1)}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
         }
@@ -464,7 +464,7 @@ class User {
             IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
-            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(user_icp_ledger_balance, state.cts_fees.cts_transfer_icp_fee, xdr_per_icp_rate_of_a_cycles_and_icp(state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee), cts_transfer_icp_fee));
+            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(user_icp_ledger_balance, state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee));
         },
         'IcpTransferCallError': (call_error) async {
             throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
@@ -488,17 +488,17 @@ class User {
     };
     
     late IcpTokens latest_try_to_transfer_icp;
-    String user_cts_icp_balance_is_too_low_for_the_icp_transfer(IcpTokens cts_user_icp_balance, Cycles cts_transfer_icp_fee_cycles, XDRICPRate xdr_icp_rate, IcpTokens cts_transfer_icp_fee_icp) {
-        return 'user-cts-icp-balance is too low. \nuser-cts-icp-balance: ${cts_user_icp_balance}\ntried to transfer icp: ${latest_try_to_transfer_icp}\ncts-icp-transfer-fee: ${cts_transfer_icp_fee_icp}-icp (${cts_transfer_icp_fee_cycles.cycles/CYCLES_PER_XDR}-xdr)\nicp-ledger-fees: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'; // user icp balance is too low. current balance: ${this.icp_balance!.icp}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'); 
+    String user_cts_icp_balance_is_too_low_for_the_icp_transfer(IcpTokens cts_user_icp_balance, Cycles cts_transfer_icp_fee_cycles, IcpTokens cts_transfer_icp_fee_icp) {
+        return 'user-cts-icp-balance is too low. \nuser-cts-icp-balance: ${cts_user_icp_balance}\ntried to transfer icp: ${latest_try_to_transfer_icp}\ncts-icp-transfer-fee: ${cts_transfer_icp_fee_icp}-icp (${cts_transfer_icp_fee_cycles.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}-xdr)\nicp-ledger-fees: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'; // user icp balance is too low. current balance: ${this.icp_balance!.icp}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'); 
     }
     
     Future<TransferIcpSuccess> transfer_icp(TransferIcpQuest transfer_icp_quest) async {
         latest_try_to_transfer_icp = transfer_icp_quest.icp;
         await this.fresh_icp_balance();
         await state.fresh_xdr_icp_rate();
-        IcpTokens cts_transfer_icp_fee = cycles_to_icptokens(state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate);
+        IcpTokens cts_transfer_icp_fee = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.cts_transfer_icp_fee, state.cmc_cycles_per_icp_rate));
         if (this.icp_balance!.icp < transfer_icp_quest.icp + cts_transfer_icp_fee + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
-            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(this.icp_balance!.icp, state.cts_fees.cts_transfer_icp_fee, state.xdr_icp_rate_with_a_timestamp!.xdr_icp_rate, cts_transfer_icp_fee));
+            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(this.icp_balance!.icp, state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee));
         }
         Variant transfer_icp_result = c_backwards(
             await call(

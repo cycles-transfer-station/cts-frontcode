@@ -69,14 +69,14 @@ class Icrc1TokenTradeContract extends Record {
     Future<void> load_cycles_positions() async {
         this.cycles_positions = await _load_positions_mechanism(
             method_name: 'view_cycles_positions',
-            function: CyclesPosition.oftheRecord
+            function: (Record r) => CyclesPosition.oftheRecord(r, token_decimal_places: this.ledger_data.decimals)
         );
     }
     
     Future<void> load_token_positions() async {
         this.token_positions = await _load_positions_mechanism(
             method_name: 'view_token_positions',
-            function: TokenPosition.oftheRecord
+            function: (Record r) => TokenPosition.oftheRecord(r, token_decimal_places: this.ledger_data.decimals)
         );
     }
     
@@ -168,7 +168,7 @@ class Icrc1TokenTradeContract extends Record {
             }
             
             gather_trade_logs = [
-                ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map(TradeLog.oftheStableMemorySerialization),
+                ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: this.ledger_data.decimals)),
                 ...gather_trade_logs
             ];
             
@@ -214,7 +214,7 @@ class Icrc1TokenTradeContract extends Record {
                 Uint8List logs = (s['logs'] as Blob).bytes;
                 
                 gather_trade_logs = [
-                    ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map(TradeLog.oftheStableMemorySerialization), 
+                    ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: this.ledger_data.decimals)), 
                     ...gather_trade_logs
                 ];
                 
@@ -284,7 +284,7 @@ class StorageCanister {
 abstract class Icrc1TokenTradeContractPosition {
     BigInt get id;
     Principal get positor;
-    BigInt get cycles_per_token_rate;
+    CyclesPerTokenRate get cycles_per_token_rate;
     BigInt get timestamp_nanos;
 }
 
@@ -294,7 +294,7 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
     final Principal positor;
     final Cycles cycles;
     final Cycles minimum_purchase;
-    final Cycles cycles_per_token_rate;
+    final CyclesPerTokenRate cycles_per_token_rate;
     final BigInt timestamp_nanos;
     CyclesPosition._({
         required this.id,   
@@ -304,13 +304,13 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
         required this.cycles_per_token_rate,
         required this.timestamp_nanos,
     });
-    static CyclesPosition oftheRecord(Record r) {
+    static CyclesPosition oftheRecord(Record r, {required int token_decimal_places}) {
         return CyclesPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
             minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
-            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat), 
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value, token_decimal_places: token_decimal_places), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -322,7 +322,7 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
     final Principal positor;
     final BigInt tokens;
     final BigInt minimum_purchase;
-    final Cycles cycles_per_token_rate;
+    final CyclesPerTokenRate cycles_per_token_rate;
     final BigInt timestamp_nanos;
     TokenPosition._({
         required this.id,
@@ -332,13 +332,13 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
         required this.cycles_per_token_rate,
         required this.timestamp_nanos
     });
-    static TokenPosition oftheRecord(Record r) {
+    static TokenPosition oftheRecord(Record r, {required int token_decimal_places}) {
         return TokenPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
             tokens: (r['tokens'] as Nat).value,
             minimum_purchase: (r['minimum_purchase'] as Nat).value,
-            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat), 
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value, token_decimal_places: token_decimal_places), 
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value
         );
     }
@@ -354,7 +354,7 @@ class TradeLog {
     final Principal purchaser;
     final BigInt tokens;
     final Cycles cycles;
-    final Cycles cycles_per_token_rate;
+    final CyclesPerTokenRate cycles_per_token_rate;
     final PositionKind position_kind;
     final BigInt timestamp_nanos;
     final bool? cycles_payout_lock;
@@ -377,7 +377,7 @@ class TradeLog {
         this.cycles_payout_data,
         this.token_payout_data,
     });
-    static TradeLog oftheRecord(Record r) {
+    static TradeLog oftheRecord(Record r, {required int token_decimal_places}) {
         return TradeLog._(
             position_id: (r['position_id'] as Nat).value,
             id: (r['id'] as Nat).value,
@@ -385,7 +385,7 @@ class TradeLog {
             purchaser: r['purchaser'] as Principal,
             tokens: (r['tokens'] as Nat).value,
             cycles: Cycles.oftheNat(r['cycles'] as Nat),
-            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat),
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value, token_decimal_places: token_decimal_places),
             position_kind: (r['position_kind'] as Variant).containsKey(PositionKind.Cycles.name) ? PositionKind.Cycles : PositionKind.Token,
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
             cycles_payout_lock: (r['cycles_payout_lock'] as Bool).value,
@@ -394,7 +394,7 @@ class TradeLog {
             token_payout_data: (r['token_payout_data'] as Record),
         );
     }
-    static TradeLog oftheStableMemorySerialization(Uint8List bytes) {
+    static TradeLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         return TradeLog._(
             position_id: u128_of_the_be_bytes(bytes.getRange(0, 16)),
             id: u128_of_the_be_bytes(bytes.getRange(16, 32)),
@@ -402,7 +402,7 @@ class TradeLog {
             purchaser: principal_of_the_30_bytes(bytes.getRange(62, 92)),
             tokens: u128_of_the_be_bytes(bytes.getRange(92, 108)),
             cycles: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(108, 124))),
-            cycles_per_token_rate: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(124, 140))),
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(124, 140)), token_decimal_places: token_decimal_places),
             position_kind: bytes[140] == 0 ? PositionKind.Cycles : PositionKind.Token,
             timestamp_nanos: u128_of_the_be_bytes(bytes.getRange(141, 157)),
         );

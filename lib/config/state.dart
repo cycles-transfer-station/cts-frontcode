@@ -95,7 +95,8 @@ class CustomState {
     
     late CTSFees cts_fees;
     
-    XDRICPRateWithATimestamp? xdr_icp_rate_with_a_timestamp;
+    CyclesPerTokenRateWithATimestamp? cmc_cycles_per_icp_rate_with_a_timestamp;
+    CyclesPerTokenRate get cmc_cycles_per_icp_rate => this.cmc_cycles_per_icp_rate_with_a_timestamp!.cycles_per_token_rate;
     
     CyclesMarketMain cm_main = CyclesMarketMain();
     
@@ -257,8 +258,8 @@ class CustomState {
         Nat64 certified_xdr_permyriad_per_icp = certified_icpxdrrate['xdr_permyriad_per_icp'] as Nat64;
         Nat64 certified_timestamp_seconds = certified_icpxdrrate['timestamp_seconds'] as Nat64;
 
-        this.xdr_icp_rate_with_a_timestamp = XDRICPRateWithATimestamp(
-            xdr_icp_rate: XDRICPRate.oftheXdrPerMyriadPerIcpNat64(certified_xdr_permyriad_per_icp),
+        this.cmc_cycles_per_icp_rate_with_a_timestamp = CyclesPerTokenRateWithATimestamp(
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: certified_xdr_permyriad_per_icp.value, token_decimal_places: Icrc1Ledgers.ICP.decimals),
             timestamp_seconds: certified_timestamp_seconds.value 
         );        
     }
@@ -532,8 +533,8 @@ class Cycles extends Nat {
 } 
 
 
-Cycles tokens_transform_cycles(BigInt tokens, BigInt cycles_per_token) {
-    return Cycles(cycles: tokens * cycles_per_token);
+Cycles tokens_transform_cycles(BigInt token_quantums, Cycles cycles_per_token) {
+    return Cycles(cycles: token_quantums * cycles_per_token.cycles);
 }
 
 BigInt cycles_transform_tokens(Cycles cycles, Cycles cycles_per_token) {
@@ -576,12 +577,26 @@ XDRICPRate xdr_per_icp_rate_of_a_cycles_and_icp(Cycles cycles, IcpTokens icpts) 
 
 
 
+class CyclesPerTokenRate extends Cycles {
+    final int token_decimal_places;
+    CyclesPerTokenRate({required BigInt cycles_per_token_quantum_rate, required this.token_decimal_places}) : super(cycles: cycles_per_token_quantum_rate);
+    BigInt get cycles_per_token_quantum_rate => super.cycles;
+    static CyclesPerTokenRate oftheTCyclesDoubleString(String tcycles_string, {required int token_decimal_places}) {
+        Tokens ts = Tokens.oftheDoubleString(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES - token_decimal_places); // makes sure the right number of decimal places
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: ts.token_quantums,
+            token_decimal_places: token_decimal_places
+        );
+    }
+    String toString => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
+    
+       
+}
 
-
-class CyclesWithATimestamp {
-    final BigInt cycles;
-    final BigInt timestamp_nanos;
-    CyclesWithATimestamp({required this.cycles, BigInt? opt_timestamp_nanos}) : timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
+class CyclesPerTokenRateWithATimestamp {
+    final CyclesPerTokenRate cycles_per_token_rate;
+    final BigInt timestamp_seconds;
+    CyclesPerTokenRateWithATimestamp({required this.cycles_per_token_rate, required this.timestamp_seconds});
 }
 
 class IcpTokensWithATimestamp {
@@ -589,6 +604,8 @@ class IcpTokensWithATimestamp {
     final BigInt timestamp_nanos;
     IcpTokensWithATimestamp({required this.icp, BigInt? opt_timestamp_nanos}) : timestamp_nanos = opt_timestamp_nanos==null ? get_current_time_nanoseconds() : opt_timestamp_nanos;
 }
+
+/*
 
 class XDRICPRateWithATimestamp {
     final XDRICPRate xdr_icp_rate;
@@ -639,7 +656,7 @@ class XDRICPRate extends Nat64 {
     static int DECIMAL_PLACES = 4;
     static BigInt DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES));
 }
-
+*/
 
 
 
