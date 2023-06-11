@@ -39,7 +39,7 @@ final Map<String, Map> urlmap = {
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
     'cycles_market': {
-        'path': '/cycles-market',
+        'path': '/cycles-market/trade/<token_ledger_symbol>',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesMarketScaffoldBody.create
     },

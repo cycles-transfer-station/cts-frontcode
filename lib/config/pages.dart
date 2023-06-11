@@ -26,8 +26,6 @@ import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../cycles_bank/cycles_bank.dart';
 import '../cycles_bank/scaffold_body.dart';
-import '../cycles_market/cycles_market_data.dart';
-import '../cycles_market/scaffold_body.dart';
 import '../about/scaffold_body.dart';
 import '../welcome/scaffold_body.dart';
 
@@ -164,7 +162,12 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                             ListTile(
                                                 title: const Text('MARKET'),
                                                 onTap: () {
-                                                    state.current_url = CustomUrl('cycles_market');
+                                                    state.current_url = CustomUrl(
+                                                        'cycles_market', 
+                                                        variables: {
+                                                            'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol
+                                                        }
+                                                    );
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                                     Navigator.pop(context);
                                                 },
@@ -206,7 +209,9 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                             ]
                         )
                     ),
-                    body: state.current_url.main_page_scaffold_body(), 
+                    body: SafeArea(
+                        child: state.current_url.main_page_scaffold_body()!,
+                    ),
                     bottomNavigationBar: BottomAppBar(
                         //color: Colors.blue,
                         child: IconTheme(

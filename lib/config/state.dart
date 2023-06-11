@@ -100,6 +100,8 @@ class CustomState {
     
     CyclesMarketMain cm_main = CyclesMarketMain();
     
+    int cm_main_icrc1token_trade_contracts_i = 0;
+    
     User? user;
         
     

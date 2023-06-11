@@ -555,6 +555,7 @@ class CyclesBank extends Canister {
         );
     }
     
+    /*
     // is this backwards? the fresh icp transactions part in the fresh_icrc1ledger_transactions function does prepend? test
     Future<void> fresh_cm_icp_transfers() async {
         throw Unimplemented();
@@ -565,6 +566,8 @@ class CyclesBank extends Canister {
             )
         );
     }
+    */
+    
     
     // use future locks on the load/fresh logs fns like for the cm trade logs
     /*

@@ -9,13 +9,139 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import 'forms.dart';
 import 'cards.dart';
-import 'cycles_market_data.dart';
+import 'cycles_market.dart';
 import '../cycles_bank/cycles_bank.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import '../config/pages.dart';
 import '../config/urls.dart';
+
+
+
+
+class CyclesMarketScaffoldBody extends StatelessWidget {
+    CyclesMarketScaffoldBody({Key? key}) : super(key: key);
+    static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
+
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+        // set the state.cm_main_icrc1token_trade_contracts_i
+        int cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol 
+            = state.cm_main.icrc1token_trade_contracts.indexWhere((tc)=>tc.ledger_data.symbol == state.current_url.variables['token_ledger_symbol']!);
+        
+        if (cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol < 0) {
+            state.current_url = CustomUrl('void');
+            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+        } else {
+            state.cm_main_icrc1token_trade_contracts_i = cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol;
+        }
+        
+        
+        
+        
+        List<Widget> column_children = [];
+        
+        column_children.addAll([
+            Container(
+                width: 900,
+                child: Container(
+                    child: DropdownButton<int>(
+                        //decoration: InputDecoration(
+                        //    labelText: 'Token'//state.user!.cycles_bank!.current_icrc1_ledger.symbol,
+                        //),
+                        underline: Container(
+                            height: 2,
+                            color: Colors.deepPurpleAccent,
+                        ),
+                        isExpanded: false,
+                        items: [
+                            for (int i = 0; i < state.cm_main.icrc1token_trade_contracts.length; i++)                 
+                                DropdownMenuItem<int>(
+                                    child: Container(
+                                        padding: EdgeInsets.all(8),
+                                        child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + ' / TCYCLES', style: TextStyle(fontSize: 22)), 
+                                    ),
+                                    value: i
+                                ),
+                        ],
+                        value: state.cm_main_icrc1token_trade_contracts_i,
+                        onChanged: (int? select_i) { 
+                            if (select_i is int) {
+                                if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
+                                    state.current_url = CustomUrl(
+                                        'cycles_market', 
+                                        variables: {
+                                            'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.symbol
+                                        }
+                                    );
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                }
+                            }
+                        }
+                    )
+                )
+            ),
+            CyclesMarketTradeContractTradePage(cm_main_icrc1token_trade_contracts_i: state.cm_main_icrc1token_trade_contracts_i)
+        ]);
+        
+        return Center(
+            child: Container(
+                //constraints: BoxConstraints(maxWidth: 900),
+                child: Column(
+                    children: [
+                        Container(
+                            constraints: BoxConstraints(maxWidth: 900),
+                            child: ScaffoldBodyHeader(Text('CYCLES-MARKET', style: TextStyle(fontSize: 19))),
+                        ),
+                        Expanded(
+                            child: ListView(
+                                padding: EdgeInsets.all(0),
+                                children: [
+                                    Column(
+                                        children: column_children 
+                                    )
+                                ],
+                                addAutomaticKeepAlives: true
+                            )
+                        )
+                    ]
+                )
+            )
+        );
+    }
+    
+}
+
+
+
+class CyclesMarketTradeContractTradePage extends StatefulWidget {
+    int cm_main_icrc1token_trade_contracts_i;
+    CyclesMarketTradeContractTradePage({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey<String>('CyclesMarketTradeContractTradePage cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
+    State<CyclesMarketTradeContractTradePage> createState() => CyclesMarketTradeContractTradePageState();
+}
+class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeContractTradePage> {
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        
+        return Container(
+            child: Text('hi')
+        );
+        
+        
+    }
+    
+}
+
+
+
+/*
+
 
 
 class CyclesMarketScaffoldBody extends StatelessWidget {
@@ -820,5 +946,5 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         //return Center(child: Text('Construction ...'));
     }
 }
-
+*/
 
