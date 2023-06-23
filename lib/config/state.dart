@@ -13,6 +13,8 @@ import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/candid.dart' show
     c_backwards,
     c_forwards,
+    c_forwards_one,
+    c_backwards_one,
     CandidType,
     Nat,
     Int,
@@ -29,9 +31,9 @@ import 'package:ic_tools/candid.dart' show
     candid_text_hash
     ;
 import 'package:ic_tools/candid.dart' as candid;
-import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Ledgers, Icrc1Account, Tokens;
+import 'package:ic_tools/common.dart' show IcpTokens, Icrc1Ledger, Icrc1Ledgers, Icrc1Account, Tokens, Ok, Err;
 import 'package:ic_tools/common.dart' as common;
-import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller, IndexDB, jslegation_of_a_legation, legation_of_a_jslegation, JSLegation, NullMap;
+import 'package:ic_tools/common_web.dart';
 
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
@@ -63,14 +65,23 @@ class CustomState {
     CustomState() {
     
         if (window.location.hostname!.contains(thp4z_id) || window.location.hostname!.contains('cycles-transfer-station.com')) {
-            cts = Canister(Principal(thp4z_id)); 
-            cycles_market = Canister(Principal('woddh-aqaaa-aaaal-aazqq-cai'));
+            cts = Canister(Principal.text(thp4z_id)); 
+            cycles_market = Canister(Principal.text('woddh-aqaaa-aaaal-aazqq-cai'));
         }
 
-        if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
-            cts = Canister(Principal('bayhi-7yaaa-aaaai-qahca-cai'));
-            cycles_market = Canister(Principal('mscqy-haaaa-aaaai-aahhq-cai'));
+        if (window.location.hostname!.contains('bayhi-')) {
+            cts = Canister(Principal.text('bayhi-7yaaa-aaaai-qahca-cai'));
+            cycles_market = Canister(Principal.text('mscqy-haaaa-aaaai-aahhq-cai'));
         }
+        
+        if (window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
+            /// local replica 
+            ic_base_url = Uri.parse('http://127.0.0.1:8080');
+            fetch_root_key().then((_x){});
+            cts = Canister(Principal.text('bayhi-7yaaa-aaaai-qahca-cai'));
+            cycles_market = Canister(Principal.text('mscqy-haaaa-aaaai-aahhq-cai'));
+        }
+        
         
         cts_main_icp_id = common.icp_id(cts.principal);
         
@@ -78,7 +89,10 @@ class CustomState {
             print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
         }
         
-    }
+    }    
+    
+    
+    
 
     CustomUrl current_url = CustomUrl('welcome');
     
@@ -110,13 +124,6 @@ class CustomState {
     
 
     Future<void> loadfirststate() async { 
-        //await t.m();
-        
-        
-        if (IndexDB.is_support_here() != true) {
-            window.alert('indexdb not supported. the user is log-out when the page closes.');
-        }
-        
         
         print('load cts_fees');
         print('fresh_xdr_icp_rate');
@@ -189,7 +196,7 @@ class CustomState {
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
                                                 print('testing!');
                                                 CyclesBank cb = this.user!.cycles_bank!;
-                                                this.user!.cycles_bank = CyclesBank(Principal('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
+                                                this.user!.cycles_bank = CyclesBank(Principal.text('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
                                                 await this.user!.cycles_bank!.fresh_icrc1_transactions();
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache);
                                                 print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
@@ -229,10 +236,10 @@ class CustomState {
                 put_bytes: c_forwards([])
             )
         ).first as Record;
-        this.cts_fees = CTSFees.oftheRecord(cts_fees_record);
+        this.cts_fees = CTSFees.of_the_record(cts_fees_record);
     } 
 
-
+    
     Future<void> fresh_xdr_icp_rate() async {
         // call the cmc
         //query call with the certification-data
@@ -243,17 +250,16 @@ class CustomState {
         );
         List<CandidType> cs = c_backwards(sponse);
         Record rc = cs[0] as Record;
-        Uint8List certificate_bytes = Blob.oftheVector((rc['certificate'] as Vector).cast_vector<Nat8>()).bytes;
+        Uint8List certificate_bytes = (rc['certificate'] as Blob).bytes;
         Map certificate = cbor_simple.cbor.decode(certificate_bytes) as Map;
         await verify_certificate(certificate);
-        dynamic time = lookuppathvalueinaniccertificatetree(certificate['tree'], ['time']);
-        BigInt btime = time is int ? BigInt.from(time) : time; //as BigInt
+        BigInt btime = leb128.decodeUnsigned(lookup_path_value_in_an_ic_certificate_tree(certificate['tree'], _pathbytes(['time']))!);
         if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
-        Uint8List certified_data = lookuppathvalueinaniccertificatetree(certificate['tree'], ['canister', common.SYSTEM_CANISTERS.cycles_mint.principal.bytes, 'certified_data']);
+        Uint8List certified_data = lookup_path_value_in_an_ic_certificate_tree(certificate['tree'], _pathbytes(['canister', common.SYSTEM_CANISTERS.cycles_mint.principal.bytes, 'certified_data']))!;
         List canister_hash_tree = cbor_simple.cbor.decode((rc['hash_tree'] as Blob).bytes) as List;
-        Uint8List treeroothash = constructicsystemstatetreeroothash(canister_hash_tree);
+        Uint8List treeroothash = construct_ic_system_state_tree_root_hash(canister_hash_tree);
         if (!aresamebytes(certified_data, treeroothash)) { throw Exception('certified data doesn\'t match the tree'); }
-        Record certified_icpxdrrate = c_backwards(lookuppathvalueinaniccertificatetree(canister_hash_tree, ["ICP_XDR_CONVERSION_RATE"], 'blob'))[0] as Record;
+        Record certified_icpxdrrate = c_backwards(lookup_path_value_in_an_ic_certificate_tree(canister_hash_tree, _pathbytes(["ICP_XDR_CONVERSION_RATE"]))!)[0] as Record;
         //Record r = rc['data'] as Record;
         //print(r['xdr_permyriad_per_icp']);
         //print(r['timestamp_seconds']);
@@ -266,149 +272,43 @@ class CustomState {
         );        
     }
 
-
+    
     Future<void> save_state_in_the_browser_storage() async {
     
         if (this.user != null) {
             
-            /*
-            List<Map> legations_maps = [];
-            for (Legation legation in this.user!.legations) {
-                legations_maps.add(
-                    {
-                        'legatee_public_key_DER': legation.legatee_public_key_DER,
-                        'expiration_unix_timestamp_nanoseconds': legation.expiration_unix_timestamp_nanoseconds.toRadixString(10),
-                        'target_canisters_ids': legation.target_canisters_ids != null ? legation.target_canisters_ids!.map<String>((Principal p)=>p.text).toList() : null,  
-                        'legator_public_key_DER': legation.legator_public_key_DER,
-                        'legator_signature': legation.legator_signature 
-                    }
-                );
+            await this.user!.caller.indexdb_save();
+                
+            if (this.user!.cycles_bank != null) {
+                window.localStorage['user_cycles_bank'] = '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}';                
             }
-            */
-            
-            try {
-                IndexDB idb = await IndexDB.open('cts', ['state']);
-                if (
-                    await idb.add_object(
-                        object_store_name: 'state', 
-                        key: 'user_crypto_key_public', 
-                        value: await this.user!.caller.public_key,
                         
-                    ) == false
-                ) {
-                    await idb.put_object(
-                        object_store_name: 'state', 
-                        key: 'user_crypto_key_public', 
-                        value: await this.user!.caller.public_key
-                    );  
-                }                
-                if (
-                    await idb.add_object(
-                        object_store_name: 'state', 
-                        key: 'user_crypto_key_private', 
-                        value: this.user!.caller.private_key
-                    ) == false
-                ) {
-                    await idb.put_object(
-                        object_store_name: 'state', 
-                        key: 'user_crypto_key_private', 
-                        value: this.user!.caller.private_key
-                    );  
-                }                
-                if (
-                    await idb.add_object(
-                        object_store_name: 'state', 
-                        key: 'user_legations', 
-                        value: this.user!.legations.map<JSLegation>((Legation l)=>jslegation_of_a_legation(l)).toList(), 
-                    ) == false
-                ) {
-                    await idb.put_object(
-                        object_store_name: 'state', 
-                        key: 'user_legations', 
-                        value: this.user!.legations.map<JSLegation>((Legation l)=>jslegation_of_a_legation(l)).toList(), 
-                    );  
-                }       
-                
-                if (this.user!.cycles_bank != null) {
-                    if (
-                        await idb.add_object(
-                            object_store_name: 'state', 
-                            key: 'user_cycles_bank', 
-                            value: '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}', 
-                        ) == false
-                    ) {
-                        await idb.put_object(
-                            object_store_name: 'state', 
-                            key: 'user_cycles_bank', 
-                            value: '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}', 
-                        );  
-                    }                
-                }
-                
-                idb.shutdown();
-            } catch(e, s) {
-                print('error saving user state: $s');
-                window.alert('idb error saving the user state: ${e}\n${s}');                        
-            }
         }
-        
                
     }
     
-    
     Future<void> load_state_of_the_browser_storage() async {
     
-        try {
-            IndexDB idb = await IndexDB.open('cts', ['state']);
-            //print(idb.object_store_names());
-            
-            // user
-            CryptoKey user_crypto_key_public = await idb.get_object(
-                object_store_name: 'state', 
-                key: 'user_crypto_key_public'
-            ) as CryptoKey;
-            
-            CryptoKey user_crypto_key_private = await idb.get_object(
-                object_store_name: 'state', 
-                key: 'user_crypto_key_private'
-            ) as CryptoKey;
-
-            List<Legation> legations = (await idb.get_object(
-                object_store_name: 'state', 
-                key: 'user_legations'
-            ) as List<dynamic>).cast<JSLegation>().map<Legation>((JSLegation jslegation)=>legation_of_a_jslegation(jslegation)).toList(); 
-
-            String? user_cycles_bank = await idb.get_object(
-                object_store_name: 'state', 
-                key: 'user_cycles_bank'
-            ) as String?;
-
-            idb.shutdown();
-                            
+        IICaller? ii_caller = await IICaller.indexdb_load();
+        
+        if (ii_caller != null) {
             User user_of_the_idb = User(
                 state: this,
-                caller: await SubtleCryptoECDSAP256Caller.of_the_cryptokeys(public_key: user_crypto_key_public, private_key: user_crypto_key_private),
-                legations: legations
+                caller: ii_caller
             );    
             
+            String? user_cycles_bank = window.localStorage['user_cycles_bank'];
             if (user_cycles_bank != null) {
                 List<String> user_cycles_bank_data = user_cycles_bank.split(':');
                 if (user_cycles_bank_data[0] == user_of_the_idb.principal.text) {
-                    user_of_the_idb.cycles_bank = CyclesBank(Principal(user_cycles_bank_data[1]), user_of_the_idb);
+                    user_of_the_idb.cycles_bank = CyclesBank(Principal.text(user_cycles_bank_data[1]), user_of_the_idb);
                 }
             }
             
-            //print(user_of_the_idb.caller);
-            if (user_of_the_idb.expiration_unix_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_unix_timestamp_nanoseconds! - BigInt.from(1000000000*60*20) ) {
+            if (user_of_the_idb.expiration_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_timestamp_nanoseconds! - BigInt.from(1000000000*60*10) ) {
                 this.user = user_of_the_idb;
-                //print(this.user!.caller);
             }
             
-            
-        } catch(e, s) {
-            // no error, let the user log in
-            window.console.log('load state of the browser storage idb error: $e');
-            print('load state of the browser storage error: $e\n$s');
         }
 
     }
@@ -430,7 +330,7 @@ class CTSFees {
     
     });
     
-    static CTSFees oftheRecord(Record ctsfees_record) {
+    static CTSFees of_the_record(Record ctsfees_record) {
         return CTSFees._(
             cycles_bank_cost_cycles: Cycles.oftheNat(ctsfees_record['cycles_bank_cost_cycles'] as Nat),
             cts_transfer_icp_fee: Cycles.oftheNat(ctsfees_record['cts_transfer_icp_fee'] as Nat),
@@ -584,9 +484,9 @@ class CyclesPerTokenRate extends Cycles {
     CyclesPerTokenRate({required BigInt cycles_per_token_quantum_rate, required this.token_decimal_places}) : super(cycles: cycles_per_token_quantum_rate);
     BigInt get cycles_per_token_quantum_rate => super.cycles;
     static CyclesPerTokenRate oftheTCyclesDoubleString(String tcycles_string, {required int token_decimal_places}) {
-        Tokens ts = Tokens.oftheDoubleString(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES - token_decimal_places); // makes sure the right number of decimal places
+        Tokens ts = Tokens.of_the_double_string(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES - token_decimal_places); // makes sure the right number of decimal places
         return CyclesPerTokenRate(
-            cycles_per_token_quantum_rate: ts.token_quantums,
+            cycles_per_token_quantum_rate: ts.quantums,
             token_decimal_places: token_decimal_places
         );
     }
@@ -667,7 +567,7 @@ class CallError {
     final String error_message;
     CallError({required this.error_code, required this.error_message});
     
-    static CallError oftheRecord(Record r) {
+    static CallError of_the_record(Record r) {
         return CallError(
             error_code: (r[0] as Nat32).value,
             error_message: (r[1] as candid.Text).value
@@ -770,7 +670,7 @@ class Icrc1Transaction {
         required this.memo,
         required this.fee,
     });
-    static Icrc1Transaction oftheRecord(Record tr) {
+    static Icrc1Transaction of_the_record(Record tr) {
         Record tk = tr['transaction'] as Record;
         String kind = (tk['kind'] as candid.Text).value;
         Record t = tk.find_option<Record>(kind)!;
@@ -778,8 +678,8 @@ class Icrc1Transaction {
             block: (tr['id'] as Nat).value,
             icrc1_transaction_kind: Icrc1TransactionKind.values.byName(kind),
             tokens: (t['amount'] as Nat).value, 
-            to: t.find_option<Record>('to').nullmap(Icrc1Account.oftheRecord), 
-            from: t.find_option<Record>('from').nullmap(Icrc1Account.oftheRecord),
+            to: t.find_option<Record>('to').nullmap(Icrc1Account.of_the_record), 
+            from: t.find_option<Record>('from').nullmap(Icrc1Account.of_the_record),
             created_at_time_nanos: t.find_option<Nat64>('created_at_time').nullmap((n)=>n.value), 
             timestamp_nanos: (tk['timestamp'] as Nat64).value,
             memo: t.find_option<Blob>('memo').nullmap((b)=>b.bytes),
@@ -805,6 +705,19 @@ enum Icrc1TransactionKind {
 
 
 
+
+List<Uint8List> _pathbytes(List<dynamic> path) {
+    // a path is a list of labels, see the ic-spec. 
+    // this function converts string labels to utf8 blobs in a new-list for the convenience. 
+    List<dynamic> pathb = [];
+    for (int i=0;i<path.length;i++) { 
+        pathb.add(path[i]);
+        if (pathb[i] is String) {
+            pathb[i] = utf8.encode(pathb[i]);    
+        }
+    }
+    return List.castFrom<dynamic, Uint8List>(pathb);
+}
 
 
 

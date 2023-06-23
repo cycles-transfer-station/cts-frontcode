@@ -148,7 +148,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             ) else TokenBalance(
                                 symbol: state.user!.cycles_bank!.current_icrc1_ledger!.symbol, 
                                 tokens: Tokens(
-                                    token_quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!]!,
+                                    quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!]!,
                                     decimal_places: state.user!.cycles_bank!.current_icrc1_ledger!.decimals 
                                 ), 
                                 key: ValueKey('CyclesBankScaffoldBody Icrc1TokenBalance')
@@ -527,9 +527,9 @@ class Icrc1TransactionCard extends StatelessWidget {
                                         Text('kind: ${t.icrc1_transaction_kind.name}'),
                                         Text('for: ${t.to}'),
                                         Text('by: ${t.from}'),
-                                        Text('tokens: ${Tokens(token_quantums: t.tokens, decimal_places: ledger.decimals)}'),
+                                        Text('tokens: ${Tokens(quantums: t.tokens, decimal_places: ledger.decimals)}'),
                                         Text('memo: ${t.memo == null ? '' : bytesasahexstring(t.memo!)}'),
-                                        Text('ledger-fee: ${t.fee == null ? 0 : Tokens(token_quantums: t.fee!, decimal_places: ledger.decimals)}'),
+                                        Text('ledger-fee: ${t.fee == null ? 0 : Tokens(quantums: t.fee!, decimal_places: ledger.decimals)}'),
                                         Text('timestamp: ${seconds_of_the_nanos(t.timestamp_nanos)}'),
                                     ]
                                 ),

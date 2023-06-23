@@ -2,7 +2,6 @@ import 'dart:html';
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller;
 
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
@@ -43,56 +42,6 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         
         if (state.user == null) {
-            if (window.location.hostname!.contains('bayhi-') || window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
-                column_children.add(
-                    OutlineButton(
-                        button_text: 'test user login',
-                        on_press_complete: () async {
-                            /*test*/
-                            state.is_loading = true;
-                            state.loading_text = 'loading test';
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            
-                            
-                            SubtleCryptoECDSAP256Caller test_caller = await SubtleCryptoECDSAP256Caller.new_keys(); 
-                            
-                            state.user = User(
-                                state: state,
-                                caller: test_caller,
-                                legations: [],
-                            );
-                            
-                            await state.save_state_in_the_browser_storage();
-                            
-                            try {
-                                await state.loadfirststate();
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Error:'),
-                                            content: Text('$e'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );
-                                state.loading_text = 'Error: ${e}';
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);    
-                                return;
-                            }
-                            
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
-                );
-            }
             
             column_children.add(   
                 Container(

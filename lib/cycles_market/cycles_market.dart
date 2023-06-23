@@ -7,7 +7,6 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/common.dart';
 import 'package:ic_tools/tools.dart';
-import 'package:ic_tools_web/ic_tools_web.dart' show NullMap;
 
 const int TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE = 157; 
 
@@ -24,7 +23,7 @@ class CyclesMarketMain {
             method_name: 'view_icrc1_token_trade_contracts',  
         ));
         Vector<Record> cs = (s.first as Vector).cast_vector<Record>();
-        this.icrc1token_trade_contracts = await Future.wait(cs.map(Icrc1TokenTradeContract.oftheRecord));
+        this.icrc1token_trade_contracts = await Future.wait(cs.map(Icrc1TokenTradeContract.of_the_record));
     }
 
 }
@@ -45,16 +44,16 @@ class Icrc1TokenTradeContract extends Record {
     }) {
         this['icrc1_ledger_canister_id'] = this.icrc1_ledger_canister_id; 
         this['trade_contract_canister_id'] = this.trade_contract_canister_id;
-        this['opt_cm_caller'] = Option(value: this.opt_cm_caller, value_type: PrincipalReference(isTypeStance:true));
+        this['opt_cm_caller'] = Option(value: this.opt_cm_caller, value_type: Principal.type_mode());
     }
-    static Future<Icrc1TokenTradeContract> oftheRecord(Record r) async {
+    static Future<Icrc1TokenTradeContract> of_the_record(Record r) async {
         Principal icrc1_ledger_canister_id = r['icrc1_ledger_canister_id'] as Principal; 
         // call ledger for the fee and decimals
         Icrc1Ledger ledger_data = await Icrc1Ledger.load(icrc1_ledger_canister_id);        
         return Icrc1TokenTradeContract(
             icrc1_ledger_canister_id: icrc1_ledger_canister_id,
             trade_contract_canister_id: r['trade_contract_canister_id'] as Principal,
-            opt_cm_caller: r.find_option<PrincipalReference>('opt_cm_caller').nullmap((pr)=>pr.principal!),
+            opt_cm_caller: r.find_option<Principal>('opt_cm_caller'),
             ledger_data: ledger_data
         );
     }
@@ -69,14 +68,14 @@ class Icrc1TokenTradeContract extends Record {
     Future<void> load_cycles_positions() async {
         this.cycles_positions = await _load_positions_mechanism(
             method_name: 'view_cycles_positions',
-            function: (Record r) => CyclesPosition.oftheRecord(r, token_decimal_places: this.ledger_data.decimals)
+            function: (Record r) => CyclesPosition.of_the_record(r, token_decimal_places: this.ledger_data.decimals)
         );
     }
     
     Future<void> load_token_positions() async {
         this.token_positions = await _load_positions_mechanism(
             method_name: 'view_token_positions',
-            function: (Record r) => TokenPosition.oftheRecord(r, token_decimal_places: this.ledger_data.decimals)
+            function: (Record r) => TokenPosition.of_the_record(r, token_decimal_places: this.ledger_data.decimals)
         );
     }
     
@@ -98,7 +97,7 @@ class Icrc1TokenTradeContract extends Record {
                 calltype: CallType.query,
                 method_name: method_name,
                 put_bytes: c_forwards([
-                    Record.oftheMap({
+                    Record.of_the_map({
                         'opt_start_after_position_id': Option<Nat>(value: start_after_position.nullmap((n)=>Nat(n)), value_type: Nat())
                     })
                 ])
@@ -151,7 +150,7 @@ class Icrc1TokenTradeContract extends Record {
                 calltype: CallType.query,
                 method_name: 'view_trade_logs',
                 put_bytes: c_forwards([
-                    Record.oftheMap({
+                    Record.of_the_map({
                         'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((n)=>Nat(n)), value_type: Nat()),
                     })
                 ]),
@@ -159,7 +158,7 @@ class Icrc1TokenTradeContract extends Record {
             
             //BigInt latest_trade_log_id = (s['trade_logs_len'] as Nat).value - BigInt.from(1);
             
-            storage_canisters = ((s['storage_canisters'] as Vector).cast_vector<Record>()).map(StorageCanister.oftheRecord).toList();
+            storage_canisters = ((s['storage_canisters'] as Vector).cast_vector<Record>()).map(StorageCanister.of_the_record).toList();
             
             Uint8List logs = (s['logs'] as Blob).bytes;
             
@@ -204,7 +203,7 @@ class Icrc1TokenTradeContract extends Record {
                     calltype: CallType.query,
                     method_name: storage_canister.view_trade_logs_method_name,
                     put_bytes: c_forwards([
-                        Record.oftheMap({
+                        Record.of_the_map({
                             'start_id': Nat(start_at_id),
                             'length': Nat(BigInt.from(quest_length)),
                         })
@@ -266,13 +265,13 @@ class StorageCanister {
         required this.canister_id,
         required this.view_trade_logs_method_name,
     });
-    static StorageCanister oftheRecord(Record r) {
+    static StorageCanister of_the_record(Record r) {
         FunctionReference callback = r['callback'] as FunctionReference;
         return StorageCanister._(
             first_log_id: (r['first_log_id'] as Nat).value,
             length: (r['length'] as Nat).value,
             log_size: (r['log_size'] as Nat32).value,
-            canister_id: Principal.oftheBytes(callback.service!.id!.bytes),
+            canister_id: Principal.bytes(callback.service!.id!.bytes),
             view_trade_logs_method_name: callback.method_name!.value
         );
     }
@@ -304,7 +303,7 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
         required this.cycles_per_token_rate,
         required this.timestamp_nanos,
     });
-    static CyclesPosition oftheRecord(Record r, {required int token_decimal_places}) {
+    static CyclesPosition of_the_record(Record r, {required int token_decimal_places}) {
         return CyclesPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
@@ -332,7 +331,7 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
         required this.cycles_per_token_rate,
         required this.timestamp_nanos
     });
-    static TokenPosition oftheRecord(Record r, {required int token_decimal_places}) {
+    static TokenPosition of_the_record(Record r, {required int token_decimal_places}) {
         return TokenPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
@@ -377,7 +376,7 @@ class TradeLog {
         this.cycles_payout_data,
         this.token_payout_data,
     });
-    static TradeLog oftheRecord(Record r, {required int token_decimal_places}) {
+    static TradeLog of_the_record(Record r, {required int token_decimal_places}) {
         return TradeLog._(
             position_id: (r['position_id'] as Nat).value,
             id: (r['id'] as Nat).value,
@@ -419,7 +418,7 @@ enum PositionKind {
 
 Principal principal_of_the_30_bytes(Iterable<int> b) {
     List<int> blist = b.toList();
-    return Principal.oftheBytes(Uint8List.fromList(blist.getRange(1, blist[0] + 1).toList()));
+    return Principal.bytes(Uint8List.fromList(blist.getRange(1, blist[0] + 1).toList()));
 }
 
 BigInt u128_of_the_be_bytes(Iterable<int> bytes) {

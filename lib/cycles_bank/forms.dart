@@ -99,7 +99,7 @@ final String? Function(String?) cycles_bank_principal_validator = (String? v) {
     }
     late Principal p;
     try {
-        p = Principal(v.trim());
+        p = Principal.text(v.trim());
     } catch(e) {
         return 'invalid cycles-bank-principal-id';
     }
@@ -198,7 +198,7 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                             labelText: 'For the cycles-bank: ',
                         ),
                         initialValue: for_the_cycles_bank_initial_value,
-                        onSaved: (String? v) { for_the_canister = Principal(v!.trim()); },
+                        onSaved: (String? v) { for_the_canister = Principal.text(v!.trim()); },
                         validator: cycles_bank_principal_validator
                     ),
                     TextFormField(
@@ -410,7 +410,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
             child: Column(
                 children: [
-                    Text('BALANCE: ${state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(token_quantums: state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
+                    Text('BALANCE: ${state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(quantums: state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
                     //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
@@ -486,7 +486,7 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
                 ),
                 Container(
                     width: double.infinity,
-                    child: Text('ledger-transfer-fee: ${Tokens(token_quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize: 13))
+                    child: Text('ledger-transfer-fee: ${Tokens(quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize: 13))
                 ),
                 /*
                 Container(
@@ -502,7 +502,7 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
                             DataRow(
                                 cells: [
                                     DataCell(Text('ledger-transfer-fee:', )),
-                                    DataCell(Text('${Tokens(token_quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}-${this.icrc1_ledger.symbol}')),
+                                    DataCell(Text('${Tokens(quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}-${this.icrc1_ledger.symbol}')),
                                 ]
                             ),
                         ]
@@ -541,14 +541,14 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                         decoration: InputDecoration(
                             labelText: 'For: ',
                         ),
-                        onSaved: (String? v) { for_the_icrc1_id = Principal(v!.trim()); },
+                        onSaved: (String? v) { for_the_icrc1_id = Principal.text(v!.trim()); },
                         validator: (String? v) {
                             if (v == null || v.trim() == '') {
                                 return 'type the account-id';
                             }
                             late Principal p;
                             try {
-                                p = Principal(v);
+                                p = Principal.text(v);
                             } catch(e) {
                                 return 'must be a valid principal-id.';
                             }
@@ -559,18 +559,18 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                         decoration: InputDecoration(
                             labelText: 'Tokens: ',
                         ),
-                        onSaved: (String? v) { tokens = Tokens.oftheDoubleString(v!, decimal_places: widget.icrc1_ledger.decimals); },
+                        onSaved: (String? v) { tokens = Tokens.of_the_double_string(v!, decimal_places: widget.icrc1_ledger.decimals); },
                         validator: (String? v) {
                             if (v == null || v == '') {
                                 return 'Must be a number';
                             }
                             late Tokens t;
                             try {
-                                t = Tokens.oftheDoubleString(v, decimal_places: widget.icrc1_ledger.decimals);
+                                t = Tokens.of_the_double_string(v, decimal_places: widget.icrc1_ledger.decimals);
                             } catch(e) {
                                 return 'Must be a number > 0, max ${widget.icrc1_ledger.decimals} decimal places';
                             }
-                            if (t.token_quantums == BigInt.from(0)) {
+                            if (t.quantums == BigInt.from(0)) {
                                 return 'Must be a number > 0';
                             }
                             return null;
@@ -652,15 +652,15 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                     }
                                 
                                     Uint8List icrc1_transfer_arg_raw = candid.c_forwards([
-                                        Record.oftheMap({
+                                        Record.of_the_map({
                                             //'from_subaccount' : opt Subaccount;
-                                            'to' : Record.oftheMap({
+                                            'to' : Record.of_the_map({
                                                 'owner' : for_the_icrc1_id,
                                                 //'subaccount' : opt Subaccount;
                                             }),
                                             'amount' : tokens,
                                             'fee' : Option<Nat>(value: widget.icrc1_ledger.fee_tokens),
-                                            'memo' : Option<Vector<Nat8>>(value: memo != null ? Blob(memo) : null, value_type: Vector(isTypeStance: true, values_type: Nat8())),
+                                            'memo' : Option<Vector<Nat8>>(value: memo != null ? Blob(memo) : null, value_type: Blob.type_mode()),
                                             'created_at_time' : Option<Nat64>(value: Nat64(BigInt.from(DateTime.now().millisecondsSinceEpoch) * BigInt.from(1000000)), value_type: Nat64()),
                                         })
                                     ]);
@@ -816,7 +816,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                         decoration: InputDecoration(
                             labelText: 'icp: '
                         ),
-                        onSaved: (String? value) { icp = IcpTokens.oftheDoubleString(value!); },
+                        onSaved: (String? value) { icp = IcpTokens.of_the_double_string(value!); },
                         validator: icp_validator
                     ),
                     TextFormField(
@@ -845,13 +845,13 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                     form_key.currentState!.save();
                                     
                                     Uint8List transfer_icp_quest = candid.c_forwards([
-                                        Record.oftheMap({
+                                        Record.of_the_map({
                                             'memo': memo,
                                             'amount': icp,
                                             'fee': ICP_LEDGER_TRANSFER_FEE,
-                                            'from_subaccount': Option<Blob>(value: null, value_type: Blob([], isTypeStance: true)),
+                                            'from_subaccount': Option<Blob>(value: null, value_type: Blob.type_mode()),
                                             'to': Blob(hexstringasthebytes(to)),
-                                            'created_at_time': Option<Record>(value: Record.oftheMap({'timestamp_nanos': Nat64(get_current_time_nanoseconds())})),
+                                            'created_at_time': Option<Record>(value: Record.of_the_map({'timestamp_nanos': Nat64(get_current_time_nanoseconds())})),
                                         })
                                     ]);
                                     
@@ -1445,7 +1445,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         decoration: InputDecoration(
                             labelText: 'burn icp: ',
                         ),
-                        onSaved: (String? value) { burn_icp = IcpTokens.oftheDoubleString(value!); },
+                        onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!); },
                         validator: icp_validator
                     ),
                     Padding(

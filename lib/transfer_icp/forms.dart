@@ -89,7 +89,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
                         decoration: InputDecoration(
                             labelText: 'icp: '
                         ),
-                        onSaved: (String? value) { icp = IcpTokens.oftheDoubleString(value!); },
+                        onSaved: (String? value) { icp = IcpTokens.of_the_double_string(value!); },
                         validator: icp_validator
                     ),
                     TextFormField(
@@ -242,7 +242,7 @@ final String? Function(String?) icp_validator = (String? value) {
     }
     late IcpTokens icpts;
     try {
-        icpts = IcpTokens.oftheDoubleString(value);
+        icpts = IcpTokens.of_the_double_string(value);
     } catch(e) {
         return e_s;
     }

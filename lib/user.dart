@@ -6,7 +6,7 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
-import 'package:ic_tools_web/ic_tools_web.dart' show SubtleCryptoECDSAP256Caller;
+import 'package:ic_tools/common_web.dart';
 
 import 'transfer_icp/icp_ledger.dart';
 import 'cycles_bank/cycles_bank.dart';
@@ -15,12 +15,12 @@ import 'config/state.dart';
 class User {
     CustomState state;
     
-    final SubtleCryptoECDSAP256Caller caller;
-    final List<Legation> legations;
+    final IICaller caller;
     
-    late final BigInt? expiration_unix_timestamp_nanoseconds;
-    late final Uint8List public_key_DER;
-    late final Principal principal;
+    BigInt? get expiration_timestamp_nanoseconds => caller.legations.expiration_timestamp_nanoseconds;
+    Uint8List get public_key_DER => caller.public_key_DER;
+    Principal get principal => caller.principal;
+    
     late final Uint8List user_icp_subaccount_bytes;
     late final String user_icp_id;
     
@@ -34,20 +34,16 @@ class User {
     User({
         required this.state,
         required this.caller,
-        required this.legations,
         this.icp_balance,
         this.cycles_bank,
     }) {
-        this.expiration_unix_timestamp_nanoseconds = this.legations.isNotEmpty ? this.legations.first.expiration_unix_timestamp_nanoseconds : null;
-        this.public_key_DER = legations.length >= 1 ? legations[0].legator_public_key_DER : caller.public_key_DER;
-        this.principal = Principal.ofthePublicKeyDER(this.public_key_DER);
         this.user_icp_subaccount_bytes = principal_as_an_icpsubaccountbytes(this.principal);
         this.user_icp_id = icp_id(cts.principal, subaccount_bytes: user_icp_subaccount_bytes);
     }
 
         
     Future<Uint8List> call(Canister canister, {required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 10)}) {
-        return canister.call(caller:this.caller, legations:this.legations, calltype:calltype, method_name:method_name, put_bytes:put_bytes, timeout_duration:timeout_duration);
+        return canister.call(caller:this.caller, calltype:calltype, method_name:method_name, put_bytes:put_bytes, timeout_duration:timeout_duration);
     }
     
     
@@ -58,14 +54,14 @@ class User {
             calltype: CallType.query,
             method_name: 'account_balance',
             put_bytes: c_forwards([
-                Record.oftheMap({
+                Record.of_the_map({
                     'account': Blob(hexstringasthebytes(this.user_icp_id))
                 })
             ])
         )))[0] as Record;
         
         this.icp_balance = IcpTokensWithATimestamp(
-            icp: IcpTokens.oftheRecord(icptokens_record)
+            icp: IcpTokens.of_the_record(icptokens_record)
         );
     }
 
@@ -95,7 +91,7 @@ class User {
         'CBSMapsFindUserCallFails': (vec) {
             String error_string = 'Find the user\'s cycles-bank error: \ncycles-banks-maps-canisters call error(s): ';
             for (Record call_fail in (vec as Vector).cast_vector<Record>()) {
-                error_string = error_string + '\ncbs_map: ${(call_fail[0] as Principal).text}, ${CallError.oftheRecord(call_fail[1] as Record)}';                   
+                error_string = error_string + '\ncbs_map: ${(call_fail[0] as Principal).text}, ${CallError.of_the_record(call_fail[1] as Record)}';                   
             }
             throw Exception(error_string);
         }
@@ -103,7 +99,7 @@ class User {
     
     Map<String, Never Function(CandidType)> get ledger_topup_cycles_cmc_icp_transfer_error_match_map => {
         'IcpTransferCallError': (call_error) {
-            throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
+            throw Exception('Icp ledger transfer call error:\n${CallError.of_the_record(call_error as Record)}');
         },
         'IcpTransferError': (icp_transfer_error) {
             return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
@@ -112,10 +108,10 @@ class User {
 
     Map<String, Never Function(CandidType)> get icp_transfer_error_match_map => {
         'BadFee': (expected_fee_record) {
-            throw Exception('Bad Fee set on the transfer. expected_fee: ${IcpTokens.oftheRecord((expected_fee_record as Record)['expected_fee']!)}');
+            throw Exception('Bad Fee set on the transfer. expected_fee: ${IcpTokens.of_the_record((expected_fee_record as Record)['expected_fee']!)}');
         },
         'InsufficientFunds': (balance_record) {
-            IcpTokens current_balance = IcpTokens.oftheRecord((balance_record as Record)['balance']!);
+            IcpTokens current_balance = IcpTokens.of_the_record((balance_record as Record)['balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: current_balance);
             throw Exception('Icp balance is too low. current balance: ${current_balance}');
         },
@@ -226,14 +222,14 @@ class User {
             return await this.complete_purchase_cycles_bank();          
         },
         'FoundCyclesBank':(cycles_bank_principal) async {
-            this.cycles_bank = CyclesBank((cycles_bank_principal as PrincipalReference).principal!, this);    
+            this.cycles_bank = CyclesBank((cycles_bank_principal as Principal), this);    
         },
         'UserIcpLedgerBalanceTooLow':(user_icp_ledger_balance_too_low_ctype) async {
             Record user_icp_ledger_balance_too_low_error = user_icp_ledger_balance_too_low_ctype as Record;
-            IcpTokens cycles_bank_cost_icp = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
-            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
+            IcpTokens cycles_bank_cost_icp = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
+            IcpTokens user_icp_ledger_balance = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
-            IcpTokens icp_ledger_transfer_fee = IcpTokens.oftheRecord(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
+            IcpTokens icp_ledger_transfer_fee = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
             try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${e}'); }
             throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
@@ -245,7 +241,7 @@ class User {
             throw Exception('The referral-user cannot be the caller.');
         },
         'CheckIcpBalanceCallError': (call_error_record) async {
-            throw Exception('Error when checking the user\'s icp balance:\n${CallError.oftheRecord(call_error_record as Record)}');
+            throw Exception('Error when checking the user\'s icp balance:\n${CallError.of_the_record(call_error_record as Record)}');
         },
         'CheckCurrentXdrPerMyriadPerIcpCmcRateError': (r) async {
             print(r);
@@ -266,7 +262,7 @@ class User {
     Map<String, Future<void> Function(CandidType)> get purchase_cycles_bank_result_match_map => {
         Ok: (purchase_cycles_bank_success_ctype) async {
             Record purchase_cycles_bank_success = purchase_cycles_bank_success_ctype as Record;
-            this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as PrincipalReference).principal!, this);    
+            this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as Principal), this);    
         },
         Err: (purchase_cycles_bank_error) async {
             return await match_variant<Future<void>>(purchase_cycles_bank_error as Variant, purchase_cycles_bank_error_match_map);
@@ -307,8 +303,8 @@ class User {
                 calltype: CallType.call,
                 method_name: 'purchase_cycles_bank',
                 put_bytes: c_forwards([
-                    Record.oftheMap({
-                        'opt_referral_user_id': Option(value: opt_referral_user_id !=null ? opt_referral_user_id.c : null, value_type: PrincipalReference(isTypeStance:true))
+                    Record.of_the_map({
+                        'opt_referral_user_id': Option(value: opt_referral_user_id, value_type: Principal.type_mode())
                     })
                 ])
             )
@@ -335,7 +331,7 @@ class User {
     
     Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_result_match_map => {
         Ok: (burn_icp_mint_cycles_success) async {
-            return BurnIcpMintCyclesSuccess.oftheRecord(burn_icp_mint_cycles_success);
+            return BurnIcpMintCyclesSuccess.of_the_record(burn_icp_mint_cycles_success);
         },
         Err: (burn_icp_mint_cycles_error) async {
             return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
@@ -356,7 +352,7 @@ class User {
             return match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
         },
         'MinimumBurnIcpMintCycles': (minimum_burn_icp_mint_cycles_record) async {
-            throw Exception('The minimum amount of icp that you can use to mint cycles is: ${IcpTokens.oftheRecord((minimum_burn_icp_mint_cycles_record as Record)['minimum_burn_icp_mint_cycles']!)}');
+            throw Exception('The minimum amount of icp that you can use to mint cycles is: ${IcpTokens.of_the_record((minimum_burn_icp_mint_cycles_record as Record)['minimum_burn_icp_mint_cycles']!)}');
         },
         'FindUserInTheCBSMapsError':(find_user_in_the_cbs_maps_error) async {
             return match_variant<Never>(find_user_in_the_cbs_maps_error as Variant, find_user_in_the_cbs_maps_error_match_map);
@@ -396,7 +392,7 @@ class User {
                 calltype: CallType.call,
                 method_name: 'burn_icp_mint_cycles',
                 put_bytes: c_forwards([
-                    Record.oftheMap({
+                    Record.of_the_map({
                         'burn_icp': burn_icp
                     })
                 ])
@@ -426,7 +422,7 @@ class User {
     
     Map<String, Future<TransferIcpSuccess> Function(CandidType)> get transfer_icp_result_match_map => {
         Ok: (transfer_icp_success) async {
-            return TransferIcpSuccess.oftheRecord(transfer_icp_success);
+            return TransferIcpSuccess.of_the_record(transfer_icp_success);
         },
         Err: (transfer_icp_error) async {
             return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_error as Variant, transfer_icp_error_match_map);
@@ -447,7 +443,7 @@ class User {
             return match_variant<Never>(user_is_in_the_middle_of_a_different_call as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
         },
         'CheckIcpBalanceCallError': (call_error) async {
-            throw Exception('Error when checking the user icp balance on the ledger.\n${CallError.oftheRecord(call_error as Record)}');
+            throw Exception('Error when checking the user icp balance on the ledger.\n${CallError.of_the_record(call_error as Record)}');
         },
         'CTSIsBusy': (n) async {
             throw Exception('The CTS is busy, try soon.');
@@ -457,17 +453,17 @@ class User {
             throw Exception('Error when checking the current xdr-icp rate.');
         },
         'MaxTransfer': (max_transfer_record) async {
-            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${IcpTokens.oftheRecord((max_transfer_record as Record)['cts_transfer_icp_fee'] as Record)}, must be less than ${(BigInt.from(2).pow(64)-BigInt.from(1))/BigInt.from(10).pow(8)}');
+            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${IcpTokens.of_the_record((max_transfer_record as Record)['cts_transfer_icp_fee'] as Record)}, must be less than ${(BigInt.from(2).pow(64)-BigInt.from(1))/BigInt.from(10).pow(8)}');
         },
         'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
             Record r = user_icp_ledger_balance_too_low_record as Record;
-            IcpTokens user_icp_ledger_balance = IcpTokens.oftheRecord(r['user_icp_ledger_balance']!);
+            IcpTokens user_icp_ledger_balance = IcpTokens.of_the_record(r['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
-            IcpTokens cts_transfer_icp_fee = IcpTokens.oftheRecord(r['cts_transfer_icp_fee']!);
+            IcpTokens cts_transfer_icp_fee = IcpTokens.of_the_record(r['cts_transfer_icp_fee']!);
             throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(user_icp_ledger_balance, state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee));
         },
         'IcpTransferCallError': (call_error) async {
-            throw Exception('Icp ledger transfer call error:\n${CallError.oftheRecord(call_error as Record)}');
+            throw Exception('Icp ledger transfer call error:\n${CallError.of_the_record(call_error as Record)}');
         },
         'IcpTransferError': (icp_transfer_error) async {
             return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
@@ -538,7 +534,7 @@ class BurnIcpMintCyclesSuccess {
     
     BurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
     
-    static BurnIcpMintCyclesSuccess oftheRecord(CandidType burn_icp_mint_cycles_success_record) {
+    static BurnIcpMintCyclesSuccess of_the_record(CandidType burn_icp_mint_cycles_success_record) {
         Record r = burn_icp_mint_cycles_success_record as Record;
         return BurnIcpMintCyclesSuccess(
             mint_cycles_for_the_user: Cycles.oftheNat(r['mint_cycles_for_the_user'] as Nat),
@@ -577,7 +573,7 @@ class TransferIcpSuccess {
 
     TransferIcpSuccess({required this.block_height});
     
-    static TransferIcpSuccess oftheRecord(CandidType transfer_icp_success_record) {
+    static TransferIcpSuccess of_the_record(CandidType transfer_icp_success_record) {
         Record r = transfer_icp_success_record as Record;
         return TransferIcpSuccess(
             block_height: r['block_height'] as Nat64

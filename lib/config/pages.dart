@@ -13,7 +13,6 @@ import 'package:ic_tools/candid.dart' as candid;
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show IcpTokens;
 import 'package:ic_tools/common.dart' as common;
-import 'package:ic_tools_web/ic_tools_web.dart' show IndexDB;
 
 import '../main.dart';
 import '../tools/widgets.dart';
@@ -194,8 +193,9 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     child: OutlineButton(
                                                         button_text: 'LOG-OUT',
                                                         on_press_complete: () {
+                                                            state.user!.caller.indexdb_delete();
+                                                            window.localStorage.remove('user_cycles_bank');
                                                             state.user = null;
-                                                            IndexDB.delete_database('cts');
                                                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
                                                             Navigator.pop(context);
                                                         }
