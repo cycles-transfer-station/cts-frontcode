@@ -38,13 +38,14 @@ class CreateBank extends StatelessWidget {
                                         content: SingleChildScrollView(
                                             child: Text(
                     */
-            """A CYCLES-BANK is a smart-contract living on the World-Computer-Blockchain that can hold CYCLES, transfer CYCLES, and receive CYCLES. 
+"""A CTS-MEMBERSHIP grants you the ability to mint, hold, transfer, and trade the native CYCLES.
 
-            The CYCLES currency - different than other crypto-currencies - must be held by a smart-contract on the ICP-blockchain and cannot be held by a key-pair alone. This is why one needs a cycles-bank to hold or transfer the CYCLES currency.
+Creating a CTS-MEMBERSHIP lets you into the CYCLES-MARKET where you can trade tokens with the CYCLES stablecoin.
 
-            Creating a CYCLES-BANK creates a brand new personal cycles-bank for the user. A cycles-bank comes with a lifetime of 1-year, storage space of 10-MiB, and 2.0-CTSFuel. For each cycles-transfer, the world-computer-blockchain charges some fuel, in the cycles-bank that fuel is labeled as the CTSFuel. Once a cycles-bank is created, the user can lengthen the lifetime, grow the storage-space, and top-up the CTSFuel.
+For each member, the CTS creates a CYCLES-BANK.
 
-            """
+A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockchain that can hold CYCLES, transfer CYCLES, and receive CYCLES. A CYCLES-BANK can hold many tokens on the ICP blockchain. A CYCLES-BANK makes logs of the cycles-transfers and of the cycles-market trades.
+"""
                     /*
                                             )
                                         ),
@@ -71,7 +72,7 @@ class CreateBank extends StatelessWidget {
                     child: Center(
                         child: Column(
                             children: [
-                                Text('USER-CTS-ICP-ID: '),
+                                Text('Send the MEMBERSHIP COST ICP to this address to pay for a membership: \nUSER-CTS-ICP-ID: '),
                                 SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14)),
                             ]
                         )
@@ -95,8 +96,8 @@ class CreateBank extends StatelessWidget {
                         rows: [
                             DataRow(
                                 cells: [
-                                    DataCell(Text('CYCLES-BANK COST XDR:')),
-                                    DataCell(Text('${state.cts_fees.cycles_bank_cost_cycles.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}-xdr')),
+                                    DataCell(Text('MEMBERSHIP COST CYCLES:')),
+                                    DataCell(Text('${state.cts_fees.membership_cost_per_year_cycles}')),
                                 ]
                             ),
                             /*
@@ -115,11 +116,11 @@ class CreateBank extends StatelessWidget {
                             */
                             DataRow(
                                 cells: [
-                                    DataCell(Text('CYCLES-BANK COST ICP:')),
+                                    DataCell(Text('MEMBERSHIP COST ICP:')),
                                     DataCell(Row(
                                         children: [
-                                            Text('${Tokens(quantums: cycles_transform_tokens(state.cts_fees.cycles_bank_cost_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals).round_decimal_places(1)}-icp'), 
-                                            Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the cycles-bank cost XDR converted into ICP using the current ICP/XDR conversion-rate. This amount fluctuates based on the current ICP/XDR conversion-rate.')
+                                            Text('${Tokens(quantums: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals).round_decimal_places(1)}-icp'), 
+                                            Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the membership cost in CYCLES converted into ICP using the current ICP/CYCLES conversion-rate. This amount fluctuates based on the current ICP/CYCLES conversion-rate.')
                                         ]
                                     )),
                                 ]
@@ -138,9 +139,9 @@ class CreateBank extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(11,0,11,0),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('CREATE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                        child: Text('CREATE MEMBERSHIP', style: TextStyle(fontSize: 21)),
                         onPressed: () async {  
-                            state.loading_text = 'creating cycles-bank ...';
+                            state.loading_text = 'creating membership ...';
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             try {
@@ -150,7 +151,7 @@ class CreateBank extends StatelessWidget {
                                     context: state.context,
                                     builder: (BuildContext context) {
                                         return AlertDialog(
-                                            title: Text('create cycles-bank error:'),
+                                            title: Text('create membership error:'),
                                             content: Text('${e}'),
                                             actions: <Widget>[
                                                 TextButton(
@@ -165,15 +166,15 @@ class CreateBank extends StatelessWidget {
                                 main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                 return;    
                             }
-                            state.loading_text = 'create cycles-bank success. \ncycles-bank id: ${state.user!.cycles_bank!.principal.text}\nloading cycles-bank metrics ...';
+                            state.loading_text = 'create membership success. \nbank id: ${state.user!.cycles_bank!.principal.text}\nloading membership metrics ...';
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                             
                             Future success_dialog = showDialog(
                                 context: state.context,
                                 builder: (BuildContext context) {
                                     return AlertDialog(
-                                        title: Text('create cycles-bank success:'),
-                                        content: Text('cycles-bank id: ${state.user!.cycles_bank!.principal.text}'),
+                                        title: Text('Create membership success:'),
+                                        content: Text('Bank id: ${state.user!.cycles_bank!.principal.text}'),
                                         actions: <Widget>[
                                             TextButton(
                                                 onPressed: () => Navigator.pop(context),
@@ -191,7 +192,7 @@ class CreateBank extends StatelessWidget {
                                     context: state.context,
                                     builder: (BuildContext context) {
                                         return AlertDialog(
-                                            title: Text('load cycles-bank metrics error:'),
+                                            title: Text('load membership metrics error:'),
                                             content: Text('${e}'),
                                             actions: <Widget>[
                                                 TextButton(

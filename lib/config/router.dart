@@ -22,9 +22,10 @@ class CustomRouteParser extends RouteInformationParser<CustomUrl> {
 class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, PopNavigatorRouterDelegateMixin<CustomUrl> { // what is this popnavigatorrouterdelegatemixin?
     final GlobalKey<NavigatorState> navigatorKey;
     CustomState state = CustomState();
+    late Future<void> loadfirststatefuture;
     
     CustomRouteLegate() : navigatorKey = GlobalKey<NavigatorState>() { 
-        state.loadfirststate().then((x){
+        loadfirststatefuture = state.loadfirststate().then((x){
             state.is_loading = false;
             notifyListeners();
         }).catchError((e) async {
@@ -54,6 +55,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     @override
     Future<void> setNewRoutePath(CustomUrl custom_url) async {
         //print('set new route path');
+        await loadfirststatefuture; // for the cycles-market urls, must know the trading pairs before solving for the url.
         state.current_url = custom_url;
         // does this re-build the state?
     }

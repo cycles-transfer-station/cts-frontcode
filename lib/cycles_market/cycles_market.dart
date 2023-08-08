@@ -285,6 +285,9 @@ abstract class Icrc1TokenTradeContractPosition {
     Principal get positor;
     CyclesPerTokenRate get cycles_per_token_rate;
     BigInt get timestamp_nanos;
+    
+    Cycles get cycles_quantity;
+    BigInt get tokens_quantity;
 }
 
 
@@ -295,6 +298,10 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
     final Cycles minimum_purchase;
     final CyclesPerTokenRate cycles_per_token_rate;
     final BigInt timestamp_nanos;
+    
+    Cycles get cycles_quantity => this.cycles;
+    BigInt get tokens_quantity => cycles_transform_tokens(this.cycles, this.cycles_per_token_rate);
+    
     CyclesPosition._({
         required this.id,   
         required this.positor,
@@ -323,6 +330,10 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
     final BigInt minimum_purchase;
     final CyclesPerTokenRate cycles_per_token_rate;
     final BigInt timestamp_nanos;
+    
+    Cycles get cycles_quantity => tokens_transform_cycles(this.tokens, this.cycles_per_token_rate);
+    BigInt get tokens_quantity => this.tokens;
+    
     TokenPosition._({
         required this.id,
         required this.positor,
@@ -360,6 +371,8 @@ class TradeLog {
     final bool? token_payout_lock;
     final Record? cycles_payout_data;
     final Record? token_payout_data;
+    
+    DateTime datetime() => DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(timestamp_nanos).toInt());
     
     TradeLog._({
         required this.position_id,

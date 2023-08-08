@@ -4,26 +4,36 @@ import 'package:flutter/material.dart';
 
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
+import 'package:data_table_2/data_table_2.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
-import 'forms.dart';
-import 'cards.dart';
-import 'cycles_market.dart';
+import '../config/pages.dart';
+import '../config/urls.dart';
+import './cycles_market.dart';
+import './chart.dart';
+import './forms.dart';
+import './cards.dart';
 import '../cycles_bank/cycles_bank.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
-import '../config/pages.dart';
-import '../config/urls.dart';
 
 
 
+// check the stop scroll functionality 
 
-class CyclesMarketScaffoldBody extends StatelessWidget {
+
+
+class CyclesMarketScaffoldBody extends StatefulWidget {
     CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
+    State<CyclesMarketScaffoldBody> createState() => CyclesMarketScaffoldBodyState();
+}
+class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {    
 
+    bool stop_scroll = false; 
+    
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -45,46 +55,56 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
         List<Widget> column_children = [];
         
         column_children.addAll([
+            SizedBox(
+                height: 10,   
+            ),
             Container(
                 width: 900,
                 child: Container(
-                    child: DropdownButton<int>(
-                        //decoration: InputDecoration(
-                        //    labelText: 'Token'//state.user!.cycles_bank!.current_icrc1_ledger.symbol,
-                        //),
-                        underline: Container(
-                            height: 2,
-                            color: Colors.deepPurpleAccent,
-                        ),
-                        isExpanded: false,
-                        items: [
-                            for (int i = 0; i < state.cm_main.icrc1token_trade_contracts.length; i++)                 
-                                DropdownMenuItem<int>(
-                                    child: Container(
-                                        padding: EdgeInsets.all(8),
-                                        child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + ' / TCYCLES', style: TextStyle(fontSize: 22)), 
+                    margin: EdgeInsets.all(13),
+                    child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: DropdownButton<int>(
+                            //decoration: InputDecoration(
+                            //    labelText: 'Token'//state.user!.cycles_bank!.current_icrc1_ledger.symbol,
+                            //),
+                            underline: Container(
+                                height: 0,
+                                color: Colors.deepPurpleAccent,
+                            ),
+                            //isExpanded: false,
+                            items: [
+                                for (int i = 0; i < state.cm_main.icrc1token_trade_contracts.length; i++)                 
+                                    DropdownMenuItem<int>(
+                                        child: Container(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + ' / TCYCLES', style: TextStyle(fontSize: 22)), 
+                                        ),
+                                        value: i
                                     ),
-                                    value: i
-                                ),
-                        ],
-                        value: state.cm_main_icrc1token_trade_contracts_i,
-                        onChanged: (int? select_i) { 
-                            if (select_i is int) {
-                                if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
-                                    state.current_url = CustomUrl(
-                                        'cycles_market', 
-                                        variables: {
-                                            'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.symbol
-                                        }
-                                    );
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            ],
+                            value: state.cm_main_icrc1token_trade_contracts_i,
+                            onChanged: (int? select_i) { 
+                                if (select_i is int) {
+                                    if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
+                                        state.current_url = CustomUrl(
+                                            'cycles_market', 
+                                            variables: {
+                                                'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.symbol
+                                            }
+                                        );
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    }
                                 }
                             }
-                        }
+                        )
                     )
                 )
             ),
-            CyclesMarketTradeContractTradePage(cm_main_icrc1token_trade_contracts_i: state.cm_main_icrc1token_trade_contracts_i)
+            CyclesMarketTradeContractTradePage(
+                cm_main_icrc1token_trade_contracts_i: state.cm_main_icrc1token_trade_contracts_i,
+                stop_scroll: (bool b) => setState((){ stop_scroll = b; }),
+            )
         ]);
         
         return Center(
@@ -99,6 +119,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                         Expanded(
                             child: ListView(
                                 padding: EdgeInsets.all(0),
+                                physics: stop_scroll ? NeverScrollableScrollPhysics() : null,
                                 children: [
                                     Column(
                                         children: column_children 
@@ -116,10 +137,13 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
 }
 
 
-
 class CyclesMarketTradeContractTradePage extends StatefulWidget {
     int cm_main_icrc1token_trade_contracts_i;
-    CyclesMarketTradeContractTradePage({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey<String>('CyclesMarketTradeContractTradePage cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
+    void Function(bool) stop_scroll;
+    CyclesMarketTradeContractTradePage({
+        required this.cm_main_icrc1token_trade_contracts_i,
+        required this.stop_scroll
+    }) : super(key: ValueKey<String>('CyclesMarketTradeContractTradePage cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
     State<CyclesMarketTradeContractTradePage> createState() => CyclesMarketTradeContractTradePageState();
 }
 class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeContractTradePage> {
@@ -130,13 +154,284 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         
         
         return Container(
-            child: Text('hi')
+            child: Column(
+                children: [ 
+                    Wrap(
+                        children: [
+                            Container(
+                                child: MarketTrades(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i) 
+                            ),
+                            MouseRegion(
+                                child: Container(
+                                    child: Chart(
+                                        cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
+                                        key: ValueKey('CyclesMarketTradeContractTradePage Candlestick-Chart cm_main_icrc1token_trade_contracts_i ${widget.cm_main_icrc1token_trade_contracts_i}')
+                                    ),
+                                    constraints: BoxConstraints(maxHeight: 500, maxWidth: 900, minWidth: 300)
+                                ),
+                                onEnter: (event) {
+                                    widget.stop_scroll(true);
+                                },
+                                onExit: (event) {
+                                    widget.stop_scroll(false);
+                                }
+                            ),
+                            Container(
+                                child: PositionBook(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
+                            ),  
+                        ]
+                    ),
+                    Wrap(
+                        children: [
+                            Container(
+                                child: CreatePositionWidget()
+                            )
+                        ]
+                    )
+                ]
+            )
         );
         
         
     }
     
 }
+
+
+
+
+
+class MarketTrades extends StatelessWidget {
+    int cm_main_icrc1token_trade_contracts_i;
+    MarketTrades({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage MarketTrades cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
+    
+    
+    String timestamp_format(DateTime t) {
+        return '${t.hour}:${t.minute}:${t.second}';
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+        return Container(
+            padding: EdgeInsets.fromLTRB(10,17,10,17),
+            constraints: BoxConstraints(
+                maxHeight: 400,
+                maxWidth: 400
+            ),
+            //decoration: BoxDecoration(border: Border.all()),
+            child: DataTable2(
+                //headingRowHeight: 0,
+                showBottomBorder: true,
+                columns: <DataColumn>[
+                    DataColumn(label: Text('Quantity')),
+                    DataColumn(label: Text('Rate')),
+                    DataColumn(label: Text('Time'))
+                ],
+                rows: [
+                    for (TradeLog trade in state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].trade_logs.reversed) 
+                        DataRow(
+                            cells: [
+                                DataCell(Text('${Tokens(quantums: trade.tokens, decimal_places: trade.cycles_per_token_rate.token_decimal_places/*state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals*/)}')),
+                                DataCell(Text('${trade.cycles_per_token_rate}', style: TextStyle(color: trade.position_kind == PositionKind.Cycles ? red : green /*when to make red or green?*/))),
+                                DataCell(Text('${timestamp_format(trade.datetime())}'))
+                            ]
+                        ),
+                ]
+            )
+        );
+    }
+}
+
+
+class PositionBook extends StatelessWidget {
+    int cm_main_icrc1token_trade_contracts_i;    
+    PositionBook({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage PositionBook cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
+    
+    List<DataRow> create_position_book_data_rows(List<Icrc1TokenTradeContractPosition> positions) {
+        positions = positions..sort((a,b){return b.cycles_per_token_rate.cycles_per_token_quantum_rate.compareTo(a.cycles_per_token_rate.cycles_per_token_quantum_rate);}); 
+        
+        if (positions.length == 0) { return <DataRow>[]; }
+        
+        List<DataRow> datarows = [];
+
+        BigInt quantity = BigInt.from(0); 
+        CyclesPerTokenRate rate = positions.first.cycles_per_token_rate;
+        Cycles total = Cycles(cycles: BigInt.from(0));
+        
+        bool is_buy_positions = positions.first is CyclesPosition ? true : false; 
+        
+        for (Icrc1TokenTradeContractPosition position in positions) {    
+            if (position.cycles_per_token_rate.cycles_per_token_quantum_rate == rate.cycles_per_token_quantum_rate) {
+                quantity += position.tokens_quantity;
+                total += position.cycles_quantity;
+            } else {
+                datarows.add(
+                    DataRow(
+                        cells: [
+                            DataCell(Text('${quantity}')),
+                            DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
+                            DataCell(Text('${total}'))
+                        ]
+                    )
+                );
+                quantity = position.tokens_quantity; 
+                rate = position.cycles_per_token_rate;
+                total = position.cycles_quantity;
+            }
+        }
+        // for the last positon
+        datarows.add(
+            DataRow(
+                cells: [
+                    DataCell(Text('${quantity}')),
+                    DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
+                    DataCell(Text('${total}'))
+                ]
+            )
+        );
+        return datarows;
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Container(
+            constraints: BoxConstraints(maxHeight: 540, maxWidth: 400),
+            child: Column(
+                children: [
+                    Flexible(
+                        flex: 2,
+                        child: DataTable2(
+                            // reverse: true,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(label: Text('Quantity')),
+                                DataColumn(label:Text('Rate')),
+                                DataColumn(label:  Text('Total'))
+                            ],
+                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].token_positions)
+                        )    
+                    ),
+                    Text('middle widget, current/latest trade price'),
+                    Flexible(
+                        flex: 2,
+                        child: DataTable2(
+                            headingRowHeight: 0,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[                                 
+                                DataColumn(label: Text('Quantity')),
+                                DataColumn(label:Text('Rate')),
+                                DataColumn(label:  Text('Total'))
+                            ],
+                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].cycles_positions)
+                        )
+                    ),
+                ]
+            )
+        );
+    }
+}
+
+
+const Color green = const Color(0xFF26a69a);
+const Color red = const Color(0xFFef5350);
+
+
+
+class CreatePositionWidget extends StatelessWidget {
+    Widget build(BuildContext context) {
+        
+        return Container(
+            //height: 300,
+            width: 300,
+            child: DefaultTabController(
+                length: 2,
+                child: Column(
+                    children: [
+                        Container(
+                            //height: 50,
+                            child: TabBar(
+                                tabs: [
+                                    Tab(text: 'BUY'),
+                                    Tab(text: 'SELL'),
+                                ],
+                            )
+                        ),
+                        Container(
+                            height: 300,
+                            //width: 300,
+                            child: TabBarView(
+                                children: [
+                                    Text('buy'),
+                                    Text('sell'),
+                                ],
+                            ),
+                        ),
+                    ]
+                )
+            )
+        );
+        
+    }
+    
+}
+
+
+
+class CreatePositionForm extends StatefulWidget {
+    final PositionKind position_kind;
+    CreatePositionForm({super.key, required this.position_kind});
+    State<CreatePositionForm> createState() => CreatePositionFormState();
+}
+class CreatePositionFormState extends State<CreatePositionForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'purchase icp:',
+                        ),
+                        onSaved: (String? value) { purchase_icp = IcpTokens.oftheDoubleString(value!); },
+                        validator: icp_validator
+                    ),
+                ]
+            )
+        );               
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -189,7 +484,7 @@ class CyclesMarketScaffoldBody extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(11,0,11,17),
                     child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('CREATE CYCLES-BANK', style: TextStyle(fontSize: 21)),
+                        child: Text('CREATE MEMBERSHIP', style: TextStyle(fontSize: 21)),
                         onPressed: () async {  
                             state.current_url = CustomUrl('cycles_bank');
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);

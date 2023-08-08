@@ -310,9 +310,29 @@ class CyclesBank extends Canister {
         }
     }
     
+    Future<LengthenMembershipSuccess> user_lengthen_membership_cb_cycles_payment(LengthenMembershipQuest q, Cycles msg_cycles) async {
+        Variant sponse = c_backwards_one(
+            await user.call(
+                this,
+                method_name: 'user_lengthen_membership_cb_cycles_payment',
+                calltype: CallType.call,
+                put_bytes: c_forwards([q, msg_cycles])
+            )
+        ) as Variant;
+        return await match_variant<Future<LengthenMembershipSuccess>>(sponse, {
+            Ok: (blob) async {
+                return await match_variant<Future<LengthenMembershipSuccess>>(
+                    c_backwards_one((blob as Blob).bytes) as Variant,
+                    this.user.lengthen_membership_result_match_map(this.user.complete_lengthen_membership_cb_cycles_payment)
+                );           
+            },
+            Err: (call_error) async {
+                throw Exception("call error when cycles-bank call the cts.\n${CallError.of_the_record(call_error as Record)}");
+            }
+        });
+    }
     
-    
-    
+    /*
     Future<void> cycles_balance_for_the_ctsfuel(Cycles cycles_for_the_ctsfuel) async {
         Variant sponse = c_backwards(
             await user.call(
@@ -340,8 +360,8 @@ class CyclesBank extends Canister {
         });    
     }
 
-
-    Future<BigInt/*new-lifetime-termination-timestamp-seconds*/> lengthen_lifetime(LengthenLifetimeQuest q) async {
+    // returns new-lifetime-termination-timestamp-seconds
+    Future<BigInt> lengthen_lifetime(LengthenLifetimeQuest q) async {
         if (this.metrics == null) { await this.fresh_metrics(); }
         Variant sponse = c_backwards(
             await user.call(
@@ -408,6 +428,9 @@ class CyclesBank extends Canister {
             }
         });
     }
+    */
+    
+    
     
     Future<BigInt/*block_height*/> transfer_icrc1(Icrc1Ledger icrc1_ledger, Uint8List icrc1_transfer_arg_raw) async {
         Variant sponse = c_backwards(
@@ -462,6 +485,8 @@ class CyclesBank extends Canister {
         });
         return block_height;
     }
+    
+    
 
     Future<BigInt> transfer_icp(Uint8List transfer_arg_raw) async {
         Variant sponse = c_backwards(
@@ -1196,6 +1221,10 @@ class CyclesBank extends Canister {
         this.fresh_cm_token_transfers_out(icrc1token_trade_contract);
         return block_height;
     }
+    
+    
+    
+    
 
 
 
@@ -1473,7 +1502,7 @@ class UserTransferCyclesQuest extends Record {
 
 
 
-
+/*
     
 class LengthenLifetimeQuest extends Record {
     final BigInt set_lifetime_termination_timestamp_seconds;
@@ -1490,6 +1519,8 @@ class ChangeStorageSizeQuest extends Record {
         this['new_storage_size_mib'] = Nat(this.new_storage_size_mib);
     }
 }
+
+*/
 
 
 

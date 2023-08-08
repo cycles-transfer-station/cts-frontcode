@@ -78,8 +78,8 @@ class CustomState {
             /// local replica 
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
             fetch_root_key().then((_x){});
-            cts = Canister(Principal.text('bayhi-7yaaa-aaaai-qahca-cai'));
-            cycles_market = Canister(Principal.text('mscqy-haaaa-aaaai-aahhq-cai'));
+            cts = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cts_local_'))));
+            cycles_market = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cm_local__'))));
         }
         
         
@@ -319,12 +319,12 @@ class CustomState {
 
 
 class CTSFees {
-    final Cycles cycles_bank_cost_cycles;
-    final Cycles cts_transfer_icp_fee;
-    final Cycles burn_icp_mint_cycles_fee;
+    Cycles membership_cost_per_year_cycles;
+    Cycles cts_transfer_icp_fee;
+    Cycles burn_icp_mint_cycles_fee;
 
     CTSFees._({
-        required this.cycles_bank_cost_cycles,
+        required this.membership_cost_per_year_cycles,
         required this.cts_transfer_icp_fee,
         required this.burn_icp_mint_cycles_fee
     
@@ -332,7 +332,7 @@ class CTSFees {
     
     static CTSFees of_the_record(Record ctsfees_record) {
         return CTSFees._(
-            cycles_bank_cost_cycles: Cycles.oftheNat(ctsfees_record['cycles_bank_cost_cycles'] as Nat),
+            membership_cost_per_year_cycles: Cycles.oftheNat(ctsfees_record['membership_cost_per_year_cycles'] as Nat),
             cts_transfer_icp_fee: Cycles.oftheNat(ctsfees_record['cts_transfer_icp_fee'] as Nat),
             burn_icp_mint_cycles_fee: Cycles.oftheNat(ctsfees_record['burn_icp_mint_cycles_fee'] as Nat)         
         );
@@ -492,6 +492,59 @@ class CyclesPerTokenRate extends Cycles {
     }
     String toString() => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
     
+    
+    
+    
+    // operators
+    _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+        if (a.token_decimal_places != b.token_decimal_places) {
+            throw Exception('Cannot perform operation on a CyclesPerTokenRate with a different token_decimal_places.');
+        }
+    }
+    CyclesPerTokenRate operator + (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate + t.cycles_per_token_quantum_rate,
+            token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
+        );
+    }    
+    CyclesPerTokenRate operator - (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate - t.cycles_per_token_quantum_rate,
+            token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
+        );
+    } 
+    CyclesPerTokenRate operator * (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate * t.cycles_per_token_quantum_rate,
+            token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
+        );
+    } 
+    CyclesPerTokenRate operator ~/ (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate ~/ t.cycles_per_token_quantum_rate,
+            token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
+        );
+    } 
+    bool operator > (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return this.cycles_per_token_quantum_rate > t.cycles_per_token_quantum_rate;
+    } 
+    bool operator < (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return this.cycles_per_token_quantum_rate < t.cycles_per_token_quantum_rate;
+    } 
+    bool operator >= (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return this.cycles_per_token_quantum_rate >= t.cycles_per_token_quantum_rate;
+    } 
+    bool operator <= (covariant CyclesPerTokenRate t) {
+        _check_same_token_decimal_places(this, t);
+        return this.cycles_per_token_quantum_rate <= t.cycles_per_token_quantum_rate;
+    } 
        
 }
 

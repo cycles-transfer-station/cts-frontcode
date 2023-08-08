@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart' show Nat, Int, Blob, Record, Option, Nat64, Nat8, Vector;
@@ -945,9 +947,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
 
 
 
-
-
-
+/*
 
 class CTSFuelForTheCyclesBalanceForm extends StatefulWidget {
     CTSFuelForTheCyclesBalanceForm({super.key});
@@ -1362,7 +1362,292 @@ class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
     }
 }
 
+*/
 
+
+enum LengthenMembershipPaymentMethod {
+    CyclesBankCycles(show_readable_option: 'Cycles-Bank Cycles balance'),
+    CyclesBankICP(show_readable_option: 'Cycles-Bank ICP balance'),
+    CTSUserSubaccountICP(show_readable_option: 'CTS Membership User ICP ID');
+
+    const LengthenMembershipPaymentMethod({
+        required this.show_readable_option,
+    });
+    
+    final String show_readable_option;
+    
+    static List<LengthenMembershipPaymentMethod> options_without_using_the_cycles_bank = [LengthenMembershipPaymentMethod.CTSUserSubaccountICP,];
+
+}
+
+
+
+class LengthenMembershipForm extends StatefulWidget {
+    LengthenMembershipForm({super.key});
+    State createState() => LengthenMembershipFormState();
+}
+class LengthenMembershipFormState extends State<LengthenMembershipForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    TextEditingController form_field_lengthen_years_controller = TextEditingController(text: '1');
+    
+    
+    
+    BigInt lengthen_years = BigInt.from(1);
+    LengthenMembershipPaymentMethod payment_method = LengthenMembershipPaymentMethod.CTSUserSubaccountICP;
+    
+    @override
+    void initState() {
+        super.initState();
+        form_field_lengthen_years_controller.addListener(() {
+            try {
+                lengthen_years = BigInt.parse(form_field_lengthen_years_controller.text.trim());
+            } catch(e) {
+                //
+            }
+            setState((){});
+        });
+    }
+    
+    @override
+    void dispose() {
+        form_field_lengthen_years_controller.dispose();
+        super.dispose();
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        Cycles total_cycles = Cycles(cycles: state.cts_fees.membership_cost_per_year_cycles.cycles * lengthen_years);
+        Tokens total_icp = Tokens(
+            quantums:
+                cycles_transform_tokens(
+                    total_cycles, 
+                    state.cmc_cycles_per_icp_rate
+                )
+                + BigInt.from(1) 
+                + ICP_LEDGER_TRANSFER_FEE.e8s * BigInt.from(3),
+            decimal_places: 8
+        ).round_decimal_places(1);
+                
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    Container(
+                        child: DropdownButton<LengthenMembershipPaymentMethod>(
+                            underline: Container(
+                                height: 0,
+                                color: Colors.deepPurpleAccent,
+                            ),
+                            isExpanded: false,
+                            items: [
+                                for (LengthenMembershipPaymentMethod pm in state.user!.cycles_bank != null ? LengthenMembershipPaymentMethod.values : LengthenMembershipPaymentMethod.options_without_using_the_cycles_bank)                 
+                                    DropdownMenuItem<LengthenMembershipPaymentMethod>(
+                                        child: Padding(
+                                            padding: EdgeInsets.all(8),
+                                            child: Text(pm.show_readable_option, style: TextStyle(fontSize: 22)), 
+                                        ),
+                                        value: pm
+                                    ),
+                            ],
+                            value: this.payment_method,
+                            onChanged: (LengthenMembershipPaymentMethod? select_payment_method) { 
+                                if (select_payment_method is LengthenMembershipPaymentMethod) { 
+                                    setState((){
+                                        this.payment_method = select_payment_method;    
+                                    });
+                                }
+                            }
+                        )
+                    ),
+                    switch (this.payment_method) {
+                        LengthenMembershipPaymentMethod.CyclesBankCycles => Container(
+                            child: Text('Cycles balance: ${state.user!.cycles_bank!.metrics!.cycles_balance}')
+                        ),
+                        LengthenMembershipPaymentMethod.CyclesBankICP => Container(
+                            child: Text('ICP balance: ${Tokens(quantums: state.user!.cycles_bank!.icrc1_balances_cache[Icrc1Ledgers.ICP]!, decimal_places: 8)}')
+                        ), 
+                        LengthenMembershipPaymentMethod.CTSUserSubaccountICP => Container(
+                            padding: EdgeInsets.all(7),
+                            child: Column(
+                                children: [
+                                    Center(
+                                        child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
+                                    ),
+                                    Center(
+                                        child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
+                                    ),
+                                    IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesDialog IcpBalanceAndLoadIcpBalance'))
+                                ]
+                            )
+                        ),
+                    },
+                    TextFormField(
+                        controller: form_field_lengthen_years_controller,
+                        decoration: InputDecoration(
+                            labelText: 'lengthen years: ',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                        onSaved: (String? value) { lengthen_years = BigInt.parse(value!); },
+                        validator: (String? value) {
+                            if (value == null || value.trim() == '') {
+                                return 'Must be a number of years';
+                            }
+                            late BigInt lengthen_years;
+                            try {
+                                lengthen_years = BigInt.parse(value);
+                            } catch(e) {
+                                return 'Must be a whole number of years';
+                            }
+                            if (lengthen_years == BigInt.from(0)) {
+                                return 'Cannot be zero';
+                            }
+                            return null;
+                        }
+                    ),
+                    switch (payment_method) {
+                        LengthenMembershipPaymentMethod.CyclesBankCycles => Container(
+                            child: Text('TOTAL CYCLES: ${total_cycles}', style: TextStyle(fontSize: 11))
+                        ),
+                        LengthenMembershipPaymentMethod.CyclesBankICP || LengthenMembershipPaymentMethod.CTSUserSubaccountICP => Container(
+                            child: Text(
+                                'TOTAL ICP: ${total_icp}', 
+                                style: TextStyle(fontSize: 11)
+                            )
+                        ),
+                    },
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('LENGTHEN MEMBERSHIP'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'lengthening the membership by ${lengthen_years} years ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late LengthenMembershipSuccess lengthen_membership_success;
+                                    try {
+                                        switch (payment_method) {
+                                            case LengthenMembershipPaymentMethod.CyclesBankCycles:
+                                                lengthen_membership_success = await state.user!.cycles_bank!.user_lengthen_membership_cb_cycles_payment(
+                                                    LengthenMembershipQuest(lengthen_years: lengthen_years),
+                                                    total_cycles, 
+                                                );
+                                            case LengthenMembershipPaymentMethod.CTSUserSubaccountICP:
+                                                lengthen_membership_success = await state.user!.lengthen_membership(
+                                                    LengthenMembershipQuest(lengthen_years: lengthen_years)
+                                                );        
+                                            case LengthenMembershipPaymentMethod.CyclesBankICP: 
+                                                state.loading_text = 'transferring ${total_icp} icp of the cycles-bank icp balance to the cts-user-membership-icp-account';
+                                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                                await state.user!.cycles_bank!.transfer_icrc1(
+                                                    Icrc1Ledgers.ICP, 
+                                                    candid.c_forwards_one(
+                                                        Record.of_the_map({
+                                                            'to' : Record.of_the_map({
+                                                                'owner' : cts.principal,
+                                                                'subaccount' : Option(value: Blob(state.user!.user_icp_subaccount_bytes))
+                                                            }),
+                                                            'amount' : Nat(total_icp.quantums - ICP_LEDGER_TRANSFER_FEE.e8s),
+                                                            'fee' : Option<Nat>(value: Nat(ICP_LEDGER_TRANSFER_FEE.e8s)),
+                                                            'memo' : Option<Vector<Nat8>>(value: Blob(utf8.encode('LENGTHEN-MEMBERSHIP-PAYMENT')), value_type: Blob.type_mode()),
+                                                            'created_at_time' : Option<Nat64>(value: Nat64(BigInt.from(DateTime.now().millisecondsSinceEpoch) * BigInt.from(1000000)), value_type: Nat64()),
+                                                        })
+                                                    )
+                                                );
+                                                lengthen_membership_success = await state.user!.lengthen_membership(
+                                                    LengthenMembershipQuest(lengthen_years: lengthen_years)
+                                                );
+                                        }
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Lengthen Membership Error:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'Lengthen membership by: ${lengthen_years} years success! \nloading icp balance, icp transfers, and cycles-bank metrics ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Lengthen Membership Success:'),
+                                                content: Text('lengthen by: ${lengthen_years} years success.'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.fresh_icp_balance(),
+                                            state.user!.fresh_icp_transfers(),
+                                            state.user!.cycles_bank!.fresh_metrics(),
+                                            state.user!.cycles_bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP)
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the icp balance, icp transfers, and cycles-bank metrics:'),
+                                                    content: Text('${e}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                    
+                                    await success_dialog;
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    await Future.delayed(Duration(seconds: 1));
+                                    Navigator.pop(state.context);
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );
+    }
+}
 
 
 class BurnIcpMintCyclesForm extends StatefulWidget {
@@ -1430,8 +1715,8 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                 ),
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('BURN ICP MINT CYCLES FEE: ')),
-                                        DataCell(Text('${state.cts_fees.burn_icp_mint_cycles_fee}-cycles')),
+                                        DataCell(Text('MINT CYCLES FEE: ')),
+                                        DataCell(Text('${state.cts_fees.burn_icp_mint_cycles_fee}')),
                                     ]
                                 ),
                             ]
@@ -1452,7 +1737,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('BURN ICP MINT CYCLES'),
+                            child: Text('MINT CYCLES'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
                                     
@@ -1470,7 +1755,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Burn Icp Mint Cycles Error:'),
+                                                    title: Text('Mint Cycles Error:'),
                                                     content: Text('${e}'),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -1487,14 +1772,14 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Burn icp mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user} \nloading icp balance, icp transfers, and cycles-bank cycles-balance ...';
+                                    state.loading_text = 'Mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user} \nloading icp balance, icp transfers, and cycles-bank cycles-balance ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
-                                                title: Text('Burn Icp Mint Cycles Success:'),
+                                                title: Text('Mint Cycles Success:'),
                                                 content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user}'),
                                                 actions: <Widget>[
                                                     TextButton(

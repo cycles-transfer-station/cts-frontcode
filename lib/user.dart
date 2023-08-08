@@ -210,6 +210,28 @@ class User {
             }
             throw Exception('user is in the middle of a different transfer_icp call.');
         },
+        'LengthenMembershipCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_lengthen_membership()
+                .then((x){
+                    window.alert('lengthen_membership is complete.');
+                }).catchError((e){
+                    window.alert('lengthen_membership error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different lengthen_membership call.');
+        },
+        'LengthenMembershipCBCyclesPaymentCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_lengthen_membership_cb_cycles_payment()
+                .then((x){
+                    window.alert('lengthen_membership is complete.');
+                }).catchError((e){
+                    window.alert('lengthen_membership error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different lengthen_membership call.');
+        }
     };
 
 
@@ -226,13 +248,13 @@ class User {
         },
         'UserIcpLedgerBalanceTooLow':(user_icp_ledger_balance_too_low_ctype) async {
             Record user_icp_ledger_balance_too_low_error = user_icp_ledger_balance_too_low_ctype as Record;
-            IcpTokens cycles_bank_cost_icp = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['cycles_bank_cost_icp']!);
+            IcpTokens cycles_bank_cost_icp = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['membership_cost_icp']!);
             IcpTokens user_icp_ledger_balance = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['user_icp_ledger_balance']!);
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens icp_ledger_transfer_fee = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
             try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${e}'); }
-            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+            throw Exception('User icp balance is too low.\ncurrent membership cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         }, 
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
             match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map);
@@ -255,14 +277,15 @@ class User {
         },
         'CreateCyclesBankCanisterCmcNotifyError': (cmc_notify_error) async {
             print(cmc_notify_error);
-            throw Exception('System error when creating a cycles_bank. please file this error:\n${cmc_notify_error}');
+            throw Exception('System error when creating a membership. please file this error:\n${cmc_notify_error}');
         }
     };
     
     Map<String, Future<void> Function(CandidType)> get purchase_cycles_bank_result_match_map => {
         Ok: (purchase_cycles_bank_success_ctype) async {
             Record purchase_cycles_bank_success = purchase_cycles_bank_success_ctype as Record;
-            this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as Principal), this);    
+            this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as Principal), this);  
+            this.fresh_icp_balance().then((_x){});
         },
         Err: (purchase_cycles_bank_error) async {
             return await match_variant<Future<void>>(purchase_cycles_bank_error as Variant, purchase_cycles_bank_error_match_map);
@@ -271,7 +294,7 @@ class User {
 
     Map<String, Future<void> Function(CandidType)> get complete_purchase_cycles_bank_error_match_map => {
         'UserIsNotInTheMiddleOfAPurchaseCyclesBankCall': (n) async {
-            throw Exception('user is not in the middle of a purchase_cycles_bank call.');
+            throw Exception('user is not in the middle of a create_membership call.');
         },
         'PurchaseCyclesBankError': (purchase_cycles_bank_error_ctype) async {
             return await match_variant<Future<void>>(purchase_cycles_bank_error_ctype as Variant, purchase_cycles_bank_error_match_map);
@@ -293,9 +316,9 @@ class User {
             this.fresh_icp_balance(),
             state.fresh_xdr_icp_rate()
         ]);
-        IcpTokens cycles_bank_total_cost_icp = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.cycles_bank_cost_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s);
+        IcpTokens cycles_bank_total_cost_icp = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s);
         if (this.icp_balance!.icp < cycles_bank_total_cost_icp) {
-            throw Exception('user icp balance is too low.\ncurrent cycles_bank cost icp: ${cycles_bank_total_cost_icp.round_decimal_places(1)}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
+            throw Exception('user icp balance is too low.\ncurrent membership cost icp: ${cycles_bank_total_cost_icp.round_decimal_places(1)}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
         }
         Variant purchase_cycles_bank_result = c_backwards(
             await call(
@@ -521,10 +544,167 @@ class User {
 
 
 
+    // --------------------------
+    
+    
+    Map<String, Future<LengthenMembershipSuccess> Function(CandidType)> lengthen_membership_result_match_map(Future<LengthenMembershipSuccess> Function() complete_fn) => {
+        Ok: (lengthen_membership_success) async {
+            return LengthenMembershipSuccess.of_the_record(lengthen_membership_success as Record);
+        },
+        Err: (lengthen_membership_error) async {
+            return await match_variant<Future<LengthenMembershipSuccess>>(lengthen_membership_error as Variant, lengthen_membership_error_match_map(complete_fn));
+        }
+    };
+    
+    Map<String, Future<LengthenMembershipSuccess> Function(CandidType)> complete_lengthen_membership_result_match_map(Future<LengthenMembershipSuccess> Function() complete_fn) => {
+        Ok: (lengthen_membership_success) async {
+            return await lengthen_membership_result_match_map(complete_fn)[Ok]!(lengthen_membership_success);
+        },
+        Err: (complete_lengthen_membership_error) async {
+            return await match_variant<Future<LengthenMembershipSuccess>>(complete_lengthen_membership_error as Variant, complete_lengthen_membership_error_match_map(complete_fn));
+        }
+    };
+    
+    Map<String, Future<LengthenMembershipSuccess> Function(CandidType)> lengthen_membership_error_match_map(Future<LengthenMembershipSuccess> Function() complete_fn) => {
+        'LengthenYearsCannotBeZero': (nul) async {
+            throw Exception('Lengthen years cannot be zero');
+        },
+        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call) async {
+            return match_variant<Never>(user_is_in_the_middle_of_a_different_call as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map);
+        },
+        'CTSIsBusy': (nul) async {
+            throw Exception('The CTS is busy. try soon.');
+        },
+        'MembershipNotFound': (nul) async {
+            throw Exception('CTS membership not found. Create a membership first before lengthening the membership.');
+        },
+        'FindUserInTheCBSMapsError': (find_user_in_the_cbs_maps_error) async {
+            try {
+                match_variant<Never>(find_user_in_the_cbs_maps_error as Variant, find_user_in_the_cbs_maps_error_match_map);
+            } catch(e) {
+                print(e);
+            }
+            throw Exception('Error finding the membership data. try soon.');
+        },
+        'CallerIsNotTheCyclesBankOfTheUser': (n) async {
+            throw Exception('CallerIsNotTheCyclesBankOfTheUser');
+        },
+        'CheckIcpBalanceCallError': (call_error) async {
+            throw Exception('Error checking the user\'s ICP balance, try soon. \n${CallError.of_the_record(call_error as Record)}');
+        },
+        'CheckCurrentXdrPerMyriadPerIcpCmcRateError': (check_current_xdr_icp_cmc_rate_error) async {
+            print('check_current_xdr_icp_cmc_rate_error: ${check_current_xdr_icp_cmc_rate_error}');
+            throw Exception('Error when checking the current xdr-icp rate.');
+        },
+        'UserIcpLedgerBalanceTooLow': /*{
+            membership_cost_per_year_cycles: Cycles,
+            current_xdr_permyriad_per_icp_rate: u64, 
+            icp_ledger_transfer_fee: IcpTokens,
+            user_icp_ledger_balance: IcpTokens,
+        }*/ (record) async {
+            Record r = record as Record;
+            Cycles membership_cost_per_year_cycles = Cycles.oftheNat(r['membership_cost_per_year_cycles'] as Nat);
+            state.cts_fees.membership_cost_per_year_cycles = membership_cost_per_year_cycles;
+            IcpTokens user_icp_ledger_balance = IcpTokens.of_the_record(r['user_icp_ledger_balance'] as Record);
+            this.icp_balance = IcpTokensWithATimestamp(
+                icp: user_icp_ledger_balance
+            );
+            throw Exception('User CTS ICP balance is too low. \nuser cts icp balance: ${user_icp_ledger_balance}');
+        },
+        'MidCallError': (/*covariant Variant*/ lengthen_membership_mid_call_error_ctype) async {
+            Variant lengthen_membership_mid_call_error = lengthen_membership_mid_call_error_ctype as Variant;
+            print(lengthen_membership_mid_call_error.keys.first);
+            for (String s in [
+                'PositCyclesIntoTheCyclesBankCallError',
+                'LedgerTopupCyclesCmcIcpTransferError',
+                'LedgerTopupCyclesCmcNotifyError',
+                'CollectIcpTransferCallError',
+                'CollectIcpTransferError',
+                'CBSMUpdateUserCallError',
+                'CBUpdateMembershipLengthCallError',
+            ]) {
+                if (candid_text_hash(s) == lengthen_membership_mid_call_error.keys.first) {
+                    print(s);
+                    break;
+                }
+            }
+            print(lengthen_membership_mid_call_error.values.first);
+            return await complete_fn();
+        },
+        
+    };
+    
+    Map<String, Future<LengthenMembershipSuccess> Function(CandidType)> complete_lengthen_membership_error_match_map(Future<LengthenMembershipSuccess> Function() complete_fn) => {
+        'UserIsNotInTheMiddleOfALengthenMembershipCall': (n) async {
+            throw Exception('User is not in the middle of a lengthen_membership call.');
+        },
+        'LengthenMembershipError': (lengthen_membership_error) async {
+            return await match_variant<Future<LengthenMembershipSuccess>>(lengthen_membership_error as Variant, lengthen_membership_error_match_map(complete_fn));
+        }
+          
+    };
+    
+    Future<LengthenMembershipSuccess> lengthen_membership(LengthenMembershipQuest lengthen_membership_quest) async {
+        // check icp balance is enough
+        Variant lengthen_membership_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'lengthen_membership',
+                put_bytes: c_forwards([lengthen_membership_quest])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<LengthenMembershipSuccess>>(lengthen_membership_result, lengthen_membership_result_match_map(complete_lengthen_membership));
+    }
+    
+    Future<LengthenMembershipSuccess> complete_lengthen_membership() async {
+        Variant complete_lengthen_membership_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'complete_lengthen_membership',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<LengthenMembershipSuccess>>(complete_lengthen_membership_result, complete_lengthen_membership_result_match_map(complete_lengthen_membership));
+    }
 
+    Future<LengthenMembershipSuccess> complete_lengthen_membership_cb_cycles_payment() async {
+        Variant complete_lengthen_membership_result = c_backwards(
+            await call(
+                cts,
+                calltype: CallType.call,
+                method_name: 'complete_lengthen_membership_cb_cycles_payment',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<LengthenMembershipSuccess>>(complete_lengthen_membership_result, complete_lengthen_membership_result_match_map(complete_lengthen_membership_cb_cycles_payment));
+    }
+    
+    
+    
 
 }
 
+
+
+
+class LengthenMembershipQuest extends Record {
+    final BigInt lengthen_years;
+    LengthenMembershipQuest({required this.lengthen_years}) {
+        this['lengthen_years'] = Nat(this.lengthen_years);
+    }
+}
+
+class LengthenMembershipSuccess {
+    final BigInt lifetime_termination_timestamp_seconds;
+    LengthenMembershipSuccess._({required this.lifetime_termination_timestamp_seconds});
+    static LengthenMembershipSuccess of_the_record(Record r) {
+        return LengthenMembershipSuccess._(
+            lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
+        );
+    }
+}
 
 
 

@@ -46,7 +46,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                         ScaffoldBodyHeader(Center(child:Column(children: [
-                            Text('BANK-SETTINGS', style: TextStyle(fontSize: 17)),
+                            Text('SETTINGS', style: TextStyle(fontSize: 17)),
                             SelectableText('BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 14)),
                         ]))),
                         Expanded(
@@ -67,7 +67,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                     style: ElevatedButton.styleFrom(backgroundColor: blue),
                                                     child: Text('LOAD METRICS'),
                                                     onPressed: () async {
-                                                        state.loading_text = 'loading cycles-bank metrics ...';
+                                                        state.loading_text = 'loading metrics ...';
                                                         state.is_loading = true;
                                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                                         try {
@@ -77,7 +77,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                 context: state.context,
                                                                 builder: (BuildContext context) {
                                                                     return AlertDialog(
-                                                                        title: Text('cycles-bank load metrics error:'),
+                                                                        title: Text('load metrics error:'),
                                                                         content: Text('${e}'),
                                                                         actions: <Widget>[
                                                                             TextButton(
@@ -116,28 +116,30 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             rows: <DataRow>[
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
-                                                                                        DataCell(Text('creation-timestamp: ')),
+                                                                                        DataCell(Text('membership creation: ')),
                                                                                         DataCell(SelectableText('${creation_timestamp}')),
                                                                                     ],
                                                                                 ),
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
-                                                                                        DataCell(Text('lifetime-remaining: ')),
+                                                                                        DataCell(Text('paid membership remaining: ')),
                                                                                         DataCell(SelectableText('${lifetime_remaining}')),
                                                                                     ],
                                                                                 ),
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
-                                                                                        DataCell(Text('\$CYCLES: ')),
+                                                                                        DataCell(Text('\CYCLES: ')),
                                                                                         DataCell(SelectableText('${cycles_balance}')),
                                                                                     ]
                                                                                 ),
+                                                                                /*
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
                                                                                         DataCell(Text('ctsfuel: ')),
                                                                                         DataCell(SelectableText('${ctsfuel}')),
                                                                                     ]
                                                                                 ),
+                                                                                */
                                                                                 DataRow(
                                                                                     cells: <DataCell>[
                                                                                         DataCell(Text('storage-usage: ')),
@@ -170,6 +172,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                             child: Center(
                                                                 child: Column(
                                                                     children: [
+                                                                        /*
                                                                         CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
                                                                         SizedBox(
                                                                             height: 20, 
@@ -181,23 +184,49 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             width: 1
                                                                         ),
                                                                         LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
-                                                                        // burn icp mint cycles,  
-                                                                        SizedBox(
-                                                                            width: 1,
-                                                                            height: 20
-                                                                        ),
+                                                                        */
+                                                                        //LengthenMembershipForm(key: ValueKey('CyclesBankScaffoldBody LengthenMembershipForm')),
                                                                         Container(
                                                                             width: double.infinity,
                                                                             padding: EdgeInsets.all(17),
                                                                             child: ElevatedButton(
                                                                                 style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('BURN ICP MINT CYCLES'),
+                                                                                child: Text('Lengthen Membership'),
                                                                                 onPressed: () async {
                                                                                     await showDialog(
                                                                                         context: context,
                                                                                         builder: (BuildContext context) {
                                                                                             return AlertDialog(
-                                                                                                title: Center(child: Text('BURN-ICP MINT-CYCLES')),
+                                                                                                title: Center(child: Text('LENGTHEN MEMBERSHIP')),
+                                                                                                content: Container(
+                                                                                                    padding: EdgeInsets.all(0),
+                                                                                                    child: SingleChildScrollView(
+                                                                                                        child: LengthenMembershipForm(key: ValueKey('CyclesBankScaffoldBody LengthenMembershipForm'))
+                                                                                                    )
+                                                                                                ),
+                                                                                            );
+                                                                                        }   
+                                                                                    );
+                                                                                }
+                                                                            )                     
+                                                                        ),
+                                                                        SizedBox(
+                                                                            width: 1,
+                                                                            height: 20
+                                                                        ),
+                                                                        // burn icp mint cycles,  
+                                                                        Container(
+                                                                            width: double.infinity,
+                                                                            padding: EdgeInsets.all(17),
+                                                                            child: ElevatedButton(
+                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                                                                child: Text('MINT CYCLES'),
+                                                                                onPressed: () async {
+                                                                                    await showDialog(
+                                                                                        context: context,
+                                                                                        builder: (BuildContext context) {
+                                                                                            return AlertDialog(
+                                                                                                title: Center(child: Text('MINT CYCLES')),
                                                                                                 content: Container(
                                                                                                     padding: EdgeInsets.all(0),
                                                                                                     child: SingleChildScrollView(
@@ -238,3 +267,6 @@ class ConfigureCyclesBank extends StatelessWidget {
         );        
     }
 }
+
+
+
