@@ -16,6 +16,7 @@ import 'create_bank.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
+import '../tools/tools.dart';
 import '../config/pages.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
@@ -259,7 +260,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     builder: (BuildContext context) {
                                         return AlertDialog(
                                             title: Text('Error when loading the bank ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol} transfers:'),
-                                            content: Text('${e}'),
+                                            content: Text('${etext(e)}'),
                                             actions: <Widget>[
                                                 TextButton(
                                                     onPressed: () => Navigator.pop(context),

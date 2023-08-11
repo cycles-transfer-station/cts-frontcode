@@ -574,7 +574,8 @@ class CyclesBank extends Canister {
                 ]);
                 BigInt token_ledger_balance = rs[0];
                 BigInt tokens_in_the_lock = rs[1]; 
-                this.cm_trade_contracts[tc]!.trade_contract_token_balance = token_ledger_balance - tokens_in_the_lock;
+                BigInt balance = token_ledger_balance - tokens_in_the_lock;
+                this.cm_trade_contracts[tc]!.trade_contract_token_balance = balance >= BigInt.from(0) ? balance : BigInt.from(0);
             }))
         );
     }
@@ -805,6 +806,14 @@ class CyclesBank extends Canister {
 
     
 
+    Future<BigInt/*position-id*/> cm_buy_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
+        throw Exception('unimplemented');
+    }
+
+    Future<BigInt/*position-id*/> cm_sell_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
+        throw Exception('unimplemented');
+    }
+    
     
     Future<CreateCyclesPositionSuccess> cm_create_cycles_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateCyclesPositionQuest q) async {
         Variant sponse = c_backwards(
@@ -1527,6 +1536,23 @@ class ChangeStorageSizeQuest extends Record {
 
 
 // ------------- CYCLES-MARKET -------------
+
+
+
+class MatchTokensQuest extends Record {
+    final Tokens tokens;
+    final CyclesPerTokenRate cycles_per_token_rate;
+    MatchTokensQuest({
+        required this.tokens,
+        required this.cycles_per_token_rate
+    }) {
+        this['tokens'] = tokens;
+        this['cycles_per_token_rate'] = cycles_per_token_rate;
+    }
+}
+
+
+
 
 
 

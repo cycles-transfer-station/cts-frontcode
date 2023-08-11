@@ -20,7 +20,9 @@ import '../transfer_icp/scaffold_body.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../main.dart';
 import '../user.dart';
+import '../tools/tools.dart';
 import './cycles_bank.dart';
+
 
 
 enum CyclesTransferMemoType {
@@ -317,7 +319,7 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Transfer Cycles Error:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -363,7 +365,7 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Error when loading the cycles balance and the transfers list:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -431,7 +433,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
                                         builder: (BuildContext context) {
                                             return AlertDialog(
                                                 title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
-                                                content: Text('${e}'),
+                                                content: Text('${etext(e)}'),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),
@@ -562,21 +564,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                             labelText: 'Tokens: ',
                         ),
                         onSaved: (String? v) { tokens = Tokens.of_the_double_string(v!, decimal_places: widget.icrc1_ledger.decimals); },
-                        validator: (String? v) {
-                            if (v == null || v == '') {
-                                return 'Must be a number';
-                            }
-                            late Tokens t;
-                            try {
-                                t = Tokens.of_the_double_string(v, decimal_places: widget.icrc1_ledger.decimals);
-                            } catch(e) {
-                                return 'Must be a number > 0, max ${widget.icrc1_ledger.decimals} decimal places';
-                            }
-                            if (t.quantums == BigInt.from(0)) {
-                                return 'Must be a number > 0';
-                            }
-                            return null;
-                        }
+                        validator: tokens_validator(token_decimal_places: widget.icrc1_ledger.decimals)
                     ),
                     TextFormField(
                         decoration: InputDecoration(
@@ -729,7 +717,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Error when loading ${widget.icrc1_ledger.symbol} balance:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -757,6 +745,30 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
     }
 }
 
+
+
+String? Function(String?) tokens_validator({required int token_decimal_places}) {
+    return 
+        (String? v) {
+            if (v == null || v == '') {
+                return 'Must be a number';
+            }
+            late Tokens t;
+            try {
+                t = Tokens.of_the_double_string(v, decimal_places: token_decimal_places);
+            } catch(e) {
+                return 'Must be a number > 0, max ${token_decimal_places} decimal places';
+            }
+            if (t.quantums == BigInt.from(0)) {
+                return 'Must be a number > 0';
+            }
+            return null;
+        };
+}
+
+String? Function(String?) cycles_per_token_rate_validator({required int token_decimal_places}) {
+    return tokens_validator(token_decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES - token_decimal_places);
+}
 
 
 
@@ -870,7 +882,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Transfer Icp Error:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -916,7 +928,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Error when loading the icp balance and the transfers list:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -1572,7 +1584,7 @@ class LengthenMembershipFormState extends State<LengthenMembershipForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Lengthen Membership Error:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -1620,7 +1632,7 @@ class LengthenMembershipFormState extends State<LengthenMembershipForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Error when loading the icp balance, icp transfers, and cycles-bank metrics:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -1756,7 +1768,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Mint Cycles Error:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),
@@ -1803,7 +1815,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Error when loading the icp balance, icp transfers, and cycles-bank cycles-balance:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),

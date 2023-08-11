@@ -15,9 +15,11 @@ import './chart.dart';
 import './forms.dart';
 import './cards.dart';
 import '../cycles_bank/cycles_bank.dart';
+import '../cycles_bank/forms.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
+import '../tools/tools.dart';
 
 
 
@@ -184,7 +186,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                     Wrap(
                         children: [
                             Container(
-                                child: CreatePositionWidget()
+                                child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                             )
                         ]
                     )
@@ -342,6 +344,8 @@ const Color red = const Color(0xFFef5350);
 
 
 class CreatePositionWidget extends StatelessWidget {
+    final int cm_main_icrc1token_trade_contracts_i;
+    CreatePositionWidget({super.key, required this.cm_main_icrc1token_trade_contracts_i});
     Widget build(BuildContext context) {
         
         return Container(
@@ -365,8 +369,8 @@ class CreatePositionWidget extends StatelessWidget {
                             //width: 300,
                             child: TabBarView(
                                 children: [
-                                    Text('buy'),
-                                    Text('sell'),
+                                    CreatePositionForm(position_kind: PositionKind.Cycles, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
+                                    CreatePositionForm(position_kind: PositionKind.Token, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
                                 ],
                             ),
                         ),
@@ -382,30 +386,151 @@ class CreatePositionWidget extends StatelessWidget {
 
 
 class CreatePositionForm extends StatefulWidget {
+    final int cm_main_icrc1token_trade_contracts_i;
     final PositionKind position_kind;
-    CreatePositionForm({super.key, required this.position_kind});
+    CreatePositionForm({super.key, required this.position_kind, required this.cm_main_icrc1token_trade_contracts_i});
     State<CreatePositionForm> createState() => CreatePositionFormState();
 }
 class CreatePositionFormState extends State<CreatePositionForm> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
     
-    
+    late Tokens amount_tokens;
+    late CyclesPerTokenRate cycles_per_token_rate;
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
+        final String buy_or_sell = widget.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL';
+        final int token_decimal_places = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals;        
+        final String token_symbol = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol;
+        
         return Form(
             key: form_key,
             child: Column(
                 children: <Widget>[
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'purchase icp:',
+                            labelText: '$token_symbol:',
                         ),
-                        onSaved: (String? value) { purchase_icp = IcpTokens.oftheDoubleString(value!); },
-                        validator: icp_validator
+                        onSaved: (String? value) { amount_tokens = Tokens.of_the_double_string(value!, decimal_places: token_decimal_places); },
+                        validator: tokens_validator(token_decimal_places: token_decimal_places)
                     ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'rate:',
+                        ),
+                        onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
+                        validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
+                    ),
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(7, 17, 7,7),
+                        child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('${buy_or_sell} ${token_symbol}'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'creating ${buy_or_sell} position';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    MatchTokensQuest match_tokens_quest = MatchTokensQuest(
+                                        tokens: amount_tokens,
+                                        cycles_per_token_rate: cycles_per_token_rate,
+                                    );
+                                    
+                                    late BigInt position_id;
+                                    
+                                    try {
+                                        if (widget.position_kind == PositionKind.Cycles) {
+                                            position_id = await state.user!.bank!.cm_buy_tokens(
+                                                state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
+                                                match_tokens_quest
+                                            );
+                                        } else {
+                                            position_id = await state.user!.bank!.cm_sell_tokens(
+                                                state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
+                                                match_tokens_quest
+                                            );
+                                        }
+                                    } catch(e) {
+                                        print(e);
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('$buy_or_sell $token_symbol error:'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = '$buy_or_sell $token_symbol is success. \nposition-id: ${position_id}\nloading token balance and position data ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('$buy_or_sell $token_symbol success!'),
+                                                content: Text('Position-ID: ${position_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    ); 
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                                            state.user!.bank!.fresh_metrics(),
+                                            state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trade_logs()
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the token balance and the position data:'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                
+                                    await success_dialog;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
+                                }
+                            }
+                        )
+                    )
                 ]
             )
         );               

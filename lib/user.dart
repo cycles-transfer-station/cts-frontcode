@@ -11,6 +11,7 @@ import 'package:ic_tools/common_web.dart';
 import 'transfer_icp/icp_ledger.dart';
 import 'cycles_bank/cycles_bank.dart';
 import 'config/state.dart';
+import 'tools/tools.dart';
 
 class User {
     CustomState state;
@@ -253,7 +254,7 @@ class User {
             this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
             IcpTokens icp_ledger_transfer_fee = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
-            try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${e}'); }
+            try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${etext(e)}'); }
             throw Exception('User icp balance is too low.\ncurrent membership cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         }, 
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
