@@ -331,106 +331,7 @@ class CyclesBank extends Canister {
             }
         });
     }
-    
-    /*
-    Future<void> cycles_balance_for_the_ctsfuel(Cycles cycles_for_the_ctsfuel) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'cycles_balance_for_the_ctsfuel',
-                put_bytes: c_forwards([cycles_for_the_ctsfuel]),
-                calltype: CallType.call
-            )
-        ).first as Variant;
-        match_variant<void>(sponse, {
-            Ok:(nul) {
-                            
-            },
-            Err:(cycles_balance_for_the_ctsfuel_balance_error) {
-                match_variant<Never>(cycles_balance_for_the_ctsfuel_balance_error as Variant, {
-                    'MinimumCyclesForTheCTSFuel': (r) {
-                        throw Exception('Minimum cycles for the ctsfuel: ${Cycles.oftheNat((r as Record)['minimum_cycles_for_the_ctsfuel']!)}');
-                    },
-                    'CyclesBalanceTooLow': (cycles_balance_record) { 
-                        this.metrics!.cycles_balance = Cycles.oftheNat((cycles_balance_record as Record)['cycles_balance']!);
-                        throw Exception('The cycles_balance is too low.');
-                    }
-                });
-            }
-        });    
-    }
 
-    // returns new-lifetime-termination-timestamp-seconds
-    Future<BigInt> lengthen_lifetime(LengthenLifetimeQuest q) async {
-        if (this.metrics == null) { await this.fresh_metrics(); }
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'lengthen_lifetime',
-                calltype: CallType.call,
-                put_bytes: c_forwards([q])
-            )
-        ).first as Variant;
-        BigInt new_lifetime_termination_timestamp_seconds = match_variant<BigInt>(sponse, {
-            Ok: (ok) {
-                return (ok as Nat).value;
-            },
-            Err: (lengthen_lifetime_error) {
-                return match_variant<Never>(lengthen_lifetime_error as Variant, {
-                    'MinimumSetLifetimeTerminationTimestampSeconds': (nat) {
-                        throw Exception('The minimum days that the lifetime of this cycles-bank can lengthen is ${(((nat as Nat).value - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24).toStringAsFixed(3)}');
-                    },
-                    'CyclesBalanceTooLow': (r_ctype){
-                        Record r = r_ctype as Record;
-                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles_balance in the cycles-bank is too low.\ncost to lengthen the lifetime for ${ ((q.set_lifetime_termination_timestamp_seconds - this.metrics!.lifetime_termination_timestamp_seconds)/BigInt.from(60)/60/24).toStringAsFixed(3) }-days: ${Cycles.oftheNat(r['lengthen_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
-                    },
-                    'CBSMCallError': (call_error_record) {
-                        throw Exception('cbsm call error: ${CallError.of_the_record(call_error_record as Record)}');
-                    }   
-                });
-            }
-        });
-        return new_lifetime_termination_timestamp_seconds;
-    }
-
-    
-    
-    Future<void> change_storage_size(ChangeStorageSizeQuest q) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'change_storage_size',
-                calltype: CallType.call,
-                put_bytes: c_forwards([q])
-            )
-        ).first as Variant;
-        match_variant<void>(sponse, {
-            Ok: (n){
-                
-            },
-            Err: (change_storage_size_error){
-                match_variant<Never>(change_storage_size_error as Variant, {
-                    'NewStorageSizeMibTooLow':(r_c){
-                        throw Exception('The minimum new storage size is: ${((r_c as Record)['minimum_new_storage_size_mib'] as Nat).value}-MiB');
-                    },
-                    'NewStorageSizeMibTooHigh': (r_c){ 
-                        throw Exception('The maximum new storage size is: ${((r_c as Record)['maximum_new_storage_size_mib'] as Nat).value}-MiB');
-                    },
-                    'CyclesBalanceTooLow': (r_c){
-                        this.metrics!.cycles_balance = Cycles.oftheNat((r_c as Record)['cycles_balance']!);
-                        throw Exception('The cycles_balance is too low. \nstorage change cycles-cost: ${Cycles.oftheNat((r_c as Record)['new_storage_size_mib_cost_cycles']!)}\ncycles_balance: ${this.metrics!.cycles_balance}');
-                    },
-                    'ManagementCanisterUpdateSettingsCallError':(call_error_record){
-                        throw Exception('management-canister call error: ${CallError.of_the_record(call_error_record as Record)}');
-                    }
-                });    
-            }
-        });
-    }
-    */
-    
-    
     
     Future<BigInt/*block_height*/> transfer_icrc1(Icrc1Ledger icrc1_ledger, Uint8List icrc1_transfer_arg_raw) async {
         Variant sponse = c_backwards(
@@ -544,6 +445,268 @@ class CyclesBank extends Canister {
     
     // cycles-market methods
     
+    
+    
+    // put on the cb
+    
+    
+
+    Future<void> load_cm_user_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+        await Future.wait(
+            icrc1token_trade_contracts.map((icrc1token_trade_contract)=>Future(()async{
+                
+                List<PositionLog> gather_user_current_positions = [];
+                int? latest_logs_b_chunk_len = null; 
+                
+                while (true) {
+                    Uint8List logs_b_chunk = await icrc1token_trade_contract.canister.call(
+                        method_name: 'view_user_current_positions',
+                        calltype: CallType.query,
+                        put_bytes: c_forwards_one(
+                            Record.of_the_map({
+                                'index_key': this.principal,
+                                'opt_start_before_id': Option<Nat>(value: gather_user_current_positions.isEmpty ? null : Nat(gather_user_current_positions.first.id), value_type: Nat()),
+                            })
+                        ),
+                    );
+                
+                    int logs_b_chunk_len = logs_b_chunk.length;
+                                            
+                    gather_user_current_positions = [
+                        ...logs_b_chunk.chunks(PositionLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>PositionLog.oftheStableMemorySerialization(b, token_decimal_places: icrc1token_trade_contract.ledger_data.decimals)),
+                        ...gather_user_current_positions
+                    ];
+                    
+                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len) || logs_b_chunk_len == 0) {
+                        break;
+                    }
+                    latest_logs_b_chunk_len = logs_b_chunk_len;
+                    
+                }
+                
+                Map gather_user_current_positions_as_map = Map<BigInt, PositionLog>.fromIterable(
+                    gather_user_current_positions,
+                    key: (pl)=>pl.id,
+                    value: (pl)=> pl
+                );
+                List<BigInt> for_the_do_fresh_these_position_ids_in_the_storage_log = [];        
+                for (PositionLog pl in this.cm_trade_contracts[icrc1token_trade_contract]!.current_user_positions_logs) {
+                    if (gather_user_current_positions_as_map.containsKey(pl.id) == false) {
+                        for_the_do_fresh_these_position_ids_in_the_storage_log.add(pl.id);
+                    }
+                }
+                
+                this.cm_trade_contracts[icrc1token_trade_contract]!.current_user_positions_logs = gather_user_current_positions;
+                
+                
+                // storage_logs start with the ones in the buffer 
+                
+                
+                
+                BigInt? last_known_storage_log_position_id = this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage.isEmpty ? null : this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage.last.id;
+                List<PositionLog> gather_user_positions_log_storage = [];
+                latest_logs_b_chunk_len = null; 
+                bool catch_up_complete = false;
+                while (true) {
+                    
+                    Uint8List logs_b_chunk = await icrc1token_trade_contract.canister.call(
+                        method_name: 'view_user_positions_logs',
+                        calltype: CallType.query,
+                        put_bytes: c_forwards_one(
+                            Record.of_the_map({
+                                'index_key': this.principal,
+                                'opt_start_before_id': Option<Nat>(value: gather_user_positions_log_storage.isEmpty ? null : Nat(gather_user_positions_log_storage.first.id), value_type: Nat()),
+                            })
+                        ),
+                    );
+                    
+                    int logs_b_chunk_len = logs_b_chunk.length;
+                                            
+                    gather_user_positions_log_storage = [
+                        ...logs_b_chunk.chunks(PositionLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>PositionLog.oftheStableMemorySerialization(b, token_decimal_places: icrc1token_trade_contract.ledger_data.decimals)),
+                        ...gather_user_positions_log_storage
+                    ];
+                    
+                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len!) || logs_b_chunk_len == 0) {
+                        break;
+                    }
+                    latest_logs_b_chunk_len = logs_b_chunk_len;
+                    
+                    if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id!) {
+                        gather_user_positions_log_storage = gather_user_positions_log_storage.skipWhile((e)=>e.id <= last_known_storage_log_position_id).toList();
+                        catch_up_complete = true;
+                        break;
+                    } 
+                }
+                
+                
+                List<StorageCanister>? scs;
+                
+                if (catch_up_complete == false) {
+                
+                    scs = (c_backwards_one(await icrc1token_trade_contract.canister.call(
+                        method_name: 'view_positions_storage_canisters',
+                        calltype: CallType.query,
+                    )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+                            
+                    for (StorageCanister sc in scs!.reversed) {
+                        
+                        int chunk_size = 1024 * 512 * 3 ~/ sc.log_size;
+                        
+                        while (true) {
+                            Uint8List logs_b_chunk = await Canister(sc.canister_id).call(
+                                calltype: CallType.query, 
+                                method_name: sc.view_logs_method_name,
+                                put_bytes: c_forwards([
+                                    this.principal,
+                                    Option<Nat>(value: gather_user_positions_log_storage.isEmpty ? null : Nat(gather_user_positions_log_storage.first.id), value_type: Nat()),
+                                    Nat32(chunk_size),
+                                ])
+                            );
+                            int logs_b_chunk_size = logs_b_chunk.length ~/ sc.log_size;
+                            
+                            gather_user_positions_log_storage  = [
+                                ...logs_b_chunk.chunks(sc.log_size).map((b)=>PositionLog.oftheStableMemorySerialization(b, token_decimal_places: icrc1token_trade_contract.ledger_data.decimals)),
+                                ...gather_user_positions_log_storage
+                            ];
+                            
+                            if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id!) {
+                                gather_user_positions_log_storage = gather_user_positions_log_storage.skipWhile((e)=>e.id <= last_known_storage_log_position_id).toList();
+                                catch_up_complete = true;
+                                break;
+                            } 
+                            
+                            if (logs_b_chunk_size < chunk_size) {
+                                break;
+                            }
+                        }
+                        
+                        if (catch_up_complete == true) {
+                            break;
+                        }
+                    }  
+                }
+                
+                this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage.addAll(gather_user_positions_log_storage);
+        
+                
+                // for_the_do_fresh_these_position_ids_in_the_storage_log
+                
+                
+                latest_logs_b_chunk_len = null; 
+                while (for_the_do_fresh_these_position_ids_in_the_storage_log.isNotEmpty) {
+                    Uint8List logs_b_chunk = await icrc1token_trade_contract.canister.call(
+                        method_name: 'view_user_positions_logs',
+                        calltype: CallType.query,
+                        put_bytes: c_forwards_one(
+                            Record.of_the_map({
+                                'index_key': this.principal,
+                                'opt_start_before_id': Option<Nat>(value: Nat(for_the_do_fresh_these_position_ids_in_the_storage_log.last + BigInt.from(1)), value_type: Nat()),
+                            })
+                        ),
+                    );
+                        
+                    int logs_b_chunk_len = logs_b_chunk.length;
+                                                
+                    List<PositionLog> positions_chunk = logs_b_chunk.chunks(PositionLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>PositionLog.oftheStableMemorySerialization(b, token_decimal_places: icrc1token_trade_contract.ledger_data.decimals)).toList();
+                    Map positions_chunk_map = Map.fromIterable(
+                        positions_chunk,
+                        key: (e)=>e.id,
+                        value: (e)=>e
+                    );
+                        
+                    int i = 0;
+                    while (i<for_the_do_fresh_these_position_ids_in_the_storage_log.length) {
+                        BigInt plid = for_the_do_fresh_these_position_ids_in_the_storage_log[i];
+                        if (positions_chunk_map.containsKey(plid)) {
+                            this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage[this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage.indexWhere((l)=> l.id == plid)] = positions_chunk_map[plid];
+                            for_the_do_fresh_these_position_ids_in_the_storage_log.removeAt(i);                       
+                        } else {
+                            i = i + 1;
+                        }
+                    }
+                        
+                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len!) || logs_b_chunk_len == 0) {
+                        break;
+                    }
+                    latest_logs_b_chunk_len = logs_b_chunk_len;
+                        
+                }
+                
+                if (for_the_do_fresh_these_position_ids_in_the_storage_log.isNotEmpty) {
+                    if (scs == null) {
+                        scs = (c_backwards_one(await icrc1token_trade_contract.canister.call(
+                            method_name: 'view_positions_storage_canisters',
+                            calltype: CallType.query,
+                        )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+                    }
+                    for (StorageCanister sc in scs!.reversed) {
+                            
+                        int chunk_size = 1024 * 512 * 3 ~/ sc.log_size;
+                            
+                        while (true) {
+                            Uint8List logs_b_chunk = await Canister(sc.canister_id).call(
+                                calltype: CallType.query, 
+                                method_name: sc.view_logs_method_name,
+                                put_bytes: c_forwards([
+                                    this.principal,
+                                    Option<Nat>(value: Nat(for_the_do_fresh_these_position_ids_in_the_storage_log.last + BigInt.from(1)), value_type: Nat()),
+                                    Nat32(chunk_size),
+                                ])
+                            );
+                            int logs_b_chunk_size = logs_b_chunk.length ~/ sc.log_size;
+                                
+                            List<PositionLog> positions_chunk = logs_b_chunk.chunks(PositionLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>PositionLog.oftheStableMemorySerialization(b, token_decimal_places: icrc1token_trade_contract.ledger_data.decimals)).toList();
+                            Map positions_chunk_map = Map.fromIterable(
+                                positions_chunk,
+                                key: (e)=>e.id,
+                                value: (e)=>e
+                            );
+                                
+                            int i = 0;
+                            while (i<for_the_do_fresh_these_position_ids_in_the_storage_log.length) {
+                                BigInt plid = for_the_do_fresh_these_position_ids_in_the_storage_log[i];
+                                if (positions_chunk_map.containsKey(plid)) {
+                                    this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage[this.cm_trade_contracts[icrc1token_trade_contract]!.user_positions_logs_storage.indexWhere((l)=> l.id == plid)] = positions_chunk_map[plid];
+                                    for_the_do_fresh_these_position_ids_in_the_storage_log.removeAt(i);                       
+                                } else {
+                                    i = i + 1;
+                                }
+                            }
+                                    
+                            if (for_the_do_fresh_these_position_ids_in_the_storage_log.isEmpty == true) {
+                                break;
+                            } 
+                                
+                            if (logs_b_chunk_size < chunk_size) {
+                                break;
+                            }
+                        }
+                            
+                        if (for_the_do_fresh_these_position_ids_in_the_storage_log.isEmpty == true) {
+                            break;
+                        }
+                    }
+                }  
+            }))
+        );
+           
+    }
+    
+ 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     Future<BigInt> cm_view_token_lock(Icrc1TokenTradeContract icrc1token_trade_contract) async {
         BigInt token_lock = (c_backwards(
             await this.user.call(
@@ -609,7 +772,7 @@ class CyclesBank extends Canister {
     Future<void> create_load_trade_logs_future() async {
      
     */
-    
+    /*
     Future<void> fresh_cm_cycles_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
         List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
         await Future.wait(
@@ -786,10 +949,11 @@ class CyclesBank extends Canister {
             }))   
         );
     }
-    
+    */
     Future<void> load_cm_data() async {
         await Future.wait([
             this.fresh_cm_trade_contracts_token_balances(),
+            /*
             this.fresh_cm_cycles_positions(),
             this.fresh_cm_token_positions(),
             this.fresh_cm_cycles_positions_purchases(),
@@ -801,6 +965,7 @@ class CyclesBank extends Canister {
             this.fresh_cm_message_token_position_purchase_purchaser_logs(),
             this.fresh_cm_message_void_cycles_position_positor_logs(),
             this.fresh_cm_message_void_token_position_positor_logs(),
+            */
         ]);
     }
 
@@ -814,7 +979,7 @@ class CyclesBank extends Canister {
         throw Exception('unimplemented');
     }
     
-    
+    /*
     Future<CreateCyclesPositionSuccess> cm_create_cycles_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateCyclesPositionQuest q) async {
         Variant sponse = c_backwards(
             await user.call(
@@ -1115,7 +1280,7 @@ class CyclesBank extends Canister {
         await this.fresh_cm_token_positions_purchases(icrc1token_trade_contract);
         return purchase_token_position_success;
     }
-    
+    */
     
     Future<void> cm_void_position(Icrc1TokenTradeContract icrc1token_trade_contract, BigInt position_id) async {
         Variant sponse = c_backwards(
@@ -1227,10 +1392,9 @@ class CyclesBank extends Canister {
                 });
             }
         });
-        this.fresh_cm_token_transfers_out(icrc1token_trade_contract);
+        //this.fresh_cm_token_transfers_out(icrc1token_trade_contract);
         return block_height;
     }
-    
     
     
     
@@ -1538,7 +1702,7 @@ class ChangeStorageSizeQuest extends Record {
 // ------------- CYCLES-MARKET -------------
 
 
-
+/*
 class MatchTokensQuest extends Record {
     final Tokens tokens;
     final CyclesPerTokenRate cycles_per_token_rate;
@@ -1550,12 +1714,12 @@ class MatchTokensQuest extends Record {
         this['cycles_per_token_rate'] = cycles_per_token_rate;
     }
 }
+*/
 
 
 
 
-
-
+/*
 // ------------- cm create/purchase position quests and sponses -------------
 
 
@@ -1716,7 +1880,7 @@ class PurchaseTokenPositionSuccess {
         );
     }
 }
-
+*/
 
 
 class CyclesMarketVoidPositionQuest extends Record {
@@ -1753,7 +1917,7 @@ class CyclesMarketTransferTokenBalanceQuest extends Record {
 
 
 // ----------------- 
-
+/*
 
 class CMCyclesPosition {
     final BigInt id;
@@ -1895,7 +2059,7 @@ class CMTokenTransferOut{
     }
 }
 
-
+*/
 
 
 
@@ -1903,7 +2067,7 @@ class CMTokenTransferOut{
 
 // ------------- CM-MESSAGE-LOGS -------------
 
-
+/*
 class CMCyclesPositionPurchasePositorMessageQuest {
     final BigInt cycles_position_id;
     final BigInt purchase_id;
@@ -2186,7 +2350,7 @@ class CMMessageVoidTokenPositionPositorLog {
     }
 }
 
-
+*/
 
 // -----------------
 
@@ -2194,11 +2358,26 @@ class CMMessageVoidTokenPositionPositorLog {
 class CyclesBankCMTradeContractData {
     
     BigInt trade_contract_token_balance = BigInt.from(0);
-    List<Icrc1Transaction> token_ledger_transactions_cache = [];
-    CMTradeContractLogs logs = CMTradeContractLogs();
+    //List<Icrc1Transaction> token_ledger_transactions_cache = [];
+    //CMTradeContractLogs logs = CMTradeContractLogs();
+        
+        
+    // show user positions logs sort by creation date, latest first, with an option to show only open/current positions 
+    // show fee takes out each payout and total fees paid for the position
+    List<PositionLog> current_user_positions_logs = []; 
+    // if a log is not in the current_user_positions_logs 
+    // but is in the user_positions_logs_storage & the storage-log-shows 
+    // that the position has not terminated yet, that means that the 
+    // update_storage_position fn is ongoing and the position has terminated
+    // but the update is not availbale yet till the payout/update-storage-position runs. 
+    
+    List<PositionLog> user_positions_logs_storage = [];
+    
+        
+        
     
 }
-
+/*
 class CMTradeContractLogs {
     
     List<CMCyclesPosition> cm_cycles_positions = [];
@@ -2218,5 +2397,5 @@ class CMTradeContractLogs {
 
 
 
-
+*/
 

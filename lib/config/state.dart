@@ -38,6 +38,7 @@ import 'package:ic_tools/common_web.dart';
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
 import 'package:cbor/simple.dart' as cbor_simple;
+import 'package:data_table_2/data_table_2.dart';
 
 
 import 'urls.dart';
@@ -88,6 +89,8 @@ class CustomState {
         if (cts.principal.text != thp4z_id) {
             print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
         }
+        
+         dataTableShowLogs = false; // for the data_table_2 package
         
     }    
     

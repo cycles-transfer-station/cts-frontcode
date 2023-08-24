@@ -540,12 +540,91 @@ class CreatePositionFormState extends State<CreatePositionForm> {
 
 
 
+/*
+class UserCMLogs extends Statefulwidget {
+    UserCMLogs({super.key});
+    State createState() => UserCMLogsState();
+}
+class UserCMLogsState extends State<UserCMLogs> {
+    
+    
+    Widget build(BuildContext context) {
+        return Container(
+            child: AsyncPaginatedDataTable2(
+                showBottomBorder: true,
+                columns: [
+                    DataColumn2(
+                        label: Text('status'), // open or closed 
+                        numeric: true,
+                    )
+                    DataColumn2(
+                        label: Text('position-id'), 
+                        numeric: true,
+                    ),
+                    DataColumn2( // maybe put in the dropdown data section onTap ?
+                        label: Text('creation-time'), 
+                        numeric: true,
+                    ),
+                    DataColumn2(
+                        label: Text('original-position-tokens'), 
+                        numeric: true,
+                    ),
+                    DataColumn2(
+                        label: Text('original-position-rate'), 
+                        numeric: true,
+                    ),
+                    DataColumn2(
+                        label: Text('filled'), 
+                        numeric: true,
+                    ),
+                    DataColumn2(
+                        label: Text('filled average rate'), 
+                        numeric: true,
+                    ),
+                    DataColumn2(
+                        label: Text('current-position-tokens'), 
+                        numeric: true,
+                    ),
+                ],
+                source: CustomAsyncDataTableSource(),
+                 
+            )
+        );    
+    }
+}
 
 
+class CustomAsyncDataTableSource extends AsyncDataTableSource {
+    
+    Future<AsyncRowsResponse> getRows(int start, int end) async {
+        
+        // each row is a position. // onTap shows more about each trade? maybe a two line row without the onTap
+        DataRow2(
+            cells: [
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+                DataCell(Text('')),
+            ],
+            onTap: () {
+                
+            }
+        )
+        
+        return AsyncRowsResponse(
+            , /*total_rows:*/
+            , /*rows:*/ 
+            
+        )
+    }
 
 
-
-
+}
+*/
 
 
 
