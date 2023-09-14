@@ -61,12 +61,12 @@ List<Candle> cycles_market_icrc1token_trade_contract_candlesticks(Icrc1TokenTrad
     
     List<Candle> candlesticks = []; 
 
-    Iterable<TradeLog> trades = tc.trade_logs.reversed; 
+    Iterable<TradeItem> trades = tc.latest_trades.reversed; 
     
     if (trades.length == 0) { return <Candle>[]; }
     
-    DateTime time_mark = candle_time_duration.closest_interval(trades.first.datetime());
-    double first_trade_rate_double = double.parse(trades.first.cycles_per_token_rate.toString().replaceFirst('T','')); 
+    DateTime time_mark = candle_time_duration.closest_interval(datetime_of_the_nanos(trades.first.time_nanos));
+    double first_trade_rate_double = double.parse(trades.first.rate.toString().replaceFirst('T','')); 
     
     late double open;
     double high = 0.0;
@@ -74,10 +74,10 @@ List<Candle> cycles_market_icrc1token_trade_contract_candlesticks(Icrc1TokenTrad
     double close = first_trade_rate_double;
     double volume = 0.0;
     
-    for (TradeLog trade in trades) {
-        double trade_rate_double = double.parse(trade.cycles_per_token_rate.toString().replaceFirst('T',''));         
-        double trade_cycles_double = double.parse(trade.cycles.toString().replaceFirst('T', ''));
-        DateTime trade_datetime = trade.datetime();
+    for (TradeItem trade in trades) {
+        double trade_rate_double = double.parse(trade.rate.toString().replaceFirst('T',''));         
+        double trade_cycles_double = double.parse(tokens_transform_cycles(trade.quantity.quantums, trade.rate).toString().replaceFirst('T', ''));
+        DateTime trade_datetime = datetime_of_the_nanos(trade.time_nanos);
         if (trade_datetime.isAfter(time_mark) || trade_datetime.isAtSameMomentAs(time_mark)) {
             volume += trade_cycles_double;
             open = trade_rate_double;

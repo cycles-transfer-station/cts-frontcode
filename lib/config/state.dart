@@ -139,7 +139,7 @@ class CustomState {
             this.fresh_xdr_icp_rate(),
             Future(()async{ 
                 await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_positions_and_trade_logs()));
+                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_positions_and_trades()));
             }),
             Future(()async{ 
                 print('load state of the browser storage');
@@ -167,6 +167,44 @@ class CustomState {
                                     
                                     print('loading cycles-transfers-in-out, and cm-data, icrc1-tokens');
                                     await Future.wait([
+                                        if (this.user!.cycles_bank!.metrics!.cts_cb_authorization == false) Future(()async{
+                                            Variant v = c_backwards_one(await this.user!.call(
+                                                cts,
+                                                method_name: "set_cb_auth",
+                                                calltype: CallType.call,
+                                            )) as Variant;
+                                            if (v.containsKey(Err)) {
+                                                print('set_cb_auth error: ${e}');
+                                                return;
+                                            }
+                                            int i = 0;
+                                            while (true) { // might get a malicious replica
+                                                Blob cts_cb_authorization = c_backwards_one(
+                                                    await this.user!.call(
+                                                        cts,
+                                                        method_name: "get_cb_auth",
+                                                        calltype: CallType.query,
+                                                        put_bytes: c_forwards_one(this.user!.cycles_bank!.principal)
+                                                    )
+                                                ) as Blob;
+                                                try {
+                                                    await this.user!.call(
+                                                        this.user!.cycles_bank!,
+                                                        method_name: "user_upload_cts_cb_authorization",
+                                                        put_bytes: c_forwards_one(cts_cb_authorization),
+                                                        calltype: CallType.call,
+                                                    );
+                                                    break;
+                                                } catch(e) {
+                                                    print('error uploading cts-cb-auth into the cb.\n${e}');
+                                                    i += 1;
+                                                    if (i == 5) {
+                                                        break;
+                                                    }
+                                                    continue;
+                                                }
+                                            }
+                                        }),
                                         this.user!.cycles_bank!.fresh_cycles_transfers_out(),
                                         this.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         Future(()async{

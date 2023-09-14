@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:async';
 
 import '../config/state.dart';
 
@@ -61,7 +62,7 @@ class Icrc1TokenTradeContract extends Record {
     Canister get canister => Canister(this.trade_contract_canister_id);
     
     // ------
-    
+    /*
     List<CyclesPosition> cycles_positions = [];
     List<TokenPosition> token_positions = [];
     
@@ -247,43 +248,300 @@ class Icrc1TokenTradeContract extends Record {
             this.load_trade_logs(),
         ]);
     }
-    
+    */
     
     // -------------------------
     
-       
     
+    Future<void> load_positions_and_trades() async {
+        await Future.wait([
+            this.load_position_book(),
+            this.check_new_trades(),
+        ]);
+    }
+    
+    
+    
+    List<PositionBookItem> buy_position_book = [];
+    List<PositionBookItem> sell_position_book = [];
+    
+    Future<void> load_position_book() async {
+        await Future.wait([
+            Future(()async{
+                this.buy_position_book = await load_position_book_(PositionKind.Cycles);        
+            }),
+            Future(()async{
+                this.sell_position_book = await load_position_book_(PositionKind.Token);
+            }),            
+        ]);
+    }
+          
+    Future<List<PositionBookItem>> load_position_book_(PositionKind kind) async {
+        
+        List<PositionBookItem> gather = [];
+        while (true) {
+            ViewPositionBookSponse sponse = ViewPositionBookSponse.of_the_record(c_backwards_one(await this.canister.call(
+                calltype: CallType.query,
+                method_name: switch (kind) { 
+                    PositionKind.Cycles => 'view_buy_position_book',
+                    PositionKind.Token => 'view_sell_position_book',
+                },
+                put_bytes: c_forwards([
+                    Record.of_the_map({
+                        'opt_start_greater_than_rate': Option<Nat>(value: gather.isEmpty ? null : gather.last.rate, value_type: Nat()),
+                    })
+                ]),
+            )) as Record, token_decimal_places: this.ledger_data.decimals);
+            
+            gather.addAll(sponse.positions_quantities);
+            
+            if (sponse.is_last_chunk == true) {
+                break;
+            }
+        }
+        
+        return gather; 
+    }
+    
+    
+    List<TradeItem> latest_trades = [];
+    
+    Future<ViewTradesSponse> cm_view_latest_trades(Principal c_id, [BigInt? opt_start_before_id]) async {
+        return ViewTradesSponse.of_the_record(c_backwards_one(await Canister(c_id).call(
+            calltype: CallType.query,
+            method_name: 'view_latest_trades',
+            put_bytes: c_forwards([
+                Record.of_the_map({
+                    'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((id)=>Nat(id)), value_type: Nat()),
+                })
+            ]),            
+        )) as Record, token_decimal_places: this.ledger_data.decimals);
+    }
+    
+    Future<void> check_new_trades() async {
+        List<TradeItem> gather = [];
+        bool catch_up_complete = false;            
+        await for (Principal c_id in latest_trades_canisters_generator()) {
+            while (true) {
+                ViewTradesSponse sponse = await cm_view_latest_trades(c_id, gather.isEmpty ? null : gather.first.id);
+                gather = [
+                    ...sponse.trades_data,  
+                    ...gather
+                ];
+                if (this.latest_trades.isNotEmpty && gather.first.id <= this.latest_trades.last.id) {
+                    gather = gather.skipWhile((e)=>e.id <= this.latest_trades.last.id).toList();
+                    catch_up_complete = true;
+                    break;
+                }   
+                if (this.latest_trades.isEmpty && gather.length >= 500) {
+                    catch_up_complete = true;
+                    break;
+                }  
+                if (sponse.is_last_chunk_on_this_canister == true) {
+                    break;
+                }
+            }
+            if (catch_up_complete) {
+                break;
+            }
+        }
+        this.latest_trades.addAll(gather);
+    }
+    
+    Stream<Principal> latest_trades_canisters_generator() async* {
+        yield this.trade_contract_canister_id;
+        List<StorageCanister> trades_scs = await this.view_trades_storage_canisters();
+        trades_scs_cache = trades_scs;
+        for (StorageCanister sc in trades_scs.reversed) {
+            yield sc.canister_id;
+        } 
+    }
+    
+    List<StorageCanister> trades_scs_cache = [];
+    
+    Future<void> load_trades_back_chunk() async {
+        if (this.latest_trades.isEmpty) {
+            await this.check_new_trades();
+            return;
+        }
+        if (this.latest_trades.first.id == BigInt.from(0)) {
+            return;
+        }
+        Principal? call_canister_id;
+        if (trades_scs_cache.isEmpty || trades_scs_cache.last.first_log_id + trades_scs_cache.last.length < this.latest_trades.first.id) {
+            trades_scs_cache = await this.view_trades_storage_canisters();
+        }
+        for (StorageCanister sc in trades_scs_cache) {
+            if (this.latest_trades.first.id > sc.first_log_id && this.latest_trades.first.id <= sc.first_log_id + sc.length) {
+                call_canister_id = sc.canister_id;
+            }
+        }
+        if (call_canister_id == null) {
+            call_canister_id = this.trade_contract_canister_id;
+        }
+        ViewTradesSponse sponse = await cm_view_latest_trades(call_canister_id, this.latest_trades.first.id);
+        this.latest_trades = [
+            ...sponse.trades_data,
+            ...this.latest_trades
+        ];
+    }
+    
+        
+                
+    
+    Future<List<StorageCanister>> view_positions_storage_canisters() async {
+        return (c_backwards_one(await this.canister.call(
+            method_name: 'view_positions_storage_canisters',
+            calltype: CallType.query,
+        )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+    }
+    
+    Future<List<StorageCanister>> view_trades_storage_canisters() async {
+        return (c_backwards_one(await this.canister.call(
+            method_name: 'view_trades_storage_canisters',
+            calltype: CallType.query,
+        )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+    }
 }
+
+
+
+typedef PositionBookItem = ({CyclesPerTokenRate rate, Tokens quantity}); 
+
+
+class ViewPositionBookSponse {
+        
+    final List<PositionBookItem> positions_quantities; 
+    final bool is_last_chunk;
+    ViewPositionBookSponse._({
+        required this.positions_quantities,
+        required this.is_last_chunk,
+    });
+    static ViewPositionBookSponse of_the_record(Record r, {required int token_decimal_places}) {
+        return ViewPositionBookSponse._(
+            positions_quantities: (r['positions_quantities'] as Vector).cast_vector<Record>()
+                .map((item){
+                    return (
+                        rate: CyclesPerTokenRate(
+                            cycles_per_token_quantum_rate: (item[0] as Nat).value,
+                            token_decimal_places: token_decimal_places,
+                        ),
+                        quantity: Tokens(quantums: (item[1] as Nat).value, decimal_places: token_decimal_places),
+                    );
+                }).toList(),
+            is_last_chunk: (r['is_last_chunk'] as Bool).value,
+        );
+    }
+}
+
+typedef TradeItem = ({BigInt id, Tokens quantity, CyclesPerTokenRate rate, BigInt time_nanos, PositionKind kind});
+
+class ViewTradesSponse {
+        
+    final List<TradeItem> trades_data; 
+    final bool is_last_chunk_on_this_canister;
+
+    ViewTradesSponse._({
+        required this.trades_data,
+        required this.is_last_chunk_on_this_canister,
+    });
+    static ViewTradesSponse of_the_record(Record r, {required int token_decimal_places}) {
+        return ViewTradesSponse._(
+            trades_data: (r['trades_data'] as Vector).cast_vector<Record>()
+                .map((item){
+                    return (
+                        id: (item[0] as Nat).value,
+                        quantity: Tokens(quantums: (item[1] as Nat).value, decimal_places: token_decimal_places),
+                        rate: CyclesPerTokenRate(
+                            cycles_per_token_quantum_rate: (item[2] as Nat).value,
+                            token_decimal_places: token_decimal_places,
+                        ),
+                        time_nanos: (item[3] as Nat).value,
+                        kind: match_variant(item[4] as Variant, { for (var k in PositionKind.values) k.name: (n)=>k })
+                    );
+                }).toList(),
+            is_last_chunk_on_this_canister: (r['is_last_chunk_on_this_canister'] as Bool).value,
+        );
+    }
+}
+
+enum PositionTerminationCause {
+    Fill, // the position is fill[ed]. position.amount < minimum_token_match()
+    Bump, // the position got bumped
+    TimePass, // expired
+    UserCallVoidPosition, // t
+}
+
+class PositionTerminationData {
+    BigInt timestamp_nanos;
+    PositionTerminationCause cause;
+    PositionTerminationData._({
+        required this.timestamp_nanos,
+        required this.cause, 
+    });
+}
+
 
 class PositionLog {
     final BigInt id;
-    /*
-    BigInt? termination_timestamp_nanos;
-    
-    
-    BigInt position_id;
+    Principal positor;
+    MatchTokensQuest match_tokens_quest;
+    PositionKind position_kind;
+    BigInt mainder_position_quantity; // if cycles position this is: Cycles, if Token position this is: Tokens.
+    BigInt fill_quantity; // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
+    CyclesPerTokenRate fill_average_rate;
+    BigInt payouts_fees_sum; // // if cycles-position this is: Tokens, if token-position this is: Cycles.
     BigInt creation_timestamp_nanos;
-    BigInt original_position_tokens;
-    BigInt original_position_rate;
-    BigInt token_purchases_sum; // filled
-    BigInt token_purchases_average_rate;
-    BigInt current_position_tokens;
-    BigInt payout_fees_sum;
+    PositionTerminationData? position_termination;
     
+    //BigInt trade_log_ids
     
-    BigInt trade_log_ids
-    */
     PositionLog._({
-        required this.id
-    }) {
-        
-    }
+        required this.id,
+        required this.positor,
+        required this.match_tokens_quest,
+        required this.position_kind,
+        required this.mainder_position_quantity, // if cycles position this is: Cycles, if Token position this is: Tokens.
+        required this.fill_quantity, // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
+        required this.fill_average_rate,
+        required this.payouts_fees_sum, // // if cycles-position this is: Tokens, if token-position this is: Cycles.
+        required this.creation_timestamp_nanos,
+        required this.position_termination,
+    });
     
-    static int STABLE_MEMORY_SERIALIZE_SIZE = 5;
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 162;
     
     static PositionLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
+        PositionTerminationData? termination;
+        if (bytes[152] == 1) {
+            termination = PositionTerminationData._(
+                timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(153, 161)),
+                cause: switch (bytes[161]) {
+                    0 => PositionTerminationCause.Fill,
+                    1 => PositionTerminationCause.Bump,
+                    2 => PositionTerminationCause.TimePass,
+                    3 => PositionTerminationCause.UserCallVoidPosition,
+                    _ => throw Exception('unknown PositionTerminationCause serialization.')
+                }
+            );
+        }
         return PositionLog._(
-            id: BigInt.from(0),
+            id: u128_of_the_be_bytes(bytes.getRange(1, 17)),
+            positor: principal_of_the_30_bytes(bytes.getRange(17, 47)),
+            match_tokens_quest: MatchTokensQuest(
+                tokens: Tokens(quantums: u128_of_the_be_bytes(bytes.getRange(47, 63)), decimal_places: token_decimal_places),
+                cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(63, 79)), token_decimal_places:token_decimal_places),
+            ),
+            position_kind: bytes[79] == 0 ? PositionKind.Cycles : PositionKind.Token,
+            mainder_position_quantity: u128_of_the_be_bytes(bytes.getRange(80, 96)), // if cycles position this is: Cycles, if Token position this is: Tokens.
+            fill_quantity: u128_of_the_be_bytes(bytes.getRange(96, 112)), // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
+            fill_average_rate: CyclesPerTokenRate(
+                cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(112, 128)),
+                token_decimal_places:token_decimal_places,
+            ),
+            payouts_fees_sum: u128_of_the_be_bytes(bytes.getRange(128, 144)), // // if cycles-position this is: Tokens, if token-position this is: Cycles.
+            creation_timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(144, 152)),
+            position_termination: termination,
         );
     }
 }
@@ -302,13 +560,11 @@ class StorageCanister {
     final BigInt length;
     final int log_size;
     final Principal canister_id;
-    final String view_logs_method_name;
     StorageCanister._({
         required this.first_log_id,
         required this.length,
         required this.log_size,
         required this.canister_id,
-        required this.view_logs_method_name,
     });
     static StorageCanister of_the_record(Record r) {
         FunctionReference callback = r['callback'] as FunctionReference;
@@ -316,8 +572,7 @@ class StorageCanister {
             first_log_id: (r['first_log_id'] as Nat).value,
             length: (r['length'] as Nat).value,
             log_size: (r['log_size'] as Nat32).value,
-            canister_id: Principal.bytes(callback.service!.id!.bytes),
-            view_logs_method_name: callback.method_name!.value
+            canister_id: r['canister_id'] as Principal,
         );
     }
 }
@@ -409,13 +664,16 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
 }
 
 
-class MatchTokensQuest {
+class MatchTokensQuest extends Record {
     final Tokens tokens;
     final CyclesPerTokenRate cycles_per_token_rate;
     MatchTokensQuest({
         required this.tokens,
         required this.cycles_per_token_rate,
-    });
+    }) {
+        this['tokens'] = this.tokens;
+        this['cycles_per_token_rate'] = this.cycles_per_token_rate;
+    }
     static MatchTokensQuest of_the_record(Record r, {required int token_decimal_places}) {
         return MatchTokensQuest(
             tokens: Tokens(quantums: (r['tokens'] as Nat).value, decimal_places: token_decimal_places),
@@ -428,7 +686,7 @@ class MatchTokensQuest {
 }
 
 
-
+DateTime datetime_of_the_nanos(BigInt nanos) => DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(nanos).toInt());
 
 class TradeLog {
 
@@ -451,7 +709,7 @@ class TradeLog {
     final Record? cycles_payout_data;
     final Record? token_payout_data;
     
-    DateTime datetime() => DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(timestamp_nanos).toInt());
+    DateTime datetime() => datetime_of_the_nanos(timestamp_nanos);
     
     TradeLog._({
         required this.position_id,
@@ -513,9 +771,10 @@ Principal principal_of_the_30_bytes(Iterable<int> b) {
     return Principal.bytes(Uint8List.fromList(blist.getRange(1, blist[0] + 1).toList()));
 }
 
-BigInt u128_of_the_be_bytes(Iterable<int> bytes) {
+BigInt bigint_of_the_be_bytes(Iterable<int> bytes) {
     return BigInt.parse(bytes_as_the_bitstring(bytes), radix: 2);
 }
+BigInt Function(Iterable<int>) u128_of_the_be_bytes = bigint_of_the_be_bytes;
 
 String bytes_as_the_bitstring(Iterable<int> bytes) {
     String bitstring = '';

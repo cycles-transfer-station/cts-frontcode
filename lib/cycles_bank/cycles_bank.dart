@@ -168,11 +168,19 @@ class CyclesBank extends Canister {
     //Future<void> delete_ functionality coming soon
     
     Future<BigInt/*cycles_transfer_id*/> transfer_cycles(UserTransferCyclesQuest q) async {
+        // get the cts-cb-authorization of the q.for_the_canister, 
+        Record callee_user_and_cts_cb_authorization = c_backwards_one(
+            await this.user.call(
+                Canister(q.for_the_canister),
+                method_name: 'get_cts_cb_auth',
+                calltype: CallType.query,
+            )
+        ) as Record;
         Variant transfer_cycles_sponse = c_backwards(
             await this.user.call(
                 this,
                 method_name: 'transfer_cycles',
-                put_bytes: c_forwards([q]),
+                put_bytes: c_forwards([q, callee_user_and_cts_cb_authorization]),
                 calltype: CallType.call,
             )
         )[0] as Variant;
@@ -182,9 +190,6 @@ class CyclesBank extends Canister {
             },
             Err: (transfer_cycles_error) {
                 match_variant<Never>(transfer_cycles_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel in the cycles-bank is too low. Put CTSFuel into the cycles-bank.');
-                    },
                     'MemoryIsFull': (nul) {
                         throw Exception('The cycles-bank memory is full. Grow the memory-size of the cycles-bank or delete some data.');
                     },
@@ -199,21 +204,8 @@ class CyclesBank extends Canister {
                         this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance'] as Nat);
                         throw Exception('The cycles-balance in the cycles-bank is too low to transfer these cycles. \ncycles_balance: ${Cycles.oftheNat(r['cycles_balance'] as Nat)}\ntransfer cycles fee: ${Cycles.oftheNat(r['cycles_transferrer_transfer_cycles_fee'] as Nat)}');
                     },
-                    'CyclesTransferrerTransferCyclesError': (cycles_transferrer_transfer_cycles_error) {
-                        match_variant<Never>(cycles_transferrer_transfer_cycles_error as Variant, {
-                            'MsgCyclesTooLow': (transfer_cycles_fee_record) {
-                                throw Exception('Please file this error:\nCyclesTransferrerTransferCyclesError MsgCyclesTooLow transfer_cycles_fee: ${Cycles.oftheNat((transfer_cycles_fee_record as Record)['transfer_cycles_fee'] as Nat)}');
-                            },
-                            'MaxOngoingCyclesTransfers': (nul) {
-                                throw Exception('The cycles_transferrer is busy, try soon.');
-                            },
-                            'CyclesTransferQuestCandidCodeError': (text) {
-                                throw Exception('Please file this error: \nCyclesTransferrerTransferCyclesError CyclesTransferQuestCandidCodeError \n${(text as Text).value}');
-                            }                           
-                        });
-                    },
-                    'CyclesTransferrerTransferCyclesCallError': (call_error_record){
-                        throw Exception('Error of the transfer_cycles-call of the cycles_transferrer: \n${CallError.of_the_record(call_error_record as Record)}');
+                    'CyclesTransferCallPerformError': (call_error) {
+                        throw Exception('cycles-transfer call perform error: ${CallError.of_the_record(call_error as Record)}');
                     }
                 });
             }
@@ -528,12 +520,12 @@ class CyclesBank extends Canister {
                         ...gather_user_positions_log_storage
                     ];
                     
-                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len!) || logs_b_chunk_len == 0) {
+                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len) || logs_b_chunk_len == 0) {
                         break;
                     }
                     latest_logs_b_chunk_len = logs_b_chunk_len;
                     
-                    if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id!) {
+                    if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id) {
                         gather_user_positions_log_storage = gather_user_positions_log_storage.skipWhile((e)=>e.id <= last_known_storage_log_position_id).toList();
                         catch_up_complete = true;
                         break;
@@ -545,19 +537,16 @@ class CyclesBank extends Canister {
                 
                 if (catch_up_complete == false) {
                 
-                    scs = (c_backwards_one(await icrc1token_trade_contract.canister.call(
-                        method_name: 'view_positions_storage_canisters',
-                        calltype: CallType.query,
-                    )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+                    scs = await icrc1token_trade_contract.view_positions_storage_canisters();
                             
-                    for (StorageCanister sc in scs!.reversed) {
+                    for (StorageCanister sc in scs.reversed) {
                         
                         int chunk_size = 1024 * 512 * 3 ~/ sc.log_size;
                         
                         while (true) {
                             Uint8List logs_b_chunk = await Canister(sc.canister_id).call(
                                 calltype: CallType.query, 
-                                method_name: sc.view_logs_method_name,
+                                method_name: "map_logs_rchunks",
                                 put_bytes: c_forwards([
                                     this.principal,
                                     Option<Nat>(value: gather_user_positions_log_storage.isEmpty ? null : Nat(gather_user_positions_log_storage.first.id), value_type: Nat()),
@@ -571,7 +560,7 @@ class CyclesBank extends Canister {
                                 ...gather_user_positions_log_storage
                             ];
                             
-                            if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id!) {
+                            if (last_known_storage_log_position_id != null && gather_user_positions_log_storage.first.id <= last_known_storage_log_position_id) {
                                 gather_user_positions_log_storage = gather_user_positions_log_storage.skipWhile((e)=>e.id <= last_known_storage_log_position_id).toList();
                                 catch_up_complete = true;
                                 break;
@@ -627,7 +616,7 @@ class CyclesBank extends Canister {
                         }
                     }
                         
-                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len!) || logs_b_chunk_len == 0) {
+                    if ((latest_logs_b_chunk_len != null && logs_b_chunk_len < latest_logs_b_chunk_len) || logs_b_chunk_len == 0) {
                         break;
                     }
                     latest_logs_b_chunk_len = logs_b_chunk_len;
@@ -636,19 +625,16 @@ class CyclesBank extends Canister {
                 
                 if (for_the_do_fresh_these_position_ids_in_the_storage_log.isNotEmpty) {
                     if (scs == null) {
-                        scs = (c_backwards_one(await icrc1token_trade_contract.canister.call(
-                            method_name: 'view_positions_storage_canisters',
-                            calltype: CallType.query,
-                        )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
+                        scs = await icrc1token_trade_contract.view_positions_storage_canisters();
                     }
-                    for (StorageCanister sc in scs!.reversed) {
+                    for (StorageCanister sc in scs.reversed) {
                             
                         int chunk_size = 1024 * 512 * 3 ~/ sc.log_size;
                             
                         while (true) {
                             Uint8List logs_b_chunk = await Canister(sc.canister_id).call(
                                 calltype: CallType.query, 
-                                method_name: sc.view_logs_method_name,
+                                method_name: "map_logs_rchunks",
                                 put_bytes: c_forwards([
                                     this.principal,
                                     Option<Nat>(value: Nat(for_the_do_fresh_these_position_ids_in_the_storage_log.last + BigInt.from(1)), value_type: Nat()),
@@ -953,6 +939,7 @@ class CyclesBank extends Canister {
     Future<void> load_cm_data() async {
         await Future.wait([
             this.fresh_cm_trade_contracts_token_balances(),
+            this.load_cm_user_positions(),
             /*
             this.fresh_cm_cycles_positions(),
             this.fresh_cm_token_positions(),
@@ -969,14 +956,46 @@ class CyclesBank extends Canister {
         ]);
     }
 
-    
+    Future<BigInt> cm_post_tokens_(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q, PositionKind kind) async {
+        Variant v = c_backwards_one(
+            await user.call(
+                this, 
+                method_name: switch (kind) { PositionKind.Cycles => "cm_buy_tokens", _ => "cm_sell_tokens" },
+                calltype: CallType.call,
+                put_bytes: c_forwards([icrc1token_trade_contract, q])
+            )
+        ) as Variant;
+        BigInt position_id = match_variant(v, {
+            Ok:(s){
+                return match_variant(s as Variant, {
+                    Ok: (r)=>((r as Record)['position_id'] as Nat).value,
+                    Err: (e){
+                        return match_variant<Never>(e as Variant, {
+                            
+                        }); 
+                    }
+                });
+            },
+            Err: (e) {
+                return match_variant<Never>(e as Variant, {
+                    /*
+                    MemoryIsFull,
+                    CyclesBalanceTooLow{ cycles_balance: Cycles },
+                    CMBuyTokensCallError((u32, String)),
+                    CMBuyTokensCallSponseCandidDecodeError{candid_error: String, sponse_bytes: Vec<u8> }, 
+                    */
+                });
+            } 
+        });
+        return position_id;
+    }    
 
     Future<BigInt/*position-id*/> cm_buy_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
-        throw Exception('unimplemented');
+        return await cm_post_tokens_(icrc1token_trade_contract, q, PositionKind.Cycles);
     }
 
     Future<BigInt/*position-id*/> cm_sell_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
-        throw Exception('unimplemented');
+        return await cm_post_tokens_(icrc1token_trade_contract, q, PositionKind.Token);
     }
     
     /*
@@ -1463,7 +1482,6 @@ class CyclesBankMetrics {
     CTSFuel ctsfuel_balance;
     BigInt storage_size_mib;
     BigInt lifetime_termination_timestamp_seconds;
-    Vector<Principal> cycles_transferrer_canisters;
     Principal user_id;
     BigInt user_canister_creation_timestamp_nanos;
     BigInt storage_usage;
@@ -1471,6 +1489,7 @@ class CyclesBankMetrics {
     BigInt cycles_transfers_in_len;
     BigInt cycles_transfers_out_len;
     Map<Principal/*icrc1tokentradecontractcanisterid*/, CMTradeContractLogsLengths> cm_trade_contracts_logs_lengths;
+    bool cts_cb_authorization;
     
     CyclesBankMetrics._({
         required this.global_allocator_counter,
@@ -1478,7 +1497,6 @@ class CyclesBankMetrics {
         required this.ctsfuel_balance,
         required this.storage_size_mib,
         required this.lifetime_termination_timestamp_seconds,
-        required this.cycles_transferrer_canisters,
         required this.user_id,
         required this.user_canister_creation_timestamp_nanos,
         required this.storage_usage,
@@ -1486,6 +1504,7 @@ class CyclesBankMetrics {
         required this.cycles_transfers_in_len,
         required this.cycles_transfers_out_len,
         required this.cm_trade_contracts_logs_lengths,
+        required this.cts_cb_authorization,
     });
     static CyclesBankMetrics of_the_record(Record r) {
         return CyclesBankMetrics._(
@@ -1494,7 +1513,6 @@ class CyclesBankMetrics {
             ctsfuel_balance: CTSFuel.oftheNat(r['ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,
             lifetime_termination_timestamp_seconds: (r['lifetime_termination_timestamp_seconds'] as Nat).value,
-            cycles_transferrer_canisters: ((r['cycles_transferrer_canisters'] as Vector).cast_vector<Principal>()), 
             user_id: (r['user_id'] as Principal),
             user_canister_creation_timestamp_nanos: (r['user_canister_creation_timestamp_nanos'] as Nat).value,
             storage_usage: (r['storage_usage'] as Nat).value,
@@ -1505,6 +1523,7 @@ class CyclesBankMetrics {
                 for (Record c in (r['cm_trade_contracts_logs_lengths'] as Vector).cast_vector<Record>()) 
                     (c[0] as Record)['trade_contract_canister_id'] as Principal: CMTradeContractLogsLengths.of_the_record(c)
             },
+            cts_cb_authorization: (r['cts_cb_authorization'] as Bool).value,
         );
     }
 }
@@ -1512,43 +1531,17 @@ class CyclesBankMetrics {
 
 
 class CMTradeContractLogsLengths {
-    CMCallsOutLengths cm_calls_out_lengths;
     CMMessageLogsLengths cm_message_logs_lengths;
     CMTradeContractLogsLengths._({
-        required this.cm_calls_out_lengths,
         required this.cm_message_logs_lengths,
     });
     static CMTradeContractLogsLengths of_the_record(Record r) {
         return CMTradeContractLogsLengths._(
-            cm_calls_out_lengths: CMCallsOutLengths.of_the_record(r['cm_calls_out_lengths'] as Record),
             cm_message_logs_lengths: CMMessageLogsLengths.of_the_record(r['cm_message_logs_lengths'] as Record),    
         );
     }
 }
 
-class CMCallsOutLengths {
-    BigInt cm_cycles_positions_length;
-    BigInt cm_token_positions_length;
-    BigInt cm_cycles_positions_purchases_length;
-    BigInt cm_token_positions_purchases_length;    
-    BigInt cm_token_transfers_out_length;
-    CMCallsOutLengths._({
-        required this.cm_cycles_positions_length,
-        required this.cm_token_positions_length,
-        required this.cm_cycles_positions_purchases_length,
-        required this.cm_token_positions_purchases_length,   
-        required this.cm_token_transfers_out_length,
-    });
-    static CMCallsOutLengths of_the_record(Record r) {
-        return CMCallsOutLengths._(
-            cm_cycles_positions_length: (r['cm_cycles_positions_length'] as Nat64).value,
-            cm_token_positions_length: (r['cm_token_positions_length'] as Nat64).value,
-            cm_cycles_positions_purchases_length: (r['cm_cycles_positions_purchases_length'] as Nat64).value,
-            cm_token_positions_purchases_length: (r['cm_token_positions_purchases_length'] as Nat64).value,   
-            cm_token_transfers_out_length: (r['cm_token_transfers_out_length'] as Nat64).value,
-        );
-    }
-}
 
 class CMMessageLogsLengths {
     BigInt cm_message_cycles_position_purchase_positor_logs_length;

@@ -232,12 +232,12 @@ class MarketTrades extends StatelessWidget {
                     DataColumn(label: Text('Time'))
                 ],
                 rows: [
-                    for (TradeLog trade in state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].trade_logs.reversed) 
+                    for (TradeItem trade in state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].latest_trades.reversed) 
                         DataRow(
                             cells: [
-                                DataCell(Text('${Tokens(quantums: trade.tokens, decimal_places: trade.cycles_per_token_rate.token_decimal_places/*state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals*/)}')),
-                                DataCell(Text('${trade.cycles_per_token_rate}', style: TextStyle(color: trade.position_kind == PositionKind.Cycles ? red : green /*when to make red or green?*/))),
-                                DataCell(Text('${timestamp_format(trade.datetime())}'))
+                                DataCell(Text('${trade.quantity}')),
+                                DataCell(Text('${trade.rate}', style: TextStyle(color: trade.kind == PositionKind.Cycles ? red : green /*when to make red or green?*/))),
+                                DataCell(Text('${timestamp_format(datetime_of_the_nanos(trade.time_nanos))}'))
                             ]
                         ),
                 ]
@@ -251,36 +251,33 @@ class PositionBook extends StatelessWidget {
     int cm_main_icrc1token_trade_contracts_i;    
     PositionBook({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage PositionBook cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
     
-    List<DataRow> create_position_book_data_rows(List<Icrc1TokenTradeContractPosition> positions) {
-        positions = positions..sort((a,b){return b.cycles_per_token_rate.cycles_per_token_quantum_rate.compareTo(a.cycles_per_token_rate.cycles_per_token_quantum_rate);}); 
+    List<DataRow> create_position_book_data_rows(List<PositionBookItem> positions, PositionKind position_kind) {
+        positions = positions..sort((a,b){return b.rate.cycles_per_token_quantum_rate.compareTo(a.rate.cycles_per_token_quantum_rate);}); 
         
         if (positions.length == 0) { return <DataRow>[]; }
         
         List<DataRow> datarows = [];
 
-        BigInt quantity = BigInt.from(0); 
-        CyclesPerTokenRate rate = positions.first.cycles_per_token_rate;
-        Cycles total = Cycles(cycles: BigInt.from(0));
+        Tokens quantity = Tokens(quantums: BigInt.from(0), decimal_places: positions.first.quantity.decimal_places); 
+        CyclesPerTokenRate rate = positions.first.rate;
         
-        bool is_buy_positions = positions.first is CyclesPosition ? true : false; 
+        bool is_buy_positions = position_kind == PositionKind.Cycles; 
         
-        for (Icrc1TokenTradeContractPosition position in positions) {    
-            if (position.cycles_per_token_rate.cycles_per_token_quantum_rate == rate.cycles_per_token_quantum_rate) {
-                quantity += position.tokens_quantity;
-                total += position.cycles_quantity;
+        for (PositionBookItem position in positions) {    
+            if (position.rate.cycles_per_token_quantum_rate == rate.cycles_per_token_quantum_rate) {
+                quantity = Tokens(quantums: quantity.quantums + position.quantity.quantums, decimal_places: quantity.decimal_places);
             } else {
                 datarows.add(
                     DataRow(
                         cells: [
                             DataCell(Text('${quantity}')),
                             DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
-                            DataCell(Text('${total}'))
+                            DataCell(Text('${tokens_transform_cycles(quantity.quantums, rate)}'))
                         ]
                     )
                 );
-                quantity = position.tokens_quantity; 
-                rate = position.cycles_per_token_rate;
-                total = position.cycles_quantity;
+                quantity = position.quantity; 
+                rate = position.rate;
             }
         }
         // for the last positon
@@ -289,7 +286,7 @@ class PositionBook extends StatelessWidget {
                 cells: [
                     DataCell(Text('${quantity}')),
                     DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
-                    DataCell(Text('${total}'))
+                    DataCell(Text('${tokens_transform_cycles(quantity.quantums, rate)}'))
                 ]
             )
         );
@@ -314,7 +311,7 @@ class PositionBook extends StatelessWidget {
                                 DataColumn(label:Text('Rate')),
                                 DataColumn(label:  Text('Total'))
                             ],
-                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].token_positions)
+                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].sell_position_book, PositionKind.Token)
                         )    
                     ),
                     Text('middle widget, current/latest trade price'),
@@ -328,7 +325,7 @@ class PositionBook extends StatelessWidget {
                                 DataColumn(label:Text('Rate')),
                                 DataColumn(label:  Text('Total'))
                             ],
-                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].cycles_positions)
+                            rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].buy_position_book, PositionKind.Cycles)
                         )
                     ),
                 ]
@@ -503,7 +500,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                         await Future.wait([
                                             state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
                                             state.user!.bank!.fresh_metrics(),
-                                            state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trade_logs()
+                                            state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trades()
                                         ]);
                                     } catch(e) {
                                         await showDialog(
@@ -541,7 +538,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
 
 
 /*
-class UserCMLogs extends Statefulwidget {
+class UserCMLogs extends StatefulWidget {
     UserCMLogs({super.key});
     State createState() => UserCMLogsState();
 }
@@ -624,8 +621,8 @@ class CustomAsyncDataTableSource extends AsyncDataTableSource {
 
 
 }
-*/
 
+*/
 
 
 

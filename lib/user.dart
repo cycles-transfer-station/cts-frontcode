@@ -286,7 +286,39 @@ class User {
         Ok: (purchase_cycles_bank_success_ctype) async {
             Record purchase_cycles_bank_success = purchase_cycles_bank_success_ctype as Record;
             this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as Principal), this);  
-            this.fresh_icp_balance().then((_x){});
+            
+            Future.wait([
+                this.fresh_icp_balance(),
+                Future(()async{
+                    int i = 0;
+                    while (true) { // might get a malicious replica
+                        Blob cts_cb_authorization = c_backwards_one(
+                            await call(
+                                cts,
+                                method_name: "get_cb_auth",
+                                calltype: CallType.query,
+                                put_bytes: c_forwards_one(this.cycles_bank!.principal)
+                            )
+                        ) as Blob;
+                        try {
+                            await call(
+                                this.cycles_bank!,
+                                method_name: "user_upload_cts_cb_authorization",
+                                put_bytes: c_forwards_one(cts_cb_authorization),
+                                calltype: CallType.call,
+                            );
+                            break;
+                        } catch(e) {
+                            print('error uploading cts-cb-auth into the cb.\n${e}');
+                            i += 1;
+                            if (i == 5) {
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                })
+            ]).then((_x){});
         },
         Err: (purchase_cycles_bank_error) async {
             return await match_variant<Future<void>>(purchase_cycles_bank_error as Variant, purchase_cycles_bank_error_match_map);
