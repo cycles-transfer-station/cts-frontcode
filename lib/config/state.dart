@@ -58,36 +58,40 @@ late final Canister cycles_market;
 
 late final String cts_main_icp_id;
 
-const String thp4z_id = 'thp4z-laaaa-aaaam-qaaea-cai';
+const String em3jm = 'em3jm-bqaaa-aaaar-qabxa-cai';
+
+final bool is_on_local = window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1');
 
 
 class CustomState {
 
     CustomState() {
     
-        if (window.location.hostname!.contains(thp4z_id) || window.location.hostname!.contains('cycles-transfer-station.com')) {
-            cts = Canister(Principal.text(thp4z_id)); 
-            cycles_market = Canister(Principal.text('woddh-aqaaa-aaaal-aazqq-cai'));
+        if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com')) {
+            cts = Canister(Principal.text(em3jm)); 
+            cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
         }
-
-        if (window.location.hostname!.contains('bayhi-')) {
-            cts = Canister(Principal.text('bayhi-7yaaa-aaaai-qahca-cai'));
-            cycles_market = Canister(Principal.text('mscqy-haaaa-aaaai-aahhq-cai'));
-        }
-        
-        if (window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1')) {
+        if (is_on_local) {
             /// local replica 
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
             fetch_root_key().then((_x){});
             cts = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cts_local_'))));
             cycles_market = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cm_local__'))));
+        
+            Future.wait([
+                load_local_root_key_onto_a_canister(cts),
+                load_local_root_key_onto_a_canister(cycles_market),
+            ]).then((_x){});
+            
+            
+        
         }
         
         
         cts_main_icp_id = common.icp_id(cts.principal);
         
-        if (cts.principal.text != thp4z_id) {
-            print('WARNING! Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
+        if (cts.principal.text != em3jm) {
+            print('Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
         }
         
          dataTableShowLogs = false; // for the data_table_2 package
@@ -139,6 +143,7 @@ class CustomState {
             this.fresh_xdr_icp_rate(),
             Future(()async{ 
                 await cycles_market_main_fresh_icrc1token_trade_contracts_future;
+                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>load_local_root_key_onto_a_canister(c.canister)));
                 await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_positions_and_trades()));
             }),
             Future(()async{ 
@@ -209,7 +214,7 @@ class CustomState {
                                         this.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                         Future(()async{
                                             await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                                            await this.user!.cycles_bank!.fresh_known_cm_trade_contracts_of_the_cm_main();
+                                            this.user!.cycles_bank!.fresh_known_cm_trade_contracts_of_the_cm_main();
                                             await Future.wait([
                                                 this.user!.cycles_bank!.fresh_icrc1_balances(),
                                                 this.user!.cycles_bank!.fresh_icrc1_transactions(),
@@ -218,40 +223,9 @@ class CustomState {
                                             
                                             
                                             //test
-                                            if (cts.principal.text != thp4z_id) {
+                                            if (cts.principal.text != em3jm) {
                                                 //print('TESTING!');
-                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                //this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                
-                                                /*
-                                                while (true) {
-                                                    print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                                    print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                    await Future.delayed(Duration(seconds: 30));
-                                                    await this.user!.cycles_bank!.fresh_icrc1_transactions();
-                                                }
-                                                */
-                                                /*
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                print('testing!');
-                                                CyclesBank cb = this.user!.cycles_bank!;
-                                                this.user!.cycles_bank = CyclesBank(Principal.text('evwae-swnhu-flvdq-7h6p3-dfua7-y7qdb-hgipo-ky4g3-7bbng-blqet-sae'), this.user!);
-                                                await this.user!.cycles_bank!.fresh_icrc1_transactions();
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.removeAt(0);
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                print('await this.user!.cycles_bank!.fresh_icrc1_transactions()');
-                                                await this.user!.cycles_bank!.fresh_icrc1_transactions();
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache);
-                                                print(this.user!.cycles_bank!.icrc1_transactions_cache[common.Icrc1Ledgers.SNS1]!.length);
-                                                this.user!.cycles_bank = cb;
-                                                */
+                                               
                                             }
                                         }),
                                     ]);
@@ -356,6 +330,16 @@ class CustomState {
     
 }
 
+
+Future<void> load_local_root_key_onto_a_canister(Canister c) async {
+    if (is_on_local) {
+        await c.call(
+            method_name: 'local_put_ic_root_key',
+            calltype: CallType.call,
+            put_bytes: c_forwards_one(Blob(ic_root_key.sublist(ic_root_key.length-96))),
+        );
+    }
+}
 
 
 

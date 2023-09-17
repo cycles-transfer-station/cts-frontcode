@@ -287,8 +287,12 @@ class User {
             Record purchase_cycles_bank_success = purchase_cycles_bank_success_ctype as Record;
             this.cycles_bank = CyclesBank((purchase_cycles_bank_success['cycles_bank_canister_id'] as Principal), this);  
             
-            Future.wait([
-                this.fresh_icp_balance(),
+            this.cycles_bank!.fresh_known_cm_trade_contracts_of_the_cm_main();
+            await Future.wait([
+                this.fresh_icp_balance(),                
+                this.cycles_bank!.fresh_metrics(),
+                this.cycles_bank!.fresh_icrc1_balances(),
+                this.cycles_bank!.fresh_icrc1_transactions(),
                 Future(()async{
                     int i = 0;
                     while (true) { // might get a malicious replica
@@ -297,7 +301,7 @@ class User {
                                 cts,
                                 method_name: "get_cb_auth",
                                 calltype: CallType.query,
-                                put_bytes: c_forwards_one(this.cycles_bank!.principal)
+                                put_bytes: c_forwards_one(this.cycles_bank!.principal),
                             )
                         ) as Blob;
                         try {
@@ -318,7 +322,7 @@ class User {
                         }
                     }
                 })
-            ]).then((_x){});
+            ]);
         },
         Err: (purchase_cycles_bank_error) async {
             return await match_variant<Future<void>>(purchase_cycles_bank_error as Variant, purchase_cycles_bank_error_match_map);

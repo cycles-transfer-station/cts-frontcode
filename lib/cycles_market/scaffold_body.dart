@@ -183,7 +183,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                             ),  
                         ]
                     ),
-                    Wrap(
+                    if (state.user != null && state.user!.bank != null) Wrap(
                         children: [
                             Container(
                                 child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
@@ -304,7 +304,7 @@ class PositionBook extends StatelessWidget {
                     Flexible(
                         flex: 2,
                         child: DataTable2(
-                            // reverse: true,
+                            reverse: true,
                             showBottomBorder: true,
                             columns: <DataColumn>[
                                 DataColumn(label: Text('Quantity')),
@@ -454,8 +454,10 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                                 match_tokens_quest
                                             );
                                         }
-                                    } catch(e) {
-                                        print(e);
+                                    } catch(e,s) {
+                                        //print(e);
+                                        //print(s);
+                                        
                                         await showDialog(
                                             context: state.context,
                                             builder: (BuildContext context) {

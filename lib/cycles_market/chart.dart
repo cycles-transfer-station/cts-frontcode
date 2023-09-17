@@ -128,29 +128,29 @@ class ChartState extends State<Chart> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         
-        
+        List<Candle> candles = cycles_market_icrc1token_trade_contract_candlesticks(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i], candle_time_duration);
         return Container(
             //decoration: BoxDecoration(border: Border.all()),
             child: Candlesticks(
                 key: ValueKey(candle_time_duration),
-                candles: [
+                candles: candles.length >= 2 ? candles : [
                     Candle(
                         date: DateTime.now(),
-                        open: 1.0,
-                        high: 7.0,
-                        low: 0.5,
-                        close: 5.0,
-                        volume: 20
+                        open: 0,
+                        high: 0,
+                        low: 0,
+                        close: 0,
+                        volume: 0
                     ),
                     Candle(
                         date: DateTime.now(),
-                        open: 2.0,
-                        high: 8.0,
-                        low: 1.0,
-                        close: 5.0,
-                        volume: 25
-                    )
-                ],//cycles_market_icrc1token_trade_contract_candlesticks(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i], candle_time_duration), //MockDataTesla.candles, 
+                        open: 0,
+                        high: 0,
+                        low: 0,
+                        close: 0,
+                        volume: 0
+                    )  
+                ],
                 actions: <ToolBarAction>[
                     ToolBarAction(
                         child: Text('5m'),

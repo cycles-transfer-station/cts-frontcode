@@ -88,7 +88,6 @@ class CyclesTransferOutListItem extends StatelessWidget {
                                         SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
                                         SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
                                         SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
-                                        SelectableText('safe-transferrer-fee: ${cycles_transfer_out.fee_paid}'),
                                         SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
                                     ]                            
                                 ),

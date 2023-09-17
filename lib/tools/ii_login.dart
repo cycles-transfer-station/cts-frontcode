@@ -47,8 +47,8 @@ ii_login(BuildContext context) async {
             ii_caller = await IICaller.login(
                 derivation_origin: [
                     'cycles-transfer-station.com',
-                ].contains(window.location.hostname!) ? 'https://${thp4z_id}.ic0.app' 
-                : window.location.hostname!.contains('.icp0.io') ? 'https://${window.location.hostname!.replaceFirst('.icp0.io','.ic0.app')}'
+                ].contains(window.location.hostname!) ? 'https://${em3jm}.icp0.io' 
+                : window.location.hostname!.contains('.ic0.app') ? 'https://${window.location.hostname!.replaceFirst('.ic0.app', '.icp0.io')}'
                 : null
             );
         } catch(e) {

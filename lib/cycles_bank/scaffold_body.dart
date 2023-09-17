@@ -402,7 +402,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                 tooltip: 'Settings', 
                                                 onPressed: () async {
                                                     showDialog<void>(
-                                                        barrierDismissible: false,
+                                                        barrierDismissible: true,
                                                         context: context,
                                                         builder: (BuildContext context) => Dialog(
                                                             child: Container(

@@ -28,7 +28,7 @@ class CyclesBank extends Canister {
     List<CyclesTransferIn> cycles_transfers_in = [];
     List<CyclesTransferOut> cycles_transfers_out = [];
     
-    List<Icrc1Ledger> known_icrc1_ledgers = [...Icrc1Ledgers.all, ];
+    List<Icrc1Ledger> known_icrc1_ledgers = [ if (is_on_local) Icrc1Ledgers.ICP, if (is_on_local == false) ...Icrc1Ledgers.all ];
     Icrc1Ledger? current_icrc1_ledger = null;
     Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
@@ -39,7 +39,7 @@ class CyclesBank extends Canister {
     // cycles-market fields
     Map<Icrc1TokenTradeContract, CyclesBankCMTradeContractData> cm_trade_contracts = {};
     // only need cause icp ledger has different account ids and transaction log
-    late final String cm_icp_id; //cm_icp_id = common.icp_id(cycles_market_icp_icrc1token_trade_contract.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(principal)), 
+    //late final String cm_icp_id; //cm_icp_id = common.icp_id(cycles_market_icp_icrc1token_trade_contract.principal, subaccount_bytes: principal_as_an_icpsubaccountbytes(principal)), 
     List<IcpTransfer> cm_icp_transfers = [];
     
     
@@ -47,7 +47,10 @@ class CyclesBank extends Canister {
     CyclesBank(
         super.principal,
         this.user,
-    ): icp_id = common.icp_id(principal);
+    ): icp_id = common.icp_id(principal) {
+        
+        load_local_root_key_onto_a_canister(this).then((_x){});      
+    }
     
     Future<void> fresh_metrics() async {
         Record metrics_record = c_backwards(
@@ -63,7 +66,7 @@ class CyclesBank extends Canister {
         //print('cm_message_cycles_position_purchase_positor_logs_len: ${this.metrics!.cm_message_cycles_position_purchase_positor_logs_len}');
     }
     
-    Future<void> fresh_known_cm_trade_contracts_of_the_cm_main() async {
+    void fresh_known_cm_trade_contracts_of_the_cm_main() {
         for (Icrc1TokenTradeContract tc in this.user.state.cm_main.icrc1token_trade_contracts) {
             if (this.known_icrc1_ledgers.contains(tc.ledger_data) == false) {
                 this.known_icrc1_ledgers.add(tc.ledger_data);
@@ -102,16 +105,21 @@ class CyclesBank extends Canister {
             ])
         )).first as Variant;
     } 
-    
-    Future<void> fresh_icrc1_transactions([Icrc1Ledger? icrc1_ledger]) {
+
+    Future<void> fresh_icrc1_transactions([Icrc1Ledger? icrc1_ledger]) async {
+        if (is_on_local) {
+            return;
+        } else {
+            return fresh_icrc1_transactions_(icrc1_ledger);
+        }
+    }    
+    Future<void> fresh_icrc1_transactions_([Icrc1Ledger? icrc1_ledger]) {
         List<Icrc1Ledger> ledgers = icrc1_ledger != null ? [icrc1_ledger] : this.known_icrc1_ledgers;
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 print('fresh icrc1 transactions future ${l.name}');
                 if (l.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) {
-                    // for the do! hook up with the dashboard icp-ledger-api
-                    //print('get_icp_transfers');
-                    //print(this.icp_id);
+                    // for the do! hook up with the new icp index canister
                     this.icp_transfers = [
                         ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
                         ...this.icp_transfers
@@ -725,6 +733,7 @@ class CyclesBank extends Canister {
                 BigInt tokens_in_the_lock = rs[1]; 
                 BigInt balance = token_ledger_balance - tokens_in_the_lock;
                 this.cm_trade_contracts[tc]!.trade_contract_token_balance = balance >= BigInt.from(0) ? balance : BigInt.from(0);
+                print('token_ledger_balance: $token_ledger_balance, tokens_in_the_lock: $tokens_in_the_lock');
             }))
         );
     }
@@ -743,103 +752,8 @@ class CyclesBank extends Canister {
     */
     
     
-    // use future locks on the load/fresh logs fns like for the cm trade logs
+    
     /*
-    Future<void> load_trade_logs() async {
-        if (this.load_trade_logs_future != null) {
-            await this.load_trade_logs_future!;
-        } else {
-            this.load_trade_logs_future = create_load_trade_logs_future();
-            await this.load_trade_logs_future!;
-            this.load_trade_logs_future == null;
-        } 
-    }
-    
-    Future<void> create_load_trade_logs_future() async {
-     
-    */
-    /*
-    Future<void> fresh_cm_cycles_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
-        await Future.wait(
-            icrc1token_trade_contracts.map((tc)=>Future(()async{
-                this.cm_trade_contracts[tc]!.logs.cm_cycles_positions.addAll(
-                    await cb_download_mechanism(
-                        icrc1token_trade_contract: tc,
-                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_cycles_positions.length,
-                        download_method_name: 'download_cm_cycles_positions', 
-                        function: CMCyclesPosition.of_the_record,
-                    )
-                );
-            }))   
-        );
-    }             
-    
-    Future<void> fresh_cm_token_positions([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
-        await Future.wait(
-            icrc1token_trade_contracts.map((tc)=>Future(()async{
-                this.cm_trade_contracts[tc]!.logs.cm_token_positions.addAll(
-                    await cb_download_mechanism(
-                        icrc1token_trade_contract: tc,
-                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_positions.length,
-                        download_method_name: 'download_cm_token_positions', 
-                        function: CMTokenPosition.of_the_record,
-                    )
-                );
-            }))   
-        );        
-    }
-    
-    Future<void> fresh_cm_cycles_positions_purchases([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
-        await Future.wait(
-            icrc1token_trade_contracts.map((tc)=>Future(()async{
-                this.cm_trade_contracts[tc]!.logs.cm_cycles_positions_purchases.addAll(
-                    await cb_download_mechanism(
-                        icrc1token_trade_contract: tc,
-                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_cycles_positions_purchases.length,
-                        download_method_name: 'download_cm_cycles_positions_purchases', 
-                        function: CMCyclesPositionPurchase.of_the_record,
-                    )
-                );
-            }))   
-        );
-    }
-    
-    Future<void> fresh_cm_token_positions_purchases([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
-        await Future.wait(
-            icrc1token_trade_contracts.map((tc)=>Future(()async{
-                this.cm_trade_contracts[tc]!.logs.cm_token_positions_purchases.addAll(
-                    await cb_download_mechanism(
-                        icrc1token_trade_contract: tc,
-                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_positions_purchases.length,
-                        download_method_name: 'download_cm_token_positions_purchases', 
-                        function: CMTokenPositionPurchase.of_the_record,
-                    )
-                );
-            }))   
-        );
-    }
-    
-    Future<void> fresh_cm_token_transfers_out([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
-        await Future.wait(
-            icrc1token_trade_contracts.map((tc)=>Future(()async{
-                this.cm_trade_contracts[tc]!.logs.cm_token_transfers_out.addAll(
-                    await cb_download_mechanism(
-                        icrc1token_trade_contract: tc,
-                        len_so_far: this.cm_trade_contracts[tc]!.logs.cm_token_transfers_out.length,
-                        download_method_name: 'download_cm_token_transfers_out', 
-                        function: CMTokenTransferOut.of_the_record,
-                    )
-                );
-            }))   
-        );
-    }
-    
-    
     Future<void> fresh_cm_message_cycles_position_purchase_positor_logs([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
         List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
         await Future.wait(
@@ -994,312 +908,41 @@ class CyclesBank extends Canister {
         return await cm_post_tokens_(icrc1token_trade_contract, q, PositionKind.Cycles);
     }
 
-    Future<BigInt/*position-id*/> cm_sell_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
-        return await cm_post_tokens_(icrc1token_trade_contract, q, PositionKind.Token);
+    Future<BigInt/*position-id*/> cm_sell_tokens(Icrc1TokenTradeContract tc, MatchTokensQuest q) async {
+        
+        await Future.wait([
+            this.fresh_icrc1_balances(tc.ledger_data),
+            this.fresh_cm_trade_contracts_token_balances(tc),
+        ]);
+
+        if (this.cm_trade_contracts[tc]!.trade_contract_token_balance < q.tokens.quantums) {
+            if (this.icrc1_balances_cache[tc.ledger_data]! < q.tokens.quantums - this.cm_trade_contracts[tc]!.trade_contract_token_balance + tc.ledger_data.fee) {
+                throw Exception(
+"""For a sell-position of ${q.tokens} tokens, need minimum combined main-account and cm-escrow-account token-balance: ${Tokens(quantums: q.tokens.quantums + tc.ledger_data.fee, decimal_places: tc.ledger_data.decimals)}.
+Current main-account token-balance: ${Tokens(quantums: this.icrc1_balances_cache[tc.ledger_data]!, decimal_places: tc.ledger_data.decimals)} ${tc.ledger_data.symbol}.
+Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contracts[tc]!.trade_contract_token_balance, decimal_places: tc.ledger_data.decimals)} ${tc.ledger_data.symbol}.
+"""
+                );             
+            }    
+            print('cm_sell_tokens transferring ${q.tokens.quantums - this.cm_trade_contracts[tc]!.trade_contract_token_balance} token quantums');
+            print('tc user token balance quantums before transfer ${this.cm_trade_contracts[tc]!.trade_contract_token_balance}');
+            await transfer_icrc1(
+                tc.ledger_data, 
+                c_forwards_one(Record.of_the_map({
+                    'to':Icrc1Account(owner: tc.trade_contract_canister_id, subaccount:principal_as_an_icpsubaccountbytes(this.principal)),
+                    'fee': Nat(tc.ledger_data.fee),
+                    'amount': Nat(q.tokens.quantums - this.cm_trade_contracts[tc]!.trade_contract_token_balance)
+                }))
+            );
+            // test
+            await this.fresh_cm_trade_contracts_token_balances(tc);
+            print('tc user token balance quantums after transfer ${this.cm_trade_contracts[tc]!.trade_contract_token_balance}');
+        
+        }
+        
+        return await cm_post_tokens_(tc, q, PositionKind.Token);
     }
     
-    /*
-    Future<CreateCyclesPositionSuccess> cm_create_cycles_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateCyclesPositionQuest q) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'cm_create_cycles_position',
-                put_bytes: c_forwards([icrc1token_trade_contract, q]),
-                calltype: CallType.call
-            )
-        )[0] as Variant;
-        CreateCyclesPositionSuccess create_cycles_position_success = match_variant<CreateCyclesPositionSuccess>(sponse, {
-            Ok: (create_cycles_position_success) {
-                return CreateCyclesPositionSuccess.of_the_record(create_cycles_position_success as Record);
-            },
-            Err: (create_cycles_position_error) {
-                match_variant<Never>(create_cycles_position_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
-                    },
-                    'MemoryIsFull': (nul) {
-                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
-                    },
-                    'CyclesBalanceTooLow': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee']!)}');
-                    },
-                    'CyclesMarketCreateCyclesPositionCallError': (call_error_record) {
-                        throw Exception('cycles-market create_cycles_position call error:\n${CallError.of_the_record(call_error_record as Record)}');    
-                    },
-                    'CyclesMarketCreateCyclesPositionError': (cycles_market_create_cycles_position_error) {
-                        match_variant<Never>(cycles_market_create_cycles_position_error as Variant, {
-                            'MinimumPurchaseMustBeEqualOrLessThanTheCyclesPosition': (nul) {
-                                throw Exception('The minimum-purchase of the position must be equal or less than the position.');
-                            },
-                            'MsgCyclesTooLow': (fee_record) {
-                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee']!)}');
-                            },
-                            'CyclesMarketIsBusy': (nul) {
-                                throw Exception('The cycles-market is busy. try soon.');
-                            },
-                            'CyclesMarketIsFull': (nul) {
-                                throw Exception('File this: The cycles-market is full.');
-                            },
-                            'CyclesMarketIsFull_MinimumRateAndMinimumCyclesPositionForABump': (r_ctype) {
-                                Record r = r_ctype as Record;
-                                throw Exception('The cycles-market cycles-positions are full. If you create a cycles-position with a minimum cycles-per-token-rate: ${Cycles.oftheNat(r['minimum_rate_for_a_bump'] as Nat)} and with a minimum cycles-position: ${Cycles.oftheNat(r['minimum_cycles_position_for_a_bump']!)} then you will bump the most expensive cycles-position and take its place.');
-                            },
-                            'MinimumCyclesPosition': (cycles_nat) {
-                                throw Exception('The minimum cycles for a cycles-position is: ${Cycles.oftheNat(cycles_nat)}');
-                            },
-                            'MinimumPurchaseCannotBeZero': (nul) {
-                                throw Exception('The position minimum-purchase must greater than 0.');
-                            },
-                            'CyclesMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
-                                throw Exception('The positon\'s-cycles must be a multiple of the cycles_per_token_rate');
-                            },
-                            'MinimumPurchaseMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
-                                throw Exception('The positon\'s-minimum-purchase must be a multiple of the cycles_per_token_rate');
-                            },
-                        });
-                    }
-                });           
-            }
-        });   
-        await this.fresh_cm_cycles_positions(icrc1token_trade_contract);
-        return create_cycles_position_success;
-    }
-    
-    Future<CreateTokenPositionSuccess> cm_create_token_position(Icrc1TokenTradeContract icrc1token_trade_contract, CreateTokenPositionQuest q) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'cm_create_token_position',
-                calltype: CallType.call,
-                put_bytes: c_forwards([icrc1token_trade_contract, q])
-            )
-        )[0] as Variant;
-        CreateTokenPositionSuccess create_token_position_success = match_variant<CreateTokenPositionSuccess>(sponse, {
-            Ok: (ok_record) {
-                return CreateTokenPositionSuccess.of_the_record(ok_record as Record);
-            },
-            Err: (user_cm_create_token_position_error) {
-                return match_variant<Never>(user_cm_create_token_position_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
-                    },
-                    'MemoryIsFull': (nul) {
-                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
-                    },
-                    'CyclesBalanceTooLow': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-create-position-fee: ${Cycles.oftheNat(r['cycles_market_create_position_fee']!)}');
-                    },
-                    'CyclesMarketCreateTokenPositionCallError': (call_error_record) {
-                        throw Exception('cycles-market create_icp_position call error:\n${CallError.of_the_record(call_error_record as Record)}');    
-                    },
-                    'CyclesMarketCreateTokenPositionCallSponseCandidDecodeError': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        throw Exception('Error decoding cycles-market create_token_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
-                    },
-                    'CyclesMarketCreateTokenPositionError': (cycles_market_create_token_position_error) {
-                        return match_variant<Never>(cycles_market_create_token_position_error as Variant, {
-                            'MinimumPurchaseMustBeEqualOrLessThanTheTokenPosition': (nul) {
-                                throw Exception('The minimum-purchase of the position must be equal or less than the position.');
-                            },
-                            'MsgCyclesTooLow': (fee_record) {
-                                throw Exception('File this error: \nMsgCyclesTooLow create_position_fee: ${Cycles.oftheNat((fee_record as Record)['create_position_fee']!)}');
-                            },
-                            'CyclesMarketIsFull': (nul) {
-                                throw Exception('File this: The cycles-market is full.');
-                            },
-                            'CyclesMarketIsBusy': (nul) {
-                                throw Exception('The cycles-market is busy. try soon.');
-                            },
-                            'CallerIsInTheMiddleOfACreateTokenPositionOrPurchaseCyclesPositionOrTransferTokenBalanceCall': (nul) {
-                                throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
-                            },
-                            'CheckUserCyclesMarketTokenLedgerBalanceError':(call_error_record) {
-                                throw Exception('Error calling the token-ledger for the cycles-market-token-balance.\n${CallError.of_the_record(call_error_record as Record)}');
-                            },
-                            'UserTokenBalanceTooLow': (user_token_balance_record) {
-                                this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance = ((user_token_balance_record as Record)['user_token_balance'] as Nat).value;
-                                throw Exception('The cycles-market-token-balance is too low. The token-balance must be enough to cover the token-position (${q.tokens}) plus the token-ledger-transfer-fees for each possible purchase according to the minimum-purchase (${Tokens(quantums: (q.tokens ~/ q.minimum_purchase) * icrc1token_trade_contract.ledger_data.fee, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}). \ncurrent-token-balance: ${Tokens(quantums: this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
-                            },
-                            'CyclesMarketIsFull_MaximumRateAndMinimumTokenPositionForABump': (r_ctype) {
-                                Record r = r_ctype as Record;
-                                throw Exception('The cycles-market token-positions are full. If you create a token-position with a maximum cycles-per-token-rate: ${Cycles.oftheNat(r['maximum_rate_for_a_bump'] as Nat)} and with a minimum token-position: ${Tokens.of_the_nat(r['minimum_token_position_for_a_bump'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)} then you will bump the most expensive token-position and take its place.');
-                            },
-                            'MinimumTokenPosition': (tokens) {
-                                throw Exception('The minimum tokens for a token-position is: ${Tokens.of_the_nat(tokens, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
-                            },
-                            'MinimumPurchaseCannotBeZero': (nul) {
-                                throw Exception('The position minimum-purchase must greater than 0.');
-                            },
-                        });
-                    }
-                });
-            }
-        });        
-        await this.fresh_cm_token_positions(icrc1token_trade_contract);
-        return create_token_position_success;    
-    }
-    
-    
-    Future<PurchaseCyclesPositionSuccess> cm_purchase_cycles_position(Icrc1TokenTradeContract icrc1token_trade_contract, CyclesPosition cycles_position, Cycles purchase_cycles) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'cm_purchase_cycles_position',
-                calltype: CallType.call,
-                put_bytes: c_forwards([
-                    icrc1token_trade_contract,
-                    CyclesBankCMPurchaseCyclesPositionQuest(
-                        cycles_market_purchase_cycles_position_quest: CyclesMarketPurchaseCyclesPositionQuest(
-                            cycles_position_id: cycles_position.id,
-                            cycles: purchase_cycles,
-                        ),
-                        cycles_position_cycles_per_token_rate: cycles_position.cycles_per_token_rate,
-                        cycles_position_positor: cycles_position.positor
-                    )
-                ])
-            )
-        ).first as Variant;
-        PurchaseCyclesPositionSuccess purchase_cycles_position_success = match_variant<PurchaseCyclesPositionSuccess>(sponse, {
-            Ok: (ok) {
-                return PurchaseCyclesPositionSuccess.of_the_record(ok as Record);
-            }, 
-            Err: (purchase_cycles_position_error) {
-                return match_variant<Never>(purchase_cycles_position_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
-                    },
-                    'MemoryIsFull': (nul) {
-                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
-                    },
-                    'CyclesBalanceTooLow': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}');
-                    },
-                    'CyclesMarketPurchaseCyclesPositionCallError': (call_error_record) {
-                        throw Exception('cycles-market purchase_cycles_position call error:\n${CallError.of_the_record(call_error_record as Record)}');                    
-                    },
-                    'CyclesMarketPurchaseCyclesPositionCallSponseCandidDecodeError': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        throw Exception('Error decoding cycles-market purchase_cycles_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
-                    },
-                    'CyclesMarketPurchaseCyclesPositionError': (cycles_market_purchase_cycles_position_error) {
-                        return match_variant<Never>(cycles_market_purchase_cycles_position_error as Variant, {
-                            'MsgCyclesTooLow': (fee_record) {
-                                throw Exception('File this error: \nMsgCyclesTooLow purchase_position_fee: ${Cycles.oftheNat((fee_record as Record)['purchase_position_fee']!)}');
-                            },
-                            'CyclesMarketIsBusy': (nul) {
-                                throw Exception('The cycles-market is busy. try soon.');
-                            },
-                            'CallerIsInTheMiddleOfACreateTokenPositionOrPurchaseCyclesPositionOrTransferTokenBalanceCall': (nul) {
-                                throw Exception('The cycles-bank is in the middle of a call for the cycles-market.');    
-                            },
-                            'CheckUserCyclesMarketTokenLedgerBalanceError': (call_error_record) {
-                                throw Exception('Error calling the ${icrc1token_trade_contract.ledger_data.symbol}-ledger for the cycles-market-token-balance.\n${CallError.of_the_record(call_error_record as Record)}');
-                            },
-                            'UserTokenBalanceTooLow': (user_token_balance_record) {
-                                this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance = ((user_token_balance_record as Record)['user_token_balance'] as Nat).value;
-                                Tokens cycles_position_purchase_cycles_token_cost = Tokens(
-                                    quantums: cycles_transform_tokens(purchase_cycles, cycles_position.cycles_per_token_rate),
-                                    decimal_places: icrc1token_trade_contract.ledger_data.decimals
-                                ); 
-                                throw Exception('The user\'s-cycles-market-${icrc1token_trade_contract.ledger_data.symbol}-balance is too low for the purchase. \ncycles-market-${icrc1token_trade_contract.ledger_data.symbol}-balance: ${Tokens(quantums: this.cm_trade_contracts[icrc1token_trade_contract]!.trade_contract_token_balance, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}\npurchase_cycles: ${purchase_cycles}\n${icrc1token_trade_contract.ledger_data.symbol}-cost of these cycles in this cycles-position: ${cycles_position_purchase_cycles_token_cost}, ${icrc1token_trade_contract.ledger_data.symbol}-ledger-transfer-fee: ${icrc1token_trade_contract.ledger_data.fee_tokens}');
-                            },
-                            'CyclesPositionNotFound':(nul) {
-                                throw Exception('The cycles-position: ${cycles_position.id} is not found.');
-                            },
-                            'CyclesPositionCyclesIsLessThanThePurchaseQuest': (cycles_position_cycles_record) {
-                                // update the cycles-position-cycles
-                                throw Exception('The cycles-position: ${cycles_position.id} has ${Cycles.oftheNat((cycles_position_cycles_record as Record)['cycles_position_cycles']! as Nat)}-cycles.');
-                            },
-                            'CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest': (cycles_position_minimum_purchase_record) {
-                                throw Exception('File this error: CyclesPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this cycles-position is ${Cycles.oftheNat((cycles_position_minimum_purchase_record as Record)['cycles_position_minimum_purchase']!)}');
-                            },
-                            'PurchaseCyclesMustBeAMultipleOfTheCyclesPerTokenRate': (nul) {
-                                throw Exception('The purchase-cycles must be a multiple of the cycles_per_token_rate');
-                            }
-                        });
-                    }
-                });
-            }
-        });
-        await this.fresh_cm_cycles_positions_purchases(icrc1token_trade_contract);
-        return purchase_cycles_position_success;
-    }
-    
-    Future<PurchaseTokenPositionSuccess> cm_purchase_token_position(Icrc1TokenTradeContract icrc1token_trade_contract, TokenPosition token_position, Tokens purchase_tokens) async {
-        Variant sponse = c_backwards(
-            await user.call(
-                this,
-                method_name: 'cm_purchase_token_position',
-                calltype: CallType.call,
-                put_bytes: c_forwards([
-                    icrc1token_trade_contract,
-                    CyclesBankCMPurchaseTokenPositionQuest(
-                        cycles_market_purchase_token_position_quest: CyclesMarketPurchaseTokenPositionQuest(
-                            token_position_id: token_position.id, 
-                            tokens: purchase_tokens
-                        ),
-                        token_position_cycles_per_token_rate: token_position.cycles_per_token_rate,
-                        token_position_positor: token_position.positor
-                    )
-                ])
-            )
-        ).first as Variant;
-        PurchaseTokenPositionSuccess purchase_token_position_success = match_variant<PurchaseTokenPositionSuccess>(sponse, {
-            Ok:(ok){
-                return PurchaseTokenPositionSuccess.of_the_record(ok as Record);
-            },
-            Err: (cycles_bank_cm_purchase_token_position_error){
-                return match_variant<Never>(cycles_bank_cm_purchase_token_position_error as Variant, {
-                    'CTSFuelTooLow': (nul) {
-                        throw Exception('The CTSFuel is too low. Topup the CTSFuel in this cycles-bank.');
-                    },
-                    'MemoryIsFull': (nul) {
-                        throw Exception('The memory is full in the cycles-bank. Grow the memory or free some space.');
-                    },
-                    'CyclesBalanceTooLow': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        this.metrics!.cycles_balance = Cycles.oftheNat(r['cycles_balance']!);
-                        throw Exception('The cycles-balance is too low in the cycles-bank.\ncycles-balance: ${Cycles.oftheNat(r['cycles_balance']!)}\ncycles-market-purchase-position-fee: ${Cycles.oftheNat(r['cycles_market_purchase_position_fee']!)}\ncost for a purchase of the ${purchase_tokens}-${icrc1token_trade_contract.ledger_data.symbol} of the token-position: ${token_position.id} with the cycles_per_token-rate: ${token_position.cycles_per_token_rate} is: ${tokens_transform_cycles(purchase_tokens.quantums, token_position.cycles_per_token_rate)}');
-                    },
-                    'CyclesMarketPurchaseTokenPositionCallError': (call_error_record) {
-                        throw Exception('cycles-market purchase_token_position call error:\n${CallError.of_the_record(call_error_record as Record)}');                    
-                    },
-                    'CyclesMarketPurchaseTokenPositionCallSponseCandidDecodeError': (r_ctype) {
-                        Record r = r_ctype as Record;
-                        throw Exception('Error decoding cycles-market purchase_token_position response:\ncandid_error: ${(r['candid_error'] as Text).value}\nsponse_bytes: ${(r['sponse_bytes'] as Blob).bytes}');
-                    },
-                    'CyclesMarketPurchaseTokenPositionError': (cycles_market_purchase_token_position_error) {
-                        return match_variant<Never>(cycles_market_purchase_token_position_error as Variant, {
-                            'MsgCyclesTooLow': (fee_record) {
-                                throw Exception('File this error: \nMsgCyclesTooLow purchase_position_fee: ${Cycles.oftheNat((fee_record as Record)['purchase_position_fee']!)}');
-                            },
-                            'CyclesMarketIsBusy': (nul) {
-                                throw Exception('The cycles-market is busy. try soon.');
-                            },
-                            'TokenPositionNotFound': (nul) {
-                                throw Exception('The token-position: ${token_position.id} is not found.');
-                            },
-                            'TokenPositionTokensIsLessThanThePurchaseQuest': (token_position_tokens_record) {
-                                throw Exception('This token-position: ${token_position.id} has ${Tokens.of_the_nat((token_position_tokens_record as Record)['token_position_tokens'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}-tokens.');
-                            },
-                            'TokenPositionMinimumPurchaseIsGreaterThanThePurchaseQuest':(token_position_minimum_purchase_record){
-                                throw Exception('File this error: TokenPositionMinimumPurchaseIsGreaterThanThePurchaseQuest\nThe minimum-purchase of this token-position is ${Tokens.of_the_nat((token_position_minimum_purchase_record as Record)['token_position_minimum_purchase'] as Nat, decimal_places: icrc1token_trade_contract.ledger_data.decimals)}');
-                            }
-                        });
-                    }
-                });
-            }
-        });
-        await this.fresh_cm_token_positions_purchases(icrc1token_trade_contract);
-        return purchase_token_position_success;
-    }
-    */
     
     Future<void> cm_void_position(Icrc1TokenTradeContract icrc1token_trade_contract, BigInt position_id) async {
         Variant sponse = c_backwards(
@@ -1521,7 +1164,7 @@ class CyclesBankMetrics {
             cycles_transfers_out_len: (r['cycles_transfers_out_len'] as Nat).value,
             cm_trade_contracts_logs_lengths: { 
                 for (Record c in (r['cm_trade_contracts_logs_lengths'] as Vector).cast_vector<Record>()) 
-                    (c[0] as Record)['trade_contract_canister_id'] as Principal: CMTradeContractLogsLengths.of_the_record(c)
+                    (c[0] as Record)['trade_contract_canister_id'] as Principal: CMTradeContractLogsLengths.of_the_record(c[1] as Record)
             },
             cts_cb_authorization: (r['cts_cb_authorization'] as Bool).value,
         );
@@ -1620,7 +1263,6 @@ class CyclesTransferOut implements CyclesTransfer {
     final CyclesTransferMemo cycles_transfer_memo;                           
     final BigInt timestamp_nanos; // time sent
     final CallError? opt_cycles_transfer_call_error; // None means the cycles_transfer-call replied. // save max 20-bytes of the string
-    final Cycles fee_paid; // cycles_transferrer_fee
 
     CyclesTransferOut._({
         required this.id,    
@@ -1630,7 +1272,6 @@ class CyclesTransferOut implements CyclesTransfer {
         required this.cycles_transfer_memo,    
         required this.timestamp_nanos,    
         required this.opt_cycles_transfer_call_error,    
-        required this.fee_paid
     });    
     
     static CyclesTransferOut of_the_record(Record r) {
@@ -1644,7 +1285,6 @@ class CyclesTransferOut implements CyclesTransfer {
             cycles_transfer_memo: CyclesTransferMemo.oftheVariant(r['cycles_transfer_memo'] as Variant),    
             timestamp_nanos: (r['timestamp_nanos'] as Nat).value,    
             opt_cycles_transfer_call_error: opt_cycles_transfer_call_error != null ? CallError.of_the_record(opt_cycles_transfer_call_error) : null,
-            fee_paid: Cycles.oftheNat(Nat((r['fee_paid'] as Nat64).value))
         );
     }
 }
@@ -1712,169 +1352,6 @@ class MatchTokensQuest extends Record {
 
 
 
-/*
-// ------------- cm create/purchase position quests and sponses -------------
-
-
-class CreateCyclesPositionQuest extends Record {
-    final Cycles cycles;
-    final Cycles minimum_purchase;
-    final Cycles cycles_per_token_rate;
-    CreateCyclesPositionQuest({
-        required this.cycles,
-        required this.minimum_purchase,
-        required this.cycles_per_token_rate
-    }) {
-        this['cycles']= this.cycles;
-        this['minimum_purchase']= this.minimum_purchase;
-        this['cycles_per_token_rate']= this.cycles_per_token_rate;
-    }
-    static CreateCyclesPositionQuest of_the_record(Record r) {
-        return CreateCyclesPositionQuest(
-            cycles: Cycles.oftheNat(r['cycles'] as Nat),
-            minimum_purchase: Cycles.oftheNat(r['minimum_purchase'] as Nat),
-            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat),
-        );
-        
-    }
-
-}
-
-
-class CreateCyclesPositionSuccess {
-    final BigInt position_id;
-    CreateCyclesPositionSuccess({
-        required this.position_id
-    });
-    static CreateCyclesPositionSuccess of_the_record(Record r) {
-        return CreateCyclesPositionSuccess(
-            position_id: (r['position_id'] as Nat).value
-        );
-    }
-}
-
-
-
-class CreateTokenPositionQuest extends Record {
-    final BigInt tokens;
-    final BigInt minimum_purchase;
-    final Cycles cycles_per_token_rate;
-    CreateTokenPositionQuest({
-        required this.tokens,
-        required this.minimum_purchase,
-        required this.cycles_per_token_rate
-    }) {
-        this['tokens']= Nat(this.tokens);
-        this['minimum_purchase']= Nat(this.minimum_purchase);
-        this['cycles_per_token_rate']= this.cycles_per_token_rate;
-    }
-    static CreateTokenPositionQuest of_the_record(Record r) {
-        return CreateTokenPositionQuest(
-            tokens: (r['tokens'] as Nat).value,
-            minimum_purchase: (r['minimum_purchase'] as Nat).value,
-            cycles_per_token_rate: Cycles.oftheNat(r['cycles_per_token_rate'] as Nat),
-        );
-    }
-}
-
-
-class CreateTokenPositionSuccess {
-    final BigInt position_id;
-    CreateTokenPositionSuccess({
-        required this.position_id
-    });
-    static CreateTokenPositionSuccess of_the_record(Record r) {
-        return CreateTokenPositionSuccess(
-            position_id: (r['position_id'] as Nat).value
-        );
-    }
-}
-
-
-class CyclesBankCMPurchaseCyclesPositionQuest extends Record {
-    final CyclesMarketPurchaseCyclesPositionQuest cycles_market_purchase_cycles_position_quest;
-    final Cycles cycles_position_cycles_per_token_rate;                                              // for the cycles-bank-log
-    final Principal cycles_position_positor;
-    CyclesBankCMPurchaseCyclesPositionQuest({
-        required this.cycles_market_purchase_cycles_position_quest,
-        required this.cycles_position_cycles_per_token_rate,
-        required this.cycles_position_positor,
-    }) {
-        this['cycles_market_purchase_cycles_position_quest'] = this.cycles_market_purchase_cycles_position_quest;
-        this['cycles_position_cycles_per_token_rate'] = this.cycles_position_cycles_per_token_rate;
-        this['cycles_position_positor'] = this.cycles_position_positor;
-    }
-}
-
-class CyclesMarketPurchaseCyclesPositionQuest extends Record {
-    final BigInt cycles_position_id;
-    final Cycles cycles;
-    CyclesMarketPurchaseCyclesPositionQuest({
-        required this.cycles_position_id,
-        required this.cycles,
-    }) {
-        this['cycles_position_id'] = Nat(this.cycles_position_id);
-        this['cycles'] = this.cycles;
-    }
-}
-
-
-class PurchaseCyclesPositionSuccess {
-    final BigInt purchase_id;
-    PurchaseCyclesPositionSuccess._({
-        required this.purchase_id
-    });
-    static PurchaseCyclesPositionSuccess of_the_record(Record r) {
-        return PurchaseCyclesPositionSuccess._(
-            purchase_id: (r['purchase_id'] as Nat).value
-        );
-    }
-}
-
-
-
-class CyclesBankCMPurchaseTokenPositionQuest extends Record {
-    final CyclesMarketPurchaseTokenPositionQuest cycles_market_purchase_token_position_quest;
-    final Cycles token_position_cycles_per_token_rate;
-    final Principal token_position_positor;
-    CyclesBankCMPurchaseTokenPositionQuest({
-        required this.cycles_market_purchase_token_position_quest,
-        required this.token_position_cycles_per_token_rate,
-        required this.token_position_positor,
-    }) {
-        this['cycles_market_purchase_token_position_quest'] = this.cycles_market_purchase_token_position_quest;
-        this['token_position_cycles_per_token_rate'] = this.token_position_cycles_per_token_rate;
-        this['token_position_positor'] = this.token_position_positor;
-    }
-}
-
-class CyclesMarketPurchaseTokenPositionQuest extends Record {
-    final BigInt token_position_id;
-    final Tokens tokens;
-    CyclesMarketPurchaseTokenPositionQuest({
-        required this.token_position_id,
-        required this.tokens
-    }) {
-        this['token_position_id'] = Nat(this.token_position_id);
-        this['tokens'] = this.tokens;
-    }
-}
-
-
-
-class PurchaseTokenPositionSuccess {
-    final BigInt purchase_id;
-    PurchaseTokenPositionSuccess._({
-        required this.purchase_id
-    });
-    static PurchaseTokenPositionSuccess of_the_record(Record r) {
-        return PurchaseTokenPositionSuccess._(
-            purchase_id: (r['purchase_id'] as Nat).value
-        );
-    }
-}
-*/
-
 
 class CyclesMarketVoidPositionQuest extends Record {
     BigInt position_id;
@@ -1908,151 +1385,6 @@ class CyclesMarketTransferTokenBalanceQuest extends Record {
 }
 
 
-
-// ----------------- 
-/*
-
-class CMCyclesPosition {
-    final BigInt id;
-    final CreateCyclesPositionQuest create_cycles_position_quest;   
-    final Cycles create_position_fee;
-    final BigInt timestamp_nanos; 
-    
-    CMCyclesPosition._({
-        required this.id,   
-        required this.create_cycles_position_quest,
-        required this.create_position_fee,
-        required this.timestamp_nanos, 
-    });
-    
-    static CMCyclesPosition of_the_record(Record r) {
-        return CMCyclesPosition._(
-            id: (r['id'] as Nat).value,
-            create_cycles_position_quest: CreateCyclesPositionQuest.of_the_record(r['create_cycles_position_quest'] as Record),
-            create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
-            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
-        );
-    }
-}
-
-
-class CMTokenPosition {
-    final BigInt id;   
-    final CreateTokenPositionQuest create_token_position_quest;
-    final Cycles create_position_fee;
-    final BigInt timestamp_nanos;
-
-    CMTokenPosition._({
-        required this.id,   
-        required this.create_token_position_quest,
-        required this.create_position_fee,
-        required this.timestamp_nanos
-    });
-    
-    static CMTokenPosition of_the_record(Record r) {
-        return CMTokenPosition._(
-            id: (r['id'] as Nat).value,   
-            create_token_position_quest: CreateTokenPositionQuest.of_the_record(r['create_token_position_quest'] as Record),
-            create_position_fee: Cycles(cycles: (r['create_position_fee'] as Nat64).value),
-            timestamp_nanos: (r['timestamp_nanos'] as Nat).value
-        );
-    }
-
-}
-
-
-class CMCyclesPositionPurchase {
-    final BigInt cycles_position_id;
-    final Cycles cycles_position_cycles_per_token_rate;
-    final Principal cycles_position_positor;
-    final BigInt id;
-    final Cycles cycles;
-    final Cycles purchase_position_fee;
-    final BigInt timestamp_nanos;
-    
-    CMCyclesPositionPurchase._({
-        required this.cycles_position_id,
-        required this.cycles_position_cycles_per_token_rate,
-        required this.cycles_position_positor,
-        required this.id,
-        required this.cycles,
-        required this.purchase_position_fee,
-        required this.timestamp_nanos,
-    }); 
-    
-    static CMCyclesPositionPurchase of_the_record(Record r) {
-        return CMCyclesPositionPurchase._(
-            cycles_position_id: (r['cycles_position_id'] as Nat).value,
-            cycles_position_cycles_per_token_rate: Cycles.oftheNat(r['cycles_position_cycles_per_token_rate'] as Nat),
-            cycles_position_positor: r['cycles_position_positor'] as Principal,
-            id: (r['id'] as Nat).value,
-            cycles: Cycles.oftheNat(r['cycles'] as Nat),
-            purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
-            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,        
-        );
-    } 
-}
-
-class CMTokenPositionPurchase{
-    final BigInt token_position_id;
-    final Cycles token_position_cycles_per_token_rate;
-    final Principal token_position_positor;
-    final BigInt id;
-    final BigInt tokens;
-    final Cycles purchase_position_fee;
-    final BigInt timestamp_nanos;
-    
-    CMTokenPositionPurchase._({
-        required this.token_position_id,
-        required this.token_position_cycles_per_token_rate,
-        required this.token_position_positor,
-        required this.id,
-        required this.tokens,
-        required this.purchase_position_fee,
-        required this.timestamp_nanos,
-    });
-    
-    static CMTokenPositionPurchase of_the_record(Record r) {
-        return CMTokenPositionPurchase._(
-            token_position_id: (r['token_position_id'] as Nat).value,
-            token_position_cycles_per_token_rate: Cycles.oftheNat(r['token_position_cycles_per_token_rate'] as Nat),
-            token_position_positor: r['token_position_positor'] as Principal,
-            id: (r['id'] as Nat).value,
-            tokens: (r['tokens'] as Nat).value,
-            purchase_position_fee: Cycles(cycles: (r['purchase_position_fee'] as Nat64).value),
-            timestamp_nanos: (r['timestamp_nanos'] as Nat).value    
-        );
-    } 
-}
-
-class CMTokenTransferOut{
-    final BigInt tokens;
-    final BigInt token_ledger_transfer_fee;
-    final Icrc1Account to;
-    final BigInt block_height;
-    final BigInt timestamp_nanos;
-    final Cycles transfer_token_balance_fee;
-    CMTokenTransferOut._({
-        required this.tokens,
-        required this.token_ledger_transfer_fee,
-        required this.to,
-        required this.block_height,
-        required this.timestamp_nanos,
-        required this.transfer_token_balance_fee
-    });
-    static CMTokenTransferOut of_the_record(Record r) {
-        return CMTokenTransferOut._(
-            tokens: (r['tokens'] as Nat).value,
-            token_ledger_transfer_fee: (r['token_ledger_transfer_fee'] as Nat).value,
-            to: Icrc1Account.of_the_record(r['to'] as Record),
-            block_height: (r['block_height'] as Nat).value,
-            timestamp_nanos: (r['timestamp_nanos'] as Nat).value,
-            transfer_token_balance_fee: Cycles(cycles: (r['transfer_token_balance_fee'] as Nat64).value)
-        );
-    }
-}
-
-*/
 
 
 

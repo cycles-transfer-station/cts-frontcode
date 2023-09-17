@@ -456,7 +456,7 @@ class ViewTradesSponse {
                             cycles_per_token_quantum_rate: (item[2] as Nat).value,
                             token_decimal_places: token_decimal_places,
                         ),
-                        time_nanos: (item[3] as Nat).value,
+                        time_nanos: (item[3] as Nat64).value,
                         kind: match_variant(item[4] as Variant, { for (var k in PositionKind.values) k.name: (n)=>k })
                     );
                 }).toList(),
@@ -509,14 +509,14 @@ class PositionLog {
         required this.position_termination,
     });
     
-    static int STABLE_MEMORY_SERIALIZE_SIZE = 162;
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 163;
     
     static PositionLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         PositionTerminationData? termination;
-        if (bytes[152] == 1) {
+        if (bytes[153] == 1) {
             termination = PositionTerminationData._(
-                timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(153, 161)),
-                cause: switch (bytes[161]) {
+                timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(154, 162)),
+                cause: switch (bytes[162]) {
                     0 => PositionTerminationCause.Fill,
                     1 => PositionTerminationCause.Bump,
                     2 => PositionTerminationCause.TimePass,
@@ -526,21 +526,21 @@ class PositionLog {
             );
         }
         return PositionLog._(
-            id: u128_of_the_be_bytes(bytes.getRange(1, 17)),
-            positor: principal_of_the_30_bytes(bytes.getRange(17, 47)),
+            id: u128_of_the_be_bytes(bytes.getRange(2, 18)),
+            positor: principal_of_the_30_bytes(bytes.getRange(18, 48)),
             match_tokens_quest: MatchTokensQuest(
-                tokens: Tokens(quantums: u128_of_the_be_bytes(bytes.getRange(47, 63)), decimal_places: token_decimal_places),
-                cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(63, 79)), token_decimal_places:token_decimal_places),
+                tokens: Tokens(quantums: u128_of_the_be_bytes(bytes.getRange(48, 64)), decimal_places: token_decimal_places),
+                cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(64, 80)), token_decimal_places:token_decimal_places),
             ),
-            position_kind: bytes[79] == 0 ? PositionKind.Cycles : PositionKind.Token,
-            mainder_position_quantity: u128_of_the_be_bytes(bytes.getRange(80, 96)), // if cycles position this is: Cycles, if Token position this is: Tokens.
-            fill_quantity: u128_of_the_be_bytes(bytes.getRange(96, 112)), // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
+            position_kind: bytes[80] == 0 ? PositionKind.Cycles : PositionKind.Token,
+            mainder_position_quantity: u128_of_the_be_bytes(bytes.getRange(81, 97)), // if cycles position this is: Cycles, if Token position this is: Tokens.
+            fill_quantity: u128_of_the_be_bytes(bytes.getRange(97, 113)), // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
             fill_average_rate: CyclesPerTokenRate(
-                cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(112, 128)),
+                cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(113, 129)),
                 token_decimal_places:token_decimal_places,
             ),
-            payouts_fees_sum: u128_of_the_be_bytes(bytes.getRange(128, 144)), // // if cycles-position this is: Tokens, if token-position this is: Cycles.
-            creation_timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(144, 152)),
+            payouts_fees_sum: u128_of_the_be_bytes(bytes.getRange(129, 145)), // // if cycles-position this is: Tokens, if token-position this is: Cycles.
+            creation_timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(145, 153)),
             position_termination: termination,
         );
     }

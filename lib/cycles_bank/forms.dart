@@ -1743,7 +1743,11 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             labelText: 'burn icp: ',
                         ),
                         onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!); },
-                        validator: icp_validator
+                        validator: (String? v) {
+                            Cycles max_mint_cycles = Cycles.oftheTCyclesDoubleString('40000');
+                            IcpTokens max_burn_icp = IcpTokens(e8s: cycles_transform_tokens(max_mint_cycles, state.cmc_cycles_per_icp_rate));
+                            return icp_validator(v) ?? (IcpTokens.of_the_double_string(v!).e8s > max_burn_icp.e8s ? 'Max burn icp at once: ${max_burn_icp}' : null);
+                        }
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
