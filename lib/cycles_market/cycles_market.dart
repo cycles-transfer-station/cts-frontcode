@@ -61,196 +61,7 @@ class Icrc1TokenTradeContract extends Record {
     
     Canister get canister => Canister(this.trade_contract_canister_id);
     
-    // ------
-    /*
-    List<CyclesPosition> cycles_positions = [];
-    List<TokenPosition> token_positions = [];
-    
-    Future<void> load_cycles_positions() async {
-        this.cycles_positions = await _load_positions_mechanism(
-            method_name: 'view_cycles_positions',
-            function: (Record r) => CyclesPosition.of_the_record(r, token_decimal_places: this.ledger_data.decimals)
-        );
-    }
-    
-    Future<void> load_token_positions() async {
-        this.token_positions = await _load_positions_mechanism(
-            method_name: 'view_token_positions',
-            function: (Record r) => TokenPosition.of_the_record(r, token_decimal_places: this.ledger_data.decimals)
-        );
-    }
-    
-    Future<void> load_positions() async {
-        await Future.wait([
-            this.load_cycles_positions(),
-            this.load_token_positions(),
-        ]);
-    }
-
-    Future<List<T>> _load_positions_mechanism<T extends Icrc1TokenTradeContractPosition>({
-        required String method_name,
-        required T Function(Record) function
-    }) async {
-        List<T> list = [];
-        BigInt? start_after_position;
-        while (true) {
-            Record r = c_backwards(await Canister(this.trade_contract_canister_id).call(
-                calltype: CallType.query,
-                method_name: method_name,
-                put_bytes: c_forwards([
-                    Record.of_the_map({
-                        'opt_start_after_position_id': Option<Nat>(value: start_after_position.nullmap((n)=>Nat(n)), value_type: Nat())
-                    })
-                ])
-            )).first as Record;
-            Vector<Record> positions = (r['positions'] as Vector).cast_vector<Record>();
-            if (positions.length == 0) {
-                break;
-            }
-            list.addAll(positions.map<T>(function));
-            if ((r['is_last_chunk'] as Bool).value == true) {
-                break;
-            }
-            start_after_position = list.last.id;
-        }
-        return list;
-    }
-    
-    // ----------------------
-    
-    List<TradeLog> trade_logs = [];
-    Future<void>? load_trade_logs_future;
-    
-    
-    Future<void> load_trade_logs() async {
-        if (this.load_trade_logs_future != null) {
-            await this.load_trade_logs_future!;
-        } else {
-            this.load_trade_logs_future = create_load_trade_logs_future();
-            await this.load_trade_logs_future!;
-            this.load_trade_logs_future == null;
-        } 
-    }
-    
-    Future<void> create_load_trade_logs_future() async {
-        // take into the count logs that are saved in this class
-        // call to make sure to get new logs but stop when logs catch up with what we have by the last time.
-        // as of now the function overwrites any logs saved
-        // 
-        
-        
-        List<StorageCanister> storage_canisters = [];
-        
-        BigInt last_known_trade_log_id = this.trade_logs.isNotEmpty ? this.trade_logs.last.id : BigInt.from(-1);
-        List<TradeLog> gather_trade_logs = [];
-        
-        // call trade_contract_canister_id
-        BigInt? opt_start_before_id;
-        while (true) {
-            Record s = c_backwards(await Canister(this.trade_contract_canister_id).call(
-                calltype: CallType.query,
-                method_name: 'view_trade_logs',
-                put_bytes: c_forwards([
-                    Record.of_the_map({
-                        'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((n)=>Nat(n)), value_type: Nat()),
-                    })
-                ]),
-            )).first as Record;
-            
-            //BigInt latest_trade_log_id = (s['trade_logs_len'] as Nat).value - BigInt.from(1);
-            
-            storage_canisters = ((s['storage_canisters'] as Vector).cast_vector<Record>()).map(StorageCanister.of_the_record).toList();
-            
-            Uint8List logs = (s['logs'] as Blob).bytes;
-            
-            if (logs.length == 0) {
-                break;
-            }
-            
-            gather_trade_logs = [
-                ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: this.ledger_data.decimals)),
-                ...gather_trade_logs
-            ];
-            
-            if (gather_trade_logs.first.id <= last_known_trade_log_id) {
-                this.trade_logs.addAll(
-                    gather_trade_logs.skipWhile((l)=> l.id <= last_known_trade_log_id)
-                );
-                return;
-            }
-                        
-            if (
-                storage_canisters.isNotEmpty 
-                && storage_canisters.last.first_log_id + storage_canisters.last.length == gather_trade_logs.first.id
-            ) {
-                break; // :move-on for the querying of the storage-canisters.
-            }
-            
-            opt_start_before_id = gather_trade_logs.first.id;
-            
-        }
-        
-        // call the storage canisters
-        const int quest_for_the_logs_general_chunk_length = (1024*1024 + 1024*512) ~/ TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE; 
-
-        for (StorageCanister storage_canister in storage_canisters.reversed) {
-
-            int checkpoint_length = storage_canister.length.toInt();
-            while (true) {
-                int quest_length = min(quest_for_the_logs_general_chunk_length, checkpoint_length);
-                BigInt start_at_id = (storage_canister.first_log_id + BigInt.from(checkpoint_length)) - BigInt.from(quest_length);
-                
-                Record s = c_backwards(await Canister(storage_canister.canister_id).call(
-                    calltype: CallType.query,
-                    method_name: storage_canister.view_logs_method_name,
-                    put_bytes: c_forwards([
-                        Record.of_the_map({
-                            'start_id': Nat(start_at_id),
-                            'length': Nat(BigInt.from(quest_length)),
-                        })
-                    ])
-                )).first as Record;
-                
-                Uint8List logs = (s['logs'] as Blob).bytes;
-                
-                gather_trade_logs = [
-                    ...logs.chunks(TRADE_LOG_STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: this.ledger_data.decimals)), 
-                    ...gather_trade_logs
-                ];
-                
-                if (gather_trade_logs.first.id <= last_known_trade_log_id) {
-                    this.trade_logs.addAll(
-                        gather_trade_logs.skipWhile((l)=> l.id <= last_known_trade_log_id)
-                    );
-                    return;
-                }
-                
-                checkpoint_length -= quest_length;
-                
-                if (start_at_id == storage_canister.first_log_id /*checkpoint_length == 0*/) {
-                    break;
-                }
-            
-            }
-            
-        }
-        
-        // only happens on the first load
-        this.trade_logs = gather_trade_logs; 
-        
-    }
-    
-    // --------
-    
-    Future<void> load_positions_and_trade_logs() async {
-        await Future.wait([
-            this.load_positions(),
-            this.load_trade_logs(),
-        ]);
-    }
-    */
-    
-    // -------------------------
+   
     
     
     Future<void> load_positions_and_trades() async {
@@ -306,24 +117,14 @@ class Icrc1TokenTradeContract extends Record {
     
     List<TradeItem> latest_trades = [];
     
-    Future<ViewTradesSponse> cm_view_latest_trades(Principal c_id, [BigInt? opt_start_before_id]) async {
-        return ViewTradesSponse.of_the_record(c_backwards_one(await Canister(c_id).call(
-            calltype: CallType.query,
-            method_name: 'view_latest_trades',
-            put_bytes: c_forwards([
-                Record.of_the_map({
-                    'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((id)=>Nat(id)), value_type: Nat()),
-                })
-            ]),            
-        )) as Record, token_decimal_places: this.ledger_data.decimals);
-    }
+    
     
     Future<void> check_new_trades() async {
         List<TradeItem> gather = [];
         bool catch_up_complete = false;            
         await for (Principal c_id in latest_trades_canisters_generator()) {
             while (true) {
-                ViewTradesSponse sponse = await cm_view_latest_trades(c_id, gather.isEmpty ? null : gather.first.id);
+                ViewTradesSponse sponse = await cm_view_latest_trades_(c_id, gather.isEmpty ? null : gather.first.id);
                 gather = [
                     ...sponse.trades_data,  
                     ...gather
@@ -348,15 +149,6 @@ class Icrc1TokenTradeContract extends Record {
         this.latest_trades.addAll(gather);
     }
     
-    Stream<Principal> latest_trades_canisters_generator() async* {
-        yield this.trade_contract_canister_id;
-        List<StorageCanister> trades_scs = await this.view_trades_storage_canisters();
-        trades_scs_cache = trades_scs;
-        for (StorageCanister sc in trades_scs.reversed) {
-            yield sc.canister_id;
-        } 
-    }
-    
     List<StorageCanister> trades_scs_cache = [];
     
     Future<void> load_trades_back_chunk() async {
@@ -379,15 +171,34 @@ class Icrc1TokenTradeContract extends Record {
         if (call_canister_id == null) {
             call_canister_id = this.trade_contract_canister_id;
         }
-        ViewTradesSponse sponse = await cm_view_latest_trades(call_canister_id, this.latest_trades.first.id);
+        ViewTradesSponse sponse = await cm_view_latest_trades_(call_canister_id, this.latest_trades.first.id);
         this.latest_trades = [
             ...sponse.trades_data,
             ...this.latest_trades
         ];
     }
     
+    Stream<Principal> latest_trades_canisters_generator() async* {
+        yield this.trade_contract_canister_id;
+        List<StorageCanister> trades_scs = await this.view_trades_storage_canisters();
+        trades_scs_cache = trades_scs;
+        for (StorageCanister sc in trades_scs.reversed) {
+            yield sc.canister_id;
+        } 
+    }
+    
+    Future<ViewTradesSponse> cm_view_latest_trades_(Principal c_id, [BigInt? opt_start_before_id]) async {
+        return ViewTradesSponse.of_the_record(c_backwards_one(await Canister(c_id).call(
+            calltype: CallType.query,
+            method_name: 'view_latest_trades',
+            put_bytes: c_forwards([
+                Record.of_the_map({
+                    'opt_start_before_id': Option<Nat>(value: opt_start_before_id.nullmap((id)=>Nat(id)), value_type: Nat()),
+                })
+            ]),            
+        )) as Record, token_decimal_places: this.ledger_data.decimals);
+    }
         
-                
     
     Future<List<StorageCanister>> view_positions_storage_canisters() async {
         return (c_backwards_one(await this.canister.call(

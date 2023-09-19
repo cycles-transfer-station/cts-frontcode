@@ -169,7 +169,8 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                                         cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
                                         key: ValueKey('CyclesMarketTradeContractTradePage Candlestick-Chart cm_main_icrc1token_trade_contracts_i ${widget.cm_main_icrc1token_trade_contracts_i}')
                                     ),
-                                    constraints: BoxConstraints(maxHeight: 500, maxWidth: 900, minWidth: 300)
+                                    constraints: BoxConstraints(maxHeight: 400, maxWidth: 700, minWidth: 300),
+                                    padding: EdgeInsets.symmetric(horizontal: 23),
                                 ),
                                 onEnter: (event) {
                                     widget.stop_scroll(true);
@@ -187,7 +188,12 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         children: [
                             Container(
                                 child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
+                            ),
+                            /*
+                            Container(
+                                child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                             )
+                            */
                         ]
                     )
                 ]
@@ -225,6 +231,7 @@ class MarketTrades extends StatelessWidget {
             //decoration: BoxDecoration(border: Border.all()),
             child: DataTable2(
                 //headingRowHeight: 0,
+                //isVerticalScrollBarVisible: false,
                 showBottomBorder: true,
                 columns: <DataColumn>[
                     DataColumn(label: Text('Quantity')),
@@ -236,7 +243,7 @@ class MarketTrades extends StatelessWidget {
                         DataRow(
                             cells: [
                                 DataCell(Text('${trade.quantity}')),
-                                DataCell(Text('${trade.rate}', style: TextStyle(color: trade.kind == PositionKind.Cycles ? red : green /*when to make red or green?*/))),
+                                DataCell(Text('${trade.rate}')),
                                 DataCell(Text('${timestamp_format(datetime_of_the_nanos(trade.time_nanos))}'))
                             ]
                         ),
@@ -298,13 +305,13 @@ class PositionBook extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         return Container(
-            constraints: BoxConstraints(maxHeight: 540, maxWidth: 400),
+            constraints: BoxConstraints(maxHeight: 400, maxWidth: 400),
             child: Column(
                 children: [
                     Flexible(
                         flex: 2,
                         child: DataTable2(
-                            reverse: true,
+                            //reverse: true,
                             showBottomBorder: true,
                             columns: <DataColumn>[
                                 DataColumn(label: Text('Quantity')),
@@ -541,13 +548,17 @@ class CreatePositionFormState extends State<CreatePositionForm> {
 
 /*
 class UserCMLogs extends StatefulWidget {
-    UserCMLogs({super.key});
+    UserCMLogs({super.key, required this.cm_main_icrc1token_trade_contracts_i});
+    int cm_main_icrc1token_trade_contracts_i;
     State createState() => UserCMLogsState();
 }
 class UserCMLogsState extends State<UserCMLogs> {
     
     
     Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
         return Container(
             child: AsyncPaginatedDataTable2(
                 showBottomBorder: true,
@@ -573,6 +584,10 @@ class UserCMLogsState extends State<UserCMLogs> {
                         numeric: true,
                     ),
                     DataColumn2(
+                        label: Text('current-position-tokens'), 
+                        numeric: true,
+                    ),                    
+                    DataColumn2(
                         label: Text('filled'), 
                         numeric: true,
                     ),
@@ -581,11 +596,11 @@ class UserCMLogsState extends State<UserCMLogs> {
                         numeric: true,
                     ),
                     DataColumn2(
-                        label: Text('current-position-tokens'), 
+                        label: Text('payouts-fees-sum'), 
                         numeric: true,
                     ),
                 ],
-                source: CustomAsyncDataTableSource(),
+                source: UserCMLogsAsyncDataTableSource(),
                  
             )
         );    
@@ -593,11 +608,12 @@ class UserCMLogsState extends State<UserCMLogs> {
 }
 
 
-class CustomAsyncDataTableSource extends AsyncDataTableSource {
+class UserCMLogsAsyncDataTableSource extends AsyncDataTableSource {
     
-    Future<AsyncRowsResponse> getRows(int start, int end) async {
+    Future<AsyncRowsResponse> getRows(int start_i, int count) async {
         
         // each row is a position. // onTap shows more about each trade? maybe a two line row without the onTap
+        
         DataRow2(
             cells: [
                 DataCell(Text('')),
@@ -608,6 +624,7 @@ class CustomAsyncDataTableSource extends AsyncDataTableSource {
                 DataCell(Text('')),
                 DataCell(Text('')),
                 DataCell(Text('')),
+                DataCell(Text('')),                
             ],
             onTap: () {
                 
@@ -618,8 +635,10 @@ class CustomAsyncDataTableSource extends AsyncDataTableSource {
             , /*total_rows:*/
             , /*rows:*/ 
             
-        )
+        );
     }
+    
+    int get selectedRowCount => 0;
 
 
 }
