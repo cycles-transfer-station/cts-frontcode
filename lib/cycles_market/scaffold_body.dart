@@ -1,5 +1,5 @@
 import 'dart:ui' as dart_ui;
-
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/tools.dart';
@@ -189,11 +189,10 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                             Container(
                                 child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                             ),
-                            /*
                             Container(
                                 child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                             )
-                            */
+                            
                         ]
                     )
                 ]
@@ -546,7 +545,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
 
 
 
-/*
+
 class UserCMLogs extends StatefulWidget {
     UserCMLogs({super.key, required this.cm_main_icrc1token_trade_contracts_i});
     int cm_main_icrc1token_trade_contracts_i;
@@ -560,13 +559,17 @@ class UserCMLogsState extends State<UserCMLogs> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         return Container(
-            child: AsyncPaginatedDataTable2(
-                showBottomBorder: true,
+            constraints: BoxConstraints(maxHeight: 500, maxWidth: 1200),
+            padding: EdgeInsets.all(21),
+            child: PaginatedDataTable2(
+                //headingRowHeight: 00,
+                //dataRowHeight: 300,
+                columnSpacing: 13,
                 columns: [
                     DataColumn2(
                         label: Text('status'), // open or closed 
                         numeric: true,
-                    )
+                    ),
                     DataColumn2(
                         label: Text('position-id'), 
                         numeric: true,
@@ -584,9 +587,10 @@ class UserCMLogsState extends State<UserCMLogs> {
                         numeric: true,
                     ),
                     DataColumn2(
-                        label: Text('current-position-tokens'), 
+                        label: Text('current-position'), 
                         numeric: true,
-                    ),                    
+                    ),    
+                    /*                
                     DataColumn2(
                         label: Text('filled'), 
                         numeric: true,
@@ -599,8 +603,12 @@ class UserCMLogsState extends State<UserCMLogs> {
                         label: Text('payouts-fees-sum'), 
                         numeric: true,
                     ),
+                    */
                 ],
-                source: UserCMLogsAsyncDataTableSource(),
+                source: UserCMLogsDataTableSource(
+                    cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
+                    current_context: context, 
+                ),
                  
             )
         );    
@@ -608,33 +616,106 @@ class UserCMLogsState extends State<UserCMLogs> {
 }
 
 
-class UserCMLogsAsyncDataTableSource extends AsyncDataTableSource {
+String position_log_timestamp_format(DateTime t) {
+    DateTime now = DateTime.now();
+    String s = '${t.hour}:${t.minute}:${t.second}';
+    if ((now.year, now.month, now.day) != (t.year, t.month, t.day)) {
+        s = s + '${t.month}/${t.day}/${t.year}';
+    } 
+    return s;
+}
+DataRow datarow_of_the_user_position_log(PositionLog pl) {
+    int token_decimal_places = pl.match_tokens_quest.tokens.decimal_places;
+    return DataRow2(
+        onTap: () {},
+        cells: <DataCell>[
+             DataCell(
+                Text((pl.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL') + '-' + (pl.position_termination == null ? 'OPEN' : 'CLOSED')), 
+                /*
+                {bool placeholder = false, 
+                bool showEditIcon = false, 
+                GestureTapCallback? onTap, 
+                GestureLongPressCallback? onLongPress, 
+                GestureTapDownCallback? onTapDown, 
+                GestureTapCallback? onDoubleTap, 
+                GestureTapCancelCallback? onTapCancel}) 
+                */
+            ),
+            DataCell(Text(pl.id.toString())),
+            DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
+            DataCell(Text('${pl.match_tokens_quest.tokens}')),
+            DataCell(Text('${pl.match_tokens_quest.cycles_per_token_rate}')),
+            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Cycles(cycles: pl.mainder_position_quantity) : Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places)}')),
+            /*
+            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places) : Cycles(cycles: pl.fill_quantity)}')),
+            DataCell(Text('${pl.fill_average_rate}')),
+            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
+            */
+        ],
+    );
     
-    Future<AsyncRowsResponse> getRows(int start_i, int count) async {
+}
+
+
+class UserCMLogsDataTableSource extends DataTableSource {
+    int cm_main_icrc1token_trade_contracts_i;
+    BuildContext current_context;
+    late CustomState state;
+    UserCMLogsDataTableSource({required this.cm_main_icrc1token_trade_contracts_i, required this.current_context}) {
+        state = MainStateBind.get_state<CustomState>(current_context);
+    }
+    
+    int get rowCount => state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+        .user_positions_storage.length;
+    
+    bool get isRowCountApproximate => false;    
+    
+    DataRow? getRow(int i) {
+        Iterable<BigInt> user_positions_storage_keys = 
+            state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .user_positions_storage.keys;
+        BigInt plid = user_positions_storage_keys.elementAt(user_positions_storage_keys.length - 1 - i);
+        PositionLog? pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .current_user_positions[plid];
+        if (pl == null) {
+            pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                .user_positions_storage[plid]!;
+        }
+        return datarow_of_the_user_position_log(pl!);
         
+    }
+    Future<AsyncRowsResponse> getRows(int start_i, int count) async {
         // each row is a position. // onTap shows more about each trade? maybe a two line row without the onTap
         
-        DataRow2(
-            cells: [
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),
-                DataCell(Text('')),                
-            ],
-            onTap: () {
-                
-            }
-        )
+        List<DataRow> rows = [];
+        
+        int current_user_positions_length = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!.current_user_positions.length; 
+        if (start_i < current_user_positions_length) {
+            Iterable<BigInt> map_keys = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .current_user_positions.keys;
+            Iterable<BigInt> keys_show = map_keys.take(map_keys.length - start_i).skip(max(0, map_keys.length - start_i - count).toInt()).toList().reversed;
+            rows.addAll(keys_show.map(
+                (k)=>datarow_of_the_user_position_log(state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                .current_user_positions[k]!)
+            ));
+        }
+        if (rows.length < count) {
+            Iterable<BigInt> map_keys = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .user_positions_storage.keys;
+            Iterable<BigInt> keys_show = map_keys
+                .skipWhile((k)=>state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!.current_user_positions.containsKey(k))
+                .take(map_keys.length - max(0, start_i - current_user_positions_length))
+                .skip(max(0, map_keys.length - max(0, start_i - current_user_positions_length).toInt() - count - rows.length).toInt()).toList().reversed;
+            rows.addAll(keys_show.map(
+                (k)=>datarow_of_the_user_position_log(state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                .current_user_positions[k]!)
+            ));
+        }
         
         return AsyncRowsResponse(
-            , /*total_rows:*/
-            , /*rows:*/ 
-            
+            state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .user_positions_storage.length,
+            rows,
         );
     }
     
@@ -643,7 +724,7 @@ class UserCMLogsAsyncDataTableSource extends AsyncDataTableSource {
 
 }
 
-*/
+
 
 
 
