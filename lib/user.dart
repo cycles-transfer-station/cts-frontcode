@@ -189,17 +189,6 @@ class User {
             }
             throw Exception('user is in the middle of a different purchase_cycles_bank call.');
         },
-        'BurnIcpMintCyclesCall': (must_call_complete_record) {
-            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
-                complete_burn_icp_mint_cycles()
-                .then((x){
-                    window.alert('burn_icp_mint_cycles is complete. \ncycles-mint: ${x}');
-                }).catchError((e){
-                    window.alert('burn_icp_mint_cycles error: \n${e}');
-                });
-            }
-            throw Exception('user is in the middle of a different burn_icp_mint_cycles call.');
-        },
         'TransferIcpCall': (must_call_complete_record) {
             if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
                 complete_transfer_icp()
@@ -384,95 +373,6 @@ class User {
         return await match_variant<Future<void>>(complete_purchase_cycles_bank_result, complete_purchase_cycles_bank_result_match_map);
     }
     
-
-
-    // -----------------------------
-    
-    
-    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_result_match_map => {
-        Ok: (burn_icp_mint_cycles_success) async {
-            return BurnIcpMintCyclesSuccess.of_the_record(burn_icp_mint_cycles_success);
-        },
-        Err: (burn_icp_mint_cycles_error) async {
-            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
-        }
-    };
-    
-    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_result_match_map => {
-        Ok: (burn_icp_mint_cycles_success) async {
-            return await burn_icp_mint_cycles_result_match_map[Ok]!(burn_icp_mint_cycles_success);
-        },
-        Err: (complete_burn_icp_mint_cycles_error) async {
-            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_error as Variant, complete_burn_icp_mint_cycles_error_match_map);
-        }
-    };
-    
-    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_error_match_map => {
-        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
-            return match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
-        },
-        'MinimumBurnIcpMintCycles': (minimum_burn_icp_mint_cycles_record) async {
-            throw Exception('The minimum amount of icp that you can use to mint cycles is: ${IcpTokens.of_the_record((minimum_burn_icp_mint_cycles_record as Record)['minimum_burn_icp_mint_cycles']!)}');
-        },
-        'FindUserInTheCBSMapsError':(find_user_in_the_cbs_maps_error) async {
-            return match_variant<Never>(find_user_in_the_cbs_maps_error as Variant, find_user_in_the_cbs_maps_error_match_map);
-        },
-        'CyclesBankNotFound': (n) async {
-            throw Exception('User cycles-bank not found. The user must have a cycles-bank to mint cycles.');
-        },
-        'CTSIsBusy': (n) async {
-            throw Exception('The CTS is busy, try soon.');
-        },
-        'LedgerTopupCyclesCmcIcpTransferError': (ledger_topup_cycles_cmc_icp_transfer_error) async {
-            return match_variant<Never>(ledger_topup_cycles_cmc_icp_transfer_error as Variant, ledger_topup_cycles_cmc_icp_transfer_error_match_map);
-        },
-        'MidCallError':(burn_icp_mint_cycles_mid_call_error) async {
-            print('burn_icp_mint_cycles_mid_call_error: ${burn_icp_mint_cycles_mid_call_error}');
-            return await complete_burn_icp_mint_cycles();
-        }
-    };
-
-    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_error_match_map => {
-        'UserIsNotInTheMiddleOfABurnIcpMintCyclesCall': (n) async {
-            throw Exception('user is not in the middle of a burn_icp_mint_cycles call.');
-        },
-        'BurnIcpMintCyclesError': (burn_icp_mint_cycles_error) async {
-            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
-        }
-    };
-    
-    
-    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(IcpTokens burn_icp) async {
-        if (this.cycles_bank == null) {
-            throw Exception('The user must have a cycles-bank to mint cycles.');
-        }
-        Variant burn_icp_mint_cycles_result = c_backwards(
-            await call(
-                cts,
-                calltype: CallType.call,
-                method_name: 'burn_icp_mint_cycles',
-                put_bytes: c_forwards([
-                    Record.of_the_map({
-                        'burn_icp': burn_icp
-                    })
-                ])
-            )
-        )[0] as Variant;
-        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_result, burn_icp_mint_cycles_result_match_map);
-    }
-    
-    Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
-        Variant complete_burn_icp_mint_cycles_result = c_backwards(
-            await call(
-                cts,
-                calltype: CallType.call,
-                method_name: 'complete_burn_icp_mint_cycles',
-                put_bytes: c_forwards([])
-            )
-        )[0] as Variant;
-        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_result, complete_burn_icp_mint_cycles_result_match_map);
-    }
-
 
 
 
@@ -745,24 +645,6 @@ class LengthenMembershipSuccess {
 
 
 
-class BurnIcpMintCyclesSuccess {
-    final Cycles mint_cycles_for_the_user;
-    final Cycles cts_fee_taken;
-    
-    BurnIcpMintCyclesSuccess({required this.mint_cycles_for_the_user, required this.cts_fee_taken});
-    
-    static BurnIcpMintCyclesSuccess of_the_record(CandidType burn_icp_mint_cycles_success_record) {
-        Record r = burn_icp_mint_cycles_success_record as Record;
-        return BurnIcpMintCyclesSuccess(
-            mint_cycles_for_the_user: Cycles.oftheNat(r['mint_cycles_for_the_user'] as Nat),
-            cts_fee_taken: Cycles.oftheNat(r['cts_fee_taken'] as Nat)            
-        );
-    }
-    
-    String toString() {
-        return 'cycles-mint: ${this.mint_cycles_for_the_user}';
-    }
-}
 
 
 class TransferIcpQuest extends Record {

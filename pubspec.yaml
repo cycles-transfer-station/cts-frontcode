@@ -103,6 +103,16 @@ flutter:
       fonts: 
         - asset: fonts/NotoSansMono-VF.ttf 
     
+    - family: ChakraPetch
+      fonts: 
+       - asset: fonts/chakra-petch/ChakraPetch-Regular.ttf
+    
+    - family: CourierNew
+      fonts: 
+       - asset: fonts/courier-new/CourierNewRegular.ttf
+    - family: CourierNewBold
+      fonts: 
+       - asset: fonts/courier-new/CourierNewBold.ttf
     
 
         

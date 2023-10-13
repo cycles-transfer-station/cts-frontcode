@@ -1,11 +1,17 @@
+import 'dart:typed_data';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/common.dart' as ic_tools_common;
+import 'package:ic_tools/candid.dart' show candid_text_hash, Blob;
+
 
 import 'cycles_bank.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
-
+import '../tools/tools.dart';
 
 
 class CyclesTransferInListItem extends StatelessWidget {
@@ -20,6 +26,16 @@ class CyclesTransferInListItem extends StatelessWidget {
             && bytesasahexstring((cycles_transfer_in.cycles_transfer_memo['Blob'] as Blob).bytes) == '4354532d4255524e2d4943502d4d494e542d4359434c4553' 
             && cycles_transfer_in.by_the_canister.text == cts.principal.text;
         */
+        
+        String? show_ctmemo_blob_as_text;
+        if (cycles_transfer_in.cycles_transfer_memo.keys.first == candid_text_hash('Blob')) {
+            Uint8List b = (cycles_transfer_in.cycles_transfer_memo.values.first as Blob).bytes;
+            if (cycles_transfer_in.by_the_canister == ic_tools_common.SYSTEM_CANISTERS.cycles_mint.principal) { 
+                if (utf8.decode(b.sublist(0,8)) == 'CMC-MINT') {
+                    show_ctmemo_blob_as_text = 'CMC-MINT-' + bigint_of_the_be_bytes(Uint8List.fromList(b.sublist(8,16))).toString();
+                }
+            }            
+        }
         
         return Container(
             padding: EdgeInsets.all(11),
@@ -42,9 +58,9 @@ class CyclesTransferInListItem extends StatelessWidget {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                         SelectableText('cycles: ${cycles_transfer_in.cycles}'),
-                                        SelectableText('cycles-transfer-memo: ${cycles_transfer_in.cycles_transfer_memo}'),
+                                        SelectableText('cycles-transfer-memo: ${show_ctmemo_blob_as_text ?? cycles_transfer_in.cycles_transfer_memo}'),
                                         SelectableText('by: ${cycles_transfer_in.by_the_canister.text}'),
-                                        SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_in.timestamp_nanos)}'),
+                                        SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer_in.timestamp_nanos).toInt()))}'),
                                     ]
                                 ),
                             )
@@ -88,7 +104,7 @@ class CyclesTransferOutListItem extends StatelessWidget {
                                         SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
                                         SelectableText('cycles-transfer-memo: ${cycles_transfer_out.cycles_transfer_memo}'),
                                         SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
-                                        SelectableText('timestamp: ${seconds_of_the_nanos(cycles_transfer_out.timestamp_nanos)}'),
+                                        SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer_out.timestamp_nanos).toInt()))}'),
                                     ]                            
                                 ),
                             )
@@ -98,6 +114,16 @@ class CyclesTransferOutListItem extends StatelessWidget {
             )            
         );
     }
+}
+
+
+String log_timestamp_format(DateTime t) {
+    DateTime now = DateTime.now();
+    String s = '${t.hour}:${t.minute}:${t.second}';
+    if ((now.year, now.month, now.day) != (t.year, t.month, t.day)) {
+        s = s + ' ${t.month}/${t.day}/${t.year}';
+    } 
+    return s;
 }
 
 

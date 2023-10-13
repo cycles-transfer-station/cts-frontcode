@@ -121,7 +121,7 @@ class Chart extends StatefulWidget {
 }
 class ChartState extends State<Chart> {
     
-    CandleTimeDurationType candle_time_duration = DurationHours(1);
+    CandleTimeDurationType candle_time_duration = DurationMinutes(5);
 
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);

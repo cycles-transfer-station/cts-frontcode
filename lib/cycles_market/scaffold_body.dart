@@ -163,14 +163,15 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                             Container(
                                 child: MarketTrades(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i) 
                             ),
+                            /*
                             MouseRegion(
                                 child: Container(
                                     child: Chart(
                                         cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
                                         key: ValueKey('CyclesMarketTradeContractTradePage Candlestick-Chart cm_main_icrc1token_trade_contracts_i ${widget.cm_main_icrc1token_trade_contracts_i}')
                                     ),
-                                    constraints: BoxConstraints(maxHeight: 400, maxWidth: 700, minWidth: 300),
-                                    padding: EdgeInsets.symmetric(horizontal: 23),
+                                    constraints: BoxConstraints(maxHeight: 450, maxWidth: 800, minWidth: 300),
+                                    padding: EdgeInsets.symmetric(horizontal: 73),
                                 ),
                                 onEnter: (event) {
                                     widget.stop_scroll(true);
@@ -179,22 +180,29 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                                     widget.stop_scroll(false);
                                 }
                             ),
+                            */
                             Container(
                                 child: PositionBook(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                             ),  
                         ]
                     ),
-                    if (state.user != null && state.user!.bank != null) Wrap(
-                        children: [
-                            Container(
-                                child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                            ),
-                            Container(
-                                child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                            )
-                            
-                        ]
-                    )
+                    if (state.user != null && state.user!.bank != null) ...[
+                        SizedBox(height: 71),
+                        Wrap(
+                            children: [
+                                Container(
+                                    child: Center(
+                                        child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
+                                    )    
+                                ),
+                                Container(
+                                    child: Center(
+                                        child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
+                                    )
+                                )
+                            ]
+                        ),
+                    ]
                 ]
             )
         );
@@ -352,6 +360,7 @@ class CreatePositionWidget extends StatelessWidget {
     Widget build(BuildContext context) {
         
         return Container(
+            padding: EdgeInsets.fromLTRB(0,0,0,0),
             //height: 300,
             width: 300,
             child: DefaultTabController(
@@ -507,6 +516,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     try {
                                         await Future.wait([
                                             state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                                            state.user!.bank!.load_cm_user_positions(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
                                             state.user!.bank!.fresh_metrics(),
                                             state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trades()
                                         ]);
@@ -558,59 +568,82 @@ class UserCMLogsState extends State<UserCMLogs> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
+        TextStyle style = DefaultTextStyle.of(context).style.copyWith(fontFamily: 'ChakraPetch');
+        
         return Container(
-            constraints: BoxConstraints(maxHeight: 500, maxWidth: 1200),
-            padding: EdgeInsets.all(21),
+            constraints: BoxConstraints(maxHeight: 500, maxWidth: 800),
+            padding: EdgeInsets.fromLTRB(0,0,0,0),
             child: PaginatedDataTable2(
-                //headingRowHeight: 00,
-                //dataRowHeight: 300,
-                columnSpacing: 13,
-                columns: [
-                    DataColumn2(
-                        label: Text('status'), // open or closed 
-                        numeric: true,
+                    //headingRowHeight: 00,
+                    //dataRowHeight: 300,
+                    rowsPerPage: 8,
+                    columnSpacing: 13,
+                    columns: [
+                        DataColumn2(
+                            label: Text('TYPE', style: style),
+                            numeric: false,
+                            //size: ColumnSize.M,
+                            fixedWidth: 50.0,
+                        ),
+                        /*
+                        DataColumn2(
+                            label: Text('id'), 
+                            numeric: true,
+                            size: ColumnSize.S,
+                        ),
+                        */
+                        /*
+                        DataColumn2( // maybe put in the dropdown data section onTap ?
+                            label: Text('creation-time'), 
+                            numeric: true,
+                            size: ColumnSize.L,
+                        ),
+                        */
+                        DataColumn2(
+                            label: Text('ORIGINAL-POSITION', style: style), 
+                            numeric: true,
+                            size: ColumnSize.M,
+                            tooltip: 'original-position'
+                        ),
+                        DataColumn2(
+                            label: Text('RATE', style: style), 
+                            numeric: true,
+                            size: ColumnSize.S,
+                            tooltip: 'original-position cycles per token rate'
+                        ),
+                        DataColumn2(
+                            label: Text('FILL', style: style), 
+                            numeric: true,
+                            size: ColumnSize.M,
+                            tooltip: 'Amount of the position/order that is filled'
+                        ),
+                        DataColumn2(
+                            label: Text('FILL-RATE', style: style), 
+                            numeric: true,
+                            size: ColumnSize.S,
+                            tooltip: 'The weighted-average of the rates of the trades of this position/order so far.'
+                        ),
+                        DataColumn2(
+                            label: Text('CURRENT-POSITION', style: style), 
+                            numeric: true,
+                            size: ColumnSize.M,
+                            tooltip: 'The current amount of the position/order if this position is open.'
+                        ),
+                        /*
+                        DataColumn2(
+                            label: Text('payouts-fees-sum'), 
+                            numeric: true,
+                            size: ColumnSize.M,
+                        ),
+                        */
+                    ],
+                    source: UserCMLogsDataTableSource(
+                        cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
+                        current_context: context, 
+                        style: style, 
                     ),
-                    DataColumn2(
-                        label: Text('position-id'), 
-                        numeric: true,
-                    ),
-                    DataColumn2( // maybe put in the dropdown data section onTap ?
-                        label: Text('creation-time'), 
-                        numeric: true,
-                    ),
-                    DataColumn2(
-                        label: Text('original-position-tokens'), 
-                        numeric: true,
-                    ),
-                    DataColumn2(
-                        label: Text('original-position-rate'), 
-                        numeric: true,
-                    ),
-                    DataColumn2(
-                        label: Text('current-position'), 
-                        numeric: true,
-                    ),    
-                    /*                
-                    DataColumn2(
-                        label: Text('filled'), 
-                        numeric: true,
-                    ),
-                    DataColumn2(
-                        label: Text('filled average rate'), 
-                        numeric: true,
-                    ),
-                    DataColumn2(
-                        label: Text('payouts-fees-sum'), 
-                        numeric: true,
-                    ),
-                    */
-                ],
-                source: UserCMLogsDataTableSource(
-                    cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
-                    current_context: context, 
-                ),
-                 
-            )
+                ),    
+            
         );    
     }
 }
@@ -620,17 +653,17 @@ String position_log_timestamp_format(DateTime t) {
     DateTime now = DateTime.now();
     String s = '${t.hour}:${t.minute}:${t.second}';
     if ((now.year, now.month, now.day) != (t.year, t.month, t.day)) {
-        s = s + '${t.month}/${t.day}/${t.year}';
+        s = s + ' ${t.month}/${t.day}/${t.year}';
     } 
     return s;
 }
-DataRow datarow_of_the_user_position_log(PositionLog pl) {
+DataRow datarow_of_the_user_position_log(TextStyle style, PositionLog pl, String token_symbol) {
     int token_decimal_places = pl.match_tokens_quest.tokens.decimal_places;
     return DataRow2(
         onTap: () {},
         cells: <DataCell>[
              DataCell(
-                Text((pl.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL') + '-' + (pl.position_termination == null ? 'OPEN' : 'CLOSED')), 
+                Text(pl.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL', style: style), /*+ '-' + (pl.position_termination == null ? 'OPEN' : 'CLOSED')*/
                 /*
                 {bool placeholder = false, 
                 bool showEditIcon = false, 
@@ -641,27 +674,66 @@ DataRow datarow_of_the_user_position_log(PositionLog pl) {
                 GestureTapCancelCallback? onTapCancel}) 
                 */
             ),
-            DataCell(Text(pl.id.toString())),
-            DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
-            DataCell(Text('${pl.match_tokens_quest.tokens}')),
-            DataCell(Text('${pl.match_tokens_quest.cycles_per_token_rate}')),
-            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Cycles(cycles: pl.mainder_position_quantity) : Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places)}')),
-            /*
-            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places) : Cycles(cycles: pl.fill_quantity)}')),
-            DataCell(Text('${pl.fill_average_rate}')),
-            DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
-            */
-        ],
+            //DataCell(Text(pl.id.toString())),
+            //DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
+            DataCell(
+                pl.position_kind == PositionKind.Cycles 
+                ? 
+                show_tokens_with_symbol(style, tokens_transform_cycles(pl.match_tokens_quest.tokens.quantums, pl.match_tokens_quest.cycles_per_token_rate), cycles_symbol)
+                : 
+                show_tokens_with_symbol(style, pl.match_tokens_quest.tokens, token_symbol)
+            ),
+            DataCell(Text('${pl.match_tokens_quest.cycles_per_token_rate}', style:style)),
+            DataCell(
+                pl.position_kind == PositionKind.Cycles 
+                ? 
+                show_tokens_with_symbol(style, Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
+                : 
+                show_tokens_with_symbol(style, Cycles(cycles: pl.fill_quantity), cycles_symbol)
+            ),
+            DataCell(Text('${pl.fill_average_rate}', style: style)),
+            DataCell(
+                pl.position_termination != null 
+                ? 
+                Text('') 
+                :
+                pl.position_kind == PositionKind.Cycles 
+                ? 
+                show_tokens_with_symbol(style, Cycles(cycles: pl.mainder_position_quantity), cycles_symbol) 
+                : 
+                show_tokens_with_symbol(style, Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)
+            ),            
+            //DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
+            
+        ]
     );
     
+}
+
+String cycles_symbol = 'TCYCLES';
+
+Tooltip show_tokens_with_symbol(TextStyle style, Tokens tokens, String token_symbol) {
+    return Tooltip(
+        message: tokens.toString(),
+        child: RichText(
+            text: TextSpan(
+                style: style,
+                children: <TextSpan>[
+                    TextSpan(text: tokens.round_decimal_places(2).toString().replaceFirst('T', ''), style: TextStyle(fontSize: 17)),
+                    TextSpan(text: '-$token_symbol', style: TextStyle(fontSize: 11)),
+                ],
+            )
+        )
+    );
 }
 
 
 class UserCMLogsDataTableSource extends DataTableSource {
     int cm_main_icrc1token_trade_contracts_i;
     BuildContext current_context;
+    TextStyle style;
     late CustomState state;
-    UserCMLogsDataTableSource({required this.cm_main_icrc1token_trade_contracts_i, required this.current_context}) {
+    UserCMLogsDataTableSource({required this.cm_main_icrc1token_trade_contracts_i, required this.current_context, required this.style}) {
         state = MainStateBind.get_state<CustomState>(current_context);
     }
     
@@ -681,7 +753,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_positions_storage[plid]!;
         }
-        return datarow_of_the_user_position_log(pl!);
+        return datarow_of_the_user_position_log(style, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol);
         
     }
     Future<AsyncRowsResponse> getRows(int start_i, int count) async {
@@ -695,8 +767,10 @@ class UserCMLogsDataTableSource extends DataTableSource {
             .current_user_positions.keys;
             Iterable<BigInt> keys_show = map_keys.take(map_keys.length - start_i).skip(max(0, map_keys.length - start_i - count).toInt()).toList().reversed;
             rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                .current_user_positions[k]!)
+                (k)=>datarow_of_the_user_position_log(style, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                    .current_user_positions[k]!, 
+                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
+                )
             ));
         }
         if (rows.length < count) {
@@ -707,8 +781,10 @@ class UserCMLogsDataTableSource extends DataTableSource {
                 .take(map_keys.length - max(0, start_i - current_user_positions_length))
                 .skip(max(0, map_keys.length - max(0, start_i - current_user_positions_length).toInt() - count - rows.length).toInt()).toList().reversed;
             rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                .current_user_positions[k]!)
+                (k)=>datarow_of_the_user_position_log(style, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                    .current_user_positions[k]!,
+                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
+                )
             ));
         }
         

@@ -29,7 +29,7 @@ Pillar #1: The cycles-bank. Each user has their own personal cycles-bank that ce
 
 Pillar #2: The cycles-transfer-specification. The cycles-transfer-specification sets the communication standard between the smart-contracts (canisters) for the cycles-transfers. The cycles-transfer-specification method has a memo-field that functions as an identifier for specific cycles-transfers/payments. 
 
-Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and ICP both ways. People who want to liquidate CYCLES can sell them for ICP and people who want CYCLES can purchase them with ICP. 
+Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and various cryptocurrencies in both ways. 
 """
                     , style: TextStyle(fontSize: 17)
                 )
@@ -53,11 +53,14 @@ Pillar #3: The cycles-market. The cycles-market is the place where people can tr
                     child: Text('BUSINESS INTEGRATION', style: TextStyle(fontSize: 19))
                 )
             ),
+            /*
             Container(
                 //padding: EdgeInsets.all(0),
                 width: double.infinity,
                 child: Text(
-"""For accepting CYCLES for payments in a blockchain service, implement the CYCLES-TRANSFER-SPECIFICATION in the receiving smart-contract: \n\nCANDID:
+//"""For accepting CYCLES for payments in a blockchain service, implement the CYCLES-TRANSFER-SPECIFICATION in the receiving smart-contract: \n\nCANDID:
+"""Cycles transfers are sent using the CYCLES-TRANSFER-SPECIFICATION:
+
 """
                     , style: TextStyle(fontSize: 17)
                 )
@@ -92,10 +95,11 @@ service cycles-transfer-specification : {
                     style: TextStyle(fontSize: 17, fontFamily: 'NotoSansMono')
                 )
             ),
+            */
             Container(
                 width: double.infinity,
                 child: Text(
-"""Identify specific payments using the memo-field of the CYCLES-TRANSFER-SPECIFICATION. The memo can be a number, natural-number (>=0), text, or binary data. The maximum size of a memo is 32-bytes. 
+"""Identify specific payments using the memo-field of the cycles-transfer. The memo can be a number, natural-number (>=0), text, or binary data. The maximum size of a memo is 32-bytes. 
 
 Use the following cycles-transfer pre-fill payment url for a simple way to collect user-payments in your service:
 """
@@ -105,8 +109,7 @@ Use the following cycles-transfer pre-fill payment url for a simple way to colle
             Container(
                 width: double.infinity,
                 child: SelectableText(
-"""https://${cts.principal.text}.ic0.app/#/cycles-bank/pay/for=<canister_principal_id_text>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>
-"""
+"""https://cycles-transfer-station.com/#/bank/pay/cycles/for=<bank>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>"""
                     , style: TextStyle(fontSize: 17, fontFamily: 'NotoSansMono')
                 )
             ),
@@ -114,6 +117,8 @@ Use the following cycles-transfer pre-fill payment url for a simple way to colle
                 width: double.infinity,
                 child: Text(
 """Switch out the variables in the url with the variable-values. The <memo_type> variable must be one of 'Text', 'Nat', 'Int', or 'Blob'.
+
+Users can click on the payment-url and it will fill out the cycles-transfer for them for a quick payment method.
 """
                     , style: TextStyle(fontSize: 17)
                 )
@@ -126,17 +131,20 @@ Use the following cycles-transfer pre-fill payment url for a simple way to colle
                 child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                        ScaffoldBodyHeader(Text('ABOUT CTS', style: TextStyle(fontSize: 19))),
+                        ScaffoldBodyHeader(Text('ABOUT THE CTS', style: TextStyle(fontSize: 19))),
                         Expanded(
-                            child: ListView(
-                                controller: main_listview_scroll_controller,
-                                padding: EdgeInsets.fromLTRB(17,0,17,0),
-                                children: [
-                                    Column(
-                                        children: column_children 
-                                    )
-                                ],
-                                addAutomaticKeepAlives: true
+                            child: DefaultTextStyle.merge(
+                                style: TextStyle(fontFamily: 'ChakraPetch'),
+                                child: ListView(
+                                    controller: main_listview_scroll_controller,
+                                    padding: EdgeInsets.fromLTRB(17,0,17,0),
+                                    children: [
+                                        Column(
+                                            children: column_children 
+                                        )
+                                    ],
+                                    addAutomaticKeepAlives: true
+                                )
                             )
                         )
                     ]

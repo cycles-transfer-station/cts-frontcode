@@ -114,12 +114,18 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
+        const double appbar_leading_width = 56.0;
+        
         return /*SelectionArea(
             child: */Scaffold(
                     key: scaffold_key,
                     appBar: AppBar(
-                        title: Center(child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold'),)),
-                        automaticallyImplyLeading: false,
+                        title: Center(child: Padding(
+                            child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
+                            padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
+                        )),
+                        automaticallyImplyLeading: true,
+                        leadingWidth: appbar_leading_width,
                     ),
                     drawer: Drawer(
                         child: Column(
@@ -216,29 +222,34 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         //color: Colors.blue,
                         child: IconTheme(
                             data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-                            child: Row(
-                                children: <Widget>[
-                                    IconButton(
-                                        tooltip: 'Navigation',
-                                        icon: const Icon(Icons.menu),
-                                        onPressed: () {
-                                            scaffold_key.currentState!.openDrawer();
-                                        },
-                                    ),
-                                    /*
-                                    if (true) const Spacer(),
-                                    IconButton(
-                                        tooltip: 'Search',
-                                        icon: const Icon(Icons.search),
-                                        onPressed: () {},
-                                    ),
-                                    IconButton(
-                                        tooltip: 'Favorite',
-                                        icon: const Icon(Icons.favorite),
-                                        onPressed: () {},
-                                    ),
-                                    */
-                                ]
+                            child: Container(
+                                constraints: BoxConstraints(minHeight: 30),
+                                child: Row(
+                                    children: <Widget>[
+                                        /*
+                                        IconButton(
+                                            tooltip: 'Navigation',
+                                            icon: const Icon(Icons.menu),
+                                            onPressed: () {
+                                                scaffold_key.currentState!.openDrawer();
+                                            },
+                                        ),
+                                        */
+                                        /*
+                                        if (true) const Spacer(),
+                                        IconButton(
+                                            tooltip: 'Search',
+                                            icon: const Icon(Icons.search),
+                                            onPressed: () {},
+                                        ),
+                                        IconButton(
+                                            tooltip: 'Favorite',
+                                            icon: const Icon(Icons.favorite),
+                                            onPressed: () {},
+                                        ),
+                                        */
+                                    ]
+                                )
                             ) 
                         )       
                     )

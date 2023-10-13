@@ -261,9 +261,8 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                                 if (form_key.currentState!.validate()==true) {
                                     
                                     form_key.currentState!.save();
-                                    
+                                    /*
                                     bool _continue = false;
-                                    
                                     await showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
@@ -297,6 +296,7 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     if (_continue == false) {
                                         return;
                                     }
+                                    */
                                 
                                     UserTransferCyclesQuest transfer_cycles_quest = UserTransferCyclesQuest(
                                         for_the_canister:for_the_canister,
@@ -309,9 +309,9 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    late BigInt cycles_transfer_out_id;
+                                    late TransferCyclesSponse transfer_cycles_sponse;
                                     try {
-                                        cycles_transfer_out_id = await state.user!.cycles_bank!.transfer_cycles(transfer_cycles_quest);
+                                        transfer_cycles_sponse = await state.user!.cycles_bank!.transfer_cycles(transfer_cycles_quest);
                                     } catch(e) {
                                         print(e);
                                         await showDialog(
@@ -335,15 +335,20 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'cycles transfer sent. cycles_transfer_id: ${cycles_transfer_out_id}\nloading cycles balance and transfers list ...';
+                                    state.loading_text = 
+"""cycles-transfer-id: ${transfer_cycles_sponse.cycles_transfer_id}
+cycles-refunded: ${transfer_cycles_sponse.cycles_refund}
+transfer-call-response: ${transfer_cycles_sponse.opt_cycles_transfer_call_error == null ? 'success' : transfer_cycles_sponse.opt_cycles_transfer_call_error!.toString()}  
+
+loading cycles balance and transfers list ...""";
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                 
                                     Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
-                                                title: Text('Cycles Transfer Sent:'),
-                                                content: Text('cycles_transfer_id: ${cycles_transfer_out_id}'),
+                                                title: Text('Transfer sent:'),
+                                                content: Text(state.loading_text),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),
@@ -958,127 +963,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
 
 
 
-
 /*
-
-class CTSFuelForTheCyclesBalanceForm extends StatefulWidget {
-    CTSFuelForTheCyclesBalanceForm({super.key});
-    State createState() => CTSFuelForTheCyclesBalanceFormState();
-}
-class CTSFuelForTheCyclesBalanceFormState extends State<CTSFuelForTheCyclesBalanceForm> {
-    GlobalKey<FormState> form_key = GlobalKey<FormState>();
-    
-    late Cycles cycles_for_the_ctsfuel;
-    
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Form(
-            key: form_key,
-            child: Wrap(
-                children: [
-                    TextFormField(
-                        decoration: InputDecoration(
-                            labelText: 'TCycles for the CTSFuel:',
-                        ),
-                        onSaved: (String? v) { cycles_for_the_ctsfuel = Cycles.oftheTCyclesDoubleString(v!); },
-                        validator: tcycles_validator
-                    ),    
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('TOPUP CTSFUEL'),
-                            onPressed: () async {
-                                if (form_key.currentState!.validate()==true) {
-                                    form_key.currentState!.save();
-                                    
-                                    state.loading_text = 'ctsfuel topup ...';
-                                    state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    try {
-                                        await state.user!.cycles_bank!.cycles_balance_for_the_ctsfuel(cycles_for_the_ctsfuel);
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('CTSFuel Topup Error:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                
-                                    form_key.currentState!.reset();                                                                        
-                                    state.loading_text = 'ctsfuel topup success.\nloading ctsfuel balance ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('CTSFUEL TOPUP SUCCESS'),
-                                                content: Text('CTSFUEL-TOPUP: ${cycles_for_the_ctsfuel.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }
-                                    );
-                                    
-                                    try {
-                                        await state.user!.cycles_bank!.fresh_metrics();
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error when loading the ctsfuel balance:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                    }
-                                    
-                                    await success_dialog;
-                                    
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                }
-                            }
-                        )
-                    )
-                ]
-            )
-        );
-    }
-}
-
-
-
-
 
 class GrowStorageSizeForm extends StatefulWidget {
     GrowStorageSizeForm({super.key});
@@ -1213,167 +1098,6 @@ class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
 }
 
 
-
-
-const int minimum_lengthen_days = 30;
-
-class LengthenLifetimeForm extends StatefulWidget {
-    LengthenLifetimeForm({super.key});
-    State createState() => LengthenLifetimeFormState();
-}
-class LengthenLifetimeFormState extends State<LengthenLifetimeForm> {
-    GlobalKey<FormState> form_key = GlobalKey<FormState>();
-    
-    late BigInt lengthen_lifetime_days;
-    
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Form(
-            key: form_key,
-            child: Wrap(
-                children: [
-                    TextFormField(
-                        decoration: InputDecoration(
-                            labelText: 'Lengthen Lifetime Days',
-                        ),
-                        onSaved: (String? v) { lengthen_lifetime_days = BigInt.parse(v!, radix: 10); },
-                        validator: (String? v) {
-                            String e_s = 'Must be a whole number';
-                            if (v == null || v == '') {
-                                return e_s;
-                            }
-                            late BigInt bi;
-                            try {
-                                bi = BigInt.parse(v, radix: 10);
-                            } catch(e) {
-                                return e_s;
-                            }
-                            if (bi < BigInt.from(minimum_lengthen_days)) {
-                                return 'Minimum ${minimum_lengthen_days} days';
-                            } 
-                            return null;
-                        }
-                    ),
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('LENGTHEN LIFETIME'),
-                            onPressed: () async {
-                                if (form_key.currentState!.validate()==true) {
-                                    
-                                    if (state.user!.cycles_bank!.metrics == null) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Lengthen Lifetime Error:'),
-                                                    content: Text('Load Metrics before lengthening lifetime.'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }
-                                        );
-                                        return;
-                                    }
-                                    
-                                    form_key.currentState!.save();
-                                    
-                                    state.loading_text = 'lengthening cycles-bank lifetime ...';
-                                    state.is_loading = true;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                    
-                                    late BigInt new_lifetime_termination_timestamp_seconds;
-                                    try {
-                                        new_lifetime_termination_timestamp_seconds = await state.user!.cycles_bank!.lengthen_lifetime( 
-                                            LengthenLifetimeQuest(
-                                                set_lifetime_termination_timestamp_seconds: state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds + lengthen_lifetime_days*BigInt.from(Duration.secondsPerDay)
-                                            )
-                                        );
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Lengthen Lifetime Error:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }
-                                        );                                        
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                    
-                                    form_key.currentState!.reset();
-                                    state.user!.cycles_bank!.metrics!.lifetime_termination_timestamp_seconds = new_lifetime_termination_timestamp_seconds;
-                                    state.loading_text = 'loading cycles-balance ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Lengthen Lifetime Success.'),
-                                                content: Text('cycles-bank lifetime-remaining: ${DateTime.fromMillisecondsSinceEpoch((new_lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }
-                                    );
-                                    
-                                    try {
-                                        await state.user!.cycles_bank!.fresh_metrics();
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error loading cycles-balance'),
-                                                    content: Text(e.toString()),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }
-                                        );      
-                                    }
-                                    
-                                    await success_dialog;
-                                    
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                }
-                            }
-                        )
-                    )
-                ]
-            ),
-        );
-    }
-}
-
 */
 
 
@@ -1405,7 +1129,7 @@ class LengthenMembershipFormState extends State<LengthenMembershipForm> {
     
     
     BigInt lengthen_years = BigInt.from(1);
-    LengthenMembershipPaymentMethod payment_method = LengthenMembershipPaymentMethod.CTSUserSubaccountICP;
+    LengthenMembershipPaymentMethod payment_method = LengthenMembershipPaymentMethod.CyclesBankCycles;
     
     @override
     void initState() {
@@ -1681,8 +1405,11 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                 children: <Widget>[
                     Container(
                         padding: EdgeInsets.all(7),
-                        child: Column(
+                        child: BankIcrc1IdAndBalanceAndLoadBalanceAndFee(Icrc1Ledgers.ICP, key: ValueKey('BurnIcpMintCyclesForm BankIcrc1IdAndBalanceAndLoadBalanceAndFee')),
+                        /*
+                        Column(
                             children: [
+                                
                                 Center(
                                     child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
                                 ),
@@ -1692,6 +1419,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                 IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesDialog IcpBalanceAndLoadIcpBalance'))
                             ]
                         )
+                        */
                     ),
                     SizedBox(
                         width: 1,
@@ -1714,21 +1442,15 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     label: Expanded(
                                         child: Text(
                                             '',
-                                        )
-                                    )
-                                )
+                                        ),
+                                    ),
+                                ),
                             ],
                             rows: [
                                 DataRow(
                                     cells: [
                                         DataCell(Text('CURRENT NETWORK TCYCLES PER ICP RATE: ', )),
                                         DataCell(Text('${state.cmc_cycles_per_icp_rate}')),
-                                    ]
-                                ),
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('MINT CYCLES FEE: ')),
-                                        DataCell(Text('${state.cts_fees.burn_icp_mint_cycles_fee}')),
                                     ]
                                 ),
                             ]
@@ -1765,7 +1487,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     
                                     late BurnIcpMintCyclesSuccess burn_icp_mint_cycles_success;
                                     try {
-                                        burn_icp_mint_cycles_success = await state.user!.burn_icp_mint_cycles(burn_icp);
+                                        burn_icp_mint_cycles_success = await state.user!.bank!.burn_icp_mint_cycles(burn_icp);
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
@@ -1788,7 +1510,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user} \nloading icp balance, icp transfers, and cycles-bank cycles-balance ...';
+                                    state.loading_text = 'Mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles} \nloading icp-balance, icp-transfers, cycles-balance, and cycles-transfers ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
@@ -1796,7 +1518,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                         builder: (BuildContext context) {
                                             return AlertDialog(
                                                 title: Text('Mint Cycles Success:'),
-                                                content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles_for_the_user}'),
+                                                content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles}'),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),
@@ -1809,16 +1531,19 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.fresh_icp_balance(),
-                                            state.user!.fresh_icp_transfers(),
-                                            state.user!.cycles_bank!.fresh_metrics(),
+                                            state.user!.bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP),
+                                            state.user!.bank!.fresh_icrc1_transactions(Icrc1Ledgers.ICP),
+                                            state.user!.bank!.fresh_metrics(),
+                                            state.user!.bank!.fresh_cycles_transfers_in(),
+                                            state.user!.bank!.fresh_cycles_transfers_out(),
+                                            
                                         ]);
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('Error when loading the icp balance, icp transfers, and cycles-bank cycles-balance:'),
+                                                    title: Text('Error when loading the icp balance, icp transfers, cycles-balance, and cycles-transfers:'),
                                                     content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(

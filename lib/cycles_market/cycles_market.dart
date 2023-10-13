@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'dart:async';
 
 import '../config/state.dart';
-
+import '../tools/tools.dart';
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/common.dart';
@@ -19,12 +19,11 @@ class CyclesMarketMain {
     List<Icrc1TokenTradeContract> icrc1token_trade_contracts = [];
     
     Future<void> fresh_icrc1token_trade_contracts() async {
-        List<CandidType> s = c_backwards(await cycles_market.call(
+        Vector<Record> s = (c_backwards_one(await cycles_market.call(
             calltype: CallType.query,
             method_name: 'view_icrc1_token_trade_contracts',  
-        ));
-        Vector<Record> cs = (s.first as Vector).cast_vector<Record>();
-        this.icrc1token_trade_contracts = await Future.wait(cs.map(Icrc1TokenTradeContract.of_the_record));
+        )) as Vector).cast_vector<Record>();
+        this.icrc1token_trade_contracts = await Future.wait(s.map((t)=>Icrc1TokenTradeContract.of_the_record(t[0] as Record)));
     }
 
 }
@@ -33,19 +32,16 @@ class CyclesMarketMain {
 class Icrc1TokenTradeContract extends Record {
     final Principal icrc1_ledger_canister_id;
     final Principal trade_contract_canister_id;
-    final Principal? opt_cm_caller;
     
     final Icrc1Ledger ledger_data;
     
     Icrc1TokenTradeContract({
         required this.icrc1_ledger_canister_id,
         required this.trade_contract_canister_id,
-        required this.opt_cm_caller,
         required this.ledger_data,
     }) {
         this['icrc1_ledger_canister_id'] = this.icrc1_ledger_canister_id; 
         this['trade_contract_canister_id'] = this.trade_contract_canister_id;
-        this['opt_cm_caller'] = Option(value: this.opt_cm_caller, value_type: Principal.type_mode());
     }
     static Future<Icrc1TokenTradeContract> of_the_record(Record r) async {
         Principal icrc1_ledger_canister_id = r['icrc1_ledger_canister_id'] as Principal; 
@@ -54,7 +50,6 @@ class Icrc1TokenTradeContract extends Record {
         return Icrc1TokenTradeContract(
             icrc1_ledger_canister_id: icrc1_ledger_canister_id,
             trade_contract_canister_id: r['trade_contract_canister_id'] as Principal,
-            opt_cm_caller: r.find_option<Principal>('opt_cm_caller'),
             ledger_data: ledger_data
         );
     }
@@ -181,6 +176,7 @@ class Icrc1TokenTradeContract extends Record {
     Stream<Principal> latest_trades_canisters_generator() async* {
         yield this.trade_contract_canister_id;
         List<StorageCanister> trades_scs = await this.view_trades_storage_canisters();
+        print('trades-storage-canisters: $trades_scs');
         trades_scs_cache = trades_scs;
         for (StorageCanister sc in trades_scs.reversed) {
             yield sc.canister_id;
@@ -378,7 +374,6 @@ class StorageCanister {
         required this.canister_id,
     });
     static StorageCanister of_the_record(Record r) {
-        FunctionReference callback = r['callback'] as FunctionReference;
         return StorageCanister._(
             first_log_id: (r['first_log_id'] as Nat).value,
             length: (r['length'] as Nat).value,
@@ -386,6 +381,7 @@ class StorageCanister {
             canister_id: r['canister_id'] as Principal,
         );
     }
+    String toString() => 'StorageCanister: $canister_id';
 }
 
 
@@ -575,37 +571,3 @@ enum PositionKind {
     Token
 }
 
-// helpers
-
-Principal principal_of_the_30_bytes(Iterable<int> b) {
-    List<int> blist = b.toList();
-    return Principal.bytes(Uint8List.fromList(blist.getRange(1, blist[0] + 1).toList()));
-}
-
-BigInt bigint_of_the_be_bytes(Iterable<int> bytes) {
-    return BigInt.parse(bytes_as_the_bitstring(bytes), radix: 2);
-}
-BigInt Function(Iterable<int>) u128_of_the_be_bytes = bigint_of_the_be_bytes;
-
-String bytes_as_the_bitstring(Iterable<int> bytes) {
-    String bitstring = '';
-    for (int byte in bytes) {
-        String byte_bitstring = byte.toRadixString(2);
-        while (byte_bitstring.length < 8) { byte_bitstring = '0' + byte_bitstring; }
-        bitstring = bitstring + byte_bitstring;
-    }
-    return bitstring;
-}
-
-
-
-extension Chunks<T extends List> on T {
-    List<T> chunks(int chunk_size) {
-        var b_len = this.length;
-        List<T> chunks = [];
-        for(int i = 0; i < b_len; i += chunk_size) {    
-            chunks.add(this.sublist(i,min(i+chunk_size, b_len)) as T);
-        }
-        return chunks;
-    }
-} 

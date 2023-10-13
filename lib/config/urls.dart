@@ -29,17 +29,17 @@ final Map<String, Map> urlmap = {
         'main_page_scaffold_body': TransferIcpScaffoldBody.create
     },
     'cycles_bank': {
-        'path': '/cycles-bank',
+        'path': '/bank',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
     'cycles_bank_pay': {
-        'path': '/cycles-bank/pay/for=<for_the_cycles_bank>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>',
+        'path': '/bank/pay/cycles/for=<for_the_cycles_bank>/Tcycles=<Tcycles>/memo_type=<memo_type>/memo=<memo>',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },
     'cycles_market': {
-        'path': '/cycles-market/trade/<token_ledger_symbol>',
+        'path': '/market/trade/<token_ledger_symbol>',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesMarketScaffoldBody.create
     },

@@ -4,6 +4,7 @@ import 'icp_ledger.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/state.dart';
+import '../cycles_bank/cards.dart';
 
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
@@ -48,7 +49,7 @@ class IcpTransferListItem extends StatelessWidget {
                                             SelectableText('icp: ${icp_transfer.amount}'),
                                             SelectableText('memo: ${icp_transfer.memo}'),
                                             SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),
-                                            SelectableText('timestamp: ${icp_transfer.timestamp_seconds}'),
+                                            SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(icp_transfer.timestamp_seconds.toInt() * 1000))}'),
                                         ]
                                     )
                                 )

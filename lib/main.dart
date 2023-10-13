@@ -40,7 +40,8 @@ class _BaseState extends State<Base> {
                     elevation: 1.5,  
                     //shadowColor: Color?,  
                 )
-            )
+            ),
+            debugShowCheckedModeBanner: false,
         );
     }
 }

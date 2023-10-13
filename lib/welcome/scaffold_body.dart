@@ -24,7 +24,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             Padding(
                 padding: EdgeInsets.fromLTRB(17.0, 34.0, 17.0, 27.0),
                 child: Container(
-                    child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 19))
+                    child: Text('Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.', style: TextStyle(fontSize: 23))
                 )
             ),
             Padding(
@@ -83,51 +83,43 @@ class WelcomeScaffoldBody extends StatelessWidget {
                     child: SingleChildScrollView(
                         child: Padding(
                             padding: EdgeInsets.all(27), 
-                            child: Column(
-                                children: [
-                                    SizedBox(
-                                        width: 3,
-                                        height: 25
-                                    ),
-                                    /*Text(
-    """
-    Welcome, here is the home for the world-computer's native CYCLES. 
-
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),*/
-                                    Text(
-    //"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
-    """Store your money on the blockchain in your own personal CYCLES-BANK! 
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                    Text(
-    """Send money between friends, or make payments in stores! 
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                    Text(
-    """Hedge against fiat inflation and crypto-volatility! 
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                    Text(
-    """Trade or liquidate through the CYCLES-MARKET! 
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                    Text(
-    """\nThe CYCLES are here!
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                    Text(
-    """\n\n\n\nUse the menu-button in the bottom-left corner for the navigation. 
-    """
-                                        , style: TextStyle(fontSize: 17)
-                                    ),
-                                ]
+                            child: DefaultTextStyle.merge(
+                                style: TextStyle(fontSize: 21),
+                                child: Column(
+                                    children: [
+                                        SizedBox(
+                                            width: 3,
+                                            height: 25
+                                        ),
+                                        /*Text(
+        """
+        Welcome, here is the home for the world-computer's native CYCLES. 
+    
+        """
+                                        ),*/
+                                        Text(
+        //"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
+        """Store your money on the blockchain in your own personal CYCLES-BANK! 
+        """
+                                        ),
+                                        Text(
+        """Send money between friends, or make payments in stores! 
+        """
+                                        ),
+                                        Text(
+        """Hedge against fiat inflation and crypto-volatility! 
+        """
+                                        ),
+                                        Text(
+        """Trade or liquidate through the CYCLES-MARKET! 
+        """
+                                        ),
+                                        Text(
+        """\nThe CYCLES are here!
+        """
+                                        ),
+                                    ]
+                                )
                             )
                         )
                     )
@@ -137,11 +129,14 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         return Center(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 900),
-                child: Column(                
-                    children: column_children,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center
+                constraints: BoxConstraints(maxWidth: 1000),
+                child: DefaultTextStyle.merge(
+                    style: TextStyle(fontFamily: 'ChakraPetch'),
+                    child: Column(                
+                        children: column_children,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center
+                    )
                 )
             )
         );

@@ -2,6 +2,7 @@
 
 import 'dart:collection';
 import 'dart:typed_data';
+import 'dart:html' show window;
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
@@ -14,7 +15,7 @@ import '../user.dart';
 import '../config/state.dart';
 import '../cycles_market/cycles_market.dart';
 import '../transfer_icp/icp_ledger.dart';
-
+import '../tools/tools.dart';
 
 
 
@@ -175,7 +176,7 @@ class CyclesBank extends Canister {
     
     //Future<void> delete_ functionality coming soon
     
-    Future<BigInt/*cycles_transfer_id*/> transfer_cycles(UserTransferCyclesQuest q) async {
+    Future<TransferCyclesSponse> transfer_cycles(UserTransferCyclesQuest q) async {
         // get the cts-cb-authorization of the q.for_the_canister, 
         Record callee_user_and_cts_cb_authorization = c_backwards_one(
             await this.user.call(
@@ -192,9 +193,9 @@ class CyclesBank extends Canister {
                 calltype: CallType.call,
             )
         )[0] as Variant;
-        BigInt cycles_transfer_out_id = match_variant<BigInt>(transfer_cycles_sponse, {
-            Ok: (cycles_transfer_id_nat_ctype) {
-                return (cycles_transfer_id_nat_ctype as Nat).value;
+        TransferCyclesSponse sponse = match_variant<TransferCyclesSponse>(transfer_cycles_sponse, {
+            Ok: (s) {
+                return TransferCyclesSponse.of_the_record(s as Record);
             },
             Err: (transfer_cycles_error) {
                 match_variant<Never>(transfer_cycles_error as Variant, {
@@ -219,7 +220,7 @@ class CyclesBank extends Canister {
             }
         });
         this.metrics!.cycles_transfers_out_len = this.metrics!.cycles_transfers_out_len + BigInt.from(1);
-        return cycles_transfer_out_id;
+        return sponse;
     }
     
 
@@ -435,9 +436,108 @@ class CyclesBank extends Canister {
         return block_height;    
     }
     
+    // user is in the middle of a different call
+     Map<String, Never Function(CandidType)> get user_is_in_the_middle_of_a_different_call_variant_match_map => {
+        'BurnIcpMintCyclesCall': (must_call_complete_record) {
+            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
+                complete_burn_icp_mint_cycles()
+                .then((x){
+                    window.alert('burn_icp_mint_cycles is complete. \ncycles-mint: ${x}');
+                }).catchError((e){
+                    window.alert('burn_icp_mint_cycles error: \n${e}');
+                });
+            }
+            throw Exception('user is in the middle of a different burn_icp_mint_cycles call.');
+        },
+    };
+
     
     
+    // -------- burn_icp_mint_cycles
     
+
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_result_match_map => {
+        Ok: (burn_icp_mint_cycles_success) async {
+            return BurnIcpMintCyclesSuccess.of_the_record(burn_icp_mint_cycles_success);
+        },
+        Err: (burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_result_match_map => {
+        Ok: (burn_icp_mint_cycles_success) async {
+            return await burn_icp_mint_cycles_result_match_map[Ok]!(burn_icp_mint_cycles_success);
+        },
+        Err: (complete_burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_error as Variant, complete_burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get burn_icp_mint_cycles_error_match_map => {
+        'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
+            return match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
+        },
+        'LedgerTopupCyclesCmcIcpTransferError': (ledger_topup_cycles_cmc_icp_transfer_error) async {
+            return match_variant<Never>(ledger_topup_cycles_cmc_icp_transfer_error as Variant, {
+                'IcpTransferCallError': (call_error) {
+                    throw Exception('Icp ledger transfer call error:\n${CallError.of_the_record(call_error as Record)}');
+                },
+                'IcpTransferError': (icp_transfer_error) {
+                    return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
+                }
+            });
+        },
+        'LedgerTopupCyclesCmcNotifyRefund': (c) async {
+            BigInt rblock = ((c as Record)['block_index'] as Nat64).value;
+            String reason = ((c as Record)['reason'] as Text).value;
+            throw Exception('The cycles-minter-canister (nns-cmc) refunded your icp at the block-height: ${rblock} with the reason: ${reason}');
+        }, 
+        'MidCallError':(burn_icp_mint_cycles_mid_call_error) async {
+            print('burn_icp_mint_cycles_mid_call_error: ${burn_icp_mint_cycles_mid_call_error}');
+            return await complete_burn_icp_mint_cycles();
+        }
+    };
+
+    Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get complete_burn_icp_mint_cycles_error_match_map => {
+        'UserIsNotInTheMiddleOfABurnIcpMintCyclesCall': (n) async {
+            throw Exception('user is not in the middle of a burn_icp_mint_cycles call.');
+        },
+        'BurnIcpMintCyclesError': (burn_icp_mint_cycles_error) async {
+            return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_error as Variant, burn_icp_mint_cycles_error_match_map);
+        }
+    };
+    
+    
+    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(IcpTokens burn_icp) async {
+        Variant burn_icp_mint_cycles_result = c_backwards(
+            await user.call(
+                this,
+                calltype: CallType.call,
+                method_name: 'burn_icp_mint_cycles',
+                put_bytes: c_forwards([
+                    Record.of_the_map({
+                        'burn_icp': burn_icp
+                    })
+                ])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(burn_icp_mint_cycles_result, burn_icp_mint_cycles_result_match_map);
+    }
+    
+    Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
+        Variant complete_burn_icp_mint_cycles_result = c_backwards(
+            await user.call(
+                this,
+                calltype: CallType.call,
+                method_name: 'complete_burn_icp_mint_cycles',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_result, complete_burn_icp_mint_cycles_result_match_map);
+    }
+
+
     
     
     
@@ -799,6 +899,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                 if (catch_up_complete == false) {
                 
                     scs = await icrc1token_trade_contract.view_positions_storage_canisters();
+                    print('positions-storage-canisters: $scs');
                             
                     for (StorageCanister sc in scs.reversed) {
                         
@@ -909,6 +1010,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                 if (for_the_do_fresh_these_position_ids_in_the_storage_log.isNotEmpty) {
                     if (scs == null) {
                         scs = await icrc1token_trade_contract.view_positions_storage_canisters();
+                        print('positions-storage-canisters: $scs');
                     }
                     for (StorageCanister sc in scs.reversed) {
                             
@@ -984,6 +1086,26 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
 }
 
 
+Map<String, Never Function(CandidType)> icp_transfer_error_match_map = {
+        'BadFee': (expected_fee_record) {
+            throw Exception('Bad Fee set on the transfer. expected_fee: ${IcpTokens.of_the_record((expected_fee_record as Record)['expected_fee']!)}');
+        },
+        'InsufficientFunds': (balance_record) {
+            IcpTokens current_balance = IcpTokens.of_the_record((balance_record as Record)['balance']!);
+            throw Exception('Icp balance is too low. current balance: ${current_balance}');
+        },
+        'TxTooOld': (allowed_window_nanos_record) {
+            throw Exception('Icp Transfer created_at_time field is too old');
+        },
+        'TxCreatedInFuture': (n) {
+            throw Exception('Icp Transfer created_at_time field is too far in the future.');
+        },
+        'TxDuplicate': (duplicate_of_record) {
+            throw Exception('The Icp Transfer is a duplicate of the transfer: ${((duplicate_of_record as Record)['duplicate_of'] as Nat64).value}');
+        }
+    };
+
+
 Map<String, Never Function(CandidType)> token_transfer_error_match_map({required int token_decimal_places}) {
     return {
         'BadFee': (expected_fee_record) {
@@ -1049,7 +1171,6 @@ class CyclesBankMetrics {
     BigInt cycles_transfers_id_counter;
     BigInt cycles_transfers_in_len;
     BigInt cycles_transfers_out_len;
-    Map<Principal/*icrc1tokentradecontractcanisterid*/, CMTradeContractLogsLengths> cm_trade_contracts_logs_lengths;
     bool cts_cb_authorization;
     
     CyclesBankMetrics._({
@@ -1064,7 +1185,6 @@ class CyclesBankMetrics {
         required this.cycles_transfers_id_counter,
         required this.cycles_transfers_in_len,
         required this.cycles_transfers_out_len,
-        required this.cm_trade_contracts_logs_lengths,
         required this.cts_cb_authorization,
     });
     static CyclesBankMetrics of_the_record(Record r) {
@@ -1080,53 +1200,7 @@ class CyclesBankMetrics {
             cycles_transfers_id_counter: (r['cycles_transfers_id_counter'] as Nat).value,
             cycles_transfers_in_len: (r['cycles_transfers_in_len'] as Nat).value,
             cycles_transfers_out_len: (r['cycles_transfers_out_len'] as Nat).value,
-            cm_trade_contracts_logs_lengths: { 
-                for (Record c in (r['cm_trade_contracts_logs_lengths'] as Vector).cast_vector<Record>()) 
-                    (c[0] as Record)['trade_contract_canister_id'] as Principal: CMTradeContractLogsLengths.of_the_record(c[1] as Record)
-            },
             cts_cb_authorization: (r['cts_cb_authorization'] as Bool).value,
-        );
-    }
-}
-
-
-
-class CMTradeContractLogsLengths {
-    CMMessageLogsLengths cm_message_logs_lengths;
-    CMTradeContractLogsLengths._({
-        required this.cm_message_logs_lengths,
-    });
-    static CMTradeContractLogsLengths of_the_record(Record r) {
-        return CMTradeContractLogsLengths._(
-            cm_message_logs_lengths: CMMessageLogsLengths.of_the_record(r['cm_message_logs_lengths'] as Record),    
-        );
-    }
-}
-
-
-class CMMessageLogsLengths {
-    BigInt cm_message_cycles_position_purchase_positor_logs_length;
-    BigInt cm_message_cycles_position_purchase_purchaser_logs_length;
-    BigInt cm_message_token_position_purchase_positor_logs_length;
-    BigInt cm_message_token_position_purchase_purchaser_logs_length;
-    BigInt cm_message_void_cycles_position_positor_logs_length;
-    BigInt cm_message_void_token_position_positor_logs_length;
-    CMMessageLogsLengths._({
-        required this.cm_message_cycles_position_purchase_positor_logs_length,
-        required this.cm_message_cycles_position_purchase_purchaser_logs_length,
-        required this.cm_message_token_position_purchase_positor_logs_length,
-        required this.cm_message_token_position_purchase_purchaser_logs_length,
-        required this.cm_message_void_cycles_position_positor_logs_length,
-        required this.cm_message_void_token_position_positor_logs_length,
-    });    
-    static CMMessageLogsLengths of_the_record(Record r) {
-        return CMMessageLogsLengths._(
-            cm_message_cycles_position_purchase_positor_logs_length: (r['cm_message_cycles_position_purchase_positor_logs_length'] as Nat64).value,
-            cm_message_cycles_position_purchase_purchaser_logs_length: (r['cm_message_cycles_position_purchase_purchaser_logs_length'] as Nat64).value,
-            cm_message_token_position_purchase_positor_logs_length: (r['cm_message_token_position_purchase_positor_logs_length'] as Nat64).value,
-            cm_message_token_position_purchase_purchaser_logs_length: (r['cm_message_token_position_purchase_purchaser_logs_length'] as Nat64).value,
-            cm_message_void_cycles_position_positor_logs_length: (r['cm_message_void_cycles_position_positor_logs_length'] as Nat64).value,
-            cm_message_void_token_position_positor_logs_length: (r['cm_message_void_token_position_positor_logs_length'] as Nat64).value,
         );
     }
 }
@@ -1224,9 +1298,42 @@ class UserTransferCyclesQuest extends Record {
     }
 }
 
+class TransferCyclesSponse extends Record {
+    final Cycles cycles_refund;
+    final BigInt cycles_transfer_id;
+    final CallError? opt_cycles_transfer_call_error;
+    TransferCyclesSponse({
+        required this.cycles_refund,
+        required this.cycles_transfer_id,
+        required this.opt_cycles_transfer_call_error,
+    });
+    static TransferCyclesSponse of_the_record(Record r) {
+        return TransferCyclesSponse(
+            cycles_refund: Cycles.oftheNat(r['cycles_refund'] as Nat),
+            cycles_transfer_id: (r['cycles_transfer_id'] as Nat).value,
+            opt_cycles_transfer_call_error: r.find_option<Record>('opt_cycles_transfer_call_error').nullmap(CallError.of_the_record)
+        );
+    }
+    
+}
 
 
-
+class BurnIcpMintCyclesSuccess {
+    final Cycles mint_cycles;
+    
+    BurnIcpMintCyclesSuccess({required this.mint_cycles});
+    
+    static BurnIcpMintCyclesSuccess of_the_record(CandidType burn_icp_mint_cycles_success_record) {
+        Record r = burn_icp_mint_cycles_success_record as Record;
+        return BurnIcpMintCyclesSuccess(
+            mint_cycles: Cycles.oftheNat(r['mint_cycles'] as Nat),
+        );
+    }
+    
+    String toString() {
+        return 'cycles-mint: ${this.mint_cycles}';
+    }
+}
 
 // ------------- CYCLES-MARKET -------------
 

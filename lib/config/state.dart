@@ -60,6 +60,8 @@ late final String cts_main_icp_id;
 
 const String em3jm = 'em3jm-bqaaa-aaaar-qabxa-cai';
 
+const String x3ncx = 'x3ncx-liaaa-aaaam-qbcfa-cai';
+
 final bool is_on_local = window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1');
 
 
@@ -70,8 +72,10 @@ class CustomState {
         if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com')) {
             cts = Canister(Principal.text(em3jm)); 
             cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
-        }
-        if (is_on_local) {
+        } else if (window.location.hostname!.contains(x3ncx)) {
+            cts = Canister(Principal.text(x3ncx));
+            cycles_market = Canister(Principal.text('x4med-gqaaa-aaaam-qbcfq-cai'));
+        } else if (is_on_local) {
             /// local replica 
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
             fetch_root_key().then((_x){});
@@ -82,9 +86,9 @@ class CustomState {
                 load_local_root_key_onto_a_canister(cts),
                 load_local_root_key_onto_a_canister(cycles_market),
             ]).then((_x){});
-            
-            
         
+        } else {
+            throw Exception('unknown stance');
         }
         
         
@@ -346,20 +350,17 @@ Future<void> load_local_root_key_onto_a_canister(Canister c) async {
 class CTSFees {
     Cycles membership_cost_per_year_cycles;
     Cycles cts_transfer_icp_fee;
-    Cycles burn_icp_mint_cycles_fee;
 
     CTSFees._({
         required this.membership_cost_per_year_cycles,
         required this.cts_transfer_icp_fee,
-        required this.burn_icp_mint_cycles_fee
-    
+        
     });
     
     static CTSFees of_the_record(Record ctsfees_record) {
         return CTSFees._(
             membership_cost_per_year_cycles: Cycles.oftheNat(ctsfees_record['membership_cost_per_year_cycles'] as Nat),
             cts_transfer_icp_fee: Cycles.oftheNat(ctsfees_record['cts_transfer_icp_fee'] as Nat),
-            burn_icp_mint_cycles_fee: Cycles.oftheNat(ctsfees_record['burn_icp_mint_cycles_fee'] as Nat)         
         );
     }
 
@@ -376,6 +377,7 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
 }
 
 
+/*
 class Cycles extends Nat {
     BigInt get cycles => super.value;
     
@@ -431,7 +433,34 @@ class Cycles extends Nat {
         Cycles cycles = Cycles(cycles: (tcycles * Cycles.T_CYCLES_DIVIDABLE_BY) + cycles_less_than_1T);
         return cycles;
     }
+*/
+// TCycles
+class Cycles extends Tokens {
+    BigInt get cycles => super.quantums;
     
+    String toString() {
+        String s = super.toString();
+        if (this.cycles != BigInt.from(0)) { s = s + 'T'; } 
+        return s;
+    }
+    
+    Cycles round_decimal_places(int round_decimal_places) {
+        return Cycles(cycles: super.round_decimal_places(round_decimal_places).quantums);
+    }
+    
+    Cycles({required BigInt cycles}) : super(quantums: cycles, decimal_places: T_CYCLES_DECIMAL_PLACES);
+    
+    static Cycles oftheNat(CandidType nat) {
+        return Cycles(
+            cycles: (nat as Nat).value
+        );
+    }
+    
+    static BigInt T_CYCLES_DIVIDABLE_BY = BigInt.from(pow(10, Cycles.T_CYCLES_DECIMAL_PLACES));
+    static int T_CYCLES_DECIMAL_PLACES = 12;    
+    
+    static Cycles oftheTCyclesDoubleString(String tcycles_string) => Cycles(cycles: Tokens.of_the_double_string(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES).quantums);
+                    
     Cycles operator + (Cycles t) {
         return Cycles(cycles: this.cycles + t.cycles);
     }    
