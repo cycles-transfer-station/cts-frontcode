@@ -106,6 +106,9 @@ flutter:
     - family: ChakraPetch
       fonts: 
        - asset: fonts/chakra-petch/ChakraPetch-Regular.ttf
+    - family: ChakraPetchBold
+      fonts:
+       - asset: fonts/chakra-petch/ChakraPetch-Bold.ttf
     
     - family: CourierNew
       fonts: 
