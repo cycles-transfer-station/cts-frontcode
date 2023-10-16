@@ -159,7 +159,11 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
     late Timer timer;
     void initState() {
         timer = Timer.periodic(Duration(seconds: 30), (timer) {
-            state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trades()
+            Future.wait([
+                state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trades(),
+                if (state.user != null && state.user!.bank != null) state.user!.bank!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i])
+                
+            ])
             .then((x){
                 setState((){});
             });
@@ -185,7 +189,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         children: [
                             Container(
                                 padding: EdgeInsets.symmetric(horizontal: lr_padding_market_trades_and_position_book, vertical: tb_padding_market_trades_and_position_book),
-                                child: MarketTrades(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i) 
+                                child: MarketTrades(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i) 
                             ),
                             /*
                             MouseRegion(
@@ -221,6 +225,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                                     )    
                                 ),
                                 Container(
+                                    padding: EdgeInsets.all(27),
                                     child: Center(
                                         child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
                                     )
@@ -241,14 +246,34 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
 
 
 class MarketTrades extends StatefulWidget {
-    int cm_main_icrc1token_trade_contracts_i;
-    MarketTrades({required this.cm_main_icrc1token_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage MarketTrades cm_main_icrc1token_trade_contracts_i ${cm_main_icrc1token_trade_contracts_i}'));
+    int cm_main_trade_contracts_i;
+    MarketTrades({required this.cm_main_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage MarketTrades cm_main_trade_contracts_i ${cm_main_trade_contracts_i}'));
     State createState() => MarketTradesState();
 }
 class MarketTradesState extends State<MarketTrades> {
     
     String timestamp_format(DateTime t) {
-        return '${t.hour}:${t.minute}:${t.second}';
+        const Map<int, String> month_map = {
+            DateTime.january: 'January',
+            DateTime.february: 'February',
+            DateTime.march: 'March',
+            DateTime.april: 'April',
+            DateTime.may: 'May',
+            DateTime.june: 'June',
+            DateTime.july: 'July',
+            DateTime.august: 'August',
+            DateTime.september: 'September',
+            DateTime.october: 'October',
+            DateTime.november: 'November',
+            DateTime.december: 'December',
+        };
+        DateTime now = DateTime.now();
+        String? daydata = t.isBefore(DateTime(now.year, now.month, now.day)) ? '${t.month}-${t.day}-${t.year}' : null;
+        String fmt = '${t.hour}:${t.minute}:${t.second}';
+        if (daydata != null){
+            fmt = fmt + '\n$daydata';
+        }
+        return fmt;
     }
     
     late CustomState state;
@@ -259,8 +284,8 @@ class MarketTradesState extends State<MarketTrades> {
     bool reached_the_begining = false;
     
     BigInt? get_earliest_known_trade_id() {
-        if (state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].latest_trades.length >= 1) {
-            return state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].latest_trades.first.id; 
+        if (state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].latest_trades.length >= 1) {
+            return state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].latest_trades.first.id; 
         } else {
             return null;
         }
@@ -273,7 +298,7 @@ class MarketTradesState extends State<MarketTrades> {
             Future(()async{
                 BigInt? earliest_known_trade_id_before_load = get_earliest_known_trade_id();
                 try {
-                    await state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_trades_back_chunk();
+                    await state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].load_trades_back_chunk();
                 } catch(e) {
                     window.alert('failed to load earlier market trades');
                     return;
@@ -312,24 +337,28 @@ class MarketTradesState extends State<MarketTrades> {
         return Container(
             constraints: BoxConstraints(
                 maxHeight: 400,
-                maxWidth: 400
+                maxWidth: 700
             ),
             //decoration: BoxDecoration(border: Border.all()),
             child: DataTable2(
+                headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
                 isHorizontalScrollBarVisible: false,
                 scrollController: _controller,
                 showBottomBorder: true,
                 columns: <DataColumn>[
-                    DataColumn(label: Text('Quantity')),
-                    DataColumn(label: Text('Rate')),
-                    DataColumn(label: Text('Time'))
+                    DataColumn(label: Text('${state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.symbol}')),
+                    DataColumn(label: Text('RATE')),
+                    DataColumn(label: Text('CYCLES')),
+                    DataColumn(label: Text('TIME'))
                 ],
                 rows: [
-                    for (TradeItem trade in state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].latest_trades.reversed) 
+                    for (TradeItem trade in state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].latest_trades.reversed) 
                         DataRow(
                             cells: [
-                                DataCell(Text('${trade.quantity}')),
+                                DataCell(show_tokens_with_symbol(trade.quantity, state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.symbol, show_token_symbol_in_main: false)),
                                 DataCell(Text('${trade.rate}')),
+                                DataCell(show_tokens_with_symbol(tokens_transform_cycles(trade.quantity.quantums, trade.rate), cycles_symbol, show_token_symbol_in_main: false)),
                                 DataCell(Text('${timestamp_format(datetime_of_the_nanos(trade.time_nanos))}'))
                             ]
                         ),
@@ -346,9 +375,12 @@ class PositionBook extends StatelessWidget {
     
     ScrollController sell_positions_scroll_controller = ScrollController();
     
+    late CustomState state;
+    late MainStateBindScope<CustomState> main_state_bind_scope;
+    
     Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state = MainStateBind.get_state<CustomState>(context);
+        main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         CyclesPerTokenRate latest_trade_rate = 
             state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].latest_trades.length >= 1 
@@ -358,44 +390,81 @@ class PositionBook extends StatelessWidget {
             CyclesPerTokenRate(cycles_per_token_quantum_rate: BigInt.from(0), token_decimal_places: state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals);
         
         List<DataColumn> header_columns = <DataColumn>[                                 
-            DataColumn(label: Text('Quantity')),
-            DataColumn(label:Text('Rate')),
-            DataColumn(label:  Text('Total'))
+            DataColumn(label: Text('${state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol}')),
+            DataColumn(label:Text('RATE')),
+            DataColumn(label:  Text('CYCLES'))
         ];
         
         WidgetsBinding.instance.addPostFrameCallback((_) {
-            sell_positions_scroll_controller.jumpTo(sell_positions_scroll_controller.position.maxScrollExtent);
+            if (sell_positions_scroll_controller.hasClients) { // need this check for when there are 0 sell-positions.
+                sell_positions_scroll_controller.jumpTo(sell_positions_scroll_controller.position.maxScrollExtent);
+            }
         });
+        
+        List<DataRow> sell_positions_rows = create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].sell_position_book, PositionKind.Token); 
+        
+        double sell_positions_dataRowHeight = DataTableTheme.of(context).dataRowMinHeight ?? kMinInteractiveDimension; // the default for the DataTable2
         
         return Container(
             constraints: BoxConstraints(maxHeight: 400, maxWidth: 400),
             child: Column(
                 children: [
-                    DataTable(
-                        columns: header_columns,
-                        rows: [],
+                    ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight:  DataTableTheme.of(context).headingRowHeight ?? 56.0),
+                        child: DataTable2(
+                            headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                            columns: header_columns,
+                            rows: [],
+                        ),
                     ),
-                    Flexible(child: DataTable2(
-                        scrollController: sell_positions_scroll_controller,
-                        headingRowHeight: 0,                            
-                        showBottomBorder: true,
-                        columns: header_columns,
-                        rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].sell_position_book, PositionKind.Token)
-                    )),    
+                    Flexible(
+                        child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: LayoutBuilder(
+                                builder: (BuildContext context, BoxConstraints constraints) {
+                            //      height: constraints.maxHeight,
+                            //      width: constraints.maxWidth
+                                    return ConstrainedBox(
+                                        constraints: BoxConstraints(maxHeight: min(sell_positions_rows.length * sell_positions_dataRowHeight, constraints.maxHeight)),
+                                        child: DataTable2(
+                                            dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
+                                            scrollController: sell_positions_scroll_controller,
+                                            headingRowHeight: 0,                         
+                                            dataRowHeight: sell_positions_dataRowHeight,   
+                                            showBottomBorder: true,
+                                            columns: header_columns,
+                                            rows: sell_positions_rows,
+                                        )
+                                    );
+                                }
+                            )
+                        )
+                    ),    
                     Center(
                         child: Container(
                             padding: EdgeInsets.symmetric(vertical: 11),
-                            child: Text('${latest_trade_rate}', style: TextStyle(fontSize: 17))
+                            child: Text('${latest_trade_rate}', style: TextStyle(fontSize: 19, fontFamily: 'CourierNewBold'))
                         )
                     ),
                     Flexible(child: DataTable2(
                         headingRowHeight: 0,
+                        dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
                         showBottomBorder: true,
                         columns: header_columns,
                         rows: create_position_book_data_rows(state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].buy_position_book, PositionKind.Cycles)
                     )),
                 ]
             )
+        );
+    }
+    
+    DataRow create_position_book_data_row(Tokens tokens_quantity, CyclesPerTokenRate rate, PositionKind kind) {
+        return DataRow(
+            cells: [
+                DataCell(show_tokens_with_symbol(tokens_quantity, state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol, show_token_symbol_in_main: false)),
+                DataCell(Text('${rate}', style: TextStyle(color: kind == PositionKind.Cycles ? green : red, fontFamily:'CourierNewBold' ))),
+                DataCell(show_tokens_with_symbol(tokens_transform_cycles(tokens_quantity.quantums, rate), cycles_symbol, show_token_symbol_in_main: false))
+            ]
         );
     }
     
@@ -415,29 +484,13 @@ class PositionBook extends StatelessWidget {
             if (position.rate.cycles_per_token_quantum_rate == rate.cycles_per_token_quantum_rate) {
                 quantity = Tokens(quantums: quantity.quantums + position.quantity.quantums, decimal_places: quantity.decimal_places);
             } else {
-                datarows.add(
-                    DataRow(
-                        cells: [
-                            DataCell(Text('${quantity}')),
-                            DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
-                            DataCell(Text('${tokens_transform_cycles(quantity.quantums, rate)}'))
-                        ]
-                    )
-                );
+                datarows.add(create_position_book_data_row(quantity, rate, position_kind));
                 quantity = position.quantity; 
                 rate = position.rate;
             }
         }
         // for the last positon
-        datarows.add(
-            DataRow(
-                cells: [
-                    DataCell(Text('${quantity}')),
-                    DataCell(Text('${rate}', style: TextStyle(color: is_buy_positions ? green : red ))),
-                    DataCell(Text('${tokens_transform_cycles(quantity.quantums, rate)}'))
-                ]
-            )
-        );
+        datarows.add(create_position_book_data_row(quantity, rate, position_kind));
         return datarows;
     }
 }
@@ -676,76 +729,75 @@ class UserCMLogsState extends State<UserCMLogs> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
         return Container(
-                constraints: BoxConstraints(maxHeight: 500, maxWidth: 800),
+                constraints: BoxConstraints(maxHeight: 505, maxWidth: 909),
                 child: PaginatedDataTable2(
-                    //headingRowHeight: 00,
-                    //dataRowHeight: 300,
                     minWidth: 500,
                     renderEmptyRowsInTheEnd: false,
                     dividerThickness: 1,
-                    headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'ChakraPetch', fontSize: 17),                      
-                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'ChakraPetch', fontSize: 17),
+                    headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
                     rowsPerPage: 8,
                     columnSpacing: 13,
+                    smRatio: 0.45,
+                    lmRatio: 1.6,
                     columns: [
                         /*
                         DataColumn2(
                             label: Text('TYPE'),
-                            numeric: false,
+                            //numeric: false,
                             //size: ColumnSize.M,
                             fixedWidth: 50.0,
                         ),
                         */
-                        /*
+                        
                         DataColumn2(
-                            label: Text('id'), 
-                            numeric: true,
+                            label: Text('ID'), 
+                            //numeric: true,
                             size: ColumnSize.S,
                         ),
-                        */
                         /*
                         DataColumn2( // maybe put in the dropdown data section onTap ?
                             label: Text('creation-time'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.L,
                         ),
                         */
                         DataColumn2(
                             label: Text('POSITION'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.M,
-                            tooltip: 'original-position'
+                            tooltip: 'ORIGINAL-POSIT'
                         ),
                         DataColumn2(
                             label: Text('RATE'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.S,
-                            tooltip: 'original-position cycles per token rate'
+                            tooltip: 'CYCLES PER ${state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol}'
                         ),
                         DataColumn2(
                             label: Text('FILL'), 
-                            numeric: true,
-                            size: ColumnSize.M,
-                            tooltip: 'Amount of the position/order that is filled'
+                            //numeric: true,
+                            size: ColumnSize.L,
+                            tooltip: ''
                         ),
                         /*
                         DataColumn2(
                             label: Text('FILL-RATE'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.S,
                             tooltip: 'The weighted-average of the rates of the trades of this position/order so far.'
                         ),
                         */
                         DataColumn2(
                             label: Text('CURRENT-POSITION'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.M,
                             tooltip: 'The current amount of the position/order if this position is open.'
                         ),
                         /*
                         DataColumn2(
                             label: Text('payouts-fees-sum'), 
-                            numeric: true,
+                            //numeric: true,
                             size: ColumnSize.M,
                         ),
                         */
@@ -769,8 +821,27 @@ String position_log_timestamp_format(DateTime t) {
     } 
     return s;
 }
-DataRow datarow_of_the_user_position_log(BuildContext context, PositionLog pl, String token_symbol) {
+DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl, String token_symbol) {
     int token_decimal_places = pl.match_tokens_quest.tokens.decimal_places;
+    
+    Tokens? fill_tokens;
+    Cycles? fill_cycles;
+    
+    Widget position_purchases_sum_widget = pl.position_kind == PositionKind.Cycles 
+        ? 
+        show_tokens_with_symbol(pl.match_tokens_quest.cycles_of_the_position() - Cycles(cycles: pl.mainder_position_quantity), cycles_symbol) 
+        : 
+        show_tokens_with_symbol(Tokens(quantums: pl.match_tokens_quest.tokens.quantums - pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol);
+    
+    Widget fill_widget = pl.position_kind == PositionKind.Cycles 
+                ? 
+                show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
+                : 
+                show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
+    
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+         
     return DataRow2(
         onTap: () {},
         cells: <DataCell>[
@@ -788,34 +859,128 @@ DataRow datarow_of_the_user_position_log(BuildContext context, PositionLog pl, S
                 */
             ),
             */
-            //DataCell(Text(pl.id.toString())),
+            DataCell(Text(pl.id.toString())),
             //DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
             DataCell(
                 pl.position_kind == PositionKind.Cycles 
                 ? 
-                show_tokens_with_symbol(context, tokens_transform_cycles(pl.match_tokens_quest.tokens.quantums, pl.match_tokens_quest.cycles_per_token_rate), cycles_symbol)
+                show_tokens_with_symbol(tokens_transform_cycles(pl.match_tokens_quest.tokens.quantums, pl.match_tokens_quest.cycles_per_token_rate), cycles_symbol)
                 : 
-                show_tokens_with_symbol(context, pl.match_tokens_quest.tokens, token_symbol)
+                show_tokens_with_symbol(pl.match_tokens_quest.tokens, token_symbol)
             ),
             DataCell(Text('${pl.match_tokens_quest.cycles_per_token_rate.toString().replaceFirst('T', '')}')),
             DataCell(
-                pl.position_kind == PositionKind.Cycles 
-                ? 
-                show_tokens_with_symbol(context, Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
-                : 
-                show_tokens_with_symbol(context, Cycles(cycles: pl.fill_quantity), cycles_symbol)
+                Row(children: [position_purchases_sum_widget, Text(' <-> '), fill_widget])
             ),
             //DataCell(Text('${pl.fill_average_rate.toString().replaceFirst('T', '')}')),
             DataCell(
                 pl.position_termination != null 
                 ? 
-                Text('') 
+                Container(
+                    child: Text(switch (pl.position_termination!.cause) {
+                        PositionTerminationCause.Fill => 'FULL',
+                        PositionTerminationCause.Bump => 'BUMP',
+                        PositionTerminationCause.TimePass => 'TIMEOUT',
+                        PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',   
+                    })
+                ) 
                 :
-                pl.position_kind == PositionKind.Cycles 
-                ? 
-                show_tokens_with_symbol(context, Cycles(cycles: pl.mainder_position_quantity), cycles_symbol) 
-                : 
-                show_tokens_with_symbol(context, Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)
+                Row(
+                    children: [
+                        pl.position_kind == PositionKind.Cycles
+                        ? 
+                        show_tokens_with_symbol(Cycles(cycles: pl.mainder_position_quantity), cycles_symbol)
+                        : 
+                        show_tokens_with_symbol(Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)        
+                        ,
+                        //SizedBox(width: 11),
+                        Spacer(),
+                        OutlineButton(
+                            child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
+                            on_press_complete: () async {
+                                    state.loading_text = 'closing position ${pl.id} ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    try {
+                                        await state.user!.bank!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
+                                    } catch(e,s) {
+                                        //print(e);
+                                        //print(s);
+                                        await showDialog(
+                                            context: state.context,
+                                            barrierDismissible: false,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('cancel position error'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    state.loading_text = 'cancel position success.\nposition-id: ${pl.id}\nloading positions ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('cancel position success!'),
+                                                content: Text('position-id: ${pl.id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    ); 
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                            state.user!.bank!.load_cm_user_positions(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                            state.user!.bank!.fresh_metrics(),
+                                            state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_positions_and_trades()
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading current positions:'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                    
+                                    await success_dialog;
+                                    
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
+                                    
+                            }
+                        )
+                    ]
+                )
             ),            
             //DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
             
@@ -824,24 +989,24 @@ DataRow datarow_of_the_user_position_log(BuildContext context, PositionLog pl, S
     
 }
 
-String cycles_symbol = 'TCYCLES';
+String cycles_symbol = 'CYCLES';
 
-Tooltip show_tokens_with_symbol(BuildContext context, Tokens tokens, String token_symbol) {
+Tooltip show_tokens_with_symbol(Tokens tokens, String token_symbol, {bool show_token_symbol_in_main = true}) {
     Tokens tokens_round = tokens.round_decimal_places(2);
     Tokens tokens_for_the_main_show = tokens_round.quantums == BigInt.from(0) ? tokens : tokens_round; 
     return Tooltip(
         richMessage: TextSpan(
             style: TextStyle(fontFamily: 'ChakraPetchBold', fontSize: 17),
             children: <TextSpan>[
-                TextSpan(text: tokens.toString().replaceFirst('T', '')),
-                //TextSpan(text: '-$token_symbol', style: TextStyle(fontSize: 9)),
+                TextSpan(text: tokens.toString()),
+                TextSpan(text: '-$token_symbol', style: TextStyle(fontSize: 11)),
             ],
         ),
         child: Text.rich(
             TextSpan(
                 children: <TextSpan>[
-                    TextSpan(text: tokens_for_the_main_show.toString().replaceFirst('T', '')),
-                    TextSpan(text: '-$token_symbol', style: TextStyle(fontSize: 11)),
+                    TextSpan(text: tokens_for_the_main_show.toString()),
+                    if (show_token_symbol_in_main) TextSpan(text: '-$token_symbol', style: TextStyle(fontSize: 11)),
                 ],
             )
         )
@@ -873,7 +1038,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_positions_storage[plid]!;
         }
-        return datarow_of_the_user_position_log(context, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol);
+        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol);
         
     }
     Future<AsyncRowsResponse> getRows(int start_i, int count) async {
@@ -887,7 +1052,8 @@ class UserCMLogsDataTableSource extends DataTableSource {
             .current_user_positions.keys;
             Iterable<BigInt> keys_show = map_keys.take(map_keys.length - start_i).skip(max(0, map_keys.length - start_i - count).toInt()).toList().reversed;
             rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(context, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, 
+                    state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                     .current_user_positions[k]!, 
                     state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
                 )
@@ -901,7 +1067,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
                 .take(map_keys.length - max(0, start_i - current_user_positions_length))
                 .skip(max(0, map_keys.length - max(0, start_i - current_user_positions_length).toInt() - count - rows.length).toInt()).toList().reversed;
             rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(context, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                     .current_user_positions[k]!,
                     state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
                 )
@@ -921,824 +1087,4 @@ class UserCMLogsDataTableSource extends DataTableSource {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-
-class CyclesMarketScaffoldBody extends StatelessWidget {
-    CyclesMarketScaffoldBody({Key? key}) : super(key: key);
-    static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
-    
-    final ScrollController user_cycles_positions_scroll_controller = ScrollController();
-    final ScrollController user_icp_positions_scroll_controller = ScrollController();    
-    final ScrollController user_cycles_positions_purchases_scroll_controller = ScrollController();
-    final ScrollController user_icp_positions_purchases_scroll_controller = ScrollController();    
-    final ScrollController cycles_positions_scroll_controller = ScrollController();
-    final ScrollController icp_positions_scroll_controller = ScrollController();    
-    final ScrollController cycles_positions_purchases_scroll_controller = ScrollController();
-    final ScrollController icp_positions_purchases_scroll_controller = ScrollController();    
-    
-    
-    
-    @override
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-         
-        List<Widget> column_children = [];
-                
-        column_children.add(
-            SizedBox(
-                height: 21
-            )
-        );
-        
-        if (state.user == null) {
-            column_children.addAll([
-                Container(padding: EdgeInsets.all(17), child: OutlineButton(
-                    button_text: 'ii login',
-                    on_press_complete: () async { await ii_login(context); }
-                ))       
-            ]);
-        } else if (state.user!.cycles_bank == null) {
-            column_children.addAll([
-                Container(
-                    width: double.infinity,
-                    height: 55,
-                    constraints: BoxConstraints(maxWidth: 550),
-                    padding: EdgeInsets.fromLTRB(11,0,11,17),
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('CREATE MEMBERSHIP', style: TextStyle(fontSize: 21)),
-                        onPressed: () async {  
-                            state.current_url = CustomUrl('cycles_bank');
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
-                )
-            ]);
-        } else if (state.user != null && state.user!.cycles_bank != null) {
-            column_children.addAll([
-                Center(
-                    child: Padding(
-                        padding: EdgeInsets.all(17),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
-                            onPressed: () async {
-                                state.loading_text = 'loading cycles-market data ...';
-                                state.is_loading = true;
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                try {
-                                    await Future.wait([
-                                        state.cycles_market_data.load_data(),
-                                        state.user!.cycles_bank!.fresh_metrics(),
-                                        state.user!.cycles_bank!.load_cm_data()
-                                    ]);
-                                } catch(e) {
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Error when loading the cycles-market data:'),
-                                                content: Text('${e}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
-                                }
-                                state.is_loading = false;
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                            }
-                        )
-                    ),
-                ),
-                SizedBox(
-                    width: 3,
-                    height: 17
-                ),
-                Wrap(
-                    children: [
-                        Container(
-                            padding: EdgeInsets.fromLTRB(0,0,0,17),
-                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
-                            child: Column(
-                                children: [
-                                    Container(
-                                        padding: EdgeInsets.fromLTRB(17,5,17,5),
-                                        child: Column(
-                                            children: [
-                                                Center(
-                                                    child: SelectableText('CYCLES-BANK-ID: ', style: TextStyle(fontSize: 13)),
-                                                ),
-                                                SizedBox(
-                                                    height: 27,
-                                                    child: Center(
-                                                        child: SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 11)),
-                                                    ),
-                                                ),
-                                                Container(
-                                                    padding: EdgeInsets.fromLTRB(10,7,10,3),
-                                                    child: Text('CYCLES: ${state.user!.cycles_bank!.metrics != null ? state.user!.cycles_bank!.metrics!.cycles_balance : 'unknown'}', style: TextStyle(fontSize:17)),                   
-                                                )
-                                            ]
-                                        )
-                                    )
-                                ]
-                            ) 
-                        ),
-                        Container(
-                            padding: EdgeInsets.fromLTRB(0,0,0,17),
-                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
-                            child: Column(
-                                children: [
-                                    Container(
-                                        padding: EdgeInsets.fromLTRB(17,5,17,5),
-                                        child: Column(
-                                            children: [
-                                                Center(
-                                                    child: SelectableText('CYCLES-BANK\'S CYCLES-MARKET ICP-ID: ', style: TextStyle(fontSize: 13)),
-                                                ),
-                                                SizedBox(
-                                                    height: 27,
-                                                    child: Center(
-                                                        child: SelectableText('${state.user!.cycles_bank!.cm_icp_id}', style: TextStyle(fontSize: 11)),
-                                                    ),
-                                                ),
-                                                Container(
-                                                    padding: EdgeInsets.fromLTRB(10,7,10,3),
-                                                    child: Text('ICP: ${state.user!.cycles_bank!.cm_icp_balance != null ? state.user!.cycles_bank!.cm_icp_balance! : 'unknown'}', style: TextStyle(fontSize:17)),                   
-                                                )
-                                            ]
-                                        )
-                                    ),
-                                    /*
-                                    Padding(
-                                        padding: EdgeInsets.all(7),
-                                        child: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                            child: Text('LOAD CM ICP BALANCE', style: TextStyle(fontSize:11)),
-                                            onPressed: () async {
-                                                state.loading_text = 'loading cycles-bank\'s cycles-market icp balance ...';
-                                                state.is_loading = true;
-                                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                try {
-                                                    await state.user!.cycles_bank!.fresh_cm_icp_balance();
-                                                } catch(e) {
-                                                    await showDialog(
-                                                        context: state.context,
-                                                        builder: (BuildContext context) {
-                                                            return AlertDialog(
-                                                                title: Text('Error when loading the cycles-bank\'s cycles-market icp balance:'),
-                                                                content: Text('${e}'),
-                                                                actions: <Widget>[
-                                                                    TextButton(
-                                                                        onPressed: () => Navigator.pop(context),
-                                                                        child: const Text('OK'),
-                                                                    ),
-                                                                ]
-                                                            );
-                                                        }   
-                                                    );                                    
-                                                }
-                                                state.is_loading = false;
-                                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                            }
-                                        )
-                                    ),   
-                                    */
-                                    Padding(
-                                        padding: EdgeInsets.all(7),
-                                        child: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                            child: Text('WITHDRAW CM ICP BALANCE', style: TextStyle(fontSize:11)),
-                                            onPressed: () async {
-                                                await showDialog(
-                                                    context: context,
-                                                    builder: (BuildContext context) {
-                                                        return AlertDialog(
-                                                            title: Center(child: Text('Withdraw cycles-market icp-balance')),
-                                                            content: Container(
-                                                                padding: EdgeInsets.all(0),
-                                                                child: CyclesBankCMTransferIcpForm(key: ValueKey('CyclesMarketScaffoldBody CyclesBankCMTransferIcpForm'))
-                                                            ),
-                                                            //actions: <Widget>[]
-                                                        );
-                                                    }   
-                                                );
-                                            }
-                                        )
-                                    ),   
-                                    
-                                ]
-                            ) 
-                        )
-                    ]
-                ),
-                SizedBox(
-                    width: 1,
-                    height: 15
-                ),
-                Container(
-                    padding: EdgeInsets.fromLTRB(10,17,10,17),
-                    child: DataTable(
-                        headingRowHeight: 0,
-                        showBottomBorder: true,
-                        columns: <DataColumn>[
-                            DataColumn(
-                                label: Expanded(
-                                    child: Text(
-                                        '',
-                                    ),
-                                ),
-                            ),
-                            DataColumn(
-                                label: Expanded(
-                                    child: Text(
-                                        '',
-                                    )
-                                )
-                            )
-                        ],
-                        rows: [
-                            DataRow(
-                                cells: [
-                                    DataCell(Text('CREATE POSITION FEE: ')),
-                                    DataCell(Text('0.05-TCycles')),
-                                ]
-                            ),
-                            DataRow(
-                                cells: [
-                                    DataCell(Text('PURCHASE POSITION FEE: ')),
-                                    DataCell(Text('0.05-TCycles')),
-                                ]
-                            )                            
-
-                            
-                        ]
-                    )
-                ),
-                SizedBox(
-                    height: 17,
-                    width: 1    
-                ),
-                Wrap(
-                    children: [
-                        Container(
-                            padding: EdgeInsets.all(11),
-                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
-                            child: CyclesBankCMCreateCyclesPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateCyclesPositionForm')),
-                        ),
-                        Container(
-                            padding: EdgeInsets.all(11),
-                            constraints: BoxConstraints(maxWidth: 350, minWidth: 250),
-                            child: CyclesBankCMCreateIcpPositionForm(key: ValueKey('CyclesBankScoffoldBody CyclesBankCMCreateIcpPositionForm')),
-                        )
-                    ]
-                ),
-                Padding(
-                    padding: EdgeInsets.all(13),
-                    child: Divider(
-                        height: 13.0,   
-                        thickness: 4.0,
-                        indent: 17.0,
-                        endIndent: 17.0,
-                        //color: 
-                    ),
-                ),    
-            ]);
-            
-        }    
-        
-        List<CyclesPosition> cycles_positions = state.cycles_market_data.cycles_positions.reversed.toList();
-        List<IcpPosition> icp_positions = state.cycles_market_data.icp_positions.reversed.toList();
-        List<CyclesPositionPurchase> cycles_positions_purchases = state.cycles_market_data.cycles_positions_purchases.reversed.toList();
-        List<IcpPositionPurchase> icp_positions_purchases = state.cycles_market_data.icp_positions_purchases.reversed.toList();
-        
-        
-        if (state.user != null && state.user!.cycles_bank != null) {
-            cycles_positions = cycles_positions.where((CyclesPosition cp)=>cp.positor.text != state.user!.cycles_bank!.principal.text).toList();
-            icp_positions = icp_positions.where((IcpPosition ip)=>ip.positor.text != state.user!.cycles_bank!.principal.text).toList();
-        }        
-        
-        if (state.user == null || state.user!.cycles_bank == null) {
-            column_children.add(
-                Padding(
-                    padding: EdgeInsets.all(7),
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                        child: Text('LOAD CYCLES-MARKET DATA', style: TextStyle(fontSize:11)),
-                        onPressed: () async {
-                            state.loading_text = 'loading cycles-market data ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            try {
-                                await Future.wait([
-                                    state.cycles_market_data.load_data()
-                                ]);
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Error when loading the cycles-market positions:'),
-                                            content: Text('${e}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );                                    
-                            }
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
-                )
-            );
-        }
-        
-        if (cycles_positions.length > 0) {
-            column_children.addAll([
-                Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.fromLTRB(11,0,0,0),
-                    child: Text('CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
-                ),
-                LimitedBox(
-                    maxHeight: 407,
-                    child: Container(
-                        constraints: BoxConstraints(),
-                        //padding: EdgeInsets.all(17),
-                        child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                            child: Scrollbar(
-                                controller: cycles_positions_scroll_controller,
-                                child: ListView.builder(
-                                    controller: cycles_positions_scroll_controller,
-                                    key: UniqueKey(), //ValueKey('cm cycles-positions'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        return CyclesPositionListItem(cycles_positions[i]);
-                                    },
-                                    itemCount: cycles_positions.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
-                                )
-                            )
-                        )
-                    )
-                )
-            ]);
-        }
-        if (icp_positions.length > 0) {
-            column_children.addAll([
-                Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.fromLTRB(11,0,0,0),
-                    child: Text('ICP-POSITIONS', style: TextStyle(fontSize: 17)),
-                ),
-                LimitedBox(
-                    maxHeight: 407,
-                    child: Container(
-                        constraints: BoxConstraints(),
-                        //padding: EdgeInsets.all(17),
-                        child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                            child: Scrollbar(
-                                controller: icp_positions_scroll_controller,
-                                child: ListView.builder(
-                                    controller: icp_positions_scroll_controller,
-                                    key: UniqueKey(), //ValueKey('cm icp-positions'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        return IcpPositionListItem(icp_positions[i]);
-                                    },
-                                    itemCount: icp_positions.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
-                                )
-                            )
-                        )
-                    )
-                )
-            ]);
-        }
-        if (cycles_positions_purchases.length > 0) {
-            column_children.addAll([
-                Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.fromLTRB(11,0,0,0),
-                    child: Text('CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-                ),
-                LimitedBox(
-                    maxHeight: 390,
-                    child: Container(
-                        constraints: BoxConstraints(),
-                        //padding: EdgeInsets.all(17),
-                        child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                            child: Scrollbar(
-                                controller: cycles_positions_purchases_scroll_controller,
-                                child: ListView.builder(
-                                    controller: cycles_positions_purchases_scroll_controller,
-                                    key: UniqueKey(), //ValueKey('cm cycles-positions-purchases'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        return CyclesPositionPurchaseListItem(cycles_positions_purchases[i]);
-                                    },
-                                    itemCount: cycles_positions_purchases.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
-                                )
-                            )
-                        )
-                    )
-                )
-            ]);
-        }
-        if (icp_positions_purchases.length > 0) {
-            column_children.addAll([
-                Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.fromLTRB(11,0,0,0),
-                    child: Text('ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-                ),
-                LimitedBox(
-                    maxHeight: 390,
-                    child: Container(
-                        constraints: BoxConstraints(),
-                        //padding: EdgeInsets.all(17),
-                        child: ScrollConfiguration(
-                            behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                            child: Scrollbar(
-                                controller: icp_positions_purchases_scroll_controller,
-                                child: ListView.builder(
-                                    controller: icp_positions_purchases_scroll_controller,
-                                    key: UniqueKey(), //ValueKey('cm icp-positions-purchases'),
-                                    scrollDirection: Axis.horizontal,
-                                    reverse: false,
-                                    shrinkWrap: false,
-                                    padding: EdgeInsets.all(7),
-                                    itemBuilder: (BuildContext context, int i) {
-                                        return IcpPositionPurchaseListItem(icp_positions_purchases[i]);
-                                    },
-                                    itemCount: icp_positions_purchases.length,
-                                    addAutomaticKeepAlives: true,
-                                    addRepaintBoundaries: true,
-                                    addSemanticIndexes: true,
-                                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                    clipBehavior: Clip.hardEdge
-                                )
-                            )
-                        )
-                    )
-                )
-            ]);
-        }
-        
-            
-        if (state.user != null && state.user!.cycles_bank != null) {    
-            
-            
-            final bool Function(CyclesMarketDataPosition) is_position_by_the_user = (CyclesMarketDataPosition cmdp) {
-                return aresamebytes(cmdp.positor.bytes, state.user!.cycles_bank!.principal.bytes);
-            };
-            
-            Map<BigInt, CyclesPosition> current_user_cycles_positions = Map.fromIterable(
-                state.cycles_market_data.cycles_positions.where(is_position_by_the_user).toList(),
-                key: (cp) => cp.id,
-                value: (cp) => cp
-            );
-        
-            Map<BigInt, IcpPosition> current_user_icp_positions = Map.fromIterable(
-                state.cycles_market_data.icp_positions.where(is_position_by_the_user).toList(),
-                key: (ip) => ip.id,
-                value: (ip) => ip
-            );
-                
-            List<CMCyclesPosition> cycles_bank_cm_cycles_positions_logs = state.user!.cycles_bank!.cm_cycles_positions.reversed.toList();
-                //..sort((CMCyclesPosition cm_cp1, CMCyclesPosition cm_cp2)=>cm_cp1.id.compareTo(cm_cp2.id))
-                //..reversed.toList();
-                
-            List<CMIcpPosition> cycles_bank_cm_icp_positions_logs = state.user!.cycles_bank!.cm_icp_positions.reversed.toList();
-                //..sort((CMIcpPosition cm_ip1, CMIcpPosition cm_ip2)=>cm_ip1.id.compareTo(cm_ip2.id))
-                //..reversed.toList();
-                
-            Map<BigInt, List<CMMessageCyclesPositionPurchasePositorLog>> user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs = {};
-            
-            Map<BigInt, List<CMMessageIcpPositionPurchasePositorLog>> user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs = {};
-            
-            for (CMCyclesPosition cm_cycles_position in cycles_bank_cm_cycles_positions_logs) {
-                user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id] = 
-                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_positor_logs
-                        .where((CMMessageCyclesPositionPurchasePositorLog l) => cm_cycles_position.id == l.cm_message_cycles_position_purchase_positor_quest.cycles_position_id)
-                        .toList()
-                        ..sort((CMMessageCyclesPositionPurchasePositorLog l1, CMMessageCyclesPositionPurchasePositorLog l2) => l1.cm_message_cycles_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_cycles_position_purchase_positor_quest.purchase_id));
-            }
-
-            for (CMIcpPosition cm_icp_position in cycles_bank_cm_icp_positions_logs) {
-                user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id] = 
-                    state.user!.cycles_bank!.cm_message_icp_position_purchase_positor_logs
-                        .where((CMMessageIcpPositionPurchasePositorLog l) => cm_icp_position.id == l.cm_message_icp_position_purchase_positor_quest.icp_position_id)
-                        .toList()
-                        ..sort((CMMessageIcpPositionPurchasePositorLog l1, CMMessageIcpPositionPurchasePositorLog l2) => l1.cm_message_icp_position_purchase_positor_quest.purchase_id.compareTo(l2.cm_message_icp_position_purchase_positor_quest.purchase_id));
-            }
-            
-            
-            if (cycles_bank_cm_cycles_positions_logs.length > 0) {
-                column_children.addAll([
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(11,0,0,0),
-                        child: Text('USER-CYCLES-POSITIONS', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 390,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            //padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: user_cycles_positions_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: user_cycles_positions_scroll_controller,
-                                        key: UniqueKey(), //ValueKey('cm user-cycles-positions'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(7),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            CMCyclesPosition cm_cycles_position = cycles_bank_cm_cycles_positions_logs[i];
-                                            List<CMMessageCyclesPositionPurchasePositorLog> purchases = user_cycles_positions_ids_map_cm_message_cycles_position_purchase_positor_logs[cm_cycles_position.id]!;  
-                                            Cycles? current_position;
-                                            if (current_user_cycles_positions[cm_cycles_position.id] is CyclesPosition) {
-                                                current_position = (current_user_cycles_positions[cm_cycles_position.id] as CyclesPosition).cycles;
-                                            }
-                                            CMMessageVoidCyclesPositionPositorLog? cm_message_void_cycles_position_positor_log;
-                                            Iterable<CMMessageVoidCyclesPositionPositorLog> cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id = 
-                                                state.user!.cycles_bank!.cm_message_void_cycles_position_positor_logs
-                                                    .where((CMMessageVoidCyclesPositionPositorLog l) => cm_cycles_position.id == l.cm_message_void_cycles_position_positor_quest.position_id);
-                                            if (cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.length > 0) {
-                                                cm_message_void_cycles_position_positor_log = cm_message_void_cycles_position_positor_logs_with_the_cm_cycles_position_id.first;
-                                            }
-                                            return UserCyclesPositionListItem(
-                                                cm_cycles_position: cm_cycles_position,
-                                                purchases: purchases,
-                                                current_position: current_position,             
-                                                cm_message_void_cycles_position_positor_log: cm_message_void_cycles_position_positor_log,
-                                            );
-                                        },
-                                        itemCount: cycles_bank_cm_cycles_positions_logs.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
-                                )
-                            )                   
-                        )
-                    )
-                ]);
-            }
-            
-            if (cycles_bank_cm_icp_positions_logs.length > 0) {
-                column_children.addAll([
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(11,0,0,0),
-                        child: Text('USER-ICP-POSITIONS', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 390,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            //padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: user_icp_positions_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: user_icp_positions_scroll_controller,
-                                        key: UniqueKey(), //ValueKey('cm user-icp-positions'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(7),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            CMIcpPosition cm_icp_position = cycles_bank_cm_icp_positions_logs[i];
-                                            List<CMMessageIcpPositionPurchasePositorLog> purchases = user_icp_positions_ids_map_cm_message_icp_position_purchase_positor_logs[cm_icp_position.id]!;  
-                                            IcpTokens? current_position;
-                                            if (current_user_icp_positions[cm_icp_position.id] is IcpPosition) {
-                                                current_position = (current_user_icp_positions[cm_icp_position.id] as IcpPosition).icp;
-                                            }
-                                            CMMessageVoidIcpPositionPositorLog? cm_message_void_icp_position_positor_log;
-                                            Iterable<CMMessageVoidIcpPositionPositorLog> cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id = 
-                                                state.user!.cycles_bank!.cm_message_void_icp_position_positor_logs
-                                                    .where((CMMessageVoidIcpPositionPositorLog l) => cm_icp_position.id == l.cm_message_void_icp_position_positor_quest.position_id);
-                                            if (cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.length > 0) {
-                                                cm_message_void_icp_position_positor_log = cm_message_void_icp_position_positor_logs_with_the_cm_icp_position_id.first;
-                                            }
-                                            return UserIcpPositionListItem(
-                                                cm_icp_position: cm_icp_position,
-                                                purchases: purchases,
-                                                current_position: current_position,             
-                                                cm_message_void_icp_position_positor_log: cm_message_void_icp_position_positor_log,
-                                            );
-                                        },
-                                        itemCount: cycles_bank_cm_icp_positions_logs.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
-                                )
-                            )                
-                        )
-                    )
-                ]);
-            }
-            
-            if (state.user!.cycles_bank!.cm_cycles_positions_purchases.length > 0) {
-                
-                List<CMCyclesPositionPurchase> cycles_bank_cm_cycles_positions_purchases = state.user!.cycles_bank!.cm_cycles_positions_purchases.reversed.toList();
-            
-                column_children.addAll([
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(11,0,0,0),
-                        child: Text('USER-CYCLES-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 390,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            //padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: user_cycles_positions_purchases_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: user_cycles_positions_purchases_scroll_controller,
-                                        key: UniqueKey(), //ValueKey('cm user-cycles-positions-purchases'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(7),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            CMCyclesPositionPurchase cm_cycles_position_purchase = cycles_bank_cm_cycles_positions_purchases[i];
-                                            CMMessageCyclesPositionPurchasePurchaserLog? cm_message_cycles_position_purchase_purchaser_log;
-                                            try {
-                                                cm_message_cycles_position_purchase_purchaser_log = 
-                                                    state.user!.cycles_bank!.cm_message_cycles_position_purchase_purchaser_logs
-                                                    .where((CMMessageCyclesPositionPurchasePurchaserLog cm_message_cycles_position_purchase_purchaser_log)=>cm_message_cycles_position_purchase_purchaser_log.cm_message_cycles_position_purchase_purchaser_quest.purchase_id == cm_cycles_position_purchase.id).first;
-                                            } catch(e) {
-                                                
-                                            }
-                                            return UserCyclesPositionPurchaseListItem(
-                                                cm_cycles_position_purchase: cm_cycles_position_purchase,
-                                                cm_message_cycles_position_purchase_purchaser_log: cm_message_cycles_position_purchase_purchaser_log
-                                            );
-                                        },
-                                        itemCount: cycles_bank_cm_cycles_positions_purchases.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ]);
-            } 
-            
-            if (state.user!.cycles_bank!.cm_icp_positions_purchases.length > 0) {
-                
-                List<CMIcpPositionPurchase> cycles_bank_cm_icp_positions_purchases = state.user!.cycles_bank!.cm_icp_positions_purchases.reversed.toList();
-            
-                column_children.addAll([
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(11,0,0,0),
-                        child: Text('USER-ICP-POSITIONS-PURCHASES', style: TextStyle(fontSize: 17)),
-                    ),
-                    LimitedBox(
-                        maxHeight: 390,
-                        child: Container(
-                            constraints: BoxConstraints(),
-                            //padding: EdgeInsets.all(17),
-                            child: ScrollConfiguration(
-                                behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                                child: Scrollbar(
-                                    controller: user_icp_positions_purchases_scroll_controller,
-                                    child: ListView.builder(
-                                        controller: user_icp_positions_purchases_scroll_controller,
-                                        key: UniqueKey(), //ValueKey('cm user-icp-positions-purchases'),
-                                        scrollDirection: Axis.horizontal,
-                                        reverse: false,
-                                        shrinkWrap: false,
-                                        padding: EdgeInsets.all(7),
-                                        itemBuilder: (BuildContext context, int i) {
-                                            CMIcpPositionPurchase cm_icp_position_purchase = cycles_bank_cm_icp_positions_purchases[i];
-                                            CMMessageIcpPositionPurchasePurchaserLog? cm_message_icp_position_purchase_purchaser_log;
-                                            try {
-                                                cm_message_icp_position_purchase_purchaser_log = 
-                                                    state.user!.cycles_bank!.cm_message_icp_position_purchase_purchaser_logs
-                                                    .where((CMMessageIcpPositionPurchasePurchaserLog cm_message_icp_position_purchase_purchaser_log)=>cm_message_icp_position_purchase_purchaser_log.cm_message_icp_position_purchase_purchaser_quest.purchase_id == cm_icp_position_purchase.id).first;
-                                            } catch(e) {
-                                                
-                                            }
-                                            return UserIcpPositionPurchaseListItem(
-                                                cm_icp_position_purchase: cm_icp_position_purchase,
-                                                cm_message_icp_position_purchase_purchaser_log: cm_message_icp_position_purchase_purchaser_log
-                                            );
-                                        },
-                                        itemCount: cycles_bank_cm_icp_positions_purchases.length,
-                                        addAutomaticKeepAlives: true,
-                                        addRepaintBoundaries: true,
-                                        addSemanticIndexes: true,
-                                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                                        clipBehavior: Clip.hardEdge
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ]);
-            }    
-        }
-        
-        
-        return Center(
-            child: Container(
-                constraints: BoxConstraints(maxWidth: 900),
-                child: Column(
-                    children: [
-                        ScaffoldBodyHeader(Text('CYCLES-MARKET', style: TextStyle(fontSize: 19))),
-                        Expanded(
-                            child: ListView(
-                                padding: EdgeInsets.all(0),
-                                children: [
-                                    Column(
-                                        children: column_children 
-                                    )
-                                ],
-                                addAutomaticKeepAlives: true
-                            )
-                        )
-                    ]
-                )
-            )
-        );
-        
-        
-        //return Center(child: Text('Construction ...'));
-    }
-}
-*/
 

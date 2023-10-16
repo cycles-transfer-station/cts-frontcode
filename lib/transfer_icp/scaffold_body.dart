@@ -198,7 +198,7 @@ class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
             child: Column(
                 children: [
                     Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}', style: TextStyle(fontSize:17)),
-                    Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
+                    //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
                         child: ElevatedButton(

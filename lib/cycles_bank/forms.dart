@@ -676,7 +676,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
                                                     title: Text('Transfer error:'),
-                                                    content: Text('${e}'),
+                                                    content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
                                                             onPressed: () => Navigator.pop(context),

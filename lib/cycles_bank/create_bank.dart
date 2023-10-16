@@ -39,14 +39,14 @@ class CreateBank extends StatelessWidget {
                                             content: SingleChildScrollView(
                                                 child: Text(
                         */
-    """A CTS-MEMBERSHIP grants you the ability to mint, hold, transfer, and trade the native CYCLES.
+"""A CTS-MEMBERSHIP grants you the ability to mint, hold, transfer, and trade the native CYCLES.
     
-    Creating a CTS-MEMBERSHIP lets you into the CYCLES-MARKET where you can trade tokens with the CYCLES stablecoin.
+Creating a CTS-MEMBERSHIP lets you into the CYCLES-MARKET where you can trade tokens with the CYCLES stablecoin.
     
-    For each member, the CTS creates a CYCLES-BANK.
+For each member, the CTS creates a new CYCLES-BANK.
     
-    A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockchain that can hold CYCLES, transfer CYCLES, and receive CYCLES. A CYCLES-BANK can hold many tokens on the ICP blockchain. A CYCLES-BANK makes logs of the cycles-transfers and of the cycles-market trades.
-    """
+A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockchain that holds, transfers, and cepts CYCLES. A CYCLES-BANK can hold many tokens on the ICP blockchain. A CYCLES-BANK keeps logs of the cycles-transfers.
+"""
                         /*
                                                 )
                                             ),
@@ -73,8 +73,9 @@ class CreateBank extends StatelessWidget {
                         child: Center(
                             child: Column(
                                 children: [
-                                    Text('Send the MEMBERSHIP COST ICP to this address to pay for a membership: \nUSER-CTS-ICP-ID: ', style: TextStyle(fontFamily: 'ChakraPetch')),
-                                    SelectableText('${state.user!.user_icp_id}\n', style: TextStyle(fontSize: 14, fontFamily: 'ChakraPetch')),
+                                    Text('Send the MEMBERSHIP COST ICP to this address to pay for a 1-year membership:'),
+                                    Center(child: Text('USER-CTS-ICP-ID', style: TextStyle(fontFamily: 'ChakraPetch'))),
+                                    SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 14, fontFamily: 'ChakraPetch')),
                                 ]
                             )
                         )

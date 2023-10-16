@@ -17,7 +17,7 @@ class CyclesMarketMain {
     CyclesMarketMain();
 
     List<Icrc1TokenTradeContract> icrc1token_trade_contracts = [];
-    
+    List<Icrc1TokenTradeContract> get trade_contracts => this.icrc1token_trade_contracts;
     Future<void> fresh_icrc1token_trade_contracts() async {
         Vector<Record> s = (c_backwards_one(await cycles_market.call(
             calltype: CallType.query,
@@ -489,6 +489,10 @@ class MatchTokensQuest extends Record {
                 token_decimal_places: token_decimal_places
             )
         );
+    }
+    
+    Cycles cycles_of_the_position() {
+        return tokens_transform_cycles(this.tokens.quantums, this.cycles_per_token_rate);
     }
 }
 

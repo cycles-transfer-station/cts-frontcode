@@ -1071,10 +1071,10 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
     
         
     
-    Future<void> load_cm_data() async {
+    Future<void> load_cm_data([Icrc1TokenTradeContract? trade_contract]) async {
         await Future.wait([
-            this.fresh_cm_trade_contracts_token_balances(),
-            this.load_cm_user_positions(),
+            this.fresh_cm_trade_contracts_token_balances(trade_contract),
+            this.load_cm_user_positions(trade_contract),
         ]);
     }
     
