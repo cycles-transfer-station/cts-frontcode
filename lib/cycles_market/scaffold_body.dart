@@ -458,12 +458,22 @@ class PositionBook extends StatelessWidget {
         );
     }
     
-    DataRow create_position_book_data_row(Tokens tokens_quantity, CyclesPerTokenRate rate, PositionKind kind) {
+    DataRow create_position_book_data_row(BigInt quantity, CyclesPerTokenRate rate, PositionKind kind) {
+        late Cycles cycles_quantity; 
+        late Tokens tokens_quantity; 
+        switch (kind) {
+            case PositionKind.Cycles: 
+                cycles_quantity = Cycles(cycles: quantity);
+                tokens_quantity = Tokens(quantums: cycles_transform_tokens(cycles_quantity, rate), decimal_places: rate.token_decimal_places);
+            case PositionKind.Token: 
+                tokens_quantity = Tokens(quantums: quantity, decimal_places: rate.token_decimal_places);
+                cycles_quantity = tokens_transform_cycles(tokens_quantity.quantums, rate);
+        }
         return DataRow(
             cells: [
                 DataCell(show_tokens_with_symbol(tokens_quantity, state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol, show_token_symbol_in_main: false)),
                 DataCell(Text('${rate}', style: TextStyle(color: kind == PositionKind.Cycles ? green : red, fontFamily:'CourierNewBold' ))),
-                DataCell(show_tokens_with_symbol(tokens_transform_cycles(tokens_quantity.quantums, rate), cycles_symbol, show_token_symbol_in_main: false))
+                DataCell(show_tokens_with_symbol(cycles_quantity, cycles_symbol, show_token_symbol_in_main: false))
             ]
         );
     }
@@ -475,14 +485,14 @@ class PositionBook extends StatelessWidget {
         
         List<DataRow> datarows = [];
 
-        Tokens quantity = Tokens(quantums: BigInt.from(0), decimal_places: positions.first.quantity.decimal_places); 
+        BigInt quantity = BigInt.from(0); 
         CyclesPerTokenRate rate = positions.first.rate;
         
         bool is_buy_positions = position_kind == PositionKind.Cycles; 
         
         for (PositionBookItem position in positions) {    
             if (position.rate.cycles_per_token_quantum_rate == rate.cycles_per_token_quantum_rate) {
-                quantity = Tokens(quantums: quantity.quantums + position.quantity.quantums, decimal_places: quantity.decimal_places);
+                quantity += position.quantity;
             } else {
                 datarows.add(create_position_book_data_row(quantity, rate, position_kind));
                 quantity = position.quantity; 
@@ -605,28 +615,23 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     state.is_loading = true;
                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
-                                    
-                                    Tokens match_tokens = 
-                                        widget.position_kind == PositionKind.Cycles 
-                                        ? Tokens(quantums: trade_amount.quantums ~/ cycles_per_token_rate.cycles_per_token_quantum_rate, decimal_places: token_decimal_places) 
-                                        : trade_amount;
-                                    MatchTokensQuest match_tokens_quest = MatchTokensQuest(
-                                        tokens: match_tokens,
-                                        cycles_per_token_rate: cycles_per_token_rate,
-                                    );
-                                    
                                     late BigInt position_id;
-                                    
                                     try {
                                         if (widget.position_kind == PositionKind.Cycles) {
-                                            position_id = await state.user!.bank!.cm_buy_tokens(
+                                            position_id = await state.user!.bank!.cm_trade_cycles(
                                                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
-                                                match_tokens_quest
+                                                TradeCyclesQuest(
+                                                    cycles: Cycles(cycles: trade_amount.quantums),
+                                                    cycles_per_token_rate: cycles_per_token_rate,
+                                                )
                                             );
                                         } else {
-                                            position_id = await state.user!.bank!.cm_sell_tokens(
+                                            position_id = await state.user!.bank!.cm_trade_tokens(
                                                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
-                                                match_tokens_quest
+                                                TradeTokensQuest(
+                                                    tokens: trade_amount,
+                                                    cycles_per_token_rate: cycles_per_token_rate
+                                                )
                                             );
                                         }
                                     } catch(e,s) {
@@ -675,8 +680,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
-                                            state.user!.bank!.load_cm_user_positions(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                                            state.user!.bank!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
                                             state.user!.bank!.fresh_metrics(),
                                             state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_positions_and_trades()
                                         ]);
@@ -821,23 +825,22 @@ String position_log_timestamp_format(DateTime t) {
     } 
     return s;
 }
-DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl, String token_symbol) {
-    int token_decimal_places = pl.match_tokens_quest.tokens.decimal_places;
-    
+DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl, String token_symbol, int token_decimal_places) {
     Tokens? fill_tokens;
     Cycles? fill_cycles;
     
+    BigInt position_purchases_sum_quantity = pl.quest.quantity - pl.mainder_position_quantity;
     Widget position_purchases_sum_widget = pl.position_kind == PositionKind.Cycles 
         ? 
-        show_tokens_with_symbol(pl.match_tokens_quest.cycles_of_the_position() - Cycles(cycles: pl.mainder_position_quantity), cycles_symbol) 
+        show_tokens_with_symbol(Cycles(cycles: position_purchases_sum_quantity), cycles_symbol) 
         : 
-        show_tokens_with_symbol(Tokens(quantums: pl.match_tokens_quest.tokens.quantums - pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol);
+        show_tokens_with_symbol(Tokens(quantums: position_purchases_sum_quantity, decimal_places: token_decimal_places), token_symbol);
     
     Widget fill_widget = pl.position_kind == PositionKind.Cycles 
-                ? 
-                show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
-                : 
-                show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
+        ? 
+        show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
+        : 
+        show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
     
     CustomState state = MainStateBind.get_state<CustomState>(context);
     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -864,11 +867,11 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
             DataCell(
                 pl.position_kind == PositionKind.Cycles 
                 ? 
-                show_tokens_with_symbol(tokens_transform_cycles(pl.match_tokens_quest.tokens.quantums, pl.match_tokens_quest.cycles_per_token_rate), cycles_symbol)
+                show_tokens_with_symbol(Cycles(cycles: pl.quest.quantity), cycles_symbol)
                 : 
-                show_tokens_with_symbol(pl.match_tokens_quest.tokens, token_symbol)
+                show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_decimal_places), token_symbol)
             ),
-            DataCell(Text('${pl.match_tokens_quest.cycles_per_token_rate.toString().replaceFirst('T', '')}')),
+            DataCell(Text('${pl.quest.cycles_per_token_rate.toString()/*.replaceFirst('T', '')*/}')),
             DataCell(
                 Row(children: [position_purchases_sum_widget, Text(' <-> '), fill_widget])
             ),
@@ -1038,7 +1041,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_positions_storage[plid]!;
         }
-        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol);
+        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol, state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals);
         
     }
     Future<AsyncRowsResponse> getRows(int start_i, int count) async {
@@ -1055,7 +1058,8 @@ class UserCMLogsDataTableSource extends DataTableSource {
                 (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, 
                     state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                     .current_user_positions[k]!, 
-                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
+                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol,
+                    state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals
                 )
             ));
         }
@@ -1069,7 +1073,8 @@ class UserCMLogsDataTableSource extends DataTableSource {
             rows.addAll(keys_show.map(
                 (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                     .current_user_positions[k]!,
-                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol
+                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol,
+                    state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals
                 )
             ));
         }

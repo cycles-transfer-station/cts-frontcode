@@ -89,8 +89,8 @@ class Icrc1TokenTradeContract extends Record {
             ViewPositionBookSponse sponse = ViewPositionBookSponse.of_the_record(c_backwards_one(await this.canister.call(
                 calltype: CallType.query,
                 method_name: switch (kind) { 
-                    PositionKind.Cycles => 'view_buy_position_book',
-                    PositionKind.Token => 'view_sell_position_book',
+                    PositionKind.Cycles => 'view_cycles_position_book',
+                    PositionKind.Token => 'view_tokens_position_book',
                 },
                 put_bytes: c_forwards([
                     Record.of_the_map({
@@ -213,7 +213,7 @@ class Icrc1TokenTradeContract extends Record {
 
 
 
-typedef PositionBookItem = ({CyclesPerTokenRate rate, Tokens quantity}); 
+typedef PositionBookItem = ({CyclesPerTokenRate rate, BigInt quantity}); 
 
 
 class ViewPositionBookSponse {
@@ -233,7 +233,7 @@ class ViewPositionBookSponse {
                             cycles_per_token_quantum_rate: (item[0] as Nat).value,
                             token_decimal_places: token_decimal_places,
                         ),
-                        quantity: Tokens(quantums: (item[1] as Nat).value, decimal_places: token_decimal_places),
+                        quantity: (item[1] as Nat).value,
                     );
                 }).toList(),
             is_last_chunk: (r['is_last_chunk'] as Bool).value,
@@ -292,7 +292,7 @@ class PositionTerminationData {
 class PositionLog {
     final BigInt id;
     Principal positor;
-    MatchTokensQuest match_tokens_quest;
+    CreatePositionQuestLog quest;
     PositionKind position_kind;
     BigInt mainder_position_quantity; // if cycles position this is: Cycles, if Token position this is: Tokens.
     BigInt fill_quantity; // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
@@ -306,7 +306,7 @@ class PositionLog {
     PositionLog._({
         required this.id,
         required this.positor,
-        required this.match_tokens_quest,
+        required this.quest,
         required this.position_kind,
         required this.mainder_position_quantity, // if cycles position this is: Cycles, if Token position this is: Tokens.
         required this.fill_quantity, // if mainder_position_quantity is: Cycles, this is: Tokens. if mainder_position_quantity is: Tokens, this is Cycles.
@@ -335,8 +335,8 @@ class PositionLog {
         return PositionLog._(
             id: u128_of_the_be_bytes(bytes.getRange(2, 18)),
             positor: principal_of_the_30_bytes(bytes.getRange(18, 48)),
-            match_tokens_quest: MatchTokensQuest(
-                tokens: Tokens(quantums: u128_of_the_be_bytes(bytes.getRange(48, 64)), decimal_places: token_decimal_places),
+            quest: CreatePositionQuestLog(
+                quantity: u128_of_the_be_bytes(bytes.getRange(48, 64)),
                 cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(64, 80)), token_decimal_places:token_decimal_places),
             ),
             position_kind: bytes[80] == 0 ? PositionKind.Cycles : PositionKind.Token,
@@ -390,8 +390,8 @@ class StorageCanister {
 abstract class Icrc1TokenTradeContractPosition {
     BigInt get id;
     Principal get positor;
-    MatchTokensQuest get match_tokens_quest;
-    CyclesPerTokenRate get cycles_per_token_rate => this.match_tokens_quest.cycles_per_token_rate; // use current available rate?
+    TradeQuest get quest;
+    CyclesPerTokenRate get cycles_per_token_rate => this.quest.cycles_per_token_rate;
     BigInt get timestamp_nanos;
     
     Cycles get cycles_quantity;
@@ -402,20 +402,20 @@ abstract class Icrc1TokenTradeContractPosition {
 class CyclesPosition implements Icrc1TokenTradeContractPosition {
     final BigInt id;   
     final Principal positor;
-    final MatchTokensQuest match_tokens_quest;
+    final TradeCyclesQuest quest;
     final Cycles current_position_cycles;
     final BigInt purchases_rates_times_cycles_quantities_sum;
     final Tokens tokens_payouts_fees_sum;
     final BigInt timestamp_nanos;
     
     Cycles get cycles_quantity => this.current_position_cycles;
-    BigInt get tokens_quantity => cycles_transform_tokens(this.current_position_cycles, this.match_tokens_quest.cycles_per_token_rate); // use current available rate?
-    CyclesPerTokenRate get cycles_per_token_rate => match_tokens_quest.cycles_per_token_rate;
+    BigInt get tokens_quantity => cycles_transform_tokens(this.current_position_cycles, this.quest.cycles_per_token_rate);
+    CyclesPerTokenRate get cycles_per_token_rate => quest.cycles_per_token_rate;
     
     CyclesPosition._({
         required this.id,   
         required this.positor,
-        required this.match_tokens_quest,
+        required this.quest,
         required this.current_position_cycles,
         required this.purchases_rates_times_cycles_quantities_sum,
         required this.tokens_payouts_fees_sum,
@@ -425,7 +425,7 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
         return CyclesPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
-            match_tokens_quest: MatchTokensQuest.of_the_record(r['match_tokens_quest'] as Record, token_decimal_places: token_decimal_places),
+            quest: TradeCyclesQuest.of_the_record(r['quest'] as Record, token_decimal_places: token_decimal_places),
             current_position_cycles: Cycles.oftheNat(r['current_position_cycles'] as Nat),
             purchases_rates_times_cycles_quantities_sum: (r['purchases_rates_times_cycles_quantities_sum'] as Nat).value, 
             tokens_payouts_fees_sum: Tokens(quantums: (r['tokens_payouts_fees_sum'] as Nat).value, decimal_places: token_decimal_places),
@@ -438,20 +438,20 @@ class CyclesPosition implements Icrc1TokenTradeContractPosition {
 class TokenPosition implements Icrc1TokenTradeContractPosition {
     final BigInt id;   
     final Principal positor;
-    final MatchTokensQuest match_tokens_quest;    
+    final TradeTokensQuest quest;    
     final Tokens current_position_tokens;
     final BigInt purchases_rates_times_token_quantities_sum;
     final Cycles cycles_payouts_fees_sum;
     final BigInt timestamp_nanos;
     
-    Cycles get cycles_quantity => tokens_transform_cycles(this.current_position_tokens.quantums, this.match_tokens_quest.cycles_per_token_rate);
+    Cycles get cycles_quantity => tokens_transform_cycles(this.current_position_tokens.quantums, this.quest.cycles_per_token_rate);
     BigInt get tokens_quantity => this.current_position_tokens.quantums;
-    CyclesPerTokenRate get cycles_per_token_rate => match_tokens_quest.cycles_per_token_rate;
+    CyclesPerTokenRate get cycles_per_token_rate => quest.cycles_per_token_rate;
     
     TokenPosition._({
         required this.id,
         required this.positor,
-        required this.match_tokens_quest,
+        required this.quest,
         required this.current_position_tokens,
         required this.purchases_rates_times_token_quantities_sum,
         required this.cycles_payouts_fees_sum,
@@ -461,7 +461,7 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
         return TokenPosition._(
             id: (r['id'] as Nat).value,
             positor: r['positor'] as Principal,
-            match_tokens_quest: MatchTokensQuest.of_the_record(r['match_tokens_quest'] as Record, token_decimal_places: token_decimal_places),            
+            quest: TradeTokensQuest.of_the_record(r['quest'] as Record, token_decimal_places: token_decimal_places),            
             current_position_tokens: Tokens(quantums: (r['current_position_tokens'] as Nat).value, decimal_places: token_decimal_places),
             purchases_rates_times_token_quantities_sum: (r['purchases_rates_times_token_quantities_sum'] as Nat).value, 
             cycles_payouts_fees_sum: Cycles.oftheNat(r['cycles_payouts_fees_sum'] as Nat),
@@ -471,18 +471,42 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
 }
 
 
-class MatchTokensQuest extends Record {
+abstract class TradeQuest {
+    CyclesPerTokenRate get cycles_per_token_rate;
+}
+
+class TradeCyclesQuest extends Record implements TradeQuest {
+    final Cycles cycles;
+    final CyclesPerTokenRate cycles_per_token_rate;
+    TradeCyclesQuest({
+        required this.cycles,
+        required this.cycles_per_token_rate,
+    }) {
+        this['cycles'] = this.cycles;
+        this['cycles_per_token_rate'] = this.cycles_per_token_rate;
+    }
+    static TradeCyclesQuest of_the_record(Record r, {required int token_decimal_places}) {
+        return TradeCyclesQuest(
+            cycles: Cycles.oftheNat(r['cycles'] as Nat),
+            cycles_per_token_rate: CyclesPerTokenRate(
+                cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
+                token_decimal_places: token_decimal_places
+            )
+        );
+    }
+}
+class TradeTokensQuest extends Record implements TradeQuest {
     final Tokens tokens;
     final CyclesPerTokenRate cycles_per_token_rate;
-    MatchTokensQuest({
+    TradeTokensQuest({
         required this.tokens,
         required this.cycles_per_token_rate,
     }) {
         this['tokens'] = this.tokens;
         this['cycles_per_token_rate'] = this.cycles_per_token_rate;
     }
-    static MatchTokensQuest of_the_record(Record r, {required int token_decimal_places}) {
-        return MatchTokensQuest(
+    static TradeTokensQuest of_the_record(Record r, {required int token_decimal_places}) {
+        return TradeTokensQuest(
             tokens: Tokens(quantums: (r['tokens'] as Nat).value, decimal_places: token_decimal_places),
             cycles_per_token_rate: CyclesPerTokenRate(
                 cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
@@ -490,10 +514,27 @@ class MatchTokensQuest extends Record {
             )
         );
     }
-    
-    Cycles cycles_of_the_position() {
-        return tokens_transform_cycles(this.tokens.quantums, this.cycles_per_token_rate);
-    }
+}
+
+
+class CreatePositionQuestLog {
+    final BigInt quantity;
+    final CyclesPerTokenRate cycles_per_token_rate;
+    CreatePositionQuestLog({
+        required this.quantity,
+        required this.cycles_per_token_rate,
+    });
+    /*
+    static CreatePositionQuestLog of_the_record(Record r, {required int token_decimal_places}) {
+        return CreatePositionQuestLog(
+            quantity: (r['quantity'] as Nat).value,
+            cycles_per_token_rate: CyclesPerTokenRate(
+                cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
+                token_decimal_places: token_decimal_places
+            )
+        );
+    } 
+    */
 }
 
 

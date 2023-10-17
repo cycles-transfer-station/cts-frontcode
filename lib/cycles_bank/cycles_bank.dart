@@ -589,11 +589,11 @@ class CyclesBank extends Canister {
     
     
     
-    Future<BigInt> cm_post_tokens_(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q, PositionKind kind) async {
+    Future<BigInt> cm_trade_(Icrc1TokenTradeContract icrc1token_trade_contract, Record q, PositionKind kind) async {
         Variant v = c_backwards_one(
             await user.call(
                 this, 
-                method_name: switch (kind) { PositionKind.Cycles => "cm_buy_tokens", _ => "cm_sell_tokens" },
+                method_name: switch (kind) { PositionKind.Cycles => "cm_trade_cycles", _ => "cm_trade_tokens" },
                 calltype: CallType.call,
                 put_bytes: c_forwards([icrc1token_trade_contract, q])
             )
@@ -603,31 +603,42 @@ class CyclesBank extends Canister {
                 return match_variant(s as Variant, {
                     Ok: (r)=>((r as Record)['position_id'] as Nat).value,
                     Err: (e){
-                        return match_variant<Never>(e as Variant, {
+                        return match_variant<Never>(e as Variant,
+                            kind == PositionKind.Cycles 
+                            ?
+                            {
                             
-                        }); 
+                            }
+                            :
+                            {
+                            
+                            }
+                        ); 
                     }
                 });
             },
             Err: (e) {
-                return match_variant<Never>(e as Variant, {
-                    /*
-                    MemoryIsFull,
-                    CyclesBalanceTooLow{ cycles_balance: Cycles },
-                    CMBuyTokensCallError((u32, String)),
-                    CMBuyTokensCallSponseCandidDecodeError{candid_error: String, sponse_bytes: Vec<u8> }, 
-                    */
-                });
+                return match_variant<Never>(e as Variant, 
+                    kind == PositionKind.Cycles 
+                    ?
+                    {
+                    
+                    }
+                    :
+                    {
+                    
+                    }
+                );
             } 
         });
         return position_id;
     }    
 
-    Future<BigInt/*position-id*/> cm_buy_tokens(Icrc1TokenTradeContract icrc1token_trade_contract, MatchTokensQuest q) async {
-        return await cm_post_tokens_(icrc1token_trade_contract, q, PositionKind.Cycles);
+    Future<BigInt/*position-id*/> cm_trade_cycles(Icrc1TokenTradeContract icrc1token_trade_contract, TradeCyclesQuest q) async {
+        return await cm_trade_(icrc1token_trade_contract, q, PositionKind.Cycles);
     }
 
-    Future<BigInt/*position-id*/> cm_sell_tokens(Icrc1TokenTradeContract tc, MatchTokensQuest q) async {
+    Future<BigInt/*position-id*/> cm_trade_tokens(Icrc1TokenTradeContract tc, TradeTokensQuest q) async {
         
         await Future.wait([
             this.fresh_icrc1_balances(tc.ledger_data),
@@ -659,7 +670,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
         
         }
         
-        return await cm_post_tokens_(tc, q, PositionKind.Token);
+        return await cm_trade_(tc, q, PositionKind.Token);
     }
     
     
@@ -1337,20 +1348,6 @@ class BurnIcpMintCyclesSuccess {
 
 // ------------- CYCLES-MARKET -------------
 
-
-/*
-class MatchTokensQuest extends Record {
-    final Tokens tokens;
-    final CyclesPerTokenRate cycles_per_token_rate;
-    MatchTokensQuest({
-        required this.tokens,
-        required this.cycles_per_token_rate
-    }) {
-        this['tokens'] = tokens;
-        this['cycles_per_token_rate'] = cycles_per_token_rate;
-    }
-}
-*/
 
 
 
