@@ -826,6 +826,9 @@ String position_log_timestamp_format(DateTime t) {
     return s;
 }
 DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl, String token_symbol, int token_decimal_places) {
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
     Tokens? fill_tokens;
     Cycles? fill_cycles;
     
@@ -842,11 +845,203 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
         : 
         show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
     
-    CustomState state = MainStateBind.get_state<CustomState>(context);
-    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    Widget position_quantity = 
+        pl.position_kind == PositionKind.Cycles 
+        ? 
+        show_tokens_with_symbol(Cycles(cycles: pl.quest.quantity), cycles_symbol)
+        : 
+        show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_decimal_places), token_symbol);
+    
+    Widget trades_quantities_widget = Row(children: [position_purchases_sum_widget, Icon(Icons.arrow_right_alt), fill_widget]);
+    
+    Widget current_position_widget = 
+        pl.position_termination != null 
+        ? 
+        Container(
+            child: Text(switch (pl.position_termination!.cause) {
+                PositionTerminationCause.Fill => 'DONE',
+                PositionTerminationCause.Bump => 'BUMP',
+                PositionTerminationCause.TimePass => 'TIMEOUT',
+                PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',   
+            })
+        ) 
+        :
+        Row(
+            children: [
+                pl.position_kind == PositionKind.Cycles
+                ? 
+                show_tokens_with_symbol(Cycles(cycles: pl.mainder_position_quantity), cycles_symbol)
+                : 
+                show_tokens_with_symbol(Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)        
+                ,
+                //SizedBox(width: 11),
+                Spacer(),
+                OutlineButton(
+                    child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
+                    on_press_complete: () async {
+                            state.loading_text = 'closing position ${pl.id} ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            
+                            try {
+                                await state.user!.bank!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
+                            } catch(e,s) {
+                                //print(e);
+                                //print(s);
+                                await showDialog(
+                                    context: state.context,
+                                    barrierDismissible: false,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('cancel position error'),
+                                            content: Text('${etext(e)}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                return;
+                            }
+                            
+                            state.loading_text = 'cancel position success.\nposition-id: ${pl.id}\nloading positions ...';
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                            
+                            Future success_dialog = showDialog(
+                                context: state.context,
+                                builder: (BuildContext context) {
+                                    return AlertDialog(
+                                        title: Text('cancel position success!'),
+                                        content: Text('position-id: ${pl.id}'),
+                                        actions: <Widget>[
+                                            TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text('OK'),
+                                            ),
+                                        ]
+                                    );
+                                }   
+                            ); 
+                            
+                            try {
+                                await Future.wait([
+                                    state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                    state.user!.bank!.load_cm_user_positions(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                    state.user!.bank!.fresh_metrics(),
+                                    state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_positions_and_trades()
+                                ]);
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Error when loading current positions:'),
+                                            content: Text('${etext(e)}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
+                            }
+                            
+                            await success_dialog;
+                            
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
+                            
+                    }
+                )
+            ]
+        );
+    
          
     return DataRow2(
-        onTap: () {},
+        onTap: () async {
+            await showDialog(
+                context: context, // state.context?. 
+                builder: (BuildContext context) {
+                    return Dialog(
+                        child: SingleChildScrollView(
+                            child: Container(
+                                padding: EdgeInsets.all(27),
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                        Text('POSITION-LOG', style: TextStyle(fontSize: 23)),
+                                        SizedBox(height: 14),
+                                        DataTable(
+                                            headingRowHeight: 0,
+                                            dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 19),
+                                            columns: [
+                                                DataColumn(label: Text('')),
+                                                DataColumn(label: Text('')),
+                                            ],
+                                            rows: [
+                                                DataRow(cells: [
+                                                    DataCell(Text('ID:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(Text('${pl.id}')),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(position_quantity),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(Text(pl.quest.cycles_per_token_rate.toString())),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('FILL:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(trades_quantities_widget),
+                                                ]),
+                                                /*
+                                                DataRow(cells: [
+                                                    DataCell(Text('FILL-AVERAGE-RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(Text('${pl.fill_average_rate}')),
+                                                ]),
+                                                */
+                                                DataRow(cells: [
+                                                    DataCell(Text('CURRENT-POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(current_position_widget),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('FILL-PERCENTAGE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(
+                                                        Builder(
+                                                            builder: (BuildContext context) {
+                                                                double percentage_fill = position_purchases_sum_quantity.toDouble() / (pl.quest.quantity / BigInt.from(100));
+                                                                return Text('${percentage_fill.toInt()}%');
+                                                            }
+                                                        )
+                                                    ),
+                                                ]),
+                                                
+                                            ]
+                                        ),
+                                        //SizedBox(height: 17),
+                                        //ViewTrades
+                                        SizedBox(height: 17),
+                                        OutlineButton(
+                                            on_press_complete: () => Navigator.pop(context),
+                                            child: Text('DONE', style: TextStyle(fontSize: 11)),
+                                        ),
+                                    ],
+                                ),
+                            )
+                        )
+                    );
+                }                
+            );
+        },
         cells: <DataCell>[
              /*
              DataCell(
@@ -864,126 +1059,14 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
             */
             DataCell(Text(pl.id.toString())),
             //DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
-            DataCell(
-                pl.position_kind == PositionKind.Cycles 
-                ? 
-                show_tokens_with_symbol(Cycles(cycles: pl.quest.quantity), cycles_symbol)
-                : 
-                show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_decimal_places), token_symbol)
-            ),
+            DataCell(position_quantity),
             DataCell(Text('${pl.quest.cycles_per_token_rate.toString()/*.replaceFirst('T', '')*/}')),
             DataCell(
-                Row(children: [position_purchases_sum_widget, Text(' <-> '), fill_widget])
+                trades_quantities_widget
             ),
             //DataCell(Text('${pl.fill_average_rate.toString().replaceFirst('T', '')}')),
             DataCell(
-                pl.position_termination != null 
-                ? 
-                Container(
-                    child: Text(switch (pl.position_termination!.cause) {
-                        PositionTerminationCause.Fill => 'FULL',
-                        PositionTerminationCause.Bump => 'BUMP',
-                        PositionTerminationCause.TimePass => 'TIMEOUT',
-                        PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',   
-                    })
-                ) 
-                :
-                Row(
-                    children: [
-                        pl.position_kind == PositionKind.Cycles
-                        ? 
-                        show_tokens_with_symbol(Cycles(cycles: pl.mainder_position_quantity), cycles_symbol)
-                        : 
-                        show_tokens_with_symbol(Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)        
-                        ,
-                        //SizedBox(width: 11),
-                        Spacer(),
-                        OutlineButton(
-                            child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
-                            on_press_complete: () async {
-                                    state.loading_text = 'closing position ${pl.id} ...';
-                                    state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    try {
-                                        await state.user!.bank!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
-                                    } catch(e,s) {
-                                        //print(e);
-                                        //print(s);
-                                        await showDialog(
-                                            context: state.context,
-                                            barrierDismissible: false,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('cancel position error'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                    
-                                    state.loading_text = 'cancel position success.\nposition-id: ${pl.id}\nloading positions ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('cancel position success!'),
-                                                content: Text('position-id: ${pl.id}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    ); 
-                                    
-                                    try {
-                                        await Future.wait([
-                                            state.user!.bank!.fresh_cm_trade_contracts_token_balances(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
-                                            state.user!.bank!.load_cm_user_positions(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
-                                            state.user!.bank!.fresh_metrics(),
-                                            state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_positions_and_trades()
-                                        ]);
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error when loading current positions:'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                    }
-                                    
-                                    await success_dialog;
-                                    
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
-                                    
-                            }
-                        )
-                    ]
-                )
+                current_position_widget
             ),            
             //DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
             
