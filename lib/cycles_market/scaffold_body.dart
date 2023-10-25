@@ -825,9 +825,13 @@ String position_log_timestamp_format(DateTime t) {
     } 
     return s;
 }
-DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl, String token_symbol, int token_decimal_places) {
+DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl) {
     CustomState state = MainStateBind.get_state<CustomState>(context);
     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+    Icrc1Ledger ledger_data = state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data;
+    String token_symbol = ledger_data.symbol;
+    int token_decimal_places = ledger_data.decimals;
     
     Tokens? fill_tokens;
     Cycles? fill_cycles;
@@ -852,7 +856,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
         : 
         show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_decimal_places), token_symbol);
     
-    Widget trades_quantities_widget = Row(children: [position_purchases_sum_widget, Icon(Icons.arrow_right_alt), fill_widget]);
+    Widget trades_quantities_widget = Row(children: [position_purchases_sum_widget, Text(' <> '), fill_widget]);
     
     Widget current_position_widget = 
         pl.position_termination != null 
@@ -992,6 +996,10 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                                     DataCell(Text('${pl.id}')),
                                                 ]),
                                                 DataRow(cells: [
+                                                    DataCell(Text('TIMESTAMP:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
+                                                ]),
+                                                DataRow(cells: [
                                                     DataCell(Text('POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
                                                     DataCell(position_quantity),
                                                 ]),
@@ -1000,35 +1008,44 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                                     DataCell(Text(pl.quest.cycles_per_token_rate.toString())),
                                                 ]),
                                                 DataRow(cells: [
-                                                    DataCell(Text('FILL:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                    DataCell(trades_quantities_widget),
-                                                ]),
-                                                /*
-                                                DataRow(cells: [
-                                                    DataCell(Text('FILL-AVERAGE-RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                    DataCell(Text('${pl.fill_average_rate}')),
-                                                ]),
-                                                */
-                                                DataRow(cells: [
-                                                    DataCell(Text('CURRENT-POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                    DataCell(current_position_widget),
-                                                ]),
-                                                DataRow(cells: [
                                                     DataCell(Text('FILL-PERCENTAGE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
                                                     DataCell(
                                                         Builder(
                                                             builder: (BuildContext context) {
                                                                 double percentage_fill = position_purchases_sum_quantity.toDouble() / (pl.quest.quantity / BigInt.from(100));
-                                                                return Text('${percentage_fill.toInt()}%');
+                                                                return Text('${percentage_fill.toStringAsFixed(0)}%');
                                                             }
                                                         )
                                                     ),
                                                 ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('FILL:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(trades_quantities_widget),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('FILL-AVERAGE-RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(Text('${pl.fill_average_rate}')),
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('CTS-PAYOUT-FEES:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(
+                                                        pl.position_kind == PositionKind.Cycles 
+                                                        ? 
+                                                        show_tokens_with_symbol(Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places), token_symbol)
+                                                        : 
+                                                        show_tokens_with_symbol(Cycles(cycles: pl.payouts_fees_sum), cycles_symbol)                                                        
+                                                    )
+                                                ]),
+                                                DataRow(cells: [
+                                                    DataCell(Text('CURRENT-POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                    DataCell(current_position_widget),
+                                                ]),
+                                                
                                                 
                                             ]
                                         ),
-                                        //SizedBox(height: 17),
-                                        //ViewTrades
+                                        SizedBox(height: 17),
+                                        ViewTradesForASpecificUserPosition(pl, cm_main_trade_contracts_i: cm_main_trade_contracts_i),
                                         SizedBox(height: 17),
                                         OutlineButton(
                                             on_press_complete: () => Navigator.pop(context),
@@ -1124,7 +1141,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_positions_storage[plid]!;
         }
-        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl!, state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol, state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals);
+        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl!);
         
     }
     Future<AsyncRowsResponse> getRows(int start_i, int count) async {
@@ -1140,9 +1157,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             rows.addAll(keys_show.map(
                 (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, 
                     state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                    .current_user_positions[k]!, 
-                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol,
-                    state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals
+                    .current_user_positions[k]!,
                 )
             ));
         }
@@ -1154,10 +1169,9 @@ class UserCMLogsDataTableSource extends DataTableSource {
                 .take(map_keys.length - max(0, start_i - current_user_positions_length))
                 .skip(max(0, map_keys.length - max(0, start_i - current_user_positions_length).toInt() - count - rows.length).toInt()).toList().reversed;
             rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                (k)=>datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, 
+                    state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                     .current_user_positions[k]!,
-                    state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]!.ledger_data.symbol,
-                    state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals
                 )
             ));
         }
@@ -1172,6 +1186,70 @@ class UserCMLogsDataTableSource extends DataTableSource {
     int get selectedRowCount => 0;
 
 
+}
+
+
+
+class ViewTradesForASpecificUserPosition extends StatefulWidget {
+    PositionLog pl;
+    int cm_main_trade_contracts_i;
+    ViewTradesForASpecificUserPosition(this.pl, {required this.cm_main_trade_contracts_i}) : super(key: ValueKey('ViewTradesForASpecificUserPosition: ${pl.id}'));
+    State createState() => ViewTradesForASpecificUserPositionState();
+}
+class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecificUserPosition> {
+    
+    late final ScrollController scrollcontroller;
+    Future<void>? load_cm_user_position_trade_logs_future;
+        
+    void initState() {        
+        scrollcontroller = ScrollController();
+        //scrollcontroller.addListener(_handle_controller_scroll);
+        super.initState();
+    }
+    void dispose() {
+        //scrollcontroller.removeListener(_handle_controller_scroll);
+        scrollcontroller.dispose();
+        super.dispose();
+    }
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        if (load_cm_user_position_trade_logs_future == null && state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id] == null) {
+            load_cm_user_position_trade_logs_future = state.user!.bank!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl.id); 
+        }
+        
+        return Container(
+            height: 300,
+            width: 700,
+            child: FutureBuilder(
+                future: load_cm_user_position_trade_logs_future,
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                    return switch (snapshot.connectionState) {
+                        ConnectionState.none || ConnectionState.done => DataTable2(
+                            headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                            dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
+                            isHorizontalScrollBarVisible: false,
+                            scrollController: scrollcontroller,
+                            showBottomBorder: true,
+                            columns: <DataColumn>[
+                                DataColumn(label: Text('TRADE-ID')),
+                                
+                            ],
+                            rows: [
+                                for (TradeLog tl in state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
+                                    DataRow(cells: [DataCell(Text('${tl.id}'))])
+                            ]
+                        ),
+                        _ => Center(child: Text('loading the trades for this position'))
+                    };
+                }
+            
+            )
+        );
+    }
+    
 }
 
 

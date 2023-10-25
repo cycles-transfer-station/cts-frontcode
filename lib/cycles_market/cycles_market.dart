@@ -541,21 +541,22 @@ class CreatePositionQuestLog {
 DateTime datetime_of_the_nanos(BigInt nanos) => DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(nanos).toInt());
 
 class TradeLog {
-
-    final BigInt position_id;
+    
+    final BigInt matchee_position_id;
+    final BigInt matcher_position_id;
     final BigInt id;
-    final Principal positor;
-    final Principal purchaser;
+    final Principal matchee_position_positor;
+    final Principal matcher_position_positor;
     final BigInt tokens;
     final Cycles cycles;
     final CyclesPerTokenRate cycles_per_token_rate;
-    final PositionKind position_kind;
+    final PositionKind matchee_position_kind;
     final BigInt timestamp_nanos;
-    /*
+    
     final BigInt tokens_payout_fee;
-    final BigInt tokens_payout_ledger_transfer_fees_sum;
+    //final BigInt tokens_payout_ledger_transfer_fees_sum;
     final Cycles cycles_payout_fee;
-    */
+    
     final bool? cycles_payout_lock;
     final bool? token_payout_lock;
     final Record? cycles_payout_data;
@@ -564,20 +565,24 @@ class TradeLog {
     DateTime datetime() => datetime_of_the_nanos(timestamp_nanos);
     
     TradeLog._({
-        required this.position_id,
+        required this.matchee_position_id,
+        required this.matcher_position_id,
         required this.id,
-        required this.positor,
-        required this.purchaser,
+        required this.matchee_position_positor,
+        required this.matcher_position_positor,
         required this.tokens,
         required this.cycles,
         required this.cycles_per_token_rate,
-        required this.position_kind,
+        required this.matchee_position_kind,
         required this.timestamp_nanos,
+        required this.tokens_payout_fee,
+        required this.cycles_payout_fee,
         this.cycles_payout_lock,
         this.token_payout_lock,
         this.cycles_payout_data,
         this.token_payout_data,
     });
+    /*
     static TradeLog of_the_record(Record r, {required int token_decimal_places}) {
         return TradeLog._(
             position_id: (r['position_id'] as Nat).value,
@@ -595,17 +600,22 @@ class TradeLog {
             token_payout_data: (r['token_payout_data'] as Record),
         );
     }
+    */
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 207;
     static TradeLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         return TradeLog._(
-            position_id: u128_of_the_be_bytes(bytes.getRange(0, 16)),
-            id: u128_of_the_be_bytes(bytes.getRange(16, 32)),
-            positor: principal_of_the_30_bytes(bytes.getRange(32, 62)),
-            purchaser: principal_of_the_30_bytes(bytes.getRange(62, 92)),
-            tokens: u128_of_the_be_bytes(bytes.getRange(92, 108)),
-            cycles: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(108, 124))),
-            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(124, 140)), token_decimal_places: token_decimal_places),
-            position_kind: bytes[140] == 0 ? PositionKind.Cycles : PositionKind.Token,
-            timestamp_nanos: u128_of_the_be_bytes(bytes.getRange(141, 157)),
+            matchee_position_id: u128_of_the_be_bytes(bytes.getRange(2, 18)),
+            id: u128_of_the_be_bytes(bytes.getRange(18, 34)),
+            matchee_position_positor: principal_of_the_30_bytes(bytes.getRange(34, 64)),
+            matcher_position_positor: principal_of_the_30_bytes(bytes.getRange(64, 94)),
+            tokens: u128_of_the_be_bytes(bytes.getRange(94, 110)),
+            cycles: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(110, 126))),
+            cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: u128_of_the_be_bytes(bytes.getRange(126, 142)), token_decimal_places: token_decimal_places),
+            matchee_position_kind: bytes[142] == 0 ? PositionKind.Cycles : PositionKind.Token,
+            timestamp_nanos: u128_of_the_be_bytes(bytes.getRange(143, 159)),
+            tokens_payout_fee: u128_of_the_be_bytes(bytes.getRange(159, 175)),
+            cycles_payout_fee: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(175, 191))),
+            matcher_position_id: u128_of_the_be_bytes(bytes.getRange(191, 207)),
         );
     }
 }
