@@ -359,7 +359,7 @@ class MarketTradesState extends State<MarketTrades> {
                                 DataCell(show_tokens_with_symbol(trade.quantity, state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.symbol, show_token_symbol_in_main: false)),
                                 DataCell(Text('${trade.rate}')),
                                 DataCell(show_tokens_with_symbol(tokens_transform_cycles(trade.quantity.quantums, trade.rate), cycles_symbol, show_token_symbol_in_main: false)),
-                                DataCell(Text('${timestamp_format(datetime_of_the_nanos(trade.time_nanos))}'))
+                                DataCell(Text('${timestamp_format(datetime_of_the_nanos(trade.time_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size)))
                             ]
                         ),
                 ]
@@ -982,7 +982,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: <Widget>[
                                         Text('POSITION-LOG', style: TextStyle(fontSize: 23)),
-                                        SizedBox(height: 14),
+                                        SizedBox(height: 21),
                                         DataTable(
                                             headingRowHeight: 0,
                                             dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 19),
@@ -997,7 +997,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                                 ]),
                                                 DataRow(cells: [
                                                     DataCell(Text('TIMESTAMP:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                    DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
+                                                    DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
                                                 ]),
                                                 DataRow(cells: [
                                                     DataCell(Text('POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
@@ -1044,7 +1044,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                                 
                                             ]
                                         ),
-                                        SizedBox(height: 17),
+                                        SizedBox(height: 27),
                                         ViewTradesForASpecificUserPosition(pl, cm_main_trade_contracts_i: cm_main_trade_contracts_i),
                                         SizedBox(height: 17),
                                         OutlineButton(
@@ -1188,7 +1188,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
 
 }
 
-
+const double timestamp_format_font_size = 13;
 
 class ViewTradesForASpecificUserPosition extends StatefulWidget {
     PositionLog pl;
@@ -1220,36 +1220,70 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
             load_cm_user_position_trade_logs_future = state.user!.bank!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl.id); 
         }
         
+        int token_decimal_places = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.decimals;
+        String token_symbol = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.symbol;
+        
         return Container(
+            padding: EdgeInsets.all(13),
             height: 300,
-            width: 700,
-            child: FutureBuilder(
-                future: load_cm_user_position_trade_logs_future,
-                builder: (BuildContext context, AsyncSnapshot snapshot) {
-                    return switch (snapshot.connectionState) {
-                        ConnectionState.none || ConnectionState.done => DataTable2(
-                            headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
-                            dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
-                            isHorizontalScrollBarVisible: false,
-                            scrollController: scrollcontroller,
-                            showBottomBorder: true,
-                            columns: <DataColumn>[
-                                DataColumn(label: Text('TRADE-ID')),
-                                
-                            ],
-                            rows: [
-                                for (TradeLog tl in state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
-                                    DataRow(cells: [DataCell(Text('${tl.id}'))])
-                            ]
-                        ),
-                        _ => Center(child: Text('loading the trades for this position'))
-                    };
-                }
-            
+            width: 850,
+            child: Column(
+                children: [
+                    Text('TRADES', style: TextStyle(fontSize: 21)),
+                    Expanded(child: FutureBuilder(
+                        future: load_cm_user_position_trade_logs_future,
+                        builder: (BuildContext context, AsyncSnapshot snapshot) {
+                            return switch (snapshot.connectionState) {
+                                ConnectionState.none || ConnectionState.done => DataTable2(
+                                    headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
+                                    isHorizontalScrollBarVisible: false,
+                                    scrollController: scrollcontroller,
+                                    showBottomBorder: true,
+                                    smRatio: 0.45,
+                                    lmRatio: 1.6,
+                                    columns: <DataColumn>[
+                                        DataColumn2(label: Text('ID'), size: ColumnSize.S),
+                                        DataColumn2(label: Text('TIMESTAMP'), size: ColumnSize.M),
+                                        DataColumn2(label: Text('TRADE'), size: ColumnSize.L),
+                                        DataColumn2(label: Text('RATE'), size: ColumnSize.M),
+                                        DataColumn2(label: Text('FEE'), size: ColumnSize.S),
+                                    ],
+                                    rows: [
+                                        for (TradeLog tl in state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
+                                            DataRow(cells: [
+                                                DataCell(Text('${tl.id}')),
+                                                DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(tl.timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
+                                                DataCell(Builder(builder: (BuildContext context) {
+                                                    List<Widget> trade_mounts = [
+                                                        show_tokens_with_symbol(tl.cycles, cycles_symbol),
+                                                        show_tokens_with_symbol(Tokens(quantums: tl.tokens, decimal_places: token_decimal_places), token_symbol)                                                
+                                                    ];
+                                                    if (widget.pl.position_kind == PositionKind.Token) {
+                                                        trade_mounts = trade_mounts.reversed.toList(); 
+                                                    } 
+                                                    return Row(children: [trade_mounts[0], Text(' <> '), trade_mounts[1]]);
+                                                })),
+                                                DataCell(Text('${tl.cycles_per_token_rate.toString()}')),
+                                                DataCell(
+                                                    widget.pl.position_kind == PositionKind.Cycles
+                                                    ?
+                                                    show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_fee, decimal_places: token_decimal_places), token_symbol)
+                                                    : 
+                                                    show_tokens_with_symbol(tl.cycles_payout_fee, cycles_symbol)
+                                                ),
+                                            ])
+                                            //DataRow(cells: [])
+                                    ]
+                                ),
+                                _ => Center(child: Text('loading the trades for this position'))
+                            };
+                        }
+                    ))
+                ]
             )
         );
-    }
-    
+    }   
 }
 
 

@@ -1075,10 +1075,10 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                 }  
             }))
         );
-           
     }
         
-    // loads every trade for a position
+        
+        
     Future<void> load_cm_user_position_trade_logs(Icrc1TokenTradeContract tc, BigInt position_id) async {
         /*
         if (this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id] != null) {
@@ -1184,6 +1184,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
         await Future.wait([
             this.fresh_cm_trade_contracts_token_balances(trade_contract),
             this.load_cm_user_positions(trade_contract),
+            // loads the latest trades of those positions whos trades have been already loaded at least once. because those positions that have not loaded the trades at least once, will load if clicked on.
             Future(()async{
                 List<Icrc1TokenTradeContract> trade_contracts = trade_contract != null ? [trade_contract] : this.cm_trade_contracts.keys.toList();
                 await Future.wait(
