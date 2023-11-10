@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 
+import './ii_login.dart';
 
 
 
@@ -38,7 +39,7 @@ class OutlineButton extends StatelessWidget {
     String? button_text;
     Widget? child;
     
-    OutlineButton({this.child, this.button_text, required this.on_press_complete}) : super(key: ValueKey(button_text)) {
+    OutlineButton({this.child, this.button_text, required this.on_press_complete, super.key}) {
         if ((this.child == null && this.button_text == null) || (this.child != null && this.button_text != null)) {
             throw Exception('OutlineButton, must take one of a button_text or a child');        
         }    
@@ -58,6 +59,26 @@ class OutlineButton extends StatelessWidget {
        
 }
 
+
+
+class OutlineButtonIILogin extends StatefulWidget {
+    OutlineButtonIILogin({super.key});
+    State createState() => OutlineButtonIILoginState();
+}
+class OutlineButtonIILoginState extends State<OutlineButtonIILogin> {
+    Future? ii_login_future;
+    
+    Widget build(BuildContext context) {
+        return OutlineButton(
+            button_text: 'ii login',
+            on_press_complete: () async {
+                ii_login_future = ii_login(context);  
+                await ii_login_future; 
+            }
+        );   
+    }
+}
+    
 
 
 

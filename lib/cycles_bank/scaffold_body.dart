@@ -56,10 +56,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                 Text('Log in for the cycles-bank.'),
                 Container(
                     padding: EdgeInsets.all(11),
-                    child: Center(child: OutlineButton(
-                        button_text: 'ii login',
-                        on_press_complete: () async { await ii_login(context); }
-                    ))
+                    child: Center(child: OutlineButtonIILogin(key: ValueKey('cb-scaffold_body-ii-login-button')))
                 )
             ]);
         
@@ -362,6 +359,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         )),
                         Expanded(
                             child: ListView(
+                                key: ValueKey('cycles_bank scaffold_body main-list-view'),
                                 controller: main_listview_scroll_controller,
                                 padding: EdgeInsets.all(0),
                                 children: [

@@ -139,81 +139,7 @@ A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockcha
                         height: 50,
                         constraints: BoxConstraints(maxWidth: 550),
                         //padding: EdgeInsets.fromLTRB(11,0,11,0),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('CREATE MEMBERSHIP', style: TextStyle(fontSize: 21)),
-                            onPressed: () async {  
-                                state.loading_text = 'creating membership ...';
-                                state.is_loading = true;
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                try {
-                                    await state.user!.purchase_cycles_bank(opt_referral_user_id: null); //FOR THE DO! ferral
-                                } catch(e) {
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('create membership error:'),
-                                                content: Text('${e}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );  
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                    return;    
-                                }
-                                state.loading_text = 'create membership success. \nbank id: ${state.user!.cycles_bank!.principal.text}\nloading membership metrics ...';
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                
-                                Future success_dialog = showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Create membership success:'),
-                                            content: Text('Bank id: ${state.user!.cycles_bank!.principal.text}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                ); 
-                                
-                                try {
-                                    await state.user!.cycles_bank!.fresh_metrics();
-                                } catch(e) {
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('load membership metrics error:'),
-                                                content: Text('${e}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );  
-                                }
-                                
-                                await success_dialog;
-                                
-                                state.is_loading = false;
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                                            
-                            }
-                        ),
+                        child: CreateMembershipButton(key: ValueKey('create_bank CreateMembershipButton')),
                     ),
                     SizedBox(
                         width: 3,
@@ -224,5 +150,106 @@ A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockcha
         );
     }
 }
+
+
+
+class CreateMembershipButton extends StatefulWidget {
+    CreateMembershipButton({super.key});
+    State createState() => CreateMembershipButtonState();
+}
+class CreateMembershipButtonState extends State<CreateMembershipButton> {
+    Future? create_membership_future;
+    Future? purchase_cycles_bank_future;
+    
+    
+    Widget build(BuildContext context) {
+        return ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: blue),
+            child: Text('CREATE MEMBERSHIP', style: TextStyle(fontSize: 21)),
+            onPressed: () async {  
+                create_membership_future = membership_future_fn(context); 
+                await create_membership_future;
+            }
+        );
+    }
+    
+    Future membership_future_fn(BuildContext context) async {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        state.loading_text = 'creating membership ...';
+        state.is_loading = true;
+        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+        try {
+            purchase_cycles_bank_future = state.user!.purchase_cycles_bank(opt_referral_user_id: null); //FOR THE DO! ferral
+            await purchase_cycles_bank_future;
+        } catch(e) {
+            await showDialog(
+                context: state.context,
+                builder: (BuildContext context) {
+                    return AlertDialog(
+                        title: Text('create membership error:'),
+                        content: Text('${e}'),
+                        actions: <Widget>[
+                            TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                            ),
+                        ]
+                    );
+                }   
+            );  
+            state.is_loading = false;
+            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+            return;    
+        }
+        state.loading_text = 'create membership success. \nbank id: ${state.user!.cycles_bank!.principal.text}\nloading membership metrics ...';
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+        
+        Future success_dialog = showDialog(
+            context: state.context,
+            builder: (BuildContext context) {
+                return AlertDialog(
+                    title: Text('Create membership success:'),
+                    content: Text('Bank id: ${state.user!.cycles_bank!.principal.text}'),
+                    actions: <Widget>[
+                        TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                        ),
+                    ]
+                );
+            }   
+        ); 
+        
+        try {
+            await state.user!.cycles_bank!.fresh_metrics();
+        } catch(e) {
+            await showDialog(
+                context: state.context,
+                builder: (BuildContext context) {
+                    return AlertDialog(
+                        title: Text('load membership metrics error:'),
+                        content: Text('${e}'),
+                        actions: <Widget>[
+                            TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                            ),
+                        ]
+                    );
+                }   
+            );  
+        }
+        
+        await success_dialog;
+        
+        state.is_loading = false;
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+         
+    }
+    
+}
+
 
 

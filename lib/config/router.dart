@@ -11,7 +11,7 @@ import '../tools/widgets.dart';
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {
     @override
-    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfABrowserUrlString(route.location!);
+    Future<CustomUrl> parseRouteInformation(RouteInformation route) async => CustomUrl.outOfABrowserUrlString(route.location);
     @override
     RouteInformation restoreRouteInformation(CustomUrl custom_url) => RouteInformation(location: custom_url.string);
 }

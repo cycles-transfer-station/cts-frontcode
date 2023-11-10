@@ -148,7 +148,7 @@ class CustomState {
             Future(()async{ 
                 await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                 await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>load_local_root_key_onto_a_canister(c.canister)));
-                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_positions_and_trades()));
+                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_data()));
             }),
             Future(()async{ 
                 print('load state of the browser storage');

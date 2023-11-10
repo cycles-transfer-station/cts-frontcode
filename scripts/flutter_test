@@ -1,0 +1,23 @@
+chromedriver --port=4444 &
+CHROMEDRIVER_PID=$!
+
+
+flutter drive \
+  --driver=test_driver/integration_test.dart \
+  --target=e2e-tests/1_test.dart \
+  --driver-port=4444 \
+  --browser-name=chrome \
+  -d chrome 
+  
+  
+  
+  #--profile \
+  #--web-port
+  
+
+
+
+
+kill $CHROMEDRIVER_PID
+#kill -9 $CHROMEDRIVER_PID
+

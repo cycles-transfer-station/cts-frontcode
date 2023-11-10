@@ -1080,14 +1080,35 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
         
         
     Future<void> load_cm_user_position_trade_logs(Icrc1TokenTradeContract tc, BigInt position_id) async {
-        /*
+        // remove logs after the first one found to still have a pending payout. 
         if (this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id] != null) {
-            this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id]!.removeWhere((key, value)=>value.)
+            BigInt? first_id_of_a_pending_payout; 
+            // find pl so we know which position kind it is.
+            PositionLog? pl = this.cm_trade_contracts[tc]!.current_user_positions[position_id];
+            if (pl == null) {
+                pl = this.cm_trade_contracts[tc]!.user_positions_storage[position_id]!;
+            }
+            // choose payout type based on the user position kind.
+            bool Function(TradeLogAndPayoutStatus) tlaps_payout_status_fn = 
+                pl.position_kind == PositionKind.Cycles
+                ?
+                (TradeLogAndPayoutStatus l)=>l.tokens_payout_complete
+                :
+                (TradeLogAndPayoutStatus l)=>l.cycles_payout_complete;
+            for (TradeLogAndPayoutStatus l in this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id]!.values) {
+                if (tlaps_payout_status_fn(l) == false) {
+                    first_id_of_a_pending_payout = l.tl.id;
+                    break;
+                }
+            }
+            if (first_id_of_a_pending_payout != null) {
+                this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id]!.removeWhere((key, value)=>key>=first_id_of_a_pending_payout!);
+            }        
         }
-        */
+        
         BigInt? last_known_trade_log_id = this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id].nullmap((tls_map)=>tls_map.lastKey());
         
-        List<TradeLog> gather_trades = []; 
+        List<TradeLogAndPayoutStatus> gather_trades = []; 
         bool catch_up_complete = false;
         for (String method_name in ['view_position_pending_trades', 'view_position_purchases_logs']) {
             int? latest_logs_b_chunk_len = null;
@@ -1097,22 +1118,40 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                     method_name: method_name,
                     calltype: CallType.query,
                     put_bytes: c_forwards_one(Record.of_the_map({
-                        'opt_start_before_id': Option<Nat>(value: gather_trades.isEmpty ? null : Nat(gather_trades.first.id), value_type: Nat()),
+                        'opt_start_before_id': Option<Nat>(value: gather_trades.isEmpty ? null : Nat(gather_trades.first.tl.id), value_type: Nat()),
                         'index_key': Nat(position_id)
                     })),
                 );
                 
                 int logs_b_chunk_len = logs_b_chunk.length;
-                                       
-                List<TradeLog> trades_chunk = logs_b_chunk.chunks(TradeLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: tc.ledger_data.decimals)).toList();
+                    
+                int log_b_chunk_size = TradeLog.STABLE_MEMORY_SERIALIZE_SIZE;                   
+                late TradeLogAndPayoutStatus Function(Uint8List b) b_code_fn;
+                if (method_name == 'view_position_pending_trades') {
+                    log_b_chunk_size += 2; 
+                    b_code_fn = (b)=>TradeLogAndPayoutStatus(
+                        TradeLog.oftheStableMemorySerialization(b.sublist(0, TradeLog.STABLE_MEMORY_SERIALIZE_SIZE), token_decimal_places: tc.ledger_data.decimals),
+                        cycles_payout_complete: b[b.length - 2] == 1,
+                        tokens_payout_complete: b[b.length - 1] == 1
+                    );
+                } else {
+                    b_code_fn = (b)=> TradeLogAndPayoutStatus(
+                        TradeLog.oftheStableMemorySerialization(b, token_decimal_places: tc.ledger_data.decimals),
+                        cycles_payout_complete: true,
+                        tokens_payout_complete: true,
+                    );
+                }
+                List<TradeLogAndPayoutStatus> trades_chunk = logs_b_chunk.chunks(log_b_chunk_size)
+                    .map(b_code_fn)
+                    .toList();
                 
                 gather_trades = [
                     ...trades_chunk,
                     ...gather_trades
                 ];
                 
-                if (last_known_trade_log_id != null && gather_trades.isNotEmpty && gather_trades.first.id <= last_known_trade_log_id) {
-                    gather_trades = gather_trades.skipWhile((t)=>t.id <= last_known_trade_log_id).toList();
+                if (last_known_trade_log_id != null && gather_trades.isNotEmpty && gather_trades.first.tl.id <= last_known_trade_log_id) {
+                    gather_trades = gather_trades.skipWhile((l)=>l.tl.id <= last_known_trade_log_id).toList();
                     catch_up_complete = true;
                     break;
                 }
@@ -1132,7 +1171,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
         // cm_trades_storage-canisters
         if (catch_up_complete == false) {
             int chunk_size = 1400000 ~/ TradeLog.STABLE_MEMORY_SERIALIZE_SIZE;
-            for (StorageCanister trades_storage_canister in (await tc.view_trades_storage_canisters())) {
+            for (StorageCanister trades_storage_canister in (await tc.view_trades_storage_canisters()).reversed) {
                 while (true) {
                     Uint8List logs_b_chunk = await this.user.call(
                         tc.canister,
@@ -1140,20 +1179,26 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                         calltype: CallType.query,
                         put_bytes: c_forwards([
                             Nat(position_id), 
-                            Option<Nat>(value: gather_trades.isEmpty ? null : Nat(gather_trades.first.id), value_type: Nat()), 
+                            Option<Nat>(value: gather_trades.isEmpty ? null : Nat(gather_trades.first.tl.id), value_type: Nat()), 
                             Nat32(chunk_size),
                         ])
                     );
                     
-                    List<TradeLog> trades_chunk = logs_b_chunk.chunks(TradeLog.STABLE_MEMORY_SERIALIZE_SIZE).map((b)=>TradeLog.oftheStableMemorySerialization(b, token_decimal_places: tc.ledger_data.decimals)).toList();
+                    List<TradeLogAndPayoutStatus> trades_chunk = logs_b_chunk.chunks(TradeLog.STABLE_MEMORY_SERIALIZE_SIZE)
+                        .map((b)=>TradeLogAndPayoutStatus(
+                            TradeLog.oftheStableMemorySerialization(b, token_decimal_places: tc.ledger_data.decimals),
+                            cycles_payout_complete: true,
+                            tokens_payout_complete: true,
+                        ))
+                        .toList();
                     
                     gather_trades = [
                         ...trades_chunk,
                         ...gather_trades
                     ];
                     
-                    if (last_known_trade_log_id != null && gather_trades.isNotEmpty && gather_trades.first.id <= last_known_trade_log_id) {
-                        gather_trades = gather_trades.skipWhile((t)=>t.id <= last_known_trade_log_id).toList();
+                    if (last_known_trade_log_id != null && gather_trades.isNotEmpty && gather_trades.first.tl.id <= last_known_trade_log_id) {
+                        gather_trades = gather_trades.skipWhile((l)=>l.tl.id <= last_known_trade_log_id).toList();
                         catch_up_complete = true;
                         break;
                     }
@@ -1173,7 +1218,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
 
         this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id] = SplayTreeMap.from({
             ...?this.cm_trade_contracts[tc]!.user_positions_trade_logs[position_id],
-            ...SplayTreeMap.fromIterable(gather_trades, key: (tl)=>tl.id, value: (tl)=>tl)
+            ...SplayTreeMap.fromIterable(gather_trades, key: (l)=>l.tl.id, value: (l)=>l)
         });
             
     }
@@ -1520,7 +1565,23 @@ class CyclesBankCMTradeContractData {
     SplayTreeMap<BigInt, PositionLog> user_positions_storage = SplayTreeMap();
     
     
-    SplayTreeMap<BigInt, SplayTreeMap<BigInt, TradeLog>> user_positions_trade_logs = SplayTreeMap();
+    SplayTreeMap<BigInt, SplayTreeMap<BigInt, TradeLogAndPayoutStatus>> user_positions_trade_logs = SplayTreeMap();
         
 }
+
+
+class TradeLogAndPayoutStatus {
+    TradeLog tl;
+    bool cycles_payout_complete;
+    bool tokens_payout_complete;
+    TradeLogAndPayoutStatus(
+        this.tl, 
+        {required this.cycles_payout_complete,
+        required this.tokens_payout_complete}
+    );
+}
+
+
+
+
 

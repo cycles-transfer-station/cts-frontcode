@@ -11,15 +11,15 @@ void main() {
 
 class Base extends StatefulWidget {
     const Base({Key? key}) : super(key: key);
-    _BaseState createState() => _BaseState(); }
-class _BaseState extends State<Base> {
-    CustomRouteParser _routeParser = CustomRouteParser();
-    CustomRouteLegate _routeLegate = CustomRouteLegate();
+    BaseState createState() => BaseState(); }
+class BaseState extends State<Base> {
+    CustomRouteParser route_parser = CustomRouteParser();
+    CustomRouteLegate route_legate = CustomRouteLegate();
     @override
     Widget build(BuildContext context) {
         return MaterialApp.router(
-            routeInformationParser : _routeParser,
-            routerDelegate         : _routeLegate,
+            routeInformationParser : route_parser,
+            routerDelegate         : route_legate,
             backButtonDispatcher   : RootBackButtonDispatcher(),
             title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(

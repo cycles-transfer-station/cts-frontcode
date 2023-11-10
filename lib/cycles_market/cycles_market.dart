@@ -59,10 +59,11 @@ class Icrc1TokenTradeContract extends Record {
    
     
     
-    Future<void> load_positions_and_trades() async {
+    Future<void> load_data() async {
         await Future.wait([
             this.load_position_book(),
             this.check_new_trades(),
+            this.load_volume_stats()
         ]);
     }
     
@@ -209,6 +210,20 @@ class Icrc1TokenTradeContract extends Record {
             calltype: CallType.query,
         )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
     }
+    
+    
+    ViewVolumeStatsSponse? volume_stats;
+    Future<void> load_volume_stats() async {
+        this.volume_stats = ViewVolumeStatsSponse.of_the_record(
+            c_backwards_one(
+                await this.canister.call(
+                    method_name: "view_volume_stats",
+                    calltype: CallType.query,
+                )
+            ) as Record
+        );
+    }
+    
 }
 
 
@@ -387,6 +402,46 @@ class StorageCanister {
 
 
 
+
+
+class ViewVolumeStatsSponse {
+    Volume volume_cycles;
+    Volume volume_tokens;
+    ViewVolumeStatsSponse._({
+        required this.volume_cycles,
+        required this.volume_tokens,
+    });
+    static ViewVolumeStatsSponse of_the_record(Record r) {
+        return ViewVolumeStatsSponse._(
+            volume_cycles: Volume.of_the_record(r['volume_cycles'] as Record),
+            volume_tokens: Volume.of_the_record(r['volume_tokens'] as Record),
+        );
+    }
+}
+class Volume {
+    BigInt volume_24_hour;
+    BigInt volume_7_day;
+    BigInt volume_30_day;
+    BigInt volume_sum;
+    Volume._({
+        required this.volume_24_hour,
+        required this.volume_7_day,
+        required this.volume_30_day,
+        required this.volume_sum,
+    });
+    static Volume of_the_record(Record r) {
+        return Volume._(
+            volume_24_hour: (r['volume_24_hour'] as Nat).value,
+            volume_7_day: (r['volume_7_day'] as Nat).value,
+            volume_30_day: (r['volume_30_day'] as Nat).value,
+            volume_sum: (r['volume_sum'] as Nat).value,
+        );
+    }
+}
+
+
+
+
 abstract class Icrc1TokenTradeContractPosition {
     BigInt get id;
     Principal get positor;
@@ -554,8 +609,9 @@ class TradeLog {
     final BigInt timestamp_nanos;
     
     final BigInt tokens_payout_fee;
-    //final BigInt tokens_payout_ledger_transfer_fees_sum;
+    final BigInt tokens_payout_ledger_transfer_fee;
     final Cycles cycles_payout_fee;
+    
     
     final bool? cycles_payout_lock;
     final bool? token_payout_lock;
@@ -577,6 +633,7 @@ class TradeLog {
         required this.timestamp_nanos,
         required this.tokens_payout_fee,
         required this.cycles_payout_fee,
+        required this.tokens_payout_ledger_transfer_fee,
         this.cycles_payout_lock,
         this.token_payout_lock,
         this.cycles_payout_data,
@@ -601,7 +658,7 @@ class TradeLog {
         );
     }
     */
-    static int STABLE_MEMORY_SERIALIZE_SIZE = 207;
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 223;
     static TradeLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         return TradeLog._(
             matchee_position_id: u128_of_the_be_bytes(bytes.getRange(2, 18)),
@@ -616,6 +673,7 @@ class TradeLog {
             tokens_payout_fee: u128_of_the_be_bytes(bytes.getRange(159, 175)),
             cycles_payout_fee: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(175, 191))),
             matcher_position_id: u128_of_the_be_bytes(bytes.getRange(191, 207)),
+            tokens_payout_ledger_transfer_fee: u128_of_the_be_bytes(bytes.getRange(207, 223))
         );
     }
 }
