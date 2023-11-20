@@ -1,3 +1,5 @@
+import 'dart:ui' as dart_ui;
+
 import 'package:flutter/material.dart';
 
 import '../config/state.dart';
@@ -109,9 +111,21 @@ class ScaffoldBodyHeader extends StatelessWidget {
             ]
         ); 
     }
-    
-
 }
+
+class ScrollConfigurationWithTheMouse extends StatelessWidget {
+    Widget child;
+    ScrollConfigurationWithTheMouse(this.child);
+    Widget build(BuildContext context) { 
+        ScrollBehavior scroll_behavior_context = ScrollConfiguration.of(context);
+        return ScrollConfiguration(
+            behavior: scroll_behavior_context.copyWith(dragDevices: scroll_behavior_context.dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
+            child: this.child
+        ); 
+    }
+}
+
+
 
 
 

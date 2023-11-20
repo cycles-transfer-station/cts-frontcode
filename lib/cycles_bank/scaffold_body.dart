@@ -1,5 +1,3 @@
-import 'dart:ui' as dart_ui;
-
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show Icrc1Ledger, Tokens;
@@ -408,9 +406,8 @@ class BankTokenTransfersLog extends StatelessWidget {
         return LimitedBox(
             maxHeight: 500,
             child: Container(
-                child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                    child: Scrollbar(
+                child: ScrollConfigurationWithTheMouse(
+                    Scrollbar(
                         controller: token_transfers_log_scroll_controller,
                         child: ListView.builder(
                             controller: token_transfers_log_scroll_controller,    
@@ -494,9 +491,8 @@ class IcpTransfersLogs extends StatelessWidget {
         return LimitedBox(
             maxHeight: 307,
             child: Container(
-                child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                    child: Scrollbar(
+                child: ScrollConfigurationWithTheMouse(
+                    Scrollbar(
                         controller: icp_transfers_log_scroll_controller,
                         child: ListView.builder(
                             controller: icp_transfers_log_scroll_controller,
@@ -550,9 +546,8 @@ class BankCyclesTransfersLog extends StatelessWidget {
         return LimitedBox(
             maxHeight: 307,
             child: Container(
-                child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(dragDevices: ScrollConfiguration.of(context).dragDevices.toSet()..add(dart_ui.PointerDeviceKind.mouse), ),
-                    child: Scrollbar(
+                child: ScrollConfigurationWithTheMouse(
+                    Scrollbar(
                         controller: token_transfers_log_scroll_controller,
                         child: ListView.builder(
                             controller: token_transfers_log_scroll_controller,    

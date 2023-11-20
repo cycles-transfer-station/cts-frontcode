@@ -83,7 +83,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                                     DropdownMenuItem<int>(
                                         child: Container(
                                             padding: EdgeInsets.all(8),
-                                            child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + ' / TCYCLES', style: TextStyle(fontSize: 22)), 
+                                            child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + '/CYCLES', style: TextStyle(fontSize: 22)), 
                                         ),
                                         value: i
                                     ),
@@ -338,7 +338,7 @@ class MarketTradesState extends State<MarketTrades> {
             reached_the_begining = true;
         }
                             
-        return Container(
+        return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
             constraints: BoxConstraints(
                 maxHeight: 400,
                 maxWidth: 700
@@ -368,7 +368,7 @@ class MarketTradesState extends State<MarketTrades> {
                         ),
                 ]
             )
-        );
+        ));
     }
 }
 
@@ -738,7 +738,9 @@ class UserCMLogsState extends State<UserCMLogs> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
-        return Container(
+        return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
                 constraints: BoxConstraints(maxHeight: 505, maxWidth: 909),
                 child: PaginatedDataTable2(
                     minWidth: 500,
@@ -817,7 +819,7 @@ class UserCMLogsState extends State<UserCMLogs> {
                         context: context,  
                     ),
                 ),    
-            
+            )
         );    
     }
 }
@@ -1064,147 +1066,189 @@ class PositionDialogState extends State<PositionDialog> {
         PositionLog pl = widget.pl;
         
         return Dialog(
-            child: Column(
-                children: [
-                    ScaffoldBodyHeader(Text('POSITION-ID: ${pl.id}')),
-                    Expanded(child: SingleChildScrollView(
-                        child: Container(
-                            padding: EdgeInsets.all(27),
-                            child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                    //Text('POSITION-LOG', style: TextStyle(fontSize: 23)),
-                                    SizedBox(height: 21),
-                                    DataTable(
-                                        headingRowHeight: 0,
-                                        dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 19),
-                                        columns: [
-                                            DataColumn(label: Text('')),
-                                            DataColumn(label: Text('')),
-                                        ],
-                                        rows: [
-                                            DataRow(cells: [
-                                                DataCell(Text('ID:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(Text('${pl.id}')),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('TIMESTAMP:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(widget.position_quantity),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(Text(pl.quest.cycles_per_token_rate.toString())),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('FILL-PERCENTAGE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(
-                                                    Builder(
-                                                        builder: (BuildContext context) {
-                                                            double percentage_fill = widget.position_purchases_sum_quantity.toDouble() / (pl.quest.quantity / BigInt.from(100));
-                                                            return Text('${percentage_fill.toStringAsFixed(0)}%');
-                                                        }
-                                                    )
-                                                ),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('TRADES:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(widget.trades_quantities_widget),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('FILL-AVERAGE-RATE:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(Text('${pl.fill_average_rate}')),
-                                            ]),
-                                            DataRow(cells: [
-                                                DataCell(Text('CTS-PAYOUT-FEES:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(
-                                                    pl.position_kind == PositionKind.Cycles 
-                                                    ? 
-                                                    show_tokens_with_symbol(Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places), token_symbol)
-                                                    : 
-                                                    show_tokens_with_symbol(Cycles(cycles: pl.payouts_fees_sum), cycles_symbol)                                                        
-                                                )
-                                            ]),
-                                            if (pl.position_kind == PositionKind.Cycles) DataRow(cells: [
-                                                DataCell(Text('${token_symbol}-LEDGER-FEES:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(
-                                                    FutureBuilder(
-                                                        future: load_cm_user_position_trade_logs_future,
-                                                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                            CustomState state = MainStateBind.get_state<CustomState>(context);
-                                                            MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                                                            BigInt trades_token_payouts_ledger_fees_sum =
-                                                                (state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
-                                                                    .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
-                                                                    .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + l.tl.tokens_payout_ledger_transfer_fee);
-                                                            return switch (snapshot.connectionState) {
-                                                                ConnectionState.none || ConnectionState.done => show_tokens_with_symbol(
-                                                                    Tokens(quantums: trades_token_payouts_ledger_fees_sum, decimal_places: token_decimal_places), 
-                                                                    token_symbol
-                                                                ),
-                                                                _ => Center(child: Text('loading ...'))
-                                                            };
-                                                        }
-                                                    )
-                                                ),
-                                            ]),
-                                            /*
-                                            DataRow(cells: [
-                                                DataCell(Text('PAYOUTS:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(
-                                                    pl.position_kind == PositionKind.Cycles 
-                                                    ? 
-                                                    FutureBuilder(
-                                                        future: load_cm_user_position_trade_logs_future,                                                                
-                                                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                                                            CustomState state = MainStateBind.get_state<CustomState>(context);
-                                                            MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                                                            BigInt trades_token_payouts_ledger_fees_sum =
-                                                                state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
-                                                                    .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? []
-                                                                    .fold(BigInt.from(0), (BigInt value, TradeLog tl)=> value + tl.tokens_payout_ledger_transfer_fee);
-                                                            return switch (snapshot.connectionState) {
-                                                                ConnectionState.none || ConnectionState.done => 
-                                                                show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity - pl.payouts_fees_sum - trades_token_payouts_ledger_fees_sum, decimal_places: token_decimal_places), token_symbol)
-                                                    
-                                                                show_tokens_with_symbol(
-                                                                    Tokens(quantums: , decimal_places: token_decimal_places), 
-                                                                    token_symbol
-                                                                ),
-                                                                _ => Center(child: Text('loading ...'))
-                                                            };
-                                                        }
-                                                    )
-                                                    :
-                                                    show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity - pl.payouts_fees_sum), cycles_symbol)
-                                                                                                            
-                                                )
-                                            ]),
-                                            */
-                                            DataRow(cells: [
-                                                DataCell(Text('CURRENT-POSITION:', style: TextStyle(fontFamily: 'CourierNewBold'))),
-                                                DataCell(widget.current_position_widget),
-                                            ]),
-                                            
-                                            
+            child: Container(
+                constraints: BoxConstraints(maxWidth: 505),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        ScaffoldBodyHeader(Row(
+                            mainAxisSize: MainAxisSize.max, 
+                            children: [
+                                Flexible(flex:1, fit: FlexFit.tight, child: Container(
+                                    width: double.infinity, 
+                                    child: Align(
+                                        alignment: Alignment.topLeft, 
+                                        child: Container(
+                                            //padding: EdgeInsets.all(3),
+                                            child: IconButton(icon: Icon(Icons.close), iconSize: 11, onPressed: ()=>Navigator.of(context).pop()),/*OutlineButton(
+                                                child: Center(child: Text('x', style: TextStyle(fontFamily: 'CourierNew'))),
+                                                on_press_complete: () => Navigator.of(context).pop(),
+                                            )*/
+                                        ) 
+                                    )
+                                )),
+                                Flexible(flex: 11, fit: FlexFit.tight, child: Center(
+                                    child: Column(
+                                        children: [
+                                            Text('POSITION-LOG', style: TextStyle(fontSize: 17))
                                         ]
-                                    ),
-                                    SizedBox(height: 27),
-                                    ViewTradesForASpecificUserPosition(pl, cm_main_trade_contracts_i: widget.cm_main_trade_contracts_i, load_cm_user_position_trade_logs_future: load_cm_user_position_trade_logs_future),
-                                    SizedBox(height: 17),
-                                    OutlineButton(
-                                        on_press_complete: () => Navigator.pop(context),
-                                        child: Text('DONE', style: TextStyle(fontSize: 11)),
-                                    ),
-                                ],
-                            ),
-                        )
-                    ))
-                ]
+                                    )
+                                )),
+                                Flexible(flex: 1,  fit: FlexFit.tight, child: Container(width: double.infinity, child: Text(''))),
+                            ]
+                        )),
+                        Flexible(fit: FlexFit.loose, child: ScrollConfigurationWithTheMouse(
+                            SingleChildScrollView(
+                                scrollDirection: Axis.horizontal, 
+                                child: SingleChildScrollView(
+                                    scrollDirection: Axis.vertical,
+                                    child: Container(
+                                        padding: EdgeInsets.all(27),
+                                        child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: <Widget>[
+                                                //Text('POSITION-LOG', style: TextStyle(fontSize: 23)),
+                                                //SizedBox(height: 21),
+                                                DataTable(
+                                                    headingRowHeight: 0,
+                                                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 14),
+                                                    columns: [
+                                                        DataColumn(label: Text('')),
+                                                        DataColumn(label: Text('')),
+                                                    ],
+                                                    rows: [
+                                                        DataRow(cells: [
+                                                            DataCell(Text('ID:',/* style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(Text('${pl.id}')),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('TIMESTAMP:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('POSITION:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(widget.position_quantity),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('RATE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(Text(pl.quest.cycles_per_token_rate.toString())),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('FILL-PERCENTAGE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(
+                                                                Builder(
+                                                                    builder: (BuildContext context) {
+                                                                        double percentage_fill = widget.position_purchases_sum_quantity.toDouble() / (pl.quest.quantity / BigInt.from(100));
+                                                                        return Text('${percentage_fill.toStringAsFixed(0)}%');
+                                                                    }
+                                                                )
+                                                            ),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('TRADES:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(widget.trades_quantities_widget),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('FILL-AVERAGE-RATE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(Text('${pl.fill_average_rate}')),
+                                                        ]),
+                                                        DataRow(cells: [
+                                                            DataCell(Text('CTS-PAYOUT-FEES:',/* style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(
+                                                                pl.position_kind == PositionKind.Cycles 
+                                                                ? 
+                                                                show_tokens_with_symbol(Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places), token_symbol)
+                                                                : 
+                                                                show_tokens_with_symbol(Cycles(cycles: pl.payouts_fees_sum), cycles_symbol)                                                        
+                                                            )
+                                                        ]),
+                                                        if (pl.position_kind == PositionKind.Cycles) DataRow(cells: [
+                                                            DataCell(Text('${token_symbol}-LEDGER-FEES:',/* style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(
+                                                                FutureBuilder(
+                                                                    future: load_cm_user_position_trade_logs_future,
+                                                                    builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                                        CustomState state = MainStateBind.get_state<CustomState>(context);
+                                                                        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                                                                        BigInt trades_token_payouts_ledger_fees_sum =
+                                                                            (state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
+                                                                                .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
+                                                                                .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + l.tl.tokens_payout_ledger_transfer_fee);
+                                                                        return switch (snapshot.connectionState) {
+                                                                            ConnectionState.none || ConnectionState.done => show_tokens_with_symbol(
+                                                                                Tokens(quantums: trades_token_payouts_ledger_fees_sum, decimal_places: token_decimal_places), 
+                                                                                token_symbol
+                                                                            ),
+                                                                            _ => Center(child: Text('loading ...'))
+                                                                        };
+                                                                    }
+                                                                )
+                                                            ),
+                                                        ]),
+                                                        /*
+                                                        DataRow(cells: [
+                                                            DataCell(Text('PAYOUTS:', style: TextStyle(fontFamily: 'CourierNewBold'))),
+                                                            DataCell(
+                                                                pl.position_kind == PositionKind.Cycles 
+                                                                ? 
+                                                                FutureBuilder(
+                                                                    future: load_cm_user_position_trade_logs_future,                                                                
+                                                                    builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                                                        CustomState state = MainStateBind.get_state<CustomState>(context);
+                                                                        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                                                                        BigInt trades_token_payouts_ledger_fees_sum =
+                                                                            state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
+                                                                                .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? []
+                                                                                .fold(BigInt.from(0), (BigInt value, TradeLog tl)=> value + tl.tokens_payout_ledger_transfer_fee);
+                                                                        return switch (snapshot.connectionState) {
+                                                                            ConnectionState.none || ConnectionState.done => 
+                                                                            show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity - pl.payouts_fees_sum - trades_token_payouts_ledger_fees_sum, decimal_places: token_decimal_places), token_symbol)
+                                                                
+                                                                            show_tokens_with_symbol(
+                                                                                Tokens(quantums: , decimal_places: token_decimal_places), 
+                                                                                token_symbol
+                                                                            ),
+                                                                            _ => Center(child: Text('loading ...'))
+                                                                        };
+                                                                    }
+                                                                )
+                                                                :
+                                                                show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity - pl.payouts_fees_sum), cycles_symbol)
+                                                                                                                        
+                                                            )
+                                                        ]),
+                                                        */
+                                                        DataRow(cells: [
+                                                            DataCell(Text('CURRENT-POSITION:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/)),
+                                                            DataCell(widget.current_position_widget),
+                                                        ]),
+                                                        
+                                                        
+                                                    ]
+                                                ),
+                                                SizedBox(height: 17),
+                                                OutlineButton(
+                                                    child: Text('VIEW TRADES', style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)),
+                                                    on_press_complete: () async {
+                                                        await showDialog(
+                                                            context: context, 
+                                                            builder: (BuildContext context) { 
+                                                                return Dialog(
+                                                                    child: ViewTradesForASpecificUserPosition(pl, cm_main_trade_contracts_i: widget.cm_main_trade_contracts_i, load_cm_user_position_trade_logs_future: load_cm_user_position_trade_logs_future),
+                                                                );
+                                                            }
+                                                        );
+                                                    } 
+                                                ),
+                                            ],
+                                        ),
+                                    )
+                                )
+                            )
+                        ))
+                    ]
+                )
             )
         );
     }
@@ -1345,65 +1389,108 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
         int token_decimal_places = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.decimals;
         String token_symbol = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data.symbol;
         
+        double width = 850;
+        
         return Container(
             padding: EdgeInsets.all(13),
-            height: 300,
-            width: 850,
+            constraints: BoxConstraints(maxWidth: width),
             child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                    Text('TRADES', style: TextStyle(fontSize: 21)),
-                    Expanded(child: FutureBuilder(
-                        future: widget.load_cm_user_position_trade_logs_future,
-                        builder: (BuildContext context, AsyncSnapshot snapshot) {
-                            return switch (snapshot.connectionState) {
-                                ConnectionState.none || ConnectionState.done => DataTable2(
-                                    headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
-                                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
-                                    isHorizontalScrollBarVisible: false,
-                                    scrollController: scrollcontroller,
-                                    showBottomBorder: true,
-                                    smRatio: 0.45,
-                                    lmRatio: 1.6,
-                                    columns: <DataColumn>[
-                                        DataColumn2(label: Text('ID'), size: ColumnSize.S),
-                                        DataColumn2(label: Text('TIMESTAMP'), size: ColumnSize.M),
-                                        DataColumn2(label: Text('TRADE'), size: ColumnSize.L),
-                                        DataColumn2(label: Text('RATE'), size: ColumnSize.M),
-                                        DataColumn2(label: Text('PAYOUT-STATUS'), size: ColumnSize.M),
-                                    ],
-                                    rows: [
-                                        for (TradeLogAndPayoutStatus l in state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
-                                            DataRow(cells: [
-                                                DataCell(Text('${l.tl.id}')),
-                                                DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(l.tl.timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
-                                                DataCell(Builder(builder: (BuildContext context) {
-                                                    List<Widget> trade_mounts = [
-                                                        show_tokens_with_symbol(l.tl.cycles, cycles_symbol),
-                                                        show_tokens_with_symbol(Tokens(quantums: l.tl.tokens, decimal_places: token_decimal_places), token_symbol)                                                
-                                                    ];
-                                                    if (widget.pl.position_kind == PositionKind.Token) {
-                                                        trade_mounts = trade_mounts.reversed.toList(); 
-                                                    } 
-                                                    return Row(children: [trade_mounts[0], Text(' <> '), trade_mounts[1]]);
-                                                })),
-                                                DataCell(Text('${l.tl.cycles_per_token_rate.toString()}')),
-                                                DataCell(Text((widget.pl.position_kind == PositionKind.Cycles ? l.tokens_payout_complete : l.cycles_payout_complete) ? 'DONE' : 'PENDING')),
-                                                /*
-                                                DataCell(
-                                                    widget.pl.position_kind == PositionKind.Cycles
-                                                    ?
-                                                    show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_fee, decimal_places: token_decimal_places), token_symbol)
-                                                    : 
-                                                    show_tokens_with_symbol(tl.cycles_payout_fee, cycles_symbol)
-                                                ),
-                                                */
-                                            ])
-                                            //DataRow(cells: [])
+                    //Text('TRADES', style: TextStyle(fontSize: 21)),
+                    ScaffoldBodyHeader(Row(
+                        mainAxisSize: MainAxisSize.max, 
+                        children: [
+                            Flexible(flex:1, fit: FlexFit.tight, child: Container(
+                                width: double.infinity, 
+                                child: Align(
+                                    alignment: Alignment.topLeft, 
+                                    child: Container(
+                                        //padding: EdgeInsets.all(3),
+                                        child: IconButton(icon: Icon(Icons.close), iconSize: 11, onPressed: ()=>Navigator.of(context).pop()),/*OutlineButton(
+                                            child: Center(child: Text('x', style: TextStyle(fontFamily: 'CourierNew'))),
+                                            on_press_complete: () => Navigator.of(context).pop(),
+                                        )*/
+                                    ) 
+                                )
+                            )),
+                            Flexible(flex: 11, fit: FlexFit.tight, child: Center(
+                                child: Column(
+                                    children: [
+                                        Text('POSITION-${widget.pl.id} TRADES', style: TextStyle(fontSize: 17))
                                     ]
-                                ),
-                                _ => Center(child: Text('loading the trades for this position'))
-                            };
-                        }
+                                )
+                            )),
+                            Flexible(flex: 1,  fit: FlexFit.tight, child: Container(width: double.infinity, child: Text(''))),
+                        ]
+                    )),
+                    Flexible(fit: FlexFit.loose, child: ScrollConfigurationWithTheMouse(/*SingleChildScrollView(
+                        scrollDirection: Axis.horizontal, 
+                        child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: */FutureBuilder(
+                            future: widget.load_cm_user_position_trade_logs_future,
+                            builder: (BuildContext context, AsyncSnapshot snapshot) {
+                                double dataRowHeight = DataTableTheme.of(context).dataRowMinHeight ?? kMinInteractiveDimension; // the default for the DataTable2
+                                return switch (snapshot.connectionState) {
+                                    ConnectionState.none || ConnectionState.done => LayoutBuilder(
+                                        builder: (BuildContext context, BoxConstraints constraints) {
+                                            Iterable<TradeLogAndPayoutStatus> rows = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [];
+                                            double headingRowHeight = DataTableTheme.of(context).headingRowHeight ?? 56.0;
+                                            return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
+                                                constraints: BoxConstraints(maxHeight: min(headingRowHeight + rows.length * dataRowHeight, constraints.maxHeight)),
+                                                width: width,
+                                                child: DataTable2(
+                                                    headingTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 17),                      
+                                                    dataTextStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNew', fontSize: 17),
+                                                    isHorizontalScrollBarVisible: false,
+                                                    scrollController: scrollcontroller,
+                                                    showBottomBorder: true,
+                                                    smRatio: 0.57,
+                                                    lmRatio: 1.3,
+                                                    columns: <DataColumn>[
+                                                        DataColumn2(label: Text('ID'), size: ColumnSize.S),
+                                                        DataColumn2(label: Text('TIMESTAMP'), size: ColumnSize.M),
+                                                        DataColumn2(label: Text('TRADE'), size: ColumnSize.L),
+                                                        DataColumn2(label: Text('RATE'), size: ColumnSize.S),
+                                                        DataColumn2(label: Text('PAYOUT'), size: ColumnSize.S),
+                                                    ],
+                                                    rows: [
+                                                        for (TradeLogAndPayoutStatus l in rows)
+                                                            DataRow(cells: [
+                                                                DataCell(Text('${l.tl.id}')),
+                                                                DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(l.tl.timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size))),
+                                                                DataCell(Builder(builder: (BuildContext context) {
+                                                                    List<Widget> trade_mounts = [
+                                                                        show_tokens_with_symbol(l.tl.cycles, cycles_symbol),
+                                                                        show_tokens_with_symbol(Tokens(quantums: l.tl.tokens, decimal_places: token_decimal_places), token_symbol)                                                
+                                                                    ];
+                                                                    if (widget.pl.position_kind == PositionKind.Token) {
+                                                                        trade_mounts = trade_mounts.reversed.toList(); 
+                                                                    } 
+                                                                    return Row(children: [trade_mounts[0], Text(' <> '), trade_mounts[1]]);
+                                                                })),
+                                                                DataCell(Text('${l.tl.cycles_per_token_rate.toString()}')),
+                                                                DataCell(Text((widget.pl.position_kind == PositionKind.Cycles ? l.tokens_payout_complete : l.cycles_payout_complete) ? 'DONE' : 'PENDING')),
+                                                                /*
+                                                                DataCell(
+                                                                    widget.pl.position_kind == PositionKind.Cycles
+                                                                    ?
+                                                                    show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_fee, decimal_places: token_decimal_places), token_symbol)
+                                                                    : 
+                                                                    show_tokens_with_symbol(tl.cycles_payout_fee, cycles_symbol)
+                                                                ),
+                                                                */
+                                                            ])
+                                                    ]
+                                                )
+                                            ));
+                                        }
+                                    ),
+                                    _ => Center(child: Text('loading the trades for this position'))
+                                };
+                            }
+                        )
                     ))
                 ]
             )
