@@ -39,7 +39,8 @@ class BaseState extends State<Base> {
                     //foregroundColor: double?, 
                     elevation: 1.5,  
                     //shadowColor: Color?,  
-                )
+                ),
+                useMaterial3: false,
             ),
             debugShowCheckedModeBanner: false,
         );

@@ -73,7 +73,7 @@ A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockcha
                         child: Center(
                             child: Column(
                                 children: [
-                                    Text('Send the MEMBERSHIP COST ICP to this address to pay for a 1-year membership:'),
+                                    Text('Send the MEMBERSHIP COST ICP to this address to pay for a 1-year membership:\n', style: TextStyle(fontFamily: 'ChakraPetch')),
                                     Center(child: Text('USER-CTS-ICP-ID', style: TextStyle(fontFamily: 'ChakraPetch'))),
                                     SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 14, fontFamily: 'ChakraPetch')),
                                 ]

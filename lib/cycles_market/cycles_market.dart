@@ -116,9 +116,10 @@ class Icrc1TokenTradeContract extends Record {
     
     
     Future<void> check_new_trades() async {
+        await this.fresh_trades_storage_canisters();
         List<TradeItem> gather = [];
         bool catch_up_complete = false;            
-        await for (Principal c_id in latest_trades_canisters_generator()) {
+        for (Principal c_id in [this.trade_contract_canister_id, ...trades_scs_cache.map((sc)=>sc.canister_id).toList().reversed.toList()]) {
             while (true) {
                 ViewTradesSponse sponse = await cm_view_latest_trades_(c_id, gather.isEmpty ? null : gather.first.id);
                 gather = [
@@ -145,8 +146,6 @@ class Icrc1TokenTradeContract extends Record {
         this.latest_trades.addAll(gather);
     }
     
-    List<StorageCanister> trades_scs_cache = [];
-    
     Future<void> load_trades_back_chunk() async {
         if (this.latest_trades.isEmpty) {
             await this.check_new_trades();
@@ -155,13 +154,14 @@ class Icrc1TokenTradeContract extends Record {
         if (this.latest_trades.first.id == BigInt.from(0)) {
             return;
         }
-        Principal? call_canister_id;
         if (trades_scs_cache.isEmpty || trades_scs_cache.last.first_log_id + trades_scs_cache.last.length < this.latest_trades.first.id) {
-            trades_scs_cache = await this.view_trades_storage_canisters();
+            await this.fresh_trades_storage_canisters();
         }
-        for (StorageCanister sc in trades_scs_cache) {
+        Principal? call_canister_id;
+        for (StorageCanister sc in trades_scs_cache.reversed) {
             if (this.latest_trades.first.id > sc.first_log_id && this.latest_trades.first.id <= sc.first_log_id + sc.length) {
                 call_canister_id = sc.canister_id;
+                break;
             }
         }
         if (call_canister_id == null) {
@@ -172,16 +172,6 @@ class Icrc1TokenTradeContract extends Record {
             ...sponse.trades_data,
             ...this.latest_trades
         ];
-    }
-    
-    Stream<Principal> latest_trades_canisters_generator() async* {
-        yield this.trade_contract_canister_id;
-        List<StorageCanister> trades_scs = await this.view_trades_storage_canisters();
-        print('trades-storage-canisters: $trades_scs');
-        trades_scs_cache = trades_scs;
-        for (StorageCanister sc in trades_scs.reversed) {
-            yield sc.canister_id;
-        } 
     }
     
     Future<ViewTradesSponse> cm_view_latest_trades_(Principal c_id, [BigInt? opt_start_before_id]) async {
@@ -204,8 +194,10 @@ class Icrc1TokenTradeContract extends Record {
         )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
     }
     
-    Future<List<StorageCanister>> view_trades_storage_canisters() async {
-        return (c_backwards_one(await this.canister.call(
+    List<StorageCanister> trades_scs_cache = [];
+    
+    Future<void> fresh_trades_storage_canisters() async {
+        trades_scs_cache = (c_backwards_one(await this.canister.call(
             method_name: 'view_trades_storage_canisters',
             calltype: CallType.query,
         )) as Vector).cast_vector<Record>().map<StorageCanister>((r) => StorageCanister.of_the_record(r)).toList();
@@ -315,6 +307,8 @@ class PositionLog {
     BigInt payouts_fees_sum; // // if cycles-position this is: Tokens, if token-position this is: Cycles.
     BigInt creation_timestamp_nanos;
     PositionTerminationData? position_termination;
+    bool void_position_payout_dust_collection;
+    BigInt void_token_position_payout_ledger_transfer_fee;
     
     //BigInt trade_log_ids
     
@@ -329,9 +323,11 @@ class PositionLog {
         required this.payouts_fees_sum, // // if cycles-position this is: Tokens, if token-position this is: Cycles.
         required this.creation_timestamp_nanos,
         required this.position_termination,
+        required this.void_position_payout_dust_collection,
+        required this.void_token_position_payout_ledger_transfer_fee,
     });
     
-    static int STABLE_MEMORY_SERIALIZE_SIZE = 163;
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 172;
     
     static PositionLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         PositionTerminationData? termination;
@@ -364,6 +360,8 @@ class PositionLog {
             payouts_fees_sum: u128_of_the_be_bytes(bytes.getRange(129, 145)), // // if cycles-position this is: Tokens, if token-position this is: Cycles.
             creation_timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(145, 153)),
             position_termination: termination,
+            void_position_payout_dust_collection: bytes[163] == 1, 
+            void_token_position_payout_ledger_transfer_fee: bigint_of_the_be_bytes(bytes.getRange(164, 172)),
         );
     }
 }
@@ -553,12 +551,15 @@ class TradeCyclesQuest extends Record implements TradeQuest {
 class TradeTokensQuest extends Record implements TradeQuest {
     final Tokens tokens;
     final CyclesPerTokenRate cycles_per_token_rate;
+    final Tokens posit_transfer_ledger_fee;
     TradeTokensQuest({
         required this.tokens,
         required this.cycles_per_token_rate,
+        required this.posit_transfer_ledger_fee,
     }) {
         this['tokens'] = this.tokens;
         this['cycles_per_token_rate'] = this.cycles_per_token_rate;
+        this['posit_transfer_ledger_fee'] = this.posit_transfer_ledger_fee;
     }
     static TradeTokensQuest of_the_record(Record r, {required int token_decimal_places}) {
         return TradeTokensQuest(
@@ -566,7 +567,8 @@ class TradeTokensQuest extends Record implements TradeQuest {
             cycles_per_token_rate: CyclesPerTokenRate(
                 cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
                 token_decimal_places: token_decimal_places
-            )
+            ),
+            posit_transfer_ledger_fee: Tokens(quantums: (r['posit_transfer_ledger_fee'] as Nat).value, decimal_places: token_decimal_places),
         );
     }
 }
@@ -612,6 +614,8 @@ class TradeLog {
     final BigInt tokens_payout_ledger_transfer_fee;
     final Cycles cycles_payout_fee;
     
+    final bool cycles_payout_dust_collection;
+    final bool token_payout_dust_collection;
     
     final bool? cycles_payout_lock;
     final bool? token_payout_lock;
@@ -634,6 +638,8 @@ class TradeLog {
         required this.tokens_payout_fee,
         required this.cycles_payout_fee,
         required this.tokens_payout_ledger_transfer_fee,
+        required this.cycles_payout_dust_collection,
+        required this.token_payout_dust_collection,        
         this.cycles_payout_lock,
         this.token_payout_lock,
         this.cycles_payout_data,
@@ -658,7 +664,7 @@ class TradeLog {
         );
     }
     */
-    static int STABLE_MEMORY_SERIALIZE_SIZE = 223;
+    static int STABLE_MEMORY_SERIALIZE_SIZE = 225;
     static TradeLog oftheStableMemorySerialization(Uint8List bytes, {required int token_decimal_places}) {
         return TradeLog._(
             matchee_position_id: u128_of_the_be_bytes(bytes.getRange(2, 18)),
@@ -673,7 +679,9 @@ class TradeLog {
             tokens_payout_fee: u128_of_the_be_bytes(bytes.getRange(159, 175)),
             cycles_payout_fee: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(175, 191))),
             matcher_position_id: u128_of_the_be_bytes(bytes.getRange(191, 207)),
-            tokens_payout_ledger_transfer_fee: u128_of_the_be_bytes(bytes.getRange(207, 223))
+            tokens_payout_ledger_transfer_fee: u128_of_the_be_bytes(bytes.getRange(207, 223)),
+            cycles_payout_dust_collection: bytes[223] == 1,
+            token_payout_dust_collection: bytes[224] == 1,
         );
     }
 }

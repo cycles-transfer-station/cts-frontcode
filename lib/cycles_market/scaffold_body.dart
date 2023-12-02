@@ -294,7 +294,7 @@ class MarketTradesState extends State<MarketTrades> {
     void _handle_controller_scroll() {
         if (reached_the_begining == false 
         && loading == false
-        && _controller.position.maxScrollExtent - _controller.offset < 200) { 
+        && _controller.position.maxScrollExtent - _controller.offset < 50) { 
             loading = true;
             Future(()async{
                 BigInt? earliest_known_trade_id_before_load = get_earliest_known_trade_id();
@@ -337,7 +337,7 @@ class MarketTradesState extends State<MarketTrades> {
                             
         return Column(
             children: [
-                Text('LATEST-TRADES'),                
+                Text('LATEST TRADES'),                
                 SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 17),
                     constraints: BoxConstraints(
@@ -414,7 +414,7 @@ class PositionBook extends StatelessWidget {
         
         return Column(
             children: [
-                Text('POSITION-BOOK'),
+                Text('POSITION BOOK'),
                 Container(
                     constraints: BoxConstraints(maxHeight: 400, maxWidth: 400),
                     child: Column(
@@ -611,6 +611,13 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
                         validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
                     ),
+                    if (widget.position_kind == PositionKind.Token) Container(
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        child: Text(
+                            'CREATE-POSITION-LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}', 
+                            style: TextStyle(fontFamily: 'ChakraPetch', fontSize: 11)
+                        ),
+                    ),
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(0, 17, 0,7),
@@ -641,7 +648,11 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
                                                 TradeTokensQuest(
                                                     tokens: trade_amount,
-                                                    cycles_per_token_rate: cycles_per_token_rate
+                                                    cycles_per_token_rate: cycles_per_token_rate,
+                                                    posit_transfer_ledger_fee: Tokens(
+                                                        quantums: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee,
+                                                        decimal_places: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals,
+                                                    )
                                                 )
                                             );
                                         }
@@ -747,7 +758,7 @@ class UserCMLogsState extends State<UserCMLogs> {
                 
         return Column(
             children: [
-                Text('USER-POSITIONS'),
+                Text('USER POSITIONS'),
                 SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Container(
@@ -812,8 +823,9 @@ String position_log_timestamp_format(DateTime t) {
 }
 
 
-DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLog pl) {
-
+DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLogAndVoidPositionPayoutStatus plavpps) {
+    PositionLog pl = plavpps.pl;
+    
     CustomState state = MainStateBind.get_state<CustomState>(context);
     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
             
@@ -851,7 +863,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
         ? 
         Container(
             child: Text(switch (pl.position_termination!.cause) {
-                PositionTerminationCause.Fill => 'DONE',
+                PositionTerminationCause.Fill => 'COMPLETE',
                 PositionTerminationCause.Bump => 'BUMP',
                 PositionTerminationCause.TimePass => 'TIMEOUT',
                 PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',   
@@ -951,6 +963,8 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                             state.is_loading = false;
                             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
                             
+                            Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
+                            
                     }
                 )
             ]
@@ -964,7 +978,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                 builder: (BuildContext context) {
                     return PositionDialog(
                         cm_main_trade_contracts_i: cm_main_trade_contracts_i, 
-                        pl: pl,
+                        plavpps: plavpps,
                         position_quantity: position_quantity,
                         position_purchases_sum_quantity: position_purchases_sum_quantity,
                         trades_quantities_widget: trades_quantities_widget,
@@ -1058,19 +1072,20 @@ class HeaderWithACloseButton extends StatelessWidget {
 
 class PositionDialog extends StatefulWidget {
     final int cm_main_trade_contracts_i;
-    PositionLog pl;
+    PositionLogAndVoidPositionPayoutStatus plavpps;
+    PositionLog get pl => plavpps.pl;
     Widget position_quantity;
     BigInt position_purchases_sum_quantity;
     Widget trades_quantities_widget;
     Widget current_position_widget;
     PositionDialog({
         required this.cm_main_trade_contracts_i, 
-        required this.pl,
+        required this.plavpps,
         required this.position_quantity,
         required this.position_purchases_sum_quantity,
         required this.trades_quantities_widget,
         required this.current_position_widget,
-    }) : super(key: ValueKey('PositionDialog pl-id: ${pl.id} cm_main_trade_contracts_i: ${cm_main_trade_contracts_i}'));
+    }) : super(key: ValueKey('PositionDialog pl-id: ${plavpps.pl.id} cm_main_trade_contracts_i: ${cm_main_trade_contracts_i}'));
     State createState() => PositionDialogState();
 }
 class PositionDialogState extends State<PositionDialog> {
@@ -1091,9 +1106,19 @@ class PositionDialogState extends State<PositionDialog> {
         
         PositionLog pl = widget.pl;
         
+        Widget mainder_position_widget = pl.position_kind == PositionKind.Cycles
+            ? show_tokens_with_symbol(
+                Cycles(cycles: pl.mainder_position_quantity), 
+                cycles_symbol,
+            )
+            : show_tokens_with_symbol(
+                Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), 
+                token_symbol,
+            );
+        
         return Dialog(
             child: Container(
-                constraints: BoxConstraints(maxWidth: 505),
+                constraints: BoxConstraints(maxWidth: 555),
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1153,7 +1178,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                             Text('${pl.fill_average_rate}'),
                                                         ),
                                                         (
-                                                            Text('CTS-PAYOUT-FEES:',/* style: TextStyle(fontFamily: 'CourierNewBold')*/),
+                                                            Text('CTS-FEES:',/* style: TextStyle(fontFamily: 'CourierNewBold')*/),
                                                             pl.position_kind == PositionKind.Cycles 
                                                             ? 
                                                             show_tokens_with_symbol(Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places), token_symbol)
@@ -1232,6 +1257,38 @@ class PositionDialogState extends State<PositionDialog> {
                                                             Text('CURRENT-POSITION:'),
                                                             widget.current_position_widget,
                                                         ),
+                                                        if (pl.position_termination != null) ...[
+                                                            (
+                                                                Text('POSITION-LEFTOVER:'),
+                                                                mainder_position_widget
+                                                            ),
+                                                            if (widget.pl.void_position_payout_dust_collection && pl.mainder_position_quantity != BigInt.zero) (
+                                                                Text('LEFTOVER-DUST-COLLECTION:'),
+                                                                Text('true'),
+                                                            ),
+                                                            if (widget.pl.void_position_payout_dust_collection == false) ...[
+                                                                (
+                                                                    Text('LEFTOVER-TRANSFER-STATUS:'),
+                                                                    Text(widget.plavpps.void_position_payout_complete ? 'COMPLETE' : 'PENDING')
+                                                                ),
+                                                                if (widget.plavpps.void_position_payout_complete && pl.position_kind == PositionKind.Token) ...[
+                                                                    (
+                                                                        Text('LEFTOVER-LEDGER-TRANSFER-FEE:'),
+                                                                        show_tokens_with_symbol(
+                                                                            Tokens(quantums: pl.void_token_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
+                                                                            token_symbol
+                                                                        )
+                                                                    ),
+                                                                    (
+                                                                        Text('LEFTOVER-TRANSFER:'),
+                                                                        show_tokens_with_symbol(
+                                                                            Tokens(quantums: pl.mainder_position_quantity - pl.void_token_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
+                                                                            token_symbol
+                                                                        )
+                                                                    )
+                                                                ]
+                                                            ]
+                                                        ]
                                                     ]
                                                 ),
                                                 SizedBox(height: 17),
@@ -1348,6 +1405,14 @@ class TradeLogDialog extends StatelessWidget {
                                                             Text('${token_symbol}-LEDGER-FEE:'),
                                                             show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_ledger_transfer_fee, decimal_places: token_decimal_places), token_symbol),
                                                         ),
+                                                        if (
+                                                            (pl.position_kind == PositionKind.Cycles && tlaps.tokens_payout_complete && tl.token_payout_dust_collection) 
+                                                            || 
+                                                            (pl.position_kind == PositionKind.Token && tlaps.cycles_payout_complete && tl.cycles_payout_dust_collection)
+                                                        ) (                                                        
+                                                            Text('DUST-COLLECTION:'),
+                                                            Text('true')
+                                                        ),
                                                         (
                                                             Text('PAYOUT:'),
                                                             pl.position_kind == PositionKind.Cycles 
@@ -1387,9 +1452,9 @@ class TradeLogDialog extends StatelessWidget {
 */
 String cycles_symbol = 'CYCLES';
 
-Tooltip show_tokens_with_symbol(Tokens tokens, String token_symbol, {bool show_token_symbol_in_main = true}) {
+Tooltip show_tokens_with_symbol(Tokens tokens, String token_symbol, {bool show_token_symbol_in_main = true, bool round_main_show = true}) {
     Tokens tokens_round = tokens.round_decimal_places(2);
-    Tokens tokens_for_the_main_show = tokens_round.quantums == BigInt.from(0) ? tokens : tokens_round; 
+    Tokens tokens_for_the_main_show = round_main_show ? (tokens_round.quantums == BigInt.from(0) ? tokens : tokens_round) : tokens; 
     return Tooltip(
         richMessage: TextSpan(
             style: TextStyle(fontFamily: 'ChakraPetchBold', fontSize: 17),
@@ -1428,61 +1493,23 @@ class UserCMLogsDataTableSource extends DataTableSource {
             state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
             .user_positions_storage.keys;
         BigInt plid = user_positions_storage_keys.elementAt(user_positions_storage_keys.length - 1 - i);
-        PositionLog? pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-            .current_user_positions[plid];
-        if (pl == null) {
-            pl = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                .user_positions_storage[plid]!;
+        PositionLogAndVoidPositionPayoutStatus? plavpps = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            .current_user_positions[plid].nullmap((pl)=>PositionLogAndVoidPositionPayoutStatus(pl, false));
+        if (plavpps == null) {
+            plavpps = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                .user_void_positions_pending[plid];
         }
-        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, pl);
-        
-    }
-    Future<AsyncRowsResponse> getRows(int start_i, int count) async {
-        // each row is a position. // onTap shows more about each trade? maybe a two line row without the onTap
-        
-        List<DataRow> rows = [];
-        
-        int current_user_positions_length = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!.current_user_positions.length; 
-        if (start_i < current_user_positions_length) {
-            Iterable<BigInt> map_keys = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-            .current_user_positions.keys;
-            Iterable<BigInt> keys_show = map_keys.take(map_keys.length - start_i).skip(max(0, map_keys.length - start_i - count).toInt()).toList().reversed;
-            rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(
-                    context,
-                    cm_main_icrc1token_trade_contracts_i, 
-                    state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                        .current_user_positions[k]!,
-                )
-            ));
+        if (plavpps == null) {
+            plavpps = PositionLogAndVoidPositionPayoutStatus(
+                state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                .user_positions_storage[plid]!,
+                true,
+            );
         }
-        if (rows.length < count) {
-            Iterable<BigInt> map_keys = state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-            .user_positions_storage.keys;
-            Iterable<BigInt> keys_show = map_keys
-                .skipWhile((k)=>state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!.current_user_positions.containsKey(k))
-                .take(map_keys.length - max(0, start_i - current_user_positions_length))
-                .skip(max(0, map_keys.length - max(0, start_i - current_user_positions_length).toInt() - count - rows.length).toInt()).toList().reversed;
-            rows.addAll(keys_show.map(
-                (k)=>datarow_of_the_user_position_log(
-                    context,
-                    cm_main_icrc1token_trade_contracts_i, 
-                    state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                        .current_user_positions[k]!,
-                )
-            ));
-        }
-        
-        return AsyncRowsResponse(
-            state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-            .user_positions_storage.length,
-            rows,
-        );
+        return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, plavpps);
     }
     
     int get selectedRowCount => 0;
-
-
 }
 
 const double timestamp_format_font_size = 13;
@@ -1559,7 +1586,7 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
                                                     } 
                                                     return Row(children: [trade_mounts[0], Text(' <> '), trade_mounts[1]]);
                                                 });
-                                                Widget payout_status_widget = Text((widget.pl.position_kind == PositionKind.Cycles ? l.tokens_payout_complete : l.cycles_payout_complete) ? 'DONE' : 'PENDING');
+                                                Widget payout_status_widget = Text((widget.pl.position_kind == PositionKind.Cycles ? l.tokens_payout_complete : l.cycles_payout_complete) ? 'COMPLETE' : 'PENDING');
                                                 Widget timestamp_widget = Text('${position_log_timestamp_format(datetime_of_the_nanos(l.tl.timestamp_nanos))}', style: TextStyle(fontSize: timestamp_format_font_size));
                                                 
                                                 data_rows.add(DataRow2(

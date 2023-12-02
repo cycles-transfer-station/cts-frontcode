@@ -337,6 +337,7 @@ For a temporary safegaurd, cycles-transfers are routed through a safe-transferre
                                     form_key.currentState!.reset();
                                     state.loading_text = 
 """cycles-transfer-id: ${transfer_cycles_sponse.cycles_transfer_id}
+cycles-sent: ${transfer_cycles_quest.cycles}
 cycles-refunded: ${transfer_cycles_sponse.cycles_refund}
 transfer-call-response: ${transfer_cycles_sponse.opt_cycles_transfer_call_error == null ? 'success' : transfer_cycles_sponse.opt_cycles_transfer_call_error!.toString()}  
 
@@ -392,6 +393,7 @@ loading cycles balance and transfers list ...""";
                                     
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
                                 }
                             }
                         )
@@ -740,6 +742,8 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                                                         
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
+                                    
                                 }
                             }
                         )
@@ -949,6 +953,8 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                     
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
+                                
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
                                 }
                             }
                         )
@@ -1373,8 +1379,7 @@ class LengthenMembershipFormState extends State<LengthenMembershipForm> {
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await Future.delayed(Duration(seconds: 1));
-                                    Navigator.pop(state.context);
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
                                 }
                             }
                         )
@@ -1395,6 +1400,9 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
     
     late IcpTokens burn_icp;
     
+    late Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles_future;
+    late Future<void> fresh_data_after_burn_icp_mint_cycles_future;
+        
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -1461,6 +1469,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         height: 17
                     ),
                     TextFormField(
+                        key: ValueKey('BurnIcpMintCycles TextFormField burn-icp'),
                         decoration: InputDecoration(
                             labelText: 'burn icp: ',
                         ),
@@ -1474,6 +1483,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     Padding(
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
+                            key: ValueKey('BurnIcpMintCyclesForm MINT CYCLES GO BUTTON'),
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('MINT CYCLES'),
                             onPressed: () async {
@@ -1487,7 +1497,8 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     
                                     late BurnIcpMintCyclesSuccess burn_icp_mint_cycles_success;
                                     try {
-                                        burn_icp_mint_cycles_success = await state.user!.bank!.burn_icp_mint_cycles(burn_icp);
+                                        this.burn_icp_mint_cycles_future = state.user!.bank!.burn_icp_mint_cycles(burn_icp);
+                                        burn_icp_mint_cycles_success = await this.burn_icp_mint_cycles_future;
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
@@ -1518,7 +1529,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                         builder: (BuildContext context) {
                                             return AlertDialog(
                                                 title: Text('Mint Cycles Success:'),
-                                                content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles}'),
+                                                content: Text('cycles-mint: ${burn_icp_mint_cycles_success.mint_cycles}', key: ValueKey('mint-cycles-success-dialog-cycles-mint-mount-text-line')),
                                                 actions: <Widget>[
                                                     TextButton(
                                                         onPressed: () => Navigator.pop(context),
@@ -1530,14 +1541,14 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     );
                                     
                                     try {
-                                        await Future.wait([
+                                        this.fresh_data_after_burn_icp_mint_cycles_future = Future.wait([
                                             state.user!.bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP),
                                             state.user!.bank!.fresh_icrc1_transactions(Icrc1Ledgers.ICP),
                                             state.user!.bank!.fresh_metrics(),
                                             state.user!.bank!.fresh_cycles_transfers_in(),
                                             state.user!.bank!.fresh_cycles_transfers_out(),
-                                            
                                         ]);
+                                        await this.fresh_data_after_burn_icp_mint_cycles_future;
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
@@ -1561,8 +1572,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     state.is_loading = false;
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
-                                    await Future.delayed(Duration(seconds: 1));
-                                    Navigator.pop(state.context);
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
                                 }
                             }
                         )

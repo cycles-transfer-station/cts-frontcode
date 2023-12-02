@@ -10,6 +10,9 @@ import 'package:ic_tools/ic_tools.dart';
 import 'package:cts_frontcode/main.dart' as app;
 import 'package:cts_frontcode/tools/widgets.dart' show OutlineButtonIILoginState; 
 import 'package:cts_frontcode/cycles_bank/create_bank.dart' show CreateMembershipButton, CreateMembershipButtonState;
+import 'package:cts_frontcode/cycles_bank/forms.dart' show BurnIcpMintCyclesForm, BurnIcpMintCyclesFormState;
+import 'package:cts_frontcode/cycles_bank/cycles_bank.dart' show BurnIcpMintCyclesSuccess;
+import 'package:cts_frontcode/config/state.dart' show Cycles;
 
 
 void main() {
@@ -75,7 +78,6 @@ void main() {
             await tester.pumpAndSettle();
             expect(find.text('creating membership ...'), findsOneWidget);
                         
-            print('awaiting purchase_cycles_bank_future');
             await purchase_cycles_bank_future;
             await tester.pumpAndSettle();
             
@@ -95,6 +97,48 @@ void main() {
             expect(find.text('CYCLES-BANK'), findsOneWidget);
             expect(find.text(bank_id.text), findsOneWidget);
             
+            await tester.tap(find.byIcon(Icons.settings_sharp));
+            await tester.pumpAndSettle();
+            
+            await tester.tap(find.text('MINT CYCLES'));
+            await tester.pumpAndSettle();
+            
+            await tester.enterText(find.byKey(ValueKey('BurnIcpMintCycles TextFormField burn-icp')), '500.01234567');
+            await tester.tap(find.byKey(ValueKey('BurnIcpMintCyclesForm MINT CYCLES GO BUTTON')));
+            
+            BurnIcpMintCyclesFormState burn_icp_mint_cycles_form_state = tester.state<BurnIcpMintCyclesFormState>(find.byType(BurnIcpMintCyclesForm)); 
+            
+            await tester.pumpAndSettle();
+            
+            expect(find.text('burning icp and minting cycles ...'), findsOneWidget);
+            
+            BurnIcpMintCyclesSuccess burn_icp_mint_cycles_success = await burn_icp_mint_cycles_form_state.burn_icp_mint_cycles_future;
+            await tester.pumpAndSettle();
+                        
+            expect(find.byType(AlertDialog), findsOneWidget);
+            expect(find.text('Mint Cycles Success:'), findsOneWidget);
+            Finder cycles_mint_mount_text_widget = find.byKey(ValueKey('mint-cycles-success-dialog-cycles-mint-mount-text-line')); 
+            String cycles_mint_mount_string = (cycles_mint_mount_text_widget.evaluate().first.widget as Text).data!.replaceFirst('cycles-mint: ', '');
+            print(cycles_mint_mount_string);
+            Cycles cycles_mint = Cycles.oftheTCyclesDoubleString(cycles_mint_mount_string.replaceFirst('T', ''));
+            assert(cycles_mint == burn_icp_mint_cycles_success.mint_cycles);
+            
+            await tester.tap(find.text('OK'));
+            await tester.pumpAndSettle();
+            
+            await burn_icp_mint_cycles_form_state.fresh_data_after_burn_icp_mint_cycles_future;
+            await tester.pumpAndSettle();
+            
+            await tester.tapAt(Offset(1, 1)); // close burn-icp-mint-cycles dialog    
+            await tester.pumpAndSettle();
+            await tester.tapAt(Offset(1, 1)); // close settings dialog    
+            await tester.pumpAndSettle();
+        
+            // on the 
+            
+            
+            
+            
             
             
             
@@ -109,7 +153,7 @@ void main() {
             
             
             
-            await Future.delayed(Duration(seconds:13));           
+            await Future.delayed(Duration(seconds:10));           
             
         }
     );

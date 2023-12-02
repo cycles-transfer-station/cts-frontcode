@@ -450,6 +450,8 @@ class Cycles extends Tokens {
     
     Cycles({required BigInt cycles}) : super(quantums: cycles, decimal_places: T_CYCLES_DECIMAL_PLACES);
     
+    static Cycles of_the_nat(CandidType nat) => Cycles.oftheNat(nat);
+    
     static Cycles oftheNat(CandidType nat) {
         return Cycles(
             cycles: (nat as Nat).value
@@ -485,6 +487,9 @@ class Cycles extends Tokens {
     bool operator <= (Cycles t) {
         return this.cycles <= t.cycles;
     } 
+    
+    @override
+    bool operator ==(covariant Cycles other) => other is Cycles && other.cycles == this.cycles;
     
 } 
 
