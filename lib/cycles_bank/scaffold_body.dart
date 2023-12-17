@@ -47,7 +47,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                     OutlineButtonIILogin(key: ValueKey('cb-scaffold_body-ii-login-button')),
-                    SizedBox(height: 11),
+                    SizedBox(height: 21),
                     Text('Log in for the cycles-bank.'),
                 ]
             );  

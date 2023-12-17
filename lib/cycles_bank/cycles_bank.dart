@@ -517,7 +517,8 @@ class CyclesBank extends Canister {
                 method_name: 'burn_icp_mint_cycles',
                 put_bytes: c_forwards([
                     Record.of_the_map({
-                        'burn_icp': burn_icp
+                        'burn_icp': burn_icp,
+                        'burn_icp_transfer_fee': ICP_LEDGER_TRANSFER_FEE,
                     })
                 ])
             )
