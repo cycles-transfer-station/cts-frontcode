@@ -139,9 +139,9 @@ class User {
             )
         )[0] as Variant;
         if (find_cycles_bank_sponse.containsKey(Ok)) {
-            Option opt_user_canister_id = find_cycles_bank_sponse[Ok] as Option;
+            Option<Principal> opt_user_canister_id = CandidType.as_option<Principal>(find_cycles_bank_sponse[Ok]);
             if (opt_user_canister_id.value != null) {
-                this.cycles_bank = CyclesBank(opt_user_canister_id.value as Principal, this);
+                this.cycles_bank = CyclesBank(opt_user_canister_id.value, this);
             } else {
                 this.cycles_bank = null;
             }

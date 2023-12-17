@@ -1167,10 +1167,9 @@ class LengthenMembershipFormState extends State<LengthenMembershipForm> {
                     total_cycles, 
                     state.cmc_cycles_per_icp_rate
                 )
-                + BigInt.from(1) 
                 + ICP_LEDGER_TRANSFER_FEE.e8s * BigInt.from(3),
             decimal_places: 8
-        ).round_decimal_places(1);
+        );
                 
         return Form(
             key: form_key,
