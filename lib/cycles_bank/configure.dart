@@ -212,7 +212,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                         ),
                                                                         SizedBox(
                                                                             width: 1,
-                                                                            height: 20
+                                                                            height: 13
                                                                         ),
                                                                         // burn icp mint cycles,  
                                                                         Container(
@@ -220,7 +220,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             padding: EdgeInsets.all(17),
                                                                             child: ElevatedButton(
                                                                                 style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('MINT CYCLES'),
+                                                                                child: Text('BURN ICP & MINT CYCLES'),
                                                                                 onPressed: () async {
                                                                                     await showDialog(
                                                                                         context: context,
@@ -231,6 +231,32 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                                                     padding: EdgeInsets.all(0),
                                                                                                     child: SingleChildScrollView(
                                                                                                         child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
+                                                                                                    )
+                                                                                                ),
+                                                                                                //actions: <Widget>[]
+                                                                                            );
+                                                                                        }   
+                                                                                    );
+                                                                                }
+                                                                            )                     
+                                                                        ),
+                                                                        // management_canister_deposit_cycles,  
+                                                                        Container(
+                                                                            width: double.infinity,
+                                                                            padding: EdgeInsets.all(17),
+                                                                            child: ElevatedButton(
+                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                                                                child: Text('MANAGEMENT CANISTER DEPOSIT CYCLES'),
+                                                                                onPressed: () async {
+                                                                                    await showDialog(
+                                                                                        context: context,
+                                                                                        builder: (BuildContext context) {
+                                                                                            return AlertDialog(
+                                                                                                title: Center(child: Text('MANAGEMENT CANISTER DEPOSIT CYCLES')),
+                                                                                                content: Container(
+                                                                                                    constraints: BoxConstraints(maxWidth: 500),
+                                                                                                    child: SingleChildScrollView(
+                                                                                                        child: ManagementCanisterDepositCyclesForm(key: ValueKey('CyclesBankScaffoldBody ManagementCanisterDepositCyclesForm'))
                                                                                                     )
                                                                                                 ),
                                                                                                 //actions: <Widget>[]

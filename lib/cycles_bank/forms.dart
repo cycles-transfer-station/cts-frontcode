@@ -86,7 +86,7 @@ final String? Function(String?) tcycles_validator = (String? v) {
     }
     late Cycles cycles;
     try {
-        cycles = Cycles.oftheTCyclesDoubleString(v);
+        cycles = Cycles.oftheTCyclesDoubleString(v.trim());
     } catch(e) {
         return 'Must be a number > 0, max 12 decimal places';
     }
@@ -207,10 +207,10 @@ class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesFo
                     ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'TCycles: ',
+                            labelText: 'TCYCLES: ',
                         ),
                         initialValue: tcycles_initial_value,
-                        onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!); },
+                        onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!.trim()); },
                         validator: tcycles_validator
                     ),
                     DropdownButtonFormField<CyclesTransferMemoType>(
@@ -907,7 +907,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Icp transfer is success. Block height: ${block}\nloading icp balance and transfers list ...';
+                                    state.loading_text = 'Icp transfer success. Block height: ${block}\nloading icp balance and transfers list ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
@@ -1472,7 +1472,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         decoration: InputDecoration(
                             labelText: 'burn icp: ',
                         ),
-                        onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!); },
+                        onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!.trim()); },
                         validator: (String? v) {
                             Cycles max_mint_cycles = Cycles.oftheTCyclesDoubleString('40000');
                             IcpTokens max_burn_icp = IcpTokens(e8s: cycles_transform_tokens(max_mint_cycles, state.cmc_cycles_per_icp_rate));
@@ -1520,7 +1520,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = 'Mint cycles is success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles} \nloading icp-balance, icp-transfers, cycles-balance, and cycles-transfers ...';
+                                    state.loading_text = 'Mint cycles success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles} \nloading icp-balance, icp-transfers, cycles-balance, and cycles-transfers ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
@@ -1583,3 +1583,161 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
 }
 
 
+class ManagementCanisterDepositCyclesForm extends StatefulWidget {
+    ManagementCanisterDepositCyclesForm({super.key});
+    State createState() => ManagementCanisterDepositCyclesFormState();
+}
+class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterDepositCyclesForm> {
+    GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    
+    late Principal canister_id;    
+    late Cycles cycles;
+        
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+                
+        return Form(
+            key: form_key,
+            child: Column(
+                children: <Widget>[
+                    Container(
+                        child: Text(
+                            'Warning: The canister receiving the cycles sent through this method will not be able to log or record this transfer. This method calls the management-canister\'s deposit_cycles method. If you don\'t know what that is, this form is not for you.', 
+                            style: TextStyle(fontSize: 13, fontFamily: 'ChakraPetch')
+                        )
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 11
+                    ),
+                    Container(
+                        child: Text('Cycles balance: ${state.user!.cycles_bank!.metrics!.cycles_balance}'),
+                    ),
+                    TextFormField(
+                        key: ValueKey('ManagementCanisterDepositCyclesForm TextFormField canister_id'),
+                        decoration: InputDecoration(
+                            labelText: 'For the canister: ',
+                        ),
+                        onSaved: (String? value) { canister_id = Principal.text(value!.trim()); },
+                        validator: (String? v) {
+                            try {
+                                Principal p = Principal.text(v.nullmap((vs)=>vs.trim()) ?? '');
+                                if (p.bytes.length >= 29) {
+                                    return 'Must be a canister princpal-id';
+                                }
+                            } catch(e) {
+                                return 'Must be a valid principal.';
+                            }
+                        }
+                    ),
+                    TextFormField(
+                        decoration: InputDecoration(
+                            labelText: 'TCYCLES: ',
+                        ),
+                        onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!.trim()); },
+                        validator: tcycles_validator
+                    ),
+                    Padding(
+                        padding: EdgeInsets.all(7),
+                        child: ElevatedButton(
+                            key: ValueKey('ManagementCanisterDepositCyclesForm DEPOSIT CYCLES GO BUTTON'),
+                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                            child: Text('DEPOSIT CYCLES'),
+                            onPressed: () async {
+                                if (form_key.currentState!.validate()==true) {
+                                    
+                                    form_key.currentState!.save();
+                                    
+                                    state.loading_text = 'calling managment canister deposit_cycles ...';
+                                    state.is_loading = true;
+                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    
+                                    late BigInt cycles_transfer_out_id;
+                                    try {
+                                        cycles_transfer_out_id = await state.user!.bank!.management_canister_deposit_cycles(
+                                            ManagementCanisterDepositCyclesQuest(
+                                                canister_id: canister_id,
+                                                cycles: cycles
+                                            )
+                                        );
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Management Canister Deposit Cycles Error:'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
+                                        return;
+                                    }
+                                    
+                                    form_key.currentState!.reset();
+                                    state.loading_text = 'Deposit cycles success. ${cycles} cycles deposited onto the canister: ${canister_id}\nloading cycles-balance and cycles-transfers ...';
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future success_dialog = showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Deposit Cycles Success:'),
+                                                content: Text('${cycles} cycles deposited onto the canister: ${canister_id}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );
+                                    
+                                    try {
+                                        await Future.wait([
+                                            state.user!.bank!.fresh_metrics(),
+                                            state.user!.bank!.fresh_cycles_transfers_in(),
+                                            state.user!.bank!.fresh_cycles_transfers_out(),
+                                        ]);
+                                    } catch(e) {
+                                        await showDialog(
+                                            context: state.context,
+                                            builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                    title: Text('Error when loading the cycles-balance and cycles-transfers:'),
+                                                    content: Text('${etext(e)}'),
+                                                    actions: <Widget>[
+                                                        TextButton(
+                                                            onPressed: () => Navigator.pop(context),
+                                                            child: const Text('OK'),
+                                                        ),
+                                                    ]
+                                                );
+                                            }   
+                                        );                                    
+                                    }
+                                    
+                                    await success_dialog;
+                                
+                                    state.is_loading = false;
+                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    
+                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
+                                }
+                            }
+                        )
+                    )
+                ]
+            )
+        );
+    }
+}

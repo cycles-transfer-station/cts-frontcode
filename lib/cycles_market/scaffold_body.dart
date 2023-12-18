@@ -614,7 +614,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     if (widget.position_kind == PositionKind.Token) Container(
                         padding: EdgeInsets.symmetric(vertical: 11),
                         child: Text(
-                            'CREATE-POSITION-LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}', 
+                            'CREATE-POSITION-LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}', 
                             style: TextStyle(fontFamily: 'ChakraPetch', fontSize: 11)
                         ),
                     ),
@@ -758,7 +758,7 @@ class UserCMLogsState extends State<UserCMLogs> {
                 
         return Column(
             children: [
-                Text('USER POSITIONS'),
+                Text('POSITIONS'),
                 SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Container(

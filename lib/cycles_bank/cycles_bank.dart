@@ -538,8 +538,32 @@ class CyclesBank extends Canister {
         return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_burn_icp_mint_cycles_result, complete_burn_icp_mint_cycles_result_match_map);
     }
 
-
-    
+        
+    Future<BigInt/*cycles-transfer-out-id*/> management_canister_deposit_cycles(ManagementCanisterDepositCyclesQuest q) async {
+        Variant sponse = c_backwards_one(
+            await user.call(
+                this,
+                calltype: CallType.call,
+                method_name: 'management_canister_deposit_cycles',
+                put_bytes: c_forwards_one(q)
+            )
+        ) as Variant;
+        return await match_variant<BigInt>(sponse, {
+            Ok: (nat) {
+                return (nat as Nat).value;
+            },
+            Err: (e) {
+                return match_variant<Never>(e as Variant, {
+                    'CyclesBalanceTooLow': (r) {
+                        throw Exception('Cycles balance too low. \ncurrent cycles balance: ${Cycles.of_the_nat((r as Record)['cycles_balance'] as Nat)}');
+                    },
+                    'CallError': (ce) {
+                        throw Exception('Management Canister Call Error: ${CallError.of_the_record(ce as Record)}');
+                    },
+                });
+            }             
+        });
+    }
     
     
     // ---------------------
@@ -729,12 +753,35 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
                 }))
             );
             // test
-            await this.fresh_cm_trade_contracts_token_balances(tc);
-            print('tc user token balance quantums after transfer ${this.cm_trade_contracts[tc]!.trade_contract_token_balance}');
+            //await this.fresh_cm_trade_contracts_token_balances(tc);
+            //print('tc user token balance quantums after transfer ${this.cm_trade_contracts[tc]!.trade_contract_token_balance}');
         
         }
         
-        return await cm_trade_(tc, q, PositionKind.Token);
+        try{
+            return await cm_trade_(tc, q, PositionKind.Token);
+        } catch(cm_trade_error) {
+            try {
+                await this.fresh_cm_trade_contracts_token_balances(tc);
+                if (this.cm_trade_contracts[tc]!.trade_contract_token_balance > tc.ledger_data.fee) {
+                    try{
+                        await this.cm_transfer_token_balance(
+                            tc,
+                            CyclesMarketTransferTokenBalanceQuest(
+                                tokens: Tokens(quantums: this.cm_trade_contracts[tc]!.trade_contract_token_balance - tc.ledger_data.fee, decimal_places: tc.ledger_data.decimals),
+                                token_fee: Tokens(quantums: tc.ledger_data.fee, decimal_places: tc.ledger_data.decimals),
+                                to: Icrc1Account(owner: this.principal),
+                            )
+                        );
+                    } catch(cm_transfer_token_balance_error) {
+                        print('Error cm_transfer_token_balance:\n${cm_transfer_token_balance_error}');
+                    }
+                }
+            } catch(fresh_cm_tc_token_balance_error) {
+                print('Error fresh_cm_trade_contracts_token_balances(tc):\n${fresh_cm_tc_token_balance_error}');
+            }
+            throw cm_trade_error;
+        }
     }
     
     
@@ -1503,6 +1550,17 @@ class BurnIcpMintCyclesSuccess {
         return 'cycles-mint: ${this.mint_cycles}';
     }
 }
+
+
+class ManagementCanisterDepositCyclesQuest extends Record {
+    final Principal canister_id;
+    final Cycles cycles;
+    ManagementCanisterDepositCyclesQuest({required this.canister_id, required this.cycles}) {
+        this['canister_id'] = this.canister_id;
+        this['cycles'] = this.cycles;
+    }
+}
+
 
 // ------------- CYCLES-MARKET -------------
 

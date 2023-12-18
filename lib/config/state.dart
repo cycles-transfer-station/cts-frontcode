@@ -68,13 +68,13 @@ final bool is_on_local = window.location.hostname!.contains('localhost') || wind
 class CustomState {
 
     CustomState() {
-    
-        if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com')) {
-            cts = Canister(Principal.text(em3jm)); 
-            cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
-        } else if (window.location.hostname!.contains(x3ncx)) {
+        
+        if (window.location.hostname!.contains(x3ncx) || window.location.hostname!.contains('cycles-transfer-station.com')) {
             cts = Canister(Principal.text(x3ncx));
             cycles_market = Canister(Principal.text('x4med-gqaaa-aaaam-qbcfq-cai'));
+        } else if (window.location.hostname!.contains(em3jm)) {
+            cts = Canister(Principal.text(em3jm)); 
+            cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
         } else if (is_on_local) {
             /// local replica 
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
@@ -94,9 +94,7 @@ class CustomState {
         
         cts_main_icp_id = common.icp_id(cts.principal);
         
-        if (cts.principal.text != em3jm) {
-            print('Using the canister: ${cts.principal.text} as the CTS-MAIN. ');
-        }
+        print('CTS-MAIN: ${cts.principal.text}.');
         
          dataTableShowLogs = false; // for the data_table_2 package
         
