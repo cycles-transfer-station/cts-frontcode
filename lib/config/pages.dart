@@ -170,7 +170,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     state.current_url = CustomUrl(
                                                         'cycles_market', 
                                                         variables: {
-                                                            'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol
+                                                            'token_ledger_id': state.cm_main.icrc1token_trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.ledger.principal.text
                                                         }
                                                     );
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);

@@ -230,9 +230,13 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                             futures.addAll([
                                                                 state.user!.cycles_bank!.fresh_cycles_transfers_in(),
                                                                 state.user!.cycles_bank!.fresh_cycles_transfers_out(),
+                                                                state.user!.cycles_bank!.fresh_metrics(),
                                                             ]); 
                                                         } else {
-                                                            futures.add(state.user!.bank!.fresh_icrc1_transactions(state.user!.bank!.current_icrc1_ledger!));
+                                                            futures.addAll([
+                                                                state.user!.bank!.fresh_icrc1_transactions(state.user!.bank!.current_icrc1_ledger!),
+                                                                state.user!.bank!.fresh_icrc1_balances(state.user!.bank!.current_icrc1_ledger!),
+                                                            ]);
                                                         }
                                                         await Future.wait(futures);
                                                     } catch(e) {

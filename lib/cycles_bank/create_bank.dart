@@ -121,8 +121,8 @@ A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockcha
                                         DataCell(Text('MEMBERSHIP COST ICP:')),
                                         DataCell(Row(
                                             children: [
-                                                Text('${Tokens(quantums: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals).round_decimal_places(1)}-icp'), 
-                                                Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the membership cost in CYCLES converted into ICP using the current ICP/CYCLES conversion-rate. This amount fluctuates based on the current ICP/CYCLES conversion-rate.')
+                                                Text('${Tokens(quantums: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals)}-icp'), 
+                                                Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the membership cost in CYCLES converted into ICP using the current ICP/CYCLES conversion-rate. This amount fluctuates based on the current ICP/CYCLES conversion-rate. This amount includes two ledger transfer fees for the transaction.')
                                             ]
                                         )),
                                     ]

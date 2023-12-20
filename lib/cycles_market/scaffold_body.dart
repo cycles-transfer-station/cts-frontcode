@@ -45,7 +45,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     
         // set the state.cm_main_icrc1token_trade_contracts_i
         int cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol 
-            = state.cm_main.icrc1token_trade_contracts.indexWhere((tc)=>tc.ledger_data.symbol == state.current_url.variables['token_ledger_symbol']!);
+            = state.cm_main.icrc1token_trade_contracts.indexWhere((tc)=>tc.ledger_data.ledger.principal.text == state.current_url.variables['token_ledger_id']!);
         
         if (cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol < 0) {
             state.current_url = CustomUrl('void');
@@ -95,7 +95,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                                         state.current_url = CustomUrl(
                                             'cycles_market', 
                                             variables: {
-                                                'token_ledger_symbol': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.symbol
+                                                'token_ledger_id': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.ledger.principal.text
                                             }
                                         );
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);

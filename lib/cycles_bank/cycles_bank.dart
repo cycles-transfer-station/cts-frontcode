@@ -178,13 +178,24 @@ class CyclesBank extends Canister {
     
     Future<TransferCyclesSponse> transfer_cycles(UserTransferCyclesQuest q) async {
         // get the cts-cb-authorization of the q.for_the_canister, 
-        Record callee_user_and_cts_cb_authorization = c_backwards_one(
-            await this.user.call(
+        late Uint8List b;
+        try {
+            b = await this.user.call(
                 Canister(q.for_the_canister),
                 method_name: 'get_cts_cb_auth',
                 calltype: CallType.query,
-            )
-        ) as Record;
+            );
+        } on CallException catch(e) {
+            if (e.reject_code == BigInt.from(3)) {
+                throw Exception('For the canister must be a CYCLES-BANK.');
+            } else {
+                rethrow;
+            }
+        } catch(e) {
+            rethrow;
+        }
+        
+        Record callee_user_and_cts_cb_authorization = c_backwards_one(b) as Record;
         Variant transfer_cycles_sponse = c_backwards(
             await this.user.call(
                 this,
@@ -780,7 +791,7 @@ Current cm-escrow-account token-balance: ${Tokens(quantums: this.cm_trade_contra
             } catch(fresh_cm_tc_token_balance_error) {
                 print('Error fresh_cm_trade_contracts_token_balances(tc):\n${fresh_cm_tc_token_balance_error}');
             }
-            throw cm_trade_error;
+            rethrow; //throw cm_trade_error;
         }
     }
     

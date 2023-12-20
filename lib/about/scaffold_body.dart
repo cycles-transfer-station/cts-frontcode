@@ -23,13 +23,11 @@ class AboutScaffoldBody extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(0, 34.0, 0, 27.0), 
                 width: double.infinity,
                 child: Text(
-"""The mainstream-usage of the native CYCLES as a stable-currency on the world-computer stands on these 3 key pillars. 
+"""The goal of the CYCLES-TRANSFER-STATION is for the mainstream-usage of the native CYCLES as the stable-currency of the world-computer. 
 
-Pillar #1: The cycles-bank. Each user has their own personal cycles-bank that cepts, holds, and transfers the cycles, and keeps logs of the transfers. Cycles-banks use the cycles-transfer-specification of Pillar #2 to transfer the CYCLES.
+Each user creates their own personal cycles-bank that mints, holds, and transfers the cycles, and keeps logs of the transfers. The cycles-bank holds other ICRC-1 tokens too. 
 
-Pillar #2: The cycles-transfer-specification. The cycles-transfer-specification sets the communication standard between the smart-contracts (canisters) for the cycles-transfers. The cycles-transfer-specification method has a memo-field that functions as an identifier for specific cycles-transfers/payments. 
-
-Pillar #3: The cycles-market. The cycles-market is the place where people can trade the native CYCLES and various cryptocurrencies in both ways. 
+The cycles-market is the place where people can trade the native CYCLES and various tokens back and forth in both ways. 
 """
                     , style: TextStyle(fontSize: 17)
                 )
