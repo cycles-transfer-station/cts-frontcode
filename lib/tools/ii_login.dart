@@ -21,7 +21,7 @@ ii_login(BuildContext context) async {
     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
     state.is_loading = true;
-    state.loading_text = 'ii login ...';
+    state.loading_text = 'LOG-IN ...';
     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
     
     late IICaller ii_caller;

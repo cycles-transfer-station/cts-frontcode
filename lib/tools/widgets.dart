@@ -72,7 +72,7 @@ class OutlineButtonIILoginState extends State<OutlineButtonIILogin> {
     
     Widget build(BuildContext context) {
         return OutlineButton(
-            button_text: 'ii login',
+            button_text: 'LOG-IN',
             on_press_complete: () async {
                 ii_login_future = ii_login(context);  
                 await ii_login_future; 

@@ -47,7 +47,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
                 Container(
                     padding: EdgeInsets.all(17.0),
                     child: OutlineButton(
-                        button_text: 'ii login',
+                        button_text: 'LOG-IN',
                         on_press_complete: () async { await ii_login(context); }
                     )
                 )

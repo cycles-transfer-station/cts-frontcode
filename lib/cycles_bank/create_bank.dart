@@ -6,6 +6,7 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../transfer_icp/icp_ledger.dart';
+import '../tools/tools.dart' show etext;
 
 
 
@@ -45,7 +46,7 @@ Creating a CTS-MEMBERSHIP lets you into the CYCLES-MARKET where you can trade to
     
 For each member, the CTS creates a new CYCLES-BANK.
     
-A CYCLES-BANK is a canister smart-contract living on the World-Computer-Blockchain that holds, transfers, and cepts CYCLES. A CYCLES-BANK can hold many tokens on the ICP blockchain. A CYCLES-BANK keeps logs of the cycles-transfers.
+A CYCLES-BANK is a canister-smart-contract living on the world-computer that mints, holds, transfers, and trades the native CYCLES. A CYCLES-BANK can also hold many different tokens on the blockchain.
 """
                         /*
                                                 )
@@ -188,8 +189,8 @@ class CreateMembershipButtonState extends State<CreateMembershipButton> {
                 context: state.context,
                 builder: (BuildContext context) {
                     return AlertDialog(
-                        title: Text('create membership error:'),
-                        content: Text('${e}'),
+                        title: Text('Create Membership Error:'),
+                        content: Text('${etext(e)}'),
                         actions: <Widget>[
                             TextButton(
                                 onPressed: () => Navigator.pop(context),
@@ -210,7 +211,7 @@ class CreateMembershipButtonState extends State<CreateMembershipButton> {
             context: state.context,
             builder: (BuildContext context) {
                 return AlertDialog(
-                    title: Text('Create membership success:'),
+                    title: Text('Create Membership Success:'),
                     content: Text('Bank id: ${state.user!.cycles_bank!.principal.text}'),
                     actions: <Widget>[
                         TextButton(
