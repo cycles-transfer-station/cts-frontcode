@@ -94,7 +94,11 @@ class CyclesBank extends Canister {
     }
     // helper for fresh_icrc1_transactions
     Future<Variant> _call_icrc1_index_transactions(Icrc1Ledger l, [Nat? start]) async {
-        return c_backwards(await l.index!.call(
+        final Map<Canister, Canister> ledger_index = {
+            Canister(Principal.text('zfcdd-tqaaa-aaaaq-aaaga-cai')): Canister(Principal.text('zlaol-iaaaa-aaaaq-aaaha-cai')), // DKP
+            Canister(Principal.text('2ouva-viaaa-aaaaq-aaamq-cai')): Canister(Principal.text('2awyi-oyaaa-aaaaq-aaanq-cai')), // CHAT
+        }; 
+        return c_backwards(await ledger_index[l.ledger]!.call(
             calltype: CallType.call,
             method_name: 'get_account_transactions',
             put_bytes: c_forwards([
