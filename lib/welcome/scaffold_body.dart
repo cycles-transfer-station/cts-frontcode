@@ -131,7 +131,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
             child: Container(
                 constraints: BoxConstraints(maxWidth: 1000),
                 child: DefaultTextStyle.merge(
-                    style: TextStyle(fontFamily: 'ChakraPetch'),
+                    style: TextStyle(fontFamily: 'AxaxaxBold'),
                     child: Column(                
                         children: column_children,
                         mainAxisAlignment: MainAxisAlignment.start,
