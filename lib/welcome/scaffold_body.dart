@@ -40,37 +40,32 @@ class WelcomeScaffoldBody extends StatelessWidget {
         
         ];
         
-        
-        if (state.user == null) {
-            
-            column_children.add(   
-                Container(
-                    padding: EdgeInsets.all(17.0),
-                    child: OutlineButton(
+        column_children.add(   
+            Container(
+                padding: EdgeInsets.all(17.0),
+                child: state.user == null ? 
+                    OutlineButton(
                         button_text: 'LOG-IN',
                         on_press_complete: () async { await ii_login(context); }
                     )
-                )
-            );
-        }
-        
-        else /*if (state.user != null)*/ {
-            
-            column_children.addAll([
-                Container(
-                    padding: EdgeInsets.all(17.0),
-                    child: SelectableText('USER-ID: ${state.user!.principal.text}')
-                ) 
-            ]);
-
-        }
+                : state.user!.bank == null ?
+                    OutlineButton(
+                        button_text: 'CREATE MEMBERSHIP',
+                        on_press_complete: () async { 
+                            state.current_url = CustomUrl('cycles_bank');
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true); 
+                        }
+                    )
+                : SelectableText('BANK-ID: ${state.user!.bank!.principal.text}')
+            )
+        );
         
         column_children.addAll([
             Container(
                 constraints: BoxConstraints(maxWidth: 570),
                 padding: EdgeInsets.fromLTRB(0, 17, 0, 0),
                 child: Divider(
-                    height: 4.0,  
+                    height: 4.0,
                     thickness: 4.0,
                     indent: 54.0,
                     endIndent: 54.0,
