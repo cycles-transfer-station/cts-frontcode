@@ -321,9 +321,13 @@ class CustomState {
                     user_of_the_idb.cycles_bank = CyclesBank(Principal.text(user_cycles_bank_data[1]), user_of_the_idb);
                 }
             }
-            
-            if (user_of_the_idb.expiration_timestamp_nanoseconds == null || get_current_time_nanoseconds() < user_of_the_idb.expiration_timestamp_nanoseconds! - BigInt.from(1000000000*60*10) ) {
+            if (user_of_the_idb.expiration_timestamp_nanoseconds == null) {
                 this.user = user_of_the_idb;
+            } else if (get_current_time_nanoseconds() < user_of_the_idb.expiration_timestamp_nanoseconds! - BigInt.from(1000000000*60*10)) {
+                // temporary condition for the first 30 days of the CTS. Take away at mid february.
+                if (user_of_the_idb.expiration_timestamp_nanoseconds! >= BigInt.parse('1703759039499000000') + BigInt.from(Duration(days: 31).inMicroseconds * 1000)) {
+                    this.user = user_of_the_idb;
+                }
             }
             
         }
