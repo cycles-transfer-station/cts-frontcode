@@ -34,13 +34,13 @@ class IcpTransferListItem extends StatelessWidget {
                     children: <Widget>[
                         ListTile(
                             title: Text(listtile_title),
-                            subtitle: Text('BLOCK-HEIGHT: ${icp_transfer.block_height}'),
+                            subtitle: Text('BLOCK: ${icp_transfer.block_height}'),
                         ),
                         Expanded(
                             child: Container(
                                 padding: EdgeInsets.fromLTRB(17,7,17,7),
                                 width: double.infinity, 
-                                child: SingleChildScrollView(
+                                child: DefaultTextStyle.merge(style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size), child: SingleChildScrollView(
                                     child: Column(
                                         mainAxisAlignment: MainAxisAlignment.start,
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,7 +52,7 @@ class IcpTransferListItem extends StatelessWidget {
                                             SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(icp_transfer.timestamp_seconds.toInt() * 1000))}'),
                                         ]
                                     )
-                                )
+                                ))
                             )
                         )
                     ]

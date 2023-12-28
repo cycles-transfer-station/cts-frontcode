@@ -14,6 +14,8 @@ import '../config/state_bind.dart';
 import '../tools/tools.dart';
 
 
+const double ct_list_item_body_font_size = 17;
+
 class CyclesTransferInListItem extends StatelessWidget {
     final CyclesTransferIn cycles_transfer_in;
     CyclesTransferInListItem(CyclesTransferIn cycles_transfer_in): cycles_transfer_in = cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${cycles_transfer_in.id}'));
@@ -53,7 +55,7 @@ class CyclesTransferInListItem extends StatelessWidget {
                             width: double.infinity, 
                             child: SingleChildScrollView(
                                 child: DefaultTextStyle.merge(
-                                    style: TextStyle(fontFamily: 'CourierNew'),
+                                    style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size),
                                     child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         mainAxisAlignment: MainAxisAlignment.start,
@@ -98,17 +100,17 @@ class CyclesTransferOutListItem extends StatelessWidget {
                             width: double.infinity, 
                             child: SingleChildScrollView(
                                 child: DefaultTextStyle.merge(
-                                    style: TextStyle(fontFamily: 'CourierNew'),
+                                    style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size),
                                     child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         mainAxisAlignment: MainAxisAlignment.start,
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                             SelectableText('for: ${cycles_transfer_out.for_the_canister.text}'),
-                                            SelectableText('cycles_sent: ${cycles_transfer_out.cycles_sent}'),
-                                            SelectableText('cycles_refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
+                                            SelectableText('cycles-sent: ${cycles_transfer_out.cycles_sent}'),
+                                            SelectableText('cycles-refunded: ${cycles_transfer_out.cycles_refunded != null ? cycles_transfer_out.cycles_refunded! : 'waiting for the callback'}'),
                                             SelectableText('memo: ${cycles_transfer_out.cycles_transfer_memo}'),
-                                            SelectableText('transfer-call-status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
+                                            SelectableText('status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
                                             SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer_out.timestamp_nanos).toInt()))}'),
                                         ]                            
                                     )

@@ -736,16 +736,16 @@ class CyclesTransferMemo extends Variant {
     
     String toString() {
         if (this.keys.first == candid_text_hash('Text')) {
-            return 'Text: ${(this.values.first as candid.Text).value}';
+            return '${(this.values.first as candid.Text).value}';
         }
         if (this.keys.first == candid_text_hash('Blob')) {
-            return 'Blob: ${bytesasahexstring((this.values.first as Blob).bytes)}';
+            return '${bytesasahexstring((this.values.first as Blob).bytes)}';
         }
         if (this.keys.first == candid_text_hash('Nat')) {
-            return 'Nat: ${(this.values.first as Nat).value}';
+            return '${(this.values.first as Nat).value}';
         }
         if (this.keys.first == candid_text_hash('Int')) {
-            return 'Int: ${(this.values.first as Int).value}';
+            return '${(this.values.first as Int).value}';
         }
         throw Exception('');
     }
