@@ -8905,7 +8905,7 @@ case 5:p=9
 g=A.a(["cycles-transfer-station.com"],t.s)
 e=window.location.hostname
 e.toString
-if(B.b.t(g,e))g="https://x3ncx-liaaa-aaaam-qbcfa-cai.icp0.io"
+if(B.b.t(g,e))g="https://em3jm-bqaaa-aaaar-qabxa-cai.icp0.io"
 else{g=window.location.hostname
 g.toString
 if(B.c.t(g,".ic0.app")){g=window.location.hostname
@@ -43971,17 +43971,17 @@ $S:186}
 A.V7.prototype={}
 A.V8.prototype={}
 A.l3.prototype={
-a1L(){var s="x3ncx-liaaa-aaaam-qbcfa-cai",r="em3jm-bqaaa-aaaar-qabxa-cai",q=window.location.hostname
+a1L(){var s="em3jm-bqaaa-aaaar-qabxa-cai",r="x3ncx-liaaa-aaaam-qbcfa-cai",q=window.location.hostname
 q.toString
 if(!B.c.t(q,s)){q=window.location.hostname
 q.toString
 q=B.c.t(q,"cycles-transfer-station.com")}else q=!0
 if(q){$.dO.sob(new A.cK(A.f3(s)))
-$.a2z.sob(new A.cK(A.f3("x4med-gqaaa-aaaam-qbcfq-cai")))
+$.a2z.sob(new A.cK(A.f3("el2py-miaaa-aaaar-qabxq-cai")))
 q=$.dO}else{q=window.location.hostname
 q.toString
 if(B.c.t(q,r)){$.dO.sob(new A.cK(A.f3(r)))
-$.a2z.sob(new A.cK(A.f3("el2py-miaaa-aaaar-qabxq-cai")))
+$.a2z.sob(new A.cK(A.f3("x4med-gqaaa-aaaam-qbcfq-cai")))
 q=$.dO}else{if($.a35()){$.b2u=A.f9("http://127.0.0.1:8080")
 q=t.P
 A.aCD().bG(new A.a6X(),q)
