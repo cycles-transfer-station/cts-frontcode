@@ -117,7 +117,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                 
                 column_children.addAll([
                     Container(
-                        padding: EdgeInsets.symmetric(vertical: 33),
+                        margin: EdgeInsets.symmetric(vertical: 33),
                         child: Column(
                             children: [
                                 Container(
