@@ -1391,7 +1391,6 @@ typedef CTSFuel = Cycles;
 
 
 class CyclesBankMetrics {
-    BigInt global_allocator_counter;
     Cycles cycles_balance;
     CTSFuel ctsfuel_balance;
     BigInt storage_size_mib;
@@ -1405,7 +1404,6 @@ class CyclesBankMetrics {
     bool cts_cb_authorization;
     
     CyclesBankMetrics._({
-        required this.global_allocator_counter,
         required this.cycles_balance,
         required this.ctsfuel_balance,
         required this.storage_size_mib,
@@ -1420,7 +1418,6 @@ class CyclesBankMetrics {
     });
     static CyclesBankMetrics of_the_record(Record r) {
         return CyclesBankMetrics._(
-            global_allocator_counter: (r['global_allocator_counter'] as Nat64).value,
             cycles_balance: Cycles.oftheNat(r['cycles_balance'] as Nat),
             ctsfuel_balance: CTSFuel.oftheNat(r['ctsfuel_balance'] as Nat),
             storage_size_mib: (r['storage_size_mib'] as Nat).value,

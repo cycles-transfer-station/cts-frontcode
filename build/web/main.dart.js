@@ -8141,14 +8141,14 @@ aDJ:function aDJ(){},
 aDK:function aDK(){},
 aCa:function aCa(){},
 a76:function a76(a,b,c,d,e,f,g,h){var _=this
-_.b=a
-_.c=b
-_.d=c
-_.e=d
-_.r=e
-_.w=f
-_.z=g
-_.Q=h},
+_.a=a
+_.b=b
+_.c=c
+_.d=d
+_.f=e
+_.r=f
+_.y=g
+_.z=h},
 mb:function mb(a,b,c,d,e){var _=this
 _.a=a
 _.b=b
@@ -44153,7 +44153,7 @@ s=11
 return A.l(i.x.r.he(),$async$$0)
 case 11:A.c_("loading cycles-transfers-in-out, and cm-data, icrc1-tokens")
 n=A.a([],t.R)
-if(!i.x.r.c.Q)J.fd(n,A.fk(new A.a6Y(i),k))
+if(!i.x.r.c.z)J.fd(n,A.fk(new A.a6Y(i),k))
 J.fd(n,i.x.r.mC())
 J.fd(n,i.x.r.oc())
 J.fd(n,A.fk(new A.a6Z(i,o.b),k))
@@ -44386,20 +44386,20 @@ A.LM.prototype={
 L(a){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e=null,d="unknown",c=A.cr(a,t.A),b=a.U(t.O)
 b.toString
 s=c.x.r.c
-if(s!=null){r=s.b.j(0)
-q=s.r
+if(s!=null){r=s.a.j(0)
+q=s.f
 p=A.a4(1e6)
 o=A.hf(B.d.H(q.eL(0)/p.eL(0)),!1)
 n=""+A.mV(o)+"-"+A.mU(o)+"-"+A.mT(o)+"\n"+A.PV(o)+":"+A.PW(o)
-m=""+B.e.bZ(A.cp(0,0,A.hf(s.e.m(0,A.a4(1000)).H(0),!1).a-Date.now(),0,0).a,864e8)+"-days"
-p=s.c
+m=""+B.e.bZ(A.cp(0,0,A.hf(s.d.m(0,A.a4(1000)).H(0),!1).a-Date.now(),0,0).a,864e8)+"-days"
+p=s.b
 p=A.bQ.prototype.gcP.call(p)
 q=$.aDO()
 B.d.ai(p.eL(0)/q.eL(0),5)
-q=s.w
+q=s.r
 p=A.a4(1048576)
 l=B.d.ai(q.eL(0)/p.eL(0),1)+"-MiB"
-k=s.d.j(0)+"-MiB"}else{k=d
+k=s.c.j(0)+"-MiB"}else{k=d
 l=k
 m=l
 n=m
@@ -44634,31 +44634,30 @@ while(true)switch(s){case 0:g=t.L
 f=A
 s=2
 return A.l(q.b.$4$calltype$method_name$put_bytes(q,B.an,"metrics",A.cb(A.a([],t.Q))),$async$he)
-case 2:h=g.a(f.ca(b)[0])
-t.cP.a(h.h(0,"global_allocator_counter")).b.toString
-p=t.j
-o=p.a(h.h(0,"cycles_balance")).b
-o.toString
-o=A.cB(o)
-n=p.a(h.h(0,"ctsfuel_balance")).b
-n.toString
-n=A.cB(n)
-m=p.a(h.h(0,"storage_size_mib")).b
-m.toString
-l=p.a(h.h(0,"lifetime_termination_timestamp_seconds")).b
-l.toString
-t.bT.a(h.h(0,"user_id"))
-k=p.a(h.h(0,"user_canister_creation_timestamp_nanos")).b
-k.toString
-j=p.a(h.h(0,"storage_usage")).b
-j.toString
-p.a(h.h(0,"cycles_transfers_id_counter")).b.toString
-p.a(h.h(0,"cycles_transfers_in_len")).b.toString
-p=p.a(h.h(0,"cycles_transfers_out_len")).b
+case 2:j=g.a(f.ca(b)[0])
+i=t.j
+h=i.a(j.h(0,"cycles_balance")).b
+h.toString
+h=A.cB(h)
+p=i.a(j.h(0,"ctsfuel_balance")).b
 p.toString
-i=t.OQ.a(h.h(0,"cts_cb_authorization")).b
+p=A.cB(p)
+o=i.a(j.h(0,"storage_size_mib")).b
+o.toString
+n=i.a(j.h(0,"lifetime_termination_timestamp_seconds")).b
+n.toString
+t.bT.a(j.h(0,"user_id"))
+m=i.a(j.h(0,"user_canister_creation_timestamp_nanos")).b
+m.toString
+l=i.a(j.h(0,"storage_usage")).b
+l.toString
+i.a(j.h(0,"cycles_transfers_id_counter")).b.toString
+i.a(j.h(0,"cycles_transfers_in_len")).b.toString
+i=i.a(j.h(0,"cycles_transfers_out_len")).b
 i.toString
-q.c=new A.a76(o,n,m,l,k,j,p,i)
+k=t.OQ.a(j.h(0,"cts_cb_authorization")).b
+k.toString
+q.c=new A.a76(h,p,o,n,m,l,i,k)
 return A.q(null,r)}})
 return A.r($async$he,r)},
 Tg(){var s,r,q,p,o,n,m,l,k,j=null
@@ -44732,7 +44731,7 @@ s=8
 return A.l(n.b.$4$calltype$method_name$put_bytes(n,B.a7,"transfer_cycles",A.cb(A.a([a,t.L.a(B.b.gN(A.ca(i.a6())))],t.Q))),$async$vW)
 case 8:j=g.bt(f.a(e.ca(c)[0]),A.a2(["Ok",new A.a9q(),"Err",new A.a9r(n)],t.N,t.T9))
 k=n.c
-k.z=k.z.k(0,A.a4(1))
+k.y=k.y.k(0,A.a4(1))
 q=j
 s=1
 break
@@ -45372,7 +45371,7 @@ s.toString
 r=t.j
 q=r.a(a.h(0,p)).b
 q.toString
-s.b=A.cB(q)
+s.a=A.cB(q)
 throw A.c(A.C("The cycles-balance in the cycles-bank is too low to transfer these cycles. \ncycles_balance: "+A.ob(r.a(a.h(0,p))).j(0)+"\ntransfer cycles fee: "+A.ob(r.a(a.h(0,"cycles_transferrer_transfer_cycles_fee"))).j(0)))},
 $S:2}
 A.a9p.prototype={
@@ -45817,7 +45816,7 @@ s.toString
 r=t.j
 q=r.a(a.h(0,p)).b
 q.toString
-s.b=A.cB(q)
+s.a=A.cB(q)
 r=A.ob(r.a(a.h(0,p))).j(0)
 q=a.h(0,"cycles_market_transfer_token_balance_fee")
 q.toString
@@ -46926,7 +46925,7 @@ l=0
 for(;l<o.length;o.length===n||(0,A.W)(o),++l){k=o[l]
 p.push(new A.ek(k,new A.bC(new A.a1(8,8,8,8),A.z(k.c,h,h,h,h,h,new A.v(!0,h,h,h,h,h,22,h,h,h,h,h,h,h,h,h,h,h,h,h,h,h,h,h,h,h),h,h),h),B.aO,h,m))}o=i.r
 s=A.ag(h,A.aEF(24,!1,p,new A.ah0(i),h,s,o,t.YU),B.f,h,h,h,h,h,h,h,h,h,h)
-switch(o.a){case 0:p=A.ag(h,A.z("Cycles balance: "+g.x.r.c.b.j(0),h,h,h,h,h,h,h,h),B.f,h,h,h,h,h,h,h,h,h,h)
+switch(o.a){case 0:p=A.ag(h,A.z("Cycles balance: "+g.x.r.c.a.j(0),h,h,h,h,h,h,h,h),B.f,h,h,h,h,h,h,h,h,h,h)
 break
 case 1:p=g.x.r.w.h(0,$.jd())
 p.toString
@@ -47268,7 +47267,7 @@ L(a){var s,r,q,p,o,n,m,l=this,k=null,j=A.cr(a,t.A),i=a.U(t.O)
 i.toString
 s=A.ag(k,A.z("Warning: The canister receiving the cycles sent through this method will not be able to log or record this transfer. This method calls the management-canister's deposit_cycles method. If you don't know what that is, this form is not for you.",k,k,k,k,k,A.aP(k,k,k,k,k,k,k,k,"ChakraPetch",k,k,13,k,k,k,k,k,!0,k,k,k,k,k,k,k,k),k,k),B.f,k,k,k,k,k,k,k,k,k,k)
 r=A.cf(k,11,1)
-q=A.ag(k,A.z("Cycles balance: "+j.x.r.c.b.j(0),k,k,k,k,k,k,k,k),B.f,k,k,k,k,k,k,k,k,k,k)
+q=A.ag(k,A.z("Cycles balance: "+j.x.r.c.a.j(0),k,k,k,k,k,k,k,k),B.f,k,k,k,k,k,k,k,k,k,k)
 p=t.W
 o=A.fH(k,A.fl(k,k,k,k,k,k,k,k,!0,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,"For the canister: ",k,k,k,k,k,k,k,k,k,k,k,k,k),k,k,new A.bn("ManagementCanisterDepositCyclesForm TextFormField canister_id",p),k,new A.ahw(l),new A.ahx())
 n=A.fH(k,A.fl(k,k,k,k,k,k,k,k,!0,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,k,"TCYCLES: ",k,k,k,k,k,k,k,k,k,k,k,k,k),k,k,k,k,new A.ahy(l),$.aE3())
@@ -47441,7 +47440,7 @@ m=A.aP(f,f,f,f,f,f,f,f,"CourierNewBold",f,f,27,f,f,f,f,f,!0,f,f,f,f,f,f,f,f)
 l=d.x.r
 k=l.r
 if(k==null){l=l.c
-l=l!=null?l.b.j(0):"..."}else{l=l.w.h(0,k)
+l=l!=null?l.a.j(0):"..."}else{l=l.w.h(0,k)
 l.toString
 l=A.cm(d.x.r.r.d,l).j(0)}m=A.qx(A.z(l,f,f,f,f,f,f,f,f),m)
 l=A.cf(f,27,3)
