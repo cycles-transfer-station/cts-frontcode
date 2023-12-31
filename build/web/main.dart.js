@@ -47587,7 +47587,7 @@ r=s.r
 r.toString
 q=s.x.h(0,r)
 s=this.c
-return A.Ol(A.ag(p,new A.n0(A.t2(A.ahb(!0,!0,!0,B.S,s,new A.a3N(r,q),q.length,new A.j5(),B.eg,new A.a1(11,11,11,11),!1,B.X,!1),s,p,p),p),B.f,p,p,p,p,p,p,p,p,p,p),307,1/0)}}
+return A.Ol(A.ag(p,new A.n0(A.t2(A.ahb(!0,!0,!0,B.S,s,new A.a3N(r,q),q.length,new A.j5(),B.eg,new A.a1(11,11,11,11),!1,B.X,!1),s,p,p),p),B.f,p,p,p,p,p,p,p,p,p,p),370,1/0)}}
 A.a3N.prototype={
 $2(a,b){var s=this.a,r=this.b[b]
 return new A.vn(s,r,new A.bn("Icrc1TransactionCard "+r.a.j(0)+" "+s.b,t.W))},

@@ -373,7 +373,7 @@ class BankTokenTransfersLog extends StatelessWidget {
         List<Icrc1Transaction> ts = state.user!.bank!.icrc1_transactions_cache[ledger]!;
     
         return LimitedBox(
-            maxHeight: 307,
+            maxHeight: 370,
             child: Container(
                 child: ScrollConfigurationWithTheMouse(
                     Scrollbar(
