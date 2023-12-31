@@ -796,7 +796,7 @@ class Icrc1Transaction {
             from: t.find_option<Record>('from').nullmap(Icrc1Account.of_the_record),
             created_at_time_nanos: t.find_option<Nat64>('created_at_time').nullmap((n)=>n.value), 
             timestamp_nanos: (tk['timestamp'] as Nat64).value,
-            memo: t.find_option<Blob>('memo').nullmap((b)=>b.bytes),
+            memo: t.find_option<Vector>('memo').nullmap((v)=>Blob.of_the_vector_nat8(v.cast_vector<Nat8>()).bytes),
             fee: t.find_option<Nat>('fee').nullmap((m)=>m.value)
         );
     }
