@@ -433,7 +433,15 @@ class Icrc1TransactionCard extends StatelessWidget {
                                             Text('for: ${t.to}'),
                                             Text('by: ${t.from}'),
                                             Text('tokens: ${Tokens(quantums: t.tokens, decimal_places: ledger.decimals)}'),
-                                            Text('memo: ${t.memo == null ? '' : bytesasahexstring(t.memo!)}'),
+                                            Row(children: [
+                                                Text('memo: '),
+                                                if (t.memo == null) Text('')
+                                                else if (t.memo!.length <= 8) Text('${bytesasahexstring(t.memo!)}')
+                                                else Tooltip(
+                                                    message: bytesasahexstring(t.memo!),
+                                                    child: Text('${bytesasahexstring(t.memo!.sublist(0, 8))}...')
+                                                )
+                                            ]),
                                             Text('ledger-fee: ${t.fee == null ? 0 : Tokens(quantums: t.fee!, decimal_places: ledger.decimals)}'),
                                             Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(t.timestamp_nanos).toInt()))}'),
                                         ]
