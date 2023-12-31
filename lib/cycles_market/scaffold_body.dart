@@ -961,9 +961,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                             await success_dialog;
                             
                             state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);   
-                            
-                            Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                             
                     }
                 )
