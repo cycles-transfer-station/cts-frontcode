@@ -629,7 +629,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     form_key.currentState!.save();
                                     
-                                    state.loading_text = 'creating ${buy_or_sell} position';
+                                    state.loading_text = 'creating position';
                                     state.is_loading = true;
                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
@@ -664,7 +664,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
-                                                    title: Text('$buy_or_sell $token_symbol error:'),
+                                                    title: Text('Create Position Error:'),
                                                     content: Text('${etext(e)}'),
                                                     actions: <Widget>[
                                                         TextButton(
@@ -681,14 +681,14 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
-                                    state.loading_text = '$buy_or_sell $token_symbol is success. \nposition-id: ${position_id}\nloading token balance and position data ...';
+                                    state.loading_text = 'Create position is success. \nPosition-ID: ${position_id}\nloading token balance and position data ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
                                     Future success_dialog = showDialog(
                                         context: state.context,
                                         builder: (BuildContext context) {
                                             return AlertDialog(
-                                                title: Text('$buy_or_sell $token_symbol success!'),
+                                                title: Text('Create Position Success!'),
                                                 content: Text('Position-ID: ${position_id}'),
                                                 actions: <Widget>[
                                                     TextButton(
