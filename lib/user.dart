@@ -182,12 +182,12 @@ class User {
             if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
                 complete_purchase_cycles_bank()
                 .then((x){
-                    window.alert('purchase_cycles_bank is complete.\ncycles_bank: ${this.cycles_bank}');
+                    window.alert('create_membership is complete.\ncycles_bank: ${this.cycles_bank}');
                 }).catchError((e){
-                    window.alert('purchase_cycles_bank error: \n${e}');
+                    window.alert('create_membership error: \n${e}');
                 });
             }
-            throw Exception('user is in the middle of a different purchase_cycles_bank call.');
+            throw Exception('user is in the middle of a different create_membership call.');
         },
         'TransferIcpCall': (must_call_complete_record) {
             if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
@@ -230,7 +230,7 @@ class User {
 
     Map<String, Future<void> Function(CandidType)> get purchase_cycles_bank_error_match_map => {
         'MidCallError': (mid_call_error) async {
-            print('purchase_cycles_bank mid_call_error: ${mid_call_error}');
+            print('create_membership mid_call_error: ${mid_call_error}');
             return await this.complete_purchase_cycles_bank();          
         },
         'FoundCyclesBank':(cycles_bank_principal) async {
@@ -244,7 +244,7 @@ class User {
             IcpTokens icp_ledger_transfer_fee = IcpTokens.of_the_record(user_icp_ledger_balance_too_low_error['icp_ledger_transfer_fee']!);
             IcpTokens must_be_with_the_icp_balance = IcpTokens(e8s: cycles_bank_cost_icp.e8s + (icp_ledger_transfer_fee.e8s*BigInt.from(2)));
             try{ await state.fresh_xdr_icp_rate(); }catch(e){ print('fresh_xdr_icp_rate error: ${etext(e)}'); }
-            throw Exception('User icp balance is too low.\ncurrent membership cost icp: ${ must_be_with_the_icp_balance.round_decimal_places(1) }\ncurrent user icp balance: ${user_icp_ledger_balance}');
+            throw Exception('User icp balance is too low.\ncurrent membership cost icp: ${ must_be_with_the_icp_balance }\ncurrent user icp balance: ${user_icp_ledger_balance}');
         }, 
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
             match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map);
@@ -344,13 +344,13 @@ class User {
         ]);
         IcpTokens cycles_bank_total_cost_icp = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + BigInt.from(1)/*bc cycles_transform_tokens cuts off any remainder cycles*/ + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s);
         if (this.icp_balance!.icp < cycles_bank_total_cost_icp) {
-            throw Exception('user icp balance is too low.\ncurrent membership cost icp: ${cycles_bank_total_cost_icp.round_decimal_places(1)}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
+            throw Exception('user icp balance is too low.\ncurrent membership cost icp: ${cycles_bank_total_cost_icp}-icp\ncurrent user icp balance: ${this.icp_balance!.icp}');
         }
         Variant purchase_cycles_bank_result = c_backwards(
             await call(
                 cts,
                 calltype: CallType.call,
-                method_name: 'purchase_cycles_bank',
+                method_name: 'create_membership',
                 put_bytes: c_forwards([
                     Record.of_the_map({
                         'opt_referral_user_id': Option(value: opt_referral_user_id, value_type: Principal.type_mode())
@@ -366,7 +366,7 @@ class User {
             await call(
                 cts,
                 calltype: CallType.call,
-                method_name: 'complete_purchase_cycles_bank',
+                method_name: 'complete_create_membership',
                 put_bytes: c_forwards([])
             )
         )[0] as Variant;

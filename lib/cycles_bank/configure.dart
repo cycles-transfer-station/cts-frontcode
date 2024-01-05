@@ -166,32 +166,22 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                     Center(
                                                         child: Container(
                                                             constraints: BoxConstraints(maxWidth: 350),
-                                                            //width: double.infinity,
-                                                            //alignment: Alignment.centerLeft,
-                                                            //margin: EdgeInsets.fromLTRB(13,7,13,7),
                                                             child: Center(
                                                                 child: Column(
                                                                     children: [
-                                                                        /*
-                                                                        CTSFuelForTheCyclesBalanceForm(key: ValueKey('CyclesBankScaffoldBody CTSFuelForTheCyclesBalanceForm')),
-                                                                        SizedBox(
-                                                                            height: 20, 
-                                                                            width: 1
+                                                                        // burn icp mint cycles,  
+                                                                        Container(
+                                                                            width: double.infinity,
+                                                                            padding: EdgeInsets.all(17),
+                                                                            child: MintCyclesButton(),                    
                                                                         ),
-                                                                        GrowStorageSizeForm(key: ValueKey('CyclesBankScaffoldBody GrowStorageSizeForm')),
-                                                                        SizedBox(
-                                                                            height: 20, 
-                                                                            width: 1
-                                                                        ),
-                                                                        LengthenLifetimeForm(key: ValueKey('CyclesBankScaffoldBody LengthenLifetimeForm')),
-                                                                        */
-                                                                        //LengthenMembershipForm(key: ValueKey('CyclesBankScaffoldBody LengthenMembershipForm')),
+                                                                        // lengthen membership
                                                                         Container(
                                                                             width: double.infinity,
                                                                             padding: EdgeInsets.all(17),
                                                                             child: ElevatedButton(
                                                                                 style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('Lengthen Membership'),
+                                                                                child: Text('LENGTHEN MEMBERSHIP'),
                                                                                 onPressed: () async {
                                                                                     await showDialog(
                                                                                         context: context,
@@ -204,36 +194,6 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                                                         child: LengthenMembershipForm(key: ValueKey('CyclesBankScaffoldBody LengthenMembershipForm'))
                                                                                                     )
                                                                                                 ),
-                                                                                            );
-                                                                                        }   
-                                                                                    );
-                                                                                }
-                                                                            )                     
-                                                                        ),
-                                                                        SizedBox(
-                                                                            width: 1,
-                                                                            height: 13
-                                                                        ),
-                                                                        // burn icp mint cycles,  
-                                                                        Container(
-                                                                            width: double.infinity,
-                                                                            padding: EdgeInsets.all(17),
-                                                                            child: ElevatedButton(
-                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('BURN ICP & MINT CYCLES'),
-                                                                                onPressed: () async {
-                                                                                    await showDialog(
-                                                                                        context: context,
-                                                                                        builder: (BuildContext context) {
-                                                                                            return AlertDialog(
-                                                                                                title: Center(child: Text('MINT CYCLES')),
-                                                                                                content: Container(
-                                                                                                    padding: EdgeInsets.all(0),
-                                                                                                    child: SingleChildScrollView(
-                                                                                                        child: BurnIcpMintCyclesForm(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesForm'))
-                                                                                                    )
-                                                                                                ),
-                                                                                                //actions: <Widget>[]
                                                                                             );
                                                                                         }   
                                                                                     );
@@ -295,4 +255,27 @@ class ConfigureCyclesBank extends StatelessWidget {
 }
 
 
+class MintCyclesButton extends StatelessWidget {
+    Widget build(BuildContext context) {
+        return ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: blue),
+            child: Text('MINT CYCLES'),
+            onPressed: () async {
+                await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                        return AlertDialog(
+                            title: Center(child: Text('MINT CYCLES')),
+                            content: Container(
+                                child: SingleChildScrollView(
+                                    child: BurnIcpMintCyclesForm(key: ValueKey('BurnIcpMintCyclesForm'))
+                                )
+                            ),
+                        );
+                    }   
+                );
+            }
+        );
+    }
+}
 

@@ -1456,7 +1456,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             rows: [
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('CURRENT NETWORK TCYCLES PER ICP RATE: ', )),
+                                        DataCell(Text('TCYCLES PER ICP RATE: ', )),
                                         DataCell(Text('${state.cmc_cycles_per_icp_rate}')),
                                     ]
                                 ),

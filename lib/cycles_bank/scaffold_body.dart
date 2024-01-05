@@ -172,17 +172,25 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     height: 27
                                 ),
                                 Container(
-                                    child: Padding(
-                                        padding: EdgeInsets.all(7),
-                                        child: ElevatedButton(
-                                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                            child: Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}'),
-                                            onPressed: () async {
-                                                await show_transfer_dialog();
-                                            }
-                                        )
+                                    padding: EdgeInsets.all(7),
+                                    child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                        child: Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}'),
+                                        onPressed: () async {
+                                            await show_transfer_dialog();
+                                        }
+                                    )
+                                ),
+                                if (state.user!.cycles_bank!.current_icrc1_ledger == null) ...[
+                                    SizedBox(
+                                        width: 3,
+                                        height: 10
                                     ),
-                                ),            
+                                    Container(
+                                        padding: EdgeInsets.all(7),
+                                        child: MintCyclesButton(),
+                                    ),
+                                ]
                             ]
                         )
                     ),

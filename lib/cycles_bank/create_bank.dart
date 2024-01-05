@@ -22,6 +22,13 @@ class CreateBank extends StatelessWidget {
             return Text('CreateBank should only be created when the user is logged in and without a bank.');
         } 
         
+        Tokens membership_cost_icp = Tokens(quantums: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals);
+        int round_decimal_places = 1;
+        Tokens show_membership_cost_icp = membership_cost_icp.round_decimal_places(round_decimal_places);
+        if (membership_cost_icp.quantums > show_membership_cost_icp.quantums) {
+            show_membership_cost_icp = Tokens(quantums: show_membership_cost_icp.quantums + BigInt.from(10).pow(Icrc1Ledgers.ICP.decimals - round_decimal_places), decimal_places: Icrc1Ledgers.ICP.decimals); 
+        }
+        
         return Container(
             padding: EdgeInsets.all(27),
             child: Column(
@@ -122,8 +129,8 @@ A CYCLES-BANK is a canister-smart-contract living on the world-computer that min
                                         DataCell(Text('MEMBERSHIP COST ICP:')),
                                         DataCell(Row(
                                             children: [
-                                                Text('${Tokens(quantums: cycles_transform_tokens(state.cts_fees.membership_cost_per_year_cycles, state.cmc_cycles_per_icp_rate) + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO.e8s, decimal_places: Icrc1Ledgers.ICP.decimals)}-icp'), 
-                                                Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the membership cost in CYCLES converted into ICP using the current ICP/CYCLES conversion-rate. This amount fluctuates based on the current ICP/CYCLES conversion-rate. This amount includes two ledger transfer fees for the transaction.')
+                                                Text('${show_membership_cost_icp}'), 
+                                                Tooltip(child: Icon(Icons.info_outline, size: 14.0), message: 'The ICP cost is the membership cost in CYCLES converted into ICP using the current ICP/CYCLES conversion-rate. This amount fluctuates based on the current ICP/CYCLES conversion-rate. This amount includes two ledger transfer fees for the transaction. The amount shown is rounded up. After the membership-creation, the leftover icp will be sent to your cycles-bank.')
                                             ]
                                         )),
                                     ]
@@ -204,7 +211,7 @@ class CreateMembershipButtonState extends State<CreateMembershipButton> {
             main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
             return;    
         }
-        state.loading_text = 'create membership success. \nbank id: ${state.user!.cycles_bank!.principal.text}\nloading membership metrics ...';
+        state.loading_text = 'Create membership success. \nBANK-ID: ${state.user!.cycles_bank!.principal.text}\nloading membership metrics ...';
         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
         
         Future success_dialog = showDialog(
