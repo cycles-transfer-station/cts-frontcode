@@ -588,8 +588,9 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
         final String buy_or_sell = widget.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL';
-        final int token_decimal_places = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals;        
-        final String token_symbol = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol;
+        final Icrc1Ledger ledger_data = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data;
+        final int token_decimal_places = ledger_data.decimals;        
+        final String token_symbol = ledger_data.symbol;
         
         int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
         
@@ -611,11 +612,27 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
                         validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
                     ),
-                    if (widget.position_kind == PositionKind.Token) Container(
+                    if (widget.position_kind == PositionKind.Cycles) Container(
+                        width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 11),
                         child: Text(
-                            'CREATE-POSITION-LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}', 
-                            style: TextStyle(fontFamily: 'ChakraPetch', fontSize: 11)
+                            'CYCLES-BALANCE: ${state.user!.bank!.metrics!.cycles_balance}', 
+                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                        ),
+                    ) else Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        child: Text(
+                            '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.bank!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
+                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                        ),
+                    ),
+                    if (widget.position_kind == PositionKind.Token) Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        child: Text(
+                            'LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}', 
+                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
                         ),
                     ),
                     Container(
