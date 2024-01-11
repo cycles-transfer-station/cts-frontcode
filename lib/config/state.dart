@@ -351,18 +351,14 @@ Future<void> load_local_root_key_onto_a_canister(Canister c) async {
 
 class CTSFees {
     Cycles membership_cost_per_year_cycles;
-    Cycles cts_transfer_icp_fee;
 
     CTSFees._({
         required this.membership_cost_per_year_cycles,
-        required this.cts_transfer_icp_fee,
-        
     });
     
     static CTSFees of_the_record(Record ctsfees_record) {
         return CTSFees._(
             membership_cost_per_year_cycles: Cycles.oftheNat(ctsfees_record['membership_cost_per_year_cycles'] as Nat),
-            cts_transfer_icp_fee: Cycles.oftheNat(ctsfees_record['cts_transfer_icp_fee'] as Nat),
         );
     }
 

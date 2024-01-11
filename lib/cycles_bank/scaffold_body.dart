@@ -56,7 +56,10 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             List<Widget> column_children = [];
             
             if (state.user!.cycles_bank == null) {
-                column_children.add(CreateBank());
+                column_children.add(
+                    Text('Maintenance, come back soon.', style: TextStyle(fontSize: 17))
+                );
+                //column_children.add(CreateBank());
             } else {
                 Future<void> Function() show_transfer_dialog = () async {
                     showDialog<void>(

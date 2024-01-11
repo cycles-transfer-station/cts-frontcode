@@ -189,15 +189,7 @@ class User {
             }
             throw Exception('user is in the middle of a different create_membership call.');
         },
-        'TransferIcpCall': (must_call_complete_record) {
-            if (((must_call_complete_record as Record)['must_call_complete'] as Bool).value == true) {
-                complete_transfer_icp()
-                .then((x){
-                    window.alert('transfer_icp is complete. icp-transfer-block-height: ${x}');
-                }).catchError((e){
-                    window.alert('transfer_icp error: \n${e}');
-                });
-            }
+        'TransferIcpCall': (_n) {
             throw Exception('user is in the middle of a different transfer_icp call.');
         },
         'LengthenMembershipCall': (must_call_complete_record) {
@@ -373,12 +365,7 @@ class User {
         return await match_variant<Future<void>>(complete_purchase_cycles_bank_result, complete_purchase_cycles_bank_result_match_map);
     }
     
-
-
-
     // ----------------------
-    
-    
     
     Map<String, Future<TransferIcpSuccess> Function(CandidType)> get transfer_icp_result_match_map => {
         Ok: (transfer_icp_success) async {
@@ -389,38 +376,12 @@ class User {
         }
     };
     
-    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get complete_transfer_icp_result_match_map => {
-        Ok: (transfer_icp_success) async {
-            return await transfer_icp_result_match_map[Ok]!(transfer_icp_success);
-        },
-        Err: (complete_transfer_icp_error) async {
-            return await match_variant<Future<TransferIcpSuccess>>(complete_transfer_icp_error as Variant, complete_transfer_icp_error_match_map);
-        }
-    };
-    
     Map<String, Future<TransferIcpSuccess> Function(CandidType)> get transfer_icp_error_match_map => {
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call) async {
             return match_variant<Never>(user_is_in_the_middle_of_a_different_call as Variant, user_is_in_the_middle_of_a_different_call_variant_match_map); 
         },
-        'CheckIcpBalanceCallError': (call_error) async {
-            throw Exception('Error when checking the user icp balance on the ledger.\n${CallError.of_the_record(call_error as Record)}');
-        },
         'CTSIsBusy': (n) async {
             throw Exception('The CTS is busy, try soon.');
-        },
-        'CheckCurrentXdrPerMyriadPerIcpCmcRateError': (check_current_xdr_icp_cmc_rate_error) async {
-            print('check_current_xdr_icp_cmc_rate_error: ${check_current_xdr_icp_cmc_rate_error}');
-            throw Exception('Error when checking the current xdr-icp rate.');
-        },
-        'MaxTransfer': (max_transfer_record) async {
-            throw Exception('The amount overflows. icp-transfer-amount + icp-fee*2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO} + the current cts-transfer-icp-fee: ${IcpTokens.of_the_record((max_transfer_record as Record)['cts_transfer_icp_fee'] as Record)}, must be less than ${(BigInt.from(2).pow(64)-BigInt.from(1))/BigInt.from(10).pow(8)}');
-        },
-        'UserIcpLedgerBalanceTooLow': (user_icp_ledger_balance_too_low_record) async {
-            Record r = user_icp_ledger_balance_too_low_record as Record;
-            IcpTokens user_icp_ledger_balance = IcpTokens.of_the_record(r['user_icp_ledger_balance']!);
-            this.icp_balance = IcpTokensWithATimestamp(icp: user_icp_ledger_balance);
-            IcpTokens cts_transfer_icp_fee = IcpTokens.of_the_record(r['cts_transfer_icp_fee']!);
-            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(user_icp_ledger_balance, state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee));
         },
         'IcpTransferCallError': (call_error) async {
             throw Exception('Icp ledger transfer call error:\n${CallError.of_the_record(call_error as Record)}');
@@ -428,34 +389,9 @@ class User {
         'IcpTransferError': (icp_transfer_error) async {
             return match_variant<Never>(icp_transfer_error as Variant, icp_transfer_error_match_map);
         },
-        'MidCallError': (transfer_icp_mid_call_error) async {
-            print('transfer_icp_mid_call_error: ${transfer_icp_mid_call_error}');
-            return await complete_transfer_icp();
-        }
     };
-    
-    Map<String, Future<TransferIcpSuccess> Function(CandidType)> get complete_transfer_icp_error_match_map => {
-        'UserIsNotInTheMiddleOfATransferIcpCall': (n) async {
-            throw Exception('user is not in the middle of a transfer_icp call.');
-        },
-        'TransferIcpError': (transfer_icp_error) async {
-            return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_error as Variant, transfer_icp_error_match_map);
-        }  
-    };
-    
-    late IcpTokens latest_try_to_transfer_icp;
-    String user_cts_icp_balance_is_too_low_for_the_icp_transfer(IcpTokens cts_user_icp_balance, Cycles cts_transfer_icp_fee_cycles, IcpTokens cts_transfer_icp_fee_icp) {
-        return 'user-cts-icp-balance is too low. \nuser-cts-icp-balance: ${cts_user_icp_balance}\ntried to transfer icp: ${latest_try_to_transfer_icp}\ncts-icp-transfer-fee: ${cts_transfer_icp_fee_icp}-icp (${cts_transfer_icp_fee_cycles.cycles/Cycles.T_CYCLES_DIVIDABLE_BY}-xdr)\nicp-ledger-fees: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'; // user icp balance is too low. current balance: ${this.icp_balance!.icp}\nCTS transfer-icp fee: ${cts_transfer_icp_fee}\nicp-ledger-transfer-fee * 2: ${ICP_LEDGER_TRANSFER_FEE_TIMES_TWO}'); 
-    }
     
     Future<TransferIcpSuccess> transfer_icp(TransferIcpQuest transfer_icp_quest) async {
-        latest_try_to_transfer_icp = transfer_icp_quest.icp;
-        await this.fresh_icp_balance();
-        await state.fresh_xdr_icp_rate();
-        IcpTokens cts_transfer_icp_fee = IcpTokens(e8s: cycles_transform_tokens(state.cts_fees.cts_transfer_icp_fee, state.cmc_cycles_per_icp_rate));
-        if (this.icp_balance!.icp < transfer_icp_quest.icp + cts_transfer_icp_fee + ICP_LEDGER_TRANSFER_FEE_TIMES_TWO) {
-            throw Exception(user_cts_icp_balance_is_too_low_for_the_icp_transfer(this.icp_balance!.icp, state.cts_fees.cts_transfer_icp_fee, cts_transfer_icp_fee));
-        }
         Variant transfer_icp_result = c_backwards(
             await call(
                 cts,
@@ -466,20 +402,6 @@ class User {
         )[0] as Variant;
         return await match_variant<Future<TransferIcpSuccess>>(transfer_icp_result, transfer_icp_result_match_map);
     }
-    
-    Future<TransferIcpSuccess> complete_transfer_icp() async {
-        Variant complete_transfer_icp_result = c_backwards(
-            await call(
-                cts,
-                calltype: CallType.call,
-                method_name: 'complete_transfer_icp',
-                put_bytes: c_forwards([])
-            )
-        )[0] as Variant;
-        return await match_variant<Future<TransferIcpSuccess>>(complete_transfer_icp_result, complete_transfer_icp_result_match_map);
-    }
-
-
 
     // --------------------------
     
