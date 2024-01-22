@@ -117,7 +117,7 @@ final String? Function(String?) cycles_bank_principal_validator = (String? v) {
 };
 
 
-
+/*
 
 class CyclesBankTransferCyclesForm extends StatefulWidget {
     CyclesBankTransferCyclesForm({super.key});
@@ -403,7 +403,7 @@ loading cycles balance and transfers list ...""";
         );  
     }
 }
-
+*/
 
 
 
@@ -421,7 +421,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
             child: Column(
                 children: [
-                    Text('BALANCE: ${state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(quantums: state.user!.bank!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
+                    Text('BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
                     //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
@@ -433,7 +433,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
                                 state.is_loading = true;
                                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                 try {
-                                    await state.user!.bank!.fresh_icrc1_balances(this.icrc1_ledger);
+                                    await state.user!.fresh_icrc1_balances([this.icrc1_ledger]);
                                 } catch(e) {
                                     await showDialog(
                                         context: state.context,
@@ -470,7 +470,7 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        String bank_icrc1_account_id = this.icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal ? state.user!.bank!.icp_id : state.user!.bank!.principal.text;
+        String bank_icrc1_account_id = this.icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal ? state.user!.icp_id : state.user!.principal.text;
         return Column(
             children: [
                 Container(
@@ -669,7 +669,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                     
                                     late BigInt transfer_block_i;
                                     try {
-                                        transfer_block_i = await state.user!.cycles_bank!.transfer_icrc1(widget.icrc1_ledger, icrc1_transfer_arg_raw);
+                                        transfer_block_i = await state.user!.transfer_icrc1(widget.icrc1_ledger, icrc1_transfer_arg_raw);
                                     } catch(e,s) {
                                         print(e);
                                         print(s);
@@ -715,8 +715,8 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                 
                                     try {
                                         await Future.wait([
-                                            state.user!.cycles_bank!.fresh_icrc1_balances(widget.icrc1_ledger),
-                                            // fresh transfer logs
+                                            state.user!.fresh_icrc1_balances([widget.icrc1_ledger]),
+                                            state.user!.fresh_icrc1_transactions([widget.icrc1_ledger]),
                                         ]);
                                     } catch(e) {
                                         await showDialog(
@@ -884,7 +884,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                     
                                     late BigInt block;
                                     try {
-                                        block = await state.user!.bank!.transfer_icp(transfer_icp_quest);
+                                        block = await state.user!.transfer_icp(transfer_icp_quest);
                                     } catch(e) {
                                         await showDialog(
                                             context: state.context,
@@ -928,8 +928,8 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP),
-                                            state.user!.bank!.fresh_icrc1_transactions(Icrc1Ledgers.ICP),
+                                            state.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP]),
+                                            state.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP]),
                                         ]);
                                     } catch(e) {
                                         await showDialog(
@@ -965,429 +965,6 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
     }
 }
 
-
-
-
-
-/*
-
-class GrowStorageSizeForm extends StatefulWidget {
-    GrowStorageSizeForm({super.key});
-    State createState() => GrowStorageSizeFormState();
-}
-class GrowStorageSizeFormState extends State<GrowStorageSizeForm> {
-    GlobalKey<FormState> form_key = GlobalKey<FormState>();
-    
-    late BigInt new_storage_size_mib; //ChangeStorageSizeQuest
-    
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        return Form(
-            key: form_key,
-            child: Wrap(
-                children: [
-                    TextFormField(
-                        decoration: InputDecoration(
-                            labelText: 'Set Storage Size MiB',
-                        ),
-                        onSaved: (String? v) { new_storage_size_mib = BigInt.parse(v!, radix: 10); },
-                        validator: (String? v) {
-                            String e_s = 'Must be a whole number';
-                            if (v == null || v == '') {
-                                return e_s;
-                            }
-                            try {
-                                BigInt bi = BigInt.parse(v);
-                            } catch(e) {
-                                return e_s;
-                            }
-                            return null;
-                        }
-                    ),
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('GROW STORAGE'),
-                            onPressed: () async {
-                                if (form_key.currentState!.validate()==true) {
-                                    form_key.currentState!.save();
-                                    
-                                    state.loading_text = 'growing storage ...';
-                                    state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    try {
-                                        await state.user!.cycles_bank!.change_storage_size( 
-                                            ChangeStorageSizeQuest(
-                                                new_storage_size_mib: new_storage_size_mib
-                                            )
-                                        );
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Grow Storage Error:'),
-                                                    content: Text('${e}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }
-                                        );                                        
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                    
-                                    form_key.currentState!.reset();
-                                    state.user!.cycles_bank!.metrics!.storage_size_mib = new_storage_size_mib;
-                                    state.loading_text = 'loading cycles-balance ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Grow Storage Success.'),
-                                                content: Text('New cycles-bank storage-size Mib: ${state.user!.cycles_bank!.metrics!.storage_size_mib}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }
-                                    );
-                                    
-                                    try {
-                                        await state.user!.cycles_bank!.fresh_metrics();
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error loading cycles-balance'),
-                                                    content: Text(e.toString()),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }
-                                        );
-                                    }
-                                    
-                                    await success_dialog;
-                                    
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                }
-                            }
-                        )
-                    )
-                ]
-            ),
-        );
-    }
-}
-
-
-*/
-
-
-enum LengthenMembershipPaymentMethod {
-    CyclesBankCycles(show_readable_option: 'Cycles-Bank Cycles balance'),
-    CyclesBankICP(show_readable_option: 'Cycles-Bank ICP balance'),
-    CTSUserSubaccountICP(show_readable_option: 'CTS Membership User ICP ID');
-
-    const LengthenMembershipPaymentMethod({
-        required this.show_readable_option,
-    });
-    
-    final String show_readable_option;
-    
-    static List<LengthenMembershipPaymentMethod> options_without_using_the_cycles_bank = [LengthenMembershipPaymentMethod.CTSUserSubaccountICP,];
-
-}
-
-
-
-class LengthenMembershipForm extends StatefulWidget {
-    LengthenMembershipForm({super.key});
-    State createState() => LengthenMembershipFormState();
-}
-class LengthenMembershipFormState extends State<LengthenMembershipForm> {
-    GlobalKey<FormState> form_key = GlobalKey<FormState>();
-    TextEditingController form_field_lengthen_years_controller = TextEditingController(text: '1');
-    
-    
-    
-    BigInt lengthen_years = BigInt.from(1);
-    LengthenMembershipPaymentMethod payment_method = LengthenMembershipPaymentMethod.CyclesBankCycles;
-    
-    @override
-    void initState() {
-        super.initState();
-        form_field_lengthen_years_controller.addListener(() {
-            try {
-                lengthen_years = BigInt.parse(form_field_lengthen_years_controller.text.trim());
-            } catch(e) {
-                //
-            }
-            setState((){});
-        });
-    }
-    
-    @override
-    void dispose() {
-        form_field_lengthen_years_controller.dispose();
-        super.dispose();
-    }
-    
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                
-        Cycles total_cycles = Cycles(cycles: state.cts_fees.membership_cost_per_year_cycles.cycles * lengthen_years);
-        Tokens total_icp = Tokens(
-            quantums:
-                cycles_transform_tokens(
-                    total_cycles, 
-                    state.cmc_cycles_per_icp_rate
-                )
-                + ICP_LEDGER_TRANSFER_FEE.e8s * BigInt.from(3),
-            decimal_places: 8
-        );
-                
-        return Form(
-            key: form_key,
-            child: Column(
-                children: <Widget>[
-                    Container(
-                        child: DropdownButton<LengthenMembershipPaymentMethod>(
-                            underline: Container(
-                                height: 0,
-                                color: Colors.deepPurpleAccent,
-                            ),
-                            isExpanded: false,
-                            items: [
-                                for (LengthenMembershipPaymentMethod pm in state.user!.cycles_bank != null ? LengthenMembershipPaymentMethod.values : LengthenMembershipPaymentMethod.options_without_using_the_cycles_bank)                 
-                                    DropdownMenuItem<LengthenMembershipPaymentMethod>(
-                                        child: Padding(
-                                            padding: EdgeInsets.all(8),
-                                            child: Text(pm.show_readable_option, style: TextStyle(fontSize: 22)), 
-                                        ),
-                                        value: pm
-                                    ),
-                            ],
-                            value: this.payment_method,
-                            onChanged: (LengthenMembershipPaymentMethod? select_payment_method) { 
-                                if (select_payment_method is LengthenMembershipPaymentMethod) { 
-                                    setState((){
-                                        this.payment_method = select_payment_method;    
-                                    });
-                                }
-                            }
-                        )
-                    ),
-                    switch (this.payment_method) {
-                        LengthenMembershipPaymentMethod.CyclesBankCycles => Container(
-                            child: Text('Cycles balance: ${state.user!.cycles_bank!.metrics!.cycles_balance}')
-                        ),
-                        LengthenMembershipPaymentMethod.CyclesBankICP => Container(
-                            child: Text('ICP balance: ${Tokens(quantums: state.user!.cycles_bank!.icrc1_balances_cache[Icrc1Ledgers.ICP]!, decimal_places: 8)}')
-                        ), 
-                        LengthenMembershipPaymentMethod.CTSUserSubaccountICP => Container(
-                            padding: EdgeInsets.all(7),
-                            child: Column(
-                                children: [
-                                    Center(
-                                        child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
-                                    ),
-                                    Center(
-                                        child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
-                                    ),
-                                    IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesDialog IcpBalanceAndLoadIcpBalance'))
-                                ]
-                            )
-                        ),
-                    },
-                    TextFormField(
-                        controller: form_field_lengthen_years_controller,
-                        decoration: InputDecoration(
-                            labelText: 'lengthen years: ',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                        onSaved: (String? value) { lengthen_years = BigInt.parse(value!); },
-                        validator: (String? value) {
-                            if (value == null || value.trim() == '') {
-                                return 'Must be a number of years';
-                            }
-                            late BigInt lengthen_years;
-                            try {
-                                lengthen_years = BigInt.parse(value);
-                            } catch(e) {
-                                return 'Must be a whole number of years';
-                            }
-                            if (lengthen_years == BigInt.from(0)) {
-                                return 'Cannot be zero';
-                            }
-                            return null;
-                        }
-                    ),
-                    switch (payment_method) {
-                        LengthenMembershipPaymentMethod.CyclesBankCycles => Container(
-                            child: Text('TOTAL CYCLES: ${total_cycles}', style: TextStyle(fontSize: 11))
-                        ),
-                        LengthenMembershipPaymentMethod.CyclesBankICP || LengthenMembershipPaymentMethod.CTSUserSubaccountICP => Container(
-                            child: Text(
-                                'TOTAL ICP: ${total_icp}', 
-                                style: TextStyle(fontSize: 11)
-                            )
-                        ),
-                    },
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('LENGTHEN MEMBERSHIP'),
-                            onPressed: () async {
-                                if (form_key.currentState!.validate()==true) {
-                                    
-                                    form_key.currentState!.save();
-                                    
-                                    state.loading_text = 'lengthening the membership by ${lengthen_years} years ...';
-                                    state.is_loading = true;
-                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    
-                                    late LengthenMembershipSuccess lengthen_membership_success;
-                                    try {
-                                        switch (payment_method) {
-                                            case LengthenMembershipPaymentMethod.CyclesBankCycles:
-                                                lengthen_membership_success = await state.user!.cycles_bank!.user_lengthen_membership_cb_cycles_payment(
-                                                    LengthenMembershipQuest(lengthen_years: lengthen_years),
-                                                    total_cycles, 
-                                                );
-                                            case LengthenMembershipPaymentMethod.CTSUserSubaccountICP:
-                                                lengthen_membership_success = await state.user!.lengthen_membership(
-                                                    LengthenMembershipQuest(lengthen_years: lengthen_years)
-                                                );        
-                                            case LengthenMembershipPaymentMethod.CyclesBankICP: 
-                                                state.loading_text = 'transferring ${total_icp} icp of the cycles-bank icp balance to the cts-user-membership-icp-account';
-                                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                                await state.user!.cycles_bank!.transfer_icrc1(
-                                                    Icrc1Ledgers.ICP, 
-                                                    candid.c_forwards_one(
-                                                        Record.of_the_map({
-                                                            'to' : Record.of_the_map({
-                                                                'owner' : cts.principal,
-                                                                'subaccount' : Option(value: Blob(state.user!.user_icp_subaccount_bytes))
-                                                            }),
-                                                            'amount' : Nat(total_icp.quantums - ICP_LEDGER_TRANSFER_FEE.e8s),
-                                                            'fee' : Option<Nat>(value: Nat(ICP_LEDGER_TRANSFER_FEE.e8s)),
-                                                            'memo' : Option<Vector<Nat8>>(value: Blob(utf8.encode('LENGTHEN-MEMBERSHIP-PAYMENT')), value_type: Blob.type_mode()),
-                                                            'created_at_time' : Option<Nat64>(value: Nat64(BigInt.from(DateTime.now().millisecondsSinceEpoch) * BigInt.from(1000000)), value_type: Nat64()),
-                                                        })
-                                                    )
-                                                );
-                                                lengthen_membership_success = await state.user!.lengthen_membership(
-                                                    LengthenMembershipQuest(lengthen_years: lengthen_years)
-                                                );
-                                        }
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Lengthen Membership Error:'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                    
-                                    form_key.currentState!.reset();
-                                    state.loading_text = 'Lengthen membership by: ${lengthen_years} years success! \nloading icp balance, icp transfers, and cycles-bank metrics ...';
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Lengthen Membership Success:'),
-                                                content: Text('lengthen by: ${lengthen_years} years success.'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );
-                                    
-                                    try {
-                                        await Future.wait([
-                                            state.user!.fresh_icp_balance(),
-                                            state.user!.fresh_icp_transfers(),
-                                            state.user!.cycles_bank!.fresh_metrics(),
-                                            state.user!.cycles_bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP)
-                                        ]);
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error when loading the icp balance, icp transfers, and cycles-bank metrics:'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                    }
-                                    
-                                    await success_dialog;
-                                
-                                    state.is_loading = false;
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
-                                }
-                            }
-                        )
-                    )
-                ]
-            )
-        );
-    }
-}
 
 
 class BurnIcpMintCyclesForm extends StatefulWidget {
@@ -1470,7 +1047,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     TextFormField(
                         key: ValueKey('BurnIcpMintCycles TextFormField burn-icp'),
                         decoration: InputDecoration(
-                            labelText: 'burn icp: ',
+                            labelText: 'Burn ICP: ',
                         ),
                         onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!.trim()); },
                         validator: (String? v) {
@@ -1479,6 +1056,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             return icp_validator(v) ?? (IcpTokens.of_the_double_string(v!).e8s > max_burn_icp.e8s ? 'Max burn icp at once: ${max_burn_icp}' : null);
                         }
                     ),
+                    Text('ICP ledger fees: ${ICP_LEDGER_TRANSFER_FEE*2}\nCYCLES fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
@@ -1496,7 +1074,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     
                                     late BurnIcpMintCyclesSuccess burn_icp_mint_cycles_success;
                                     try {
-                                        this.burn_icp_mint_cycles_future = state.user!.bank!.burn_icp_mint_cycles(burn_icp);
+                                        this.burn_icp_mint_cycles_future = state.user!.burn_icp_mint_cycles(burn_icp.e8s);
                                         burn_icp_mint_cycles_success = await this.burn_icp_mint_cycles_future;
                                     } catch(e) {
                                         await showDialog(
@@ -1541,11 +1119,8 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     
                                     try {
                                         this.fresh_data_after_burn_icp_mint_cycles_future = Future.wait([
-                                            state.user!.bank!.fresh_icrc1_balances(Icrc1Ledgers.ICP),
-                                            state.user!.bank!.fresh_icrc1_transactions(Icrc1Ledgers.ICP),
-                                            state.user!.bank!.fresh_metrics(),
-                                            state.user!.bank!.fresh_cycles_transfers_in(),
-                                            state.user!.bank!.fresh_cycles_transfers_out(),
+                                            state.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP, CYCLES_BANK_LEDGER]),
+                                            state.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP, CYCLES_BANK_LEDGER]),
                                         ]);
                                         await this.fresh_data_after_burn_icp_mint_cycles_future;
                                     } catch(e) {
@@ -1612,7 +1187,7 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                         height: 11
                     ),
                     Container(
-                        child: Text('Cycles balance: ${state.user!.cycles_bank!.metrics!.cycles_balance}'),
+                        child: Text('Cycles balance: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER])}'),
                     ),
                     TextFormField(
                         key: ValueKey('ManagementCanisterDepositCyclesForm TextFormField canister_id'),
@@ -1638,6 +1213,7 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                         onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!.trim()); },
                         validator: tcycles_validator
                     ),
+                    Text('Fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
@@ -1655,10 +1231,11 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                                     
                                     late BigInt cycles_transfer_out_id;
                                     try {
-                                        cycles_transfer_out_id = await state.user!.bank!.management_canister_deposit_cycles(
-                                            ManagementCanisterDepositCyclesQuest(
-                                                canister_id: canister_id,
-                                                cycles: cycles
+                                        cycles_transfer_out_id = await state.user!.management_canister_deposit_cycles(
+                                            CyclesOutQuest(
+                                                fee: CYCLES_BANK_LEDGER.fee,
+                                                cycles: cycles,
+                                                for_canister: canister_id,
                                             )
                                         );
                                     } catch(e) {
@@ -1704,9 +1281,8 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.bank!.fresh_metrics(),
-                                            state.user!.bank!.fresh_cycles_transfers_in(),
-                                            state.user!.bank!.fresh_cycles_transfers_out(),
+                                            state.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]),
+                                            state.user!.fresh_icrc1_transactions([CYCLES_BANK_LEDGER]),
                                         ]);
                                     } catch(e) {
                                         await showDialog(

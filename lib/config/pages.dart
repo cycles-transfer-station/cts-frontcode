@@ -133,13 +133,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                 DrawerHeader(
                                     child: state.user == null ? 
                                         Center(child: OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); })) 
-                                    : state.user!.bank == null ?
-                                        Center(child: OutlineButton(button_text: 'CREATE MEMBERSHIP', on_press_complete: () async { 
-                                            state.current_url = CustomUrl('cycles_bank');
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                            Navigator.pop(context);
-                                        }))
-                                    : SelectableText('BANK-ID: ${state.user!.bank!.principal.text}')
+                                    : SelectableText('USER-ID: ${state.user!.principal.text}')
                                 ),
                                 Expanded(
                                     child: ListView(

@@ -152,11 +152,13 @@ class CustomState {
                 print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
                 if (this.user != null) {
-                    
-                    print('user fresh_icp_balance');
-                    
+                    print('load user');
                     await Future.wait([
                         this.user!.fresh_icp_balance(),
+                        
+                    
+                        
+                        // ---
                         Future(()async{
                             if (this.user!.cycles_bank == null) {
                                 print('user find_cycles_bank');
@@ -373,6 +375,19 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
     while (bytes.length < 32) { bytes.add(0); }
     return Uint8List.fromList(bytes);
 }
+
+
+
+Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
+    ledger: Canister(Principal.text('')), 
+    symbol: 'TCYCLES', 
+    name: 'CYCLES', 
+    decimals: 12, 
+    fee: BigInt.parse('10000000000'), 
+); 
+
+
+
 
 
 /*

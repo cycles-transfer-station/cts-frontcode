@@ -48,15 +48,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
                         button_text: 'LOG-IN',
                         on_press_complete: () async { await ii_login(context); }
                     )
-                : state.user!.bank == null ?
-                    OutlineButton(
-                        button_text: 'CREATE MEMBERSHIP',
-                        on_press_complete: () async { 
-                            state.current_url = CustomUrl('cycles_bank');
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true); 
-                        }
-                    )
-                : SelectableText('BANK-ID: ${state.user!.bank!.principal.text}')
+                : SelectableText('USER-ID: ${state.user!.principal.text}')
             )
         );
         
@@ -94,7 +86,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
                                         ),*/
                                         Text(
         //"""CYCLES are the perfect natural stable-coin for the blockchain cyber-space. 
-        """Store your money on the blockchain in your own personal CYCLES-BANK! 
+        """Store your money on the blockchain in the CYCLES-BANK! 
         """
                                         ),
                                         Text(
@@ -110,7 +102,7 @@ class WelcomeScaffoldBody extends StatelessWidget {
         """
                                         ),
                                         Text(
-        """\nThe CYCLES are here!
+        """The CYCLES are here.
         """
                                         ),
                                     ]
