@@ -44,7 +44,6 @@ import 'package:data_table_2/data_table_2.dart';
 import 'urls.dart';
 import '../cycles_market/cycles_market.dart';
 import '../user.dart';
-import '../cycles_bank/cycles_bank.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../tests/test.dart' as t;
 
@@ -114,10 +113,7 @@ class CustomState {
     
     void set context(BuildContext c) { this._scontext = c; }
     BuildContext get context => this._scontext;
-    
-    
-    late CTSFees cts_fees;
-    
+        
     CyclesPerTokenRateWithATimestamp? cmc_cycles_per_icp_rate_with_a_timestamp;
     CyclesPerTokenRate get cmc_cycles_per_icp_rate => this.cmc_cycles_per_icp_rate_with_a_timestamp!.cycles_per_token_rate;
     
@@ -127,21 +123,13 @@ class CustomState {
     
     User? user;
         
-    
-    
-    
-    
 
     Future<void> loadfirststate() async { 
-        
-        print('load cts_fees');
-        print('fresh_xdr_icp_rate');
-        print('load cycles-market-data');
+        print('load first state')
         
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = this.cm_main.fresh_icrc1token_trade_contracts();
         
         await Future.wait([
-            this.load_cts_fees(),
             this.fresh_xdr_icp_rate(),
             Future(()async{ 
                 await cycles_market_main_fresh_icrc1token_trade_contracts_future;
@@ -149,114 +137,20 @@ class CustomState {
                 await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_data()));
             }),
             Future(()async{ 
-                print('load state of the browser storage');
                 await this.load_state_of_the_browser_storage();
                 if (this.user != null) {
                     print('load user');
+                    await cycles_market_main_fresh_icrc1token_trade_contracts_future;
+                    this.user!.fresh_known_cm_trade_contracts_of_the_cm_main();
                     await Future.wait([
-                        this.user!.fresh_icp_balance(),
-                        
-                    
-                        
-                        // ---
-                        Future(()async{
-                            if (this.user!.cycles_bank == null) {
-                                print('user find_cycles_bank');
-                                await this.user!.find_cycles_bank();
-                            }
-                            
-                            print('save state in the browser_storage');
-                            this.save_state_in_the_browser_storage().then((x){});
-                            
-                            if (this.user!.cycles_bank != null) {
-                                try {
-                                    print('loading cycles-bank-metrics');
-                                    // await this before reading the cb-logs
-                                    await this.user!.cycles_bank!.fresh_metrics();
-                                    
-                                    print('loading cycles-transfers-in-out, and cm-data, icrc1-tokens');
-                                    await Future.wait([
-                                        if (this.user!.cycles_bank!.metrics!.cts_cb_authorization == false) Future(()async{
-                                            Variant v = c_backwards_one(await this.user!.call(
-                                                cts,
-                                                method_name: "set_cb_auth",
-                                                calltype: CallType.call,
-                                            )) as Variant;
-                                            if (v.containsKey(Err)) {
-                                                print('set_cb_auth error: ${e}');
-                                                return;
-                                            }
-                                            int i = 0;
-                                            while (true) { // might get a malicious replica
-                                                Blob cts_cb_authorization = c_backwards_one(
-                                                    await this.user!.call(
-                                                        cts,
-                                                        method_name: "get_cb_auth",
-                                                        calltype: CallType.query,
-                                                        put_bytes: c_forwards_one(this.user!.cycles_bank!.principal)
-                                                    )
-                                                ) as Blob;
-                                                try {
-                                                    await this.user!.call(
-                                                        this.user!.cycles_bank!,
-                                                        method_name: "user_upload_cts_cb_authorization",
-                                                        put_bytes: c_forwards_one(cts_cb_authorization),
-                                                        calltype: CallType.call,
-                                                    );
-                                                    break;
-                                                } catch(e) {
-                                                    print('error uploading cts-cb-auth into the cb.\n${e}');
-                                                    i += 1;
-                                                    if (i == 5) {
-                                                        break;
-                                                    }
-                                                    continue;
-                                                }
-                                            }
-                                        }),
-                                        this.user!.cycles_bank!.fresh_cycles_transfers_out(),
-                                        this.user!.cycles_bank!.fresh_cycles_transfers_in(),
-                                        Future(()async{
-                                            await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                                            this.user!.cycles_bank!.fresh_known_cm_trade_contracts_of_the_cm_main();
-                                            await Future.wait([
-                                                this.user!.cycles_bank!.fresh_icrc1_balances(),
-                                                this.user!.cycles_bank!.fresh_icrc1_transactions(),
-                                                this.user!.cycles_bank!.load_cm_data(),
-                                            ]);
-                                            
-                                            
-                                            //test
-                                            if (cts.principal.text != em3jm) {
-                                                //print('TESTING!');
-                                               
-                                            }
-                                        }),
-                                    ]);
-                                } catch(e,s) {
-                                    print('cycles-bank load metrics, cycles-transfers-in-out, cm-data, and icrc1-tokens error: \n${e}\n${s}');
-                                }
-                            }        
-                        }),
+                        this.user!.cycles_bank!.fresh_icrc1_balances(),
+                        this.user!.cycles_bank!.fresh_icrc1_transactions(),
+                        this.user!.cycles_bank!.load_cm_data(),
                     ]);
                 } 
             }),
         ]);
-                
     }
-
-
-
-    Future<void> load_cts_fees() async {
-        Record cts_fees_record = c_backwards(
-            await cts.call(
-                method_name: 'view_fees',
-                calltype: CallType.query,
-                put_bytes: c_forwards([])
-            )
-        ).first as Record;
-        this.cts_fees = CTSFees.of_the_record(cts_fees_record);
-    } 
 
     
     Future<void> fresh_xdr_icp_rate() async {
@@ -350,21 +244,6 @@ Future<void> load_local_root_key_onto_a_canister(Canister c) async {
 }
 
 
-
-class CTSFees {
-    Cycles membership_cost_per_year_cycles;
-
-    CTSFees._({
-        required this.membership_cost_per_year_cycles,
-    });
-    
-    static CTSFees of_the_record(Record ctsfees_record) {
-        return CTSFees._(
-            membership_cost_per_year_cycles: Cycles.oftheNat(ctsfees_record['membership_cost_per_year_cycles'] as Nat),
-        );
-    }
-
-}
 
 
 

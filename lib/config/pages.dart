@@ -23,8 +23,7 @@ import 'state_bind.dart';
 import '../user.dart';
 import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
-import '../cycles_bank/cycles_bank.dart';
-import '../cycles_bank/scaffold_body.dart';
+import '../bank/scaffold_body.dart';
 import '../about/scaffold_body.dart';
 import '../welcome/scaffold_body.dart';
 

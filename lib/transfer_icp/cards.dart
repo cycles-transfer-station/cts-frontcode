@@ -4,7 +4,7 @@ import 'icp_ledger.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/state.dart';
-import '../cycles_bank/cards.dart';
+import '../bank/cards.dart';
 
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;

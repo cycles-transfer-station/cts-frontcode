@@ -7,8 +7,7 @@ import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' as ic_tools_common;
 import 'package:ic_tools/candid.dart' show candid_text_hash, Blob;
 
-
-import 'cycles_bank.dart';
+import '../user.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../tools/tools.dart';

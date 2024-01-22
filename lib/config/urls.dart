@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'pages.dart';
 import '../transfer_icp/scaffold_body.dart';
-import '../cycles_bank/scaffold_body.dart';
+import '../bank/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
 import '../welcome/scaffold_body.dart';
 import '../about/scaffold_body.dart';

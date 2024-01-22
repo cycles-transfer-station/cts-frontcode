@@ -4,7 +4,7 @@ import '../main.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../tools/widgets.dart';
-import './cycles_bank.dart';
+import '../user.dart';
 import './forms.dart';
 
 
