@@ -28,7 +28,9 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         loadfirststatefuture = state.loadfirststate().then((x){
             state.is_loading = false;
             notifyListeners();
-        }).catchError((e) async {
+        }).catchError((e, s) async {
+            print(e);
+            print(s);
             state.is_loading = false;/*TAKE THIS LINE OUT WHEN SET FOR THE GO.*/
             state.loading_text = 'Error loading the first state: ${e}';
             await showDialog(

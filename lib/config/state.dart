@@ -52,7 +52,7 @@ import '../tests/test.dart' as t;
 
 late final Canister cts;
 late final Canister cycles_market;
-
+late final Canister bank;
 
 
 late final String cts_main_icp_id;
@@ -80,7 +80,8 @@ class CustomState {
             fetch_root_key().then((_x){});
             cts = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cts_local_'))));
             cycles_market = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cm_local__'))));
-        
+            bank = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('bank_local'))));
+            
             Future.wait([
                 load_local_root_key_onto_a_canister(cts),
                 load_local_root_key_onto_a_canister(cycles_market),
@@ -242,7 +243,7 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
 
 
 Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
-    ledger: Canister(Principal.text('')), 
+    ledger: bank, 
     symbol: 'TCYCLES', 
     name: 'CYCLES', 
     decimals: 12, 
@@ -322,6 +323,10 @@ class Cycles extends Tokens {
     
     Cycles round_decimal_places(int round_decimal_places) {
         return Cycles(cycles: super.round_decimal_places(round_decimal_places).quantums);
+    }
+    
+    Cycles add_quantums(BigInt add_quantums) {
+        return Cycles(cycles: super.add_quantums(add_quantums).quantums);
     }
     
     Cycles({required BigInt cycles}) : super(quantums: cycles, decimal_places: T_CYCLES_DECIMAL_PLACES);

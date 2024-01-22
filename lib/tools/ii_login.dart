@@ -37,8 +37,7 @@ ii_login(BuildContext context) async {
                 private_key: hexstringasthebytes('3771c1f078763eb5aa8561f642a82bd6f6d4f53de06f5ce07410fc64e765427552ef30bf9e412a693d644aebe8e22de574759291065dc392382d4e633ac0c2e9'.substring(0,64)),
             )),
             icp_id(
-                cts.principal, 
-                subaccount_bytes: principal_as_an_icpsubaccountbytes(ii_caller.principal)
+                ii_caller.principal,
             ),
             IcpTokens.of_the_double_string('100000'),
         );

@@ -192,23 +192,28 @@ class CyclesTransferListItem extends StatelessWidget {
                             child: SingleChildScrollView(
                                 child: DefaultTextStyle.merge(
                                     style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size),
-                                    child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                            Text('operation: ${operation}'),
-                                            Text('amount: ${Cycles(cycles: cycles_transfer.amt)}'),
-                                            if (from != null) SelectableText('from: ${from}'),
-                                            if (to != null) SelectableText('to: ${to}'),
-                                            if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
-                                            if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
-                                            //if (mint_kind_cmc_icp_block_height != null) Text('icp-transfer-block-height: ${mint_kind_cmc_icp_block_height}'),
-                                            if (mint_kind_cycles_in_from_canister != null) Text('cycles-in from canister: ${mint_kind_cycles_in_from_canister}'),
-                                            Text('fee: ${Cycles(cycles: cycles_transfer.fee)}'),
-                                            if (cycles_transfer.memo != null) Text('memo: ${bytesasahexstring(cycles_transfer.memo!)}'),
-                                            Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer.timestamp_nanos).toInt()))}'),
-                                        ]                            
+                                    child: Container(
+                                        height: 170,
+                                        child: SingleChildScrollView(
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Text('operation: ${operation}'),
+                                                    Text('amount: ${Cycles(cycles: cycles_transfer.amt)}'),
+                                                    if (from != null) SelectableText('from: ${from}'),
+                                                    if (to != null) SelectableText('to: ${to}'),
+                                                    if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
+                                                    if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
+                                                    //if (mint_kind_cmc_icp_block_height != null) Text('icp-transfer-block-height: ${mint_kind_cmc_icp_block_height}'),
+                                                    if (mint_kind_cycles_in_from_canister != null) Text('cycles-in from canister: ${mint_kind_cycles_in_from_canister}'),
+                                                    Text('fee: ${Cycles(cycles: cycles_transfer.fee)}'),
+                                                    if (cycles_transfer.memo != null) Text('memo: ${bytesasahexstring(cycles_transfer.memo!)}'),
+                                                    Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer.timestamp_nanos).toInt()))}'),
+                                                ]                            
+                                            )
+                                        )
                                     )
                                 ),
                             )

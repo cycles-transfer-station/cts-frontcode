@@ -94,19 +94,12 @@ class User {
             ])
         )).first as Variant;
     } 
-    Future<void> fresh_icrc1_transactions([List<Icrc1Ledger>? icrc1_ledgers]) async {
-        if (is_on_local) {
-            return;
-        } else {
-            return fresh_icrc1_transactions_(icrc1_ledgers);
-        }
-    }
-    Future<void> fresh_icrc1_transactions_([List<Icrc1Ledger>? icrc1_ledgers]) {
+    Future<void> fresh_icrc1_transactions([List<Icrc1Ledger>? icrc1_ledgers]) {
         List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.known_icrc1_ledgers;
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 //print('fresh icrc1 transactions future ${l.name}');
-                if (l.ledger.principal == SYSTEM_CANISTERS.ledger.principal) {
+                if (l.ledger.principal == SYSTEM_CANISTERS.ledger.principal && is_on_local == false) {
                     // for the do! hook up with the new icp index canister
                     this.icp_transfers = [
                         ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
@@ -133,9 +126,10 @@ class User {
                             ...logs,
                             ...gather
                         ];
-                        
+                        print('gather.length: ${gather.length}');
                         if (this.cycles_transfers.length != 0 && gather.length != 0 && this.cycles_transfers.last.id >= gather.first.id) {
                             gather = gather.skipWhile((l)=>l.id <= this.cycles_transfers.last.id).toList();
+                            print('gather.length after skipwhile: ${gather.length}');
                             break;
                         }                    
                         
@@ -148,7 +142,7 @@ class User {
     
                     this.cycles_transfers.addAll(gather);                
                     
-                } else /*tokens besides icp or cycles*/ {
+                } else if (is_on_local == false)/*tokens besides icp or cycles*/ {
                     if (this.icrc1_transactions_cache[l] == null) { 
                         this.icrc1_transactions_cache[l] = []; 
                     }

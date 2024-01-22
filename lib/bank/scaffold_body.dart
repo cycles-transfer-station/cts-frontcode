@@ -117,7 +117,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                             DropdownMenuItem<Icrc1Ledger>(
                                                 child: Padding(
                                                     padding: EdgeInsets.symmetric(horizontal:4),
-                                                    child: Text(state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol, style: TextStyle(fontSize: 22)), 
+                                                    child: Text(icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol, style: TextStyle(fontSize: 22)), 
                                                 ),
                                                 value: icrc1_ledger
                                             ),
@@ -272,9 +272,9 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     child: Column(
                                         children: [
                                             Text('CYCLES-BANK', style: TextStyle(fontSize: 19)),
-                                            if (state.user != null ) ...[
-                                                SelectableText('${state.user!.principal.text}', style: TextStyle(fontSize: 17)),
-                                            ]
+                                            //if (state.user != null ) ...[
+                                            //    SelectableText('${state.user!.principal.text}', style: TextStyle(fontSize: 17)),
+                                            //]
                                         ]
                                     )
                                 )),
