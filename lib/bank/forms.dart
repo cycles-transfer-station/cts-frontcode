@@ -1055,7 +1055,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             return icp_validator(v) ?? (IcpTokens.of_the_double_string(v!).e8s > max_burn_icp.e8s ? 'Max burn icp at once: ${max_burn_icp}' : null);
                         }
                     ),
-                    Text('ICP ledger fees: ${ICP_LEDGER_TRANSFER_FEE*2}\nCYCLES fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
+                    Text('ICP ledger fees: ${IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2))}\nCYCLES fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
@@ -1186,7 +1186,7 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                         height: 11
                     ),
                     Container(
-                        child: Text('Cycles balance: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER])}'),
+                        child: Text('Cycles balance: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}'),
                     ),
                     TextFormField(
                         key: ValueKey('ManagementCanisterDepositCyclesForm TextFormField canister_id'),

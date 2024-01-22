@@ -13,7 +13,7 @@ import '../transfer_icp/icp_ledger.dart';
 import '../main.dart';
 import '../user.dart';
 
-
+/*
 
 class UserTransferIcpForm extends StatefulWidget {
     UserTransferIcpForm({super.key});
@@ -204,7 +204,7 @@ class UserTransferIcpFormState extends State<UserTransferIcpForm> {
     }
 }
 
-
+*/
 
 
 

@@ -20,6 +20,7 @@ import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import '../tools/tools.dart';
+import '../user.dart';
 
 
 
@@ -68,7 +69,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                         alignment: Alignment.centerLeft,
                         child: DropdownButton<int>(
                             //decoration: InputDecoration(
-                            //    labelText: 'Token'//state.user!.cycles_bank!.current_icrc1_ledger.symbol,
+                            //    labelText: 'Token'//state.user!.current_icrc1_ledger.symbol,
                             //),
                             underline: Container(
                                 height: 0,
@@ -158,11 +159,10 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         timer = Timer.periodic(Duration(seconds: 30), (timer) {
             Future.wait([
                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_data(),
-                if (state.user != null && state.user!.bank != null) ...[
-                    state.user!.bank!.load_cm_data(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
-                    state.user!.bank!.fresh_metrics(),
-                    state.user!.bank!.fresh_icrc1_balances(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data),
-                    state.user!.bank!.fresh_icrc1_transactions(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data),
+                if (state.user != null) ...[
+                    state.user!.load_cm_data(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                    state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                    state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                 ]
             ])
             .then((x){
@@ -217,7 +217,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                             ),  
                         ]
                     ),
-                    if (state.user != null && state.user!.bank != null) ...[
+                    if (state.user != null) ...[
                         SizedBox(height: 61),
                         Wrap(
                             alignment: WrapAlignment.center,
@@ -609,26 +609,27 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
                         validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
                     ),
-                    if (widget.position_kind == PositionKind.Cycles) Container(
+                    Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 11),
                         child: Text(
-                            'CYCLES-BALANCE: ${state.user!.bank!.metrics!.cycles_balance}', 
-                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
-                        ),
-                    ) else Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 11),
-                        child: Text(
-                            '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.bank!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
+                            'CYCLES-BALANCE: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}', 
                             style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
                         ),
                     ),
-                    if (widget.position_kind == PositionKind.Token) Container(
+                    Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 11),
                         child: Text(
-                            'LEDGER-FEES: ${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}', 
+                            '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
+                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                        ),
+                    ),
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(vertical: 11),
+                        child: Text(
+                            'LEDGER-FEES: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
                             style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
                         ),
                     ),
@@ -650,23 +651,21 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     late BigInt position_id;
                                     try {
                                         if (widget.position_kind == PositionKind.Cycles) {
-                                            position_id = await state.user!.bank!.cm_trade_cycles(
+                                            position_id = await state.user!.cm_trade_cycles(
                                                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
                                                 TradeCyclesQuest(
                                                     cycles: Cycles(cycles: trade_amount.quantums),
                                                     cycles_per_token_rate: cycles_per_token_rate,
+                                                    posit_transfer_ledger_fee: CYCLES_BANK_LEDGER.fee,
                                                 )
                                             );
                                         } else {
-                                            position_id = await state.user!.bank!.cm_trade_tokens(
+                                            position_id = await state.user!.cm_trade_tokens(
                                                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i],
                                                 TradeTokensQuest(
                                                     tokens: trade_amount,
                                                     cycles_per_token_rate: cycles_per_token_rate,
-                                                    posit_transfer_ledger_fee: Tokens(
-                                                        quantums: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee,
-                                                        decimal_places: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals,
-                                                    )
+                                                    posit_transfer_ledger_fee: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee,
                                                 )
                                             );
                                         }
@@ -716,10 +715,9 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.bank!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
-                                            state.user!.bank!.fresh_metrics(),
-                                            state.user!.bank!.fresh_icrc1_balances(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data),
-                                            state.user!.bank!.fresh_icrc1_transactions(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data),
+                                            state.user!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                                            state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                                            state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                             state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_data()
                                         ]);
                                     } catch(e) {
@@ -902,7 +900,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             
                             try {
-                                await state.user!.bank!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
+                                await state.user!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
                             } catch(e,s) {
                                 //print(e);
                                 //print(s);
@@ -948,10 +946,9 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                             
                             try {
                                 await Future.wait([
-                                    state.user!.bank!.load_cm_data(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
-                                    state.user!.bank!.fresh_metrics(),
-                                    state.user!.bank!.fresh_icrc1_balances(state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data),
-                                    state.user!.bank!.fresh_icrc1_transactions(state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data),
+                                    state.user!.load_cm_data(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                    state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                                    state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                     state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data()
                                 ]);
                             } catch(e) {
@@ -1108,8 +1105,8 @@ class PositionDialogState extends State<PositionDialog> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        if (load_cm_user_position_trade_logs_future == null && state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id] == null) {
-            load_cm_user_position_trade_logs_future = state.user!.bank!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl.id); 
+        if (load_cm_user_position_trade_logs_future == null && state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id] == null) {
+            load_cm_user_position_trade_logs_future = state.user!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl.id); 
         }
         
         Icrc1Ledger ledger_data = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data;
@@ -1205,7 +1202,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                     CustomState state = MainStateBind.get_state<CustomState>(context);
                                                                     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                                                                     BigInt trades_token_payouts_ledger_fees_sum =
-                                                                        (state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
+                                                                        (state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
                                                                             .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
                                                                             .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + l.tl.tokens_payout_ledger_transfer_fee);
                                                                     return switch (snapshot.connectionState) {
@@ -1231,7 +1228,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                     switch (snapshot.connectionState) {
                                                                         case ConnectionState.none || ConnectionState.done: 
                                                                             Iterable<TradeLogAndPayoutStatus> tlaps_list = 
-                                                                                (state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
+                                                                                (state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
                                                                                 .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? []);
                                                                             bool is_pending =
                                                                                 tlaps_list.map(
@@ -1283,19 +1280,29 @@ class PositionDialogState extends State<PositionDialog> {
                                                                     Text('LEFTOVER-TRANSFER-STATUS:'),
                                                                     Text(widget.plavpps.void_position_payout_complete ? 'COMPLETE' : 'PENDING')
                                                                 ),
-                                                                if (widget.plavpps.void_position_payout_complete && pl.position_kind == PositionKind.Token) ...[
+                                                                if (widget.plavpps.void_position_payout_complete) ...[
                                                                     (
-                                                                        Text('LEFTOVER-LEDGER-TRANSFER-FEE:'),
-                                                                        show_tokens_with_symbol(
-                                                                            Tokens(quantums: pl.void_token_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
+                                                                        Text('LEFTOVER-TRANSFER-LEDGER-FEE:'),
+                                                                        pl.position_kind == PositionKind.Token 
+                                                                        ? show_tokens_with_symbol(
+                                                                            Tokens(quantums: pl.void_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
                                                                             token_symbol
+                                                                        )
+                                                                        : show_tokens_with_symbol(
+                                                                            Cycles(cycles: pl.void_position_payout_ledger_transfer_fee),
+                                                                            cycles_symbol
                                                                         )
                                                                     ),
                                                                     (
                                                                         Text('LEFTOVER-TRANSFER:'),
-                                                                        show_tokens_with_symbol(
-                                                                            Tokens(quantums: pl.mainder_position_quantity - pl.void_token_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
+                                                                        pl.position_kind == PositionKind.Token 
+                                                                        ? show_tokens_with_symbol(
+                                                                            Tokens(quantums: pl.mainder_position_quantity - pl.void_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
                                                                             token_symbol
+                                                                        )
+                                                                        : show_tokens_with_symbol(
+                                                                            Cycles(cycles: pl.mainder_position_quantity - pl.void_position_payout_ledger_transfer_fee),
+                                                                            cycles_symbol
                                                                         )
                                                                     )
                                                                 ]
@@ -1495,25 +1502,25 @@ class UserCMLogsDataTableSource extends DataTableSource {
         state = MainStateBind.get_state<CustomState>(context);
     }
     
-    int get rowCount => state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+    int get rowCount => state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
         .user_positions_storage.length;
     
     bool get isRowCountApproximate => false;    
     
     DataRow? getRow(int i) {
         Iterable<BigInt> user_positions_storage_keys = 
-            state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
             .user_positions_storage.keys;
         BigInt plid = user_positions_storage_keys.elementAt(user_positions_storage_keys.length - 1 - i);
-        PositionLogAndVoidPositionPayoutStatus? plavpps = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+        PositionLogAndVoidPositionPayoutStatus? plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
             .current_user_positions[plid].nullmap((pl)=>PositionLogAndVoidPositionPayoutStatus(pl, false));
         if (plavpps == null) {
-            plavpps = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+            plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_void_positions_pending[plid];
         }
         if (plavpps == null) {
             plavpps = PositionLogAndVoidPositionPayoutStatus(
-                state.user!.bank!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
+                state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
                 .user_positions_storage[plid]!,
                 true,
             );
@@ -1582,7 +1589,7 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
                                 return switch (snapshot.connectionState) {
                                     ConnectionState.none || ConnectionState.done => LayoutBuilder(
                                         builder: (BuildContext context, BoxConstraints constraints) {
-                                            Iterable<TradeLogAndPayoutStatus> tlaps_list = state.user!.bank!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [];
+                                            Iterable<TradeLogAndPayoutStatus> tlaps_list = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [];
                                             double headingRowHeight = DataTableTheme.of(context).headingRowHeight ?? 56.0;
                                             
                                             List<DataRow2> data_rows = [];

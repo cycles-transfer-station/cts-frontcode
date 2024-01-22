@@ -1,16 +1,20 @@
 import 'dart:typed_data';
 import 'dart:html';
 import 'dart:math';
+import 'dart:collection';
+import 'dart:convert';
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/candid.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
+import 'package:ic_tools/common.dart' as common;
 import 'package:ic_tools/common_web.dart';
 
 import 'transfer_icp/icp_ledger.dart';
 import 'config/state.dart';
 import 'tools/tools.dart';
+import 'cycles_market/cycles_market.dart';
 
 class User {
     CustomState state;
@@ -22,7 +26,7 @@ class User {
     Principal get principal => caller.principal;
     
     late final String icp_id;
-    List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, common.Icrc1Ledgers.ICP];
+    List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP];
     Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
@@ -39,9 +43,9 @@ class User {
         required this.state,
         required this.caller,
     }) {
-        this.icp_id = icp_id(this.principal);
+        this.icp_id = common.icp_id(this.principal);
         this.bank_mint_cycles_user_icp_subaccount_bytes = principal_as_an_icpsubaccountbytes(this.principal);
-        this.bank_mint_cycles_user_icp_id = icp_id(bank.principal, subaccount_bytes: bank_user_icp_subaccount_bytes);
+        this.bank_mint_cycles_user_icp_id = common.icp_id(CYCLES_BANK_LEDGER.ledger.principal, subaccount_bytes: bank_mint_cycles_user_icp_subaccount_bytes);
     }
             
     Future<Uint8List> call(Canister canister, {required CallType calltype, required String method_name, Uint8List? put_bytes, Duration timeout_duration = const Duration(minutes: 10)}) {
@@ -102,7 +106,7 @@ class User {
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 //print('fresh icrc1 transactions future ${l.name}');
-                if (l.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) {
+                if (l.ledger.principal == SYSTEM_CANISTERS.ledger.principal) {
                     // for the do! hook up with the new icp index canister
                     this.icp_transfers = [
                         ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
@@ -126,7 +130,7 @@ class User {
                         List<CyclesTransfer> logs = (sponse['logs'] as Vector).cast_vector<Record>().map(CyclesTransfer.of_the_record).toList();
                         
                         gather = [
-                            logs,
+                            ...logs,
                             ...gather
                         ];
                         
@@ -248,8 +252,8 @@ class User {
 
     Future<BigInt> transfer_icp(Uint8List transfer_arg_raw) async {
         Variant sponse = c_backwards(
-            await user.call(
-                common.SYSTEM_CANISTERS.ledger,
+            await this.call(
+                SYSTEM_CANISTERS.ledger,
                 method_name: 'transfer',
                 calltype: CallType.call,
                 put_bytes: transfer_arg_raw
@@ -313,7 +317,7 @@ class User {
             throw Exception('The Bank is busy. Try soon.');
         },
         'MinimumBurnIcp' : (r) async {
-            throw Exception('The minimum ICP is ${IcpTokens(e8s: (r['minimum_burn_icp'] as Nat).value)}.');
+            throw Exception('The minimum ICP is ${IcpTokens(e8s: (((r as Record)['minimum_burn_icp'] as Record) as Nat).value)}.');
         },
         'MidCallError':(mint_cycles_mid_call_error) async {
             print('mint_cycles_mid_call_error: ${mint_cycles_mid_call_error}');
@@ -340,7 +344,7 @@ class User {
             });
         },
         'UserIsInTheMiddleOfADifferentCall': (user_is_in_the_middle_of_a_different_call_variant) async {
-            print('UserIsInTheMiddleOfADifferentCall: ${rc}');
+            print('UserIsInTheMiddleOfADifferentCall: ${user_is_in_the_middle_of_a_different_call_variant}');
             return match_variant<Never>(user_is_in_the_middle_of_a_different_call_variant as Variant, {
                 'MintCyclesCall': (rc) {
                     if (((rc as Record)['must_call_complete'] as Bool).value == true) {
@@ -363,45 +367,45 @@ class User {
     
     Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(BigInt burn_icp) async {
         BigInt current_bank_user_icp_subaccount_balance = await check_icrc1_balance(
-            icrc1_ledger_canister_id: common.SYSTEM_CANISTERS.ledger.principal, 
+            icrc1_ledger_canister_id: SYSTEM_CANISTERS.ledger.principal, 
             owner: CYCLES_BANK_LEDGER.ledger.principal, 
             subaccount: bank_mint_cycles_user_icp_subaccount_bytes, 
             calltype: CallType.query
         );
-        if (current_bank_user_icp_subaccount_balance < burn_icp + common.Icrc1Ledgers.ICP.fee) {
+        if (current_bank_user_icp_subaccount_balance < burn_icp + Icrc1Ledgers.ICP.fee) {
             await transfer_icp(
                 c_forwards_one(Record.of_the_map({
                     'memo': Nat64(BigInt.from(4)),
-                    'amount': IcpTokens(e8s: burn_icp + common.Icrc1Ledgers.ICP.fee - current_bank_user_icp_subaccount_balance),
+                    'amount': IcpTokens(e8s: burn_icp + Icrc1Ledgers.ICP.fee - current_bank_user_icp_subaccount_balance),
                     'fee': ICP_LEDGER_TRANSFER_FEE,
                     'from_subaccount': Option<Blob>(value: null, value_type: Blob.type_mode()),
                     'to': Blob(hexstringasthebytes(this.bank_mint_cycles_user_icp_id)),
                 }))
             );
         }
-        Variant mint_cycles_result = c_backwards(
-            await user.call(
+        Variant mint_cycles_result = c_backwards_one(
+            await this.call(
                 CYCLES_BANK_LEDGER.ledger,
                 calltype: CallType.call,
                 method_name: 'mint_cycles',
                 put_bytes: c_forwards([
                     Record.of_the_map({
-                        'to' : Icrc1Account{owner: this.principal},
+                        'to' : Icrc1Account(owner: this.principal),
                         'fee' : Option<Nat>(value: Nat(CYCLES_BANK_LEDGER.fee)),
                         'burn_icp': Nat(burn_icp),
-                        'burn_icp_transfer_fee': Nat(common.Icrc1Ledgers.ICP.fee),
+                        'burn_icp_transfer_fee': Nat(Icrc1Ledgers.ICP.fee),
                         'memo' : Option<Blob>(value: Blob(utf8.encode('CTSF'))),
                         'created_at_time' : Option<Nat64>(value:null, value_type: Nat64()),
                     })
                 ])
             )
-        )[0] as Variant;
+        ) as Variant;
         return await match_variant<Future<BurnIcpMintCyclesSuccess>>(mint_cycles_result, mint_cycles_result_match_map);
     }
     
     Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
         Variant complete_mint_cycles_result = c_backwards(
-            await user.call(
+            await this.call(
                 CYCLES_BANK_LEDGER.ledger,
                 calltype: CallType.call,
                 method_name: 'complete_mint_cycles',
@@ -415,7 +419,7 @@ class User {
     // cycles-out
     Future<BigInt/*block-id*/> management_canister_deposit_cycles(CyclesOutQuest q) async {
         Variant sponse = c_backwards_one(
-            await user.call(
+            await this.call(
                 CYCLES_BANK_LEDGER.ledger,
                 calltype: CallType.call,
                 method_name: 'cycles_out',
@@ -441,7 +445,7 @@ class User {
                         throw Exception('Management canister call error: ${CallError.of_the_record(ce as Record)}');
                     },
                     'InsufficientFunds' : (br) {
-                        BigInt balance = ((r as Record)['balance'] as Nat).value;
+                        BigInt balance = ((br as Record)['balance'] as Nat).value;
                         this.icrc1_balances_cache[CYCLES_BANK_LEDGER] = balance;
                         throw Exception('InsufficientFunds. current-balance: ${Cycles(cycles: balance)}');
                     }
@@ -473,7 +477,7 @@ class User {
                         calltype: CallType.query
                     );
                 }),
-            ])
+            ]))
         );
     }
     
@@ -494,7 +498,7 @@ class User {
             this.fresh_cm_trade_contracts_balances(trade_contract),
         ]);
         
-        BigInt trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[tc]!.trade_contract_token_balance : this.cm_trade_contracts[tc]!.trade_contract_cycles_balance;
+        BigInt trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[trade_contract]!.trade_contract_token_balance : this.cm_trade_contracts[trade_contract]!.trade_contract_cycles_balance;
         
         if (trade_contract_balance < q.quantity + ledger_data.fee) {
             if (this.icrc1_balances_cache[ledger_data]! < q.quantity + (ledger_data.fee * BigInt.from(2)) - trade_contract_balance) {
@@ -517,8 +521,8 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
         
         try{
             Variant v = c_backwards_one(
-                await user.call(
-                    tc.trade_contract_canister_id, 
+                await this.call(
+                    Canister(trade_contract.trade_contract_canister_id), 
                     method_name: switch (kind) { PositionKind.Cycles => "trade_cycles", _ => "trade_tokens" },
                     calltype: CallType.call,
                     put_bytes: c_forwards_one(q)
@@ -531,7 +535,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
                 Err: (e) {
                     return match_variant<Never>(e as Variant, {
                         'CreatePositionLedgerTransferError' : (te) {
-                            return match_variant(te as Variant, icrc1_transfer_error_match_map(tc.ledger_data));
+                            return match_variant(te as Variant, icrc1_transfer_error_match_map(trade_contract.ledger_data));
                         },
                         'CyclesMarketIsBusy': (_n) {
                             throw Exception('The cycles-market is busy. Try soon.');
@@ -540,12 +544,12 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
                             throw Exception('The rate cannot be zero');
                         },
                         'CreatePositionLedgerTransferCallError': (ce) {
-                            throw Exception('Ledger transfer call error when moving the funds for the position: ${CallError.of_the_record(ce)}');
+                            throw Exception('Ledger transfer call error when moving the funds for the position: ${CallError.of_the_record(ce as Record)}');
                         },
                         'MinimumPosition' : (r) {
                             Cycles min_cycles = Cycles.of_the_nat((r as Record)['minimum_cycles'] as Nat);
-                            Tokens min_tokens = Tokens.of_the_nat((r as Record)['minimum_tokens'] as Nat, decimal_places: tc.ledger_data.decimals);
-                            throw Exception('Amount too little.\nminimum cycles: ${minimum_cycles}\nminimum ${tc.ledger_data.symbol}: ${minimum_tokens}');
+                            Tokens min_tokens = Tokens.of_the_nat((r as Record)['minimum_tokens'] as Nat, decimal_places: trade_contract.ledger_data.decimals);
+                            throw Exception('Amount too little.\nminimum cycles: ${min_cycles}\nminimum ${trade_contract.ledger_data.symbol}: ${min_tokens}');
                         },
                         'CallerIsInTheMiddleOfADifferentCallThatLocksTheBalance': (_n) {
                             throw Exception('You are in the middle of a different call that locks the balance.');
@@ -557,12 +561,12 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
         } catch(cm_trade_error) {
             try {
                 await this.fresh_cm_trade_contracts_balances(trade_contract);
-                trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[tc]!.trade_contract_token_balance : this.cm_trade_contracts[tc]!.trade_contract_cycles_balance;
+                trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[trade_contract]!.trade_contract_token_balance : this.cm_trade_contracts[trade_contract]!.trade_contract_cycles_balance;
                 
                 if (trade_contract_balance > ledger_data.fee) {
                     try{
                         await this.cm_transfer_balance(
-                            tc,
+                            trade_contract,
                             CyclesMarketTransferBalanceQuest(                                
                                 amount: trade_contract_balance - ledger_data.fee,
                                 ledger_transfer_fee: ledger_data.fee,
@@ -583,8 +587,8 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
 
     Future<BigInt/*block_height*/> cm_transfer_balance(Icrc1TokenTradeContract tc, CyclesMarketTransferBalanceQuest q, PositionKind position_kind) async {
         Variant sponse = c_backwards(
-            await user.call(
-                tc.trade_contract_canister_id,
+            await this.call(
+                Canister(tc.trade_contract_canister_id),
                 method_name: 'transfer_' + (position_kind == PositionKind.Cycles ? 'cycles' : 'token') + '_balance',
                 calltype: CallType.call,
                 put_bytes: c_forwards_one(q)
@@ -603,12 +607,12 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
                         return match_variant<Never>(transfer_error as Variant, icrc1_transfer_error_match_map(position_kind == PositionKind.Cycles ? CYCLES_BANK_LEDGER : tc.ledger_data));
                     },
                     'TransferCallError' : (ce) {
-                        throw Exception('Ledger transfer call error: ${CallError.of_the_record(ce)}');
+                        throw Exception('Ledger transfer call error: ${CallError.of_the_record(ce as Record)}');
                     },
                     'CallerIsInTheMiddleOfADifferentCallThatLocksTheBalance': (_n) {
                         throw Exception('Caller is in the middle of a different call that locks the balance.');
                     },
-                );
+                });
             }
         });
         return block_height;
@@ -616,8 +620,8 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
     
     Future<void> cm_void_position(Icrc1TokenTradeContract tc, BigInt position_id) async {
         Variant sponse = c_backwards(
-            await user.call(
-                tc.trade_contract_canister_id,
+            await this.call(
+                Canister(tc.trade_contract_canister_id),
                 method_name: 'void_position',
                 calltype: CallType.call,
                 put_bytes: c_forwards_one(
@@ -919,7 +923,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
         for (String method_name in ['view_position_pending_trades', 'view_position_purchases_logs']) {
             int? latest_logs_b_chunk_len = null;
             while (true) {
-                Uint8List logs_b_chunk = await this.user.call(
+                Uint8List logs_b_chunk = await this.call(
                     tc.canister,
                     method_name: method_name,
                     calltype: CallType.query,
@@ -980,7 +984,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
             await tc.fresh_trades_storage_canisters();
             for (StorageCanister trades_storage_canister in (tc.trades_scs_cache).reversed) {
                 while (true) {
-                    Uint8List logs_b_chunk = await this.user.call(
+                    Uint8List logs_b_chunk = await this.call(
                         tc.canister,
                         method_name: 'map_logs_rchunks',
                         calltype: CallType.query,
@@ -1080,7 +1084,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
         },
         'InsufficientFunds': (balance_record) {
             IcpTokens current_balance = IcpTokens.of_the_record((balance_record as Record)['balance']!);
-            this.icp_balance = IcpTokensWithATimestamp(icp: current_balance);
+            this.icrc1_balances_cache[Icrc1Ledgers.ICP] = current_balance.e8s;
             throw Exception('Icp balance is too low. current balance: ${current_balance}');
         },
         'TxTooOld': (allowed_window_nanos_record) {
@@ -1122,7 +1126,7 @@ Icrc1Account bank_countid_as_icrc1account(CandidType rc) {
     Record r = rc as Record;
     return Icrc1Account(
         owner: r[0] as Principal,
-        subaccount_bytes: r.find_option<Vector>(1).nullmap((v)=>Blob.of_the_vector(v.cast_vector<Nat8>()).bytes)
+        subaccount: r.find_option<Vector>(1).nullmap((v)=>Blob.of_the_vector_nat8(v.cast_vector<Nat8>()).bytes)
     );
 }
 
@@ -1144,7 +1148,7 @@ class CyclesTransfer {
         required this.op,
     });
     
-    static CyclesTransfer.of_the_record(Record r) {
+    static CyclesTransfer of_the_record(Record r) {
         Record log = (r[1] as Record);
         Record tx = log['tx'] as Record; 
         return CyclesTransfer._(
@@ -1152,7 +1156,7 @@ class CyclesTransfer {
             timestamp_nanos: (log['ts'] as Nat64).value,
             amt: (tx['amt'] as Nat).value,
             fee: (log.find_option<Nat>('fee') ?? tx.find_option<Nat>('fee')!).value,
-            memo: tx.find_option<Vector>('memo').nullmap((v)=>Blob.of_the_vector(v.cast_vector<Nat8>()).bytes),
+            memo: tx.find_option<Vector>('memo').nullmap((v)=>Blob.of_the_vector_nat8(v.cast_vector<Nat8>()).bytes),
             op: tx['op'] as Variant,
         );
     }

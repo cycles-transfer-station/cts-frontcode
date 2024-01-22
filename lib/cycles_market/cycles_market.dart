@@ -308,7 +308,7 @@ class PositionLog {
     BigInt creation_timestamp_nanos;
     PositionTerminationData? position_termination;
     bool void_position_payout_dust_collection;
-    BigInt void_token_position_payout_ledger_transfer_fee;
+    BigInt void_position_payout_ledger_transfer_fee;
     
     //BigInt trade_log_ids
     
@@ -324,7 +324,7 @@ class PositionLog {
         required this.creation_timestamp_nanos,
         required this.position_termination,
         required this.void_position_payout_dust_collection,
-        required this.void_token_position_payout_ledger_transfer_fee,
+        required this.void_position_payout_ledger_transfer_fee,
     });
     
     static int STABLE_MEMORY_SERIALIZE_SIZE = 172;
@@ -361,7 +361,7 @@ class PositionLog {
             creation_timestamp_nanos: bigint_of_the_be_bytes(bytes.getRange(145, 153)),
             position_termination: termination,
             void_position_payout_dust_collection: bytes[163] == 1, 
-            void_token_position_payout_ledger_transfer_fee: bigint_of_the_be_bytes(bytes.getRange(164, 172)),
+            void_position_payout_ledger_transfer_fee: bigint_of_the_be_bytes(bytes.getRange(164, 172)),
         );
     }
 }
@@ -524,19 +524,27 @@ class TokenPosition implements Icrc1TokenTradeContractPosition {
 }
 
 
-abstract class TradeQuest {
+abstract class TradeQuest extends Record {
     CyclesPerTokenRate get cycles_per_token_rate;
+    BigInt get quantity;
+    BigInt get posit_transfer_ledger_fee;
 }
 
 class TradeCyclesQuest extends Record implements TradeQuest {
     final Cycles cycles;
     final CyclesPerTokenRate cycles_per_token_rate;
+    final BigInt posit_transfer_ledger_fee;
+    
+    BigInt get quantity => cycles.cycles;    
+    
     TradeCyclesQuest({
         required this.cycles,
         required this.cycles_per_token_rate,
+        required this.posit_transfer_ledger_fee,
     }) {
         this['cycles'] = this.cycles;
         this['cycles_per_token_rate'] = this.cycles_per_token_rate;
+        this['posit_transfer_ledger_fee'] = Nat(this.posit_transfer_ledger_fee);
     }
     static TradeCyclesQuest of_the_record(Record r, {required int token_decimal_places}) {
         return TradeCyclesQuest(
@@ -544,14 +552,18 @@ class TradeCyclesQuest extends Record implements TradeQuest {
             cycles_per_token_rate: CyclesPerTokenRate(
                 cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
                 token_decimal_places: token_decimal_places
-            )
+            ),
+            posit_transfer_ledger_fee: (r['posit_transfer_ledger_fee'] as Nat).value,            
         );
     }
 }
 class TradeTokensQuest extends Record implements TradeQuest {
     final Tokens tokens;
     final CyclesPerTokenRate cycles_per_token_rate;
-    final Tokens posit_transfer_ledger_fee;
+    final BigInt posit_transfer_ledger_fee;
+    
+    BigInt get quantity => tokens.quantums;
+    
     TradeTokensQuest({
         required this.tokens,
         required this.cycles_per_token_rate,
@@ -559,7 +571,7 @@ class TradeTokensQuest extends Record implements TradeQuest {
     }) {
         this['tokens'] = this.tokens;
         this['cycles_per_token_rate'] = this.cycles_per_token_rate;
-        this['posit_transfer_ledger_fee'] = this.posit_transfer_ledger_fee;
+        this['posit_transfer_ledger_fee'] = Nat(this.posit_transfer_ledger_fee);
     }
     static TradeTokensQuest of_the_record(Record r, {required int token_decimal_places}) {
         return TradeTokensQuest(
@@ -568,7 +580,7 @@ class TradeTokensQuest extends Record implements TradeQuest {
                 cycles_per_token_quantum_rate: (r['cycles_per_token_rate'] as Nat).value,
                 token_decimal_places: token_decimal_places
             ),
-            posit_transfer_ledger_fee: Tokens(quantums: (r['posit_transfer_ledger_fee'] as Nat).value, decimal_places: token_decimal_places),
+            posit_transfer_ledger_fee: (r['posit_transfer_ledger_fee'] as Nat).value,
         );
     }
 }
@@ -610,9 +622,11 @@ class TradeLog {
     final PositionKind matchee_position_kind;
     final BigInt timestamp_nanos;
     
-    final BigInt tokens_payout_fee;
-    final BigInt tokens_payout_ledger_transfer_fee;
     final Cycles cycles_payout_fee;
+    final BigInt tokens_payout_fee;
+    
+    final BigInt cycles_payout_ledger_transfer_fee;
+    final BigInt tokens_payout_ledger_transfer_fee;    
     
     final bool cycles_payout_dust_collection;
     final bool token_payout_dust_collection;
@@ -635,8 +649,9 @@ class TradeLog {
         required this.cycles_per_token_rate,
         required this.matchee_position_kind,
         required this.timestamp_nanos,
-        required this.tokens_payout_fee,
         required this.cycles_payout_fee,
+        required this.tokens_payout_fee,
+        required this.cycles_payout_ledger_transfer_fee,
         required this.tokens_payout_ledger_transfer_fee,
         required this.cycles_payout_dust_collection,
         required this.token_payout_dust_collection,        
@@ -679,7 +694,8 @@ class TradeLog {
             tokens_payout_fee: u128_of_the_be_bytes(bytes.getRange(159, 175)),
             cycles_payout_fee: Cycles(cycles: u128_of_the_be_bytes(bytes.getRange(175, 191))),
             matcher_position_id: u128_of_the_be_bytes(bytes.getRange(191, 207)),
-            tokens_payout_ledger_transfer_fee: u128_of_the_be_bytes(bytes.getRange(207, 223)),
+            cycles_payout_ledger_transfer_fee: bigint_of_the_be_bytes(bytes.getRange(207, 215)),
+            tokens_payout_ledger_transfer_fee: bigint_of_the_be_bytes(bytes.getRange(215, 223)),
             cycles_payout_dust_collection: bytes[223] == 1,
             token_payout_dust_collection: bytes[224] == 1,
         );

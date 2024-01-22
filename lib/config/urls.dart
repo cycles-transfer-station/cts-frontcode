@@ -23,11 +23,13 @@ final Map<String, Map> urlmap = {
         'page': WelcomePage.create,
         'main_page_scaffold_body': WelcomeScaffoldBody.create
     },
+    /*
     'transfer_icp': {
         'path': '/transfer-icp',
         'page': WelcomePage.create,
         'main_page_scaffold_body': TransferIcpScaffoldBody.create
     },
+    */
     'cycles_bank': {
         'path': '/bank',
         'page': WelcomePage.create,

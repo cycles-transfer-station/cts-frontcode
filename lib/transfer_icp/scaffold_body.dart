@@ -2,6 +2,7 @@ import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
+import 'package:ic_tools/common.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
@@ -13,7 +14,7 @@ import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import '../config/pages.dart';
 
-
+/*
 class TransferIcpScaffoldBody extends StatelessWidget {
     TransferIcpScaffoldBody({Key? key}) : super(key: key);
     static TransferIcpScaffoldBody create({Key? key}) => TransferIcpScaffoldBody(key: key);
@@ -51,7 +52,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                         child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
                                     ),
                                     Center(
-                                        child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
+                                        child: SelectableText('${state.user!.icp_id}', style: TextStyle(fontSize: 11)),
                                     ),
                                     IcpBalanceAndLoadIcpBalance(key: ValueKey('TransferIcpScaffoldBody IcpBalanceAndLoadIcpBalance'))
                                 ]
@@ -88,7 +89,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                             state.is_loading = true;
                             MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                             try {
-                                await state.user!.fresh_icp_transfers();
+                                await state.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP]);
                             } catch(e) {
                                 await showDialog(
                                     context: state.context,
@@ -128,7 +129,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
                                     shrinkWrap: false,
                                     padding: EdgeInsets.all(11),
                                     itemBuilder: (BuildContext context, int i) {
-                                        return IcpTransferListItem(state.user!.icp_transfers[i], state.user!.user_icp_id);
+                                        return IcpTransferListItem(state.user!.icp_transfers[i], state.user!.icp_id);
                                     },
                                     itemCount: state.user!.icp_transfers.length,
                                     addAutomaticKeepAlives: false,
@@ -184,7 +185,7 @@ class TransferIcpScaffoldBody extends StatelessWidget {
     }
 }
 
-
+*/
 class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
     IcpBalanceAndLoadIcpBalance({super.key});
     
@@ -197,7 +198,7 @@ class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
             child: Column(
                 children: [
-                    Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}', style: TextStyle(fontSize:17)),
+                    //Text('ICP-BALANCE: ${state.user!.icp_balance != null ? state.user!.icp_balance!.icp : 'unknown'}', style: TextStyle(fontSize:17)),
                     //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
@@ -209,7 +210,7 @@ class IcpBalanceAndLoadIcpBalance extends StatelessWidget {
                                 state.is_loading = true;
                                 MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                 try {
-                                    await state.user!.fresh_icp_balance();
+                                    //await state.user!.fresh_icp_balance();
                                 } catch(e) {
                                     await showDialog(
                                         context: state.context,

@@ -125,7 +125,7 @@ class CustomState {
         
 
     Future<void> loadfirststate() async { 
-        print('load first state')
+        print('load first state');
         
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = this.cm_main.fresh_icrc1token_trade_contracts();
         
@@ -143,9 +143,9 @@ class CustomState {
                     await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                     this.user!.fresh_known_cm_trade_contracts_of_the_cm_main();
                     await Future.wait([
-                        this.user!.cycles_bank!.fresh_icrc1_balances(),
-                        this.user!.cycles_bank!.fresh_icrc1_transactions(),
-                        this.user!.cycles_bank!.load_cm_data(),
+                        this.user!.fresh_icrc1_balances(),
+                        this.user!.fresh_icrc1_transactions(),
+                        this.user!.load_cm_data(),
                     ]);
                 } 
             }),
@@ -187,17 +187,9 @@ class CustomState {
 
     
     Future<void> save_state_in_the_browser_storage() async {
-    
         if (this.user != null) {
-            
             await this.user!.caller.indexdb_save();
-                
-            if (this.user!.cycles_bank != null) {
-                window.localStorage['user_cycles_bank'] = '${this.user!.principal.text}:${this.user!.cycles_bank!.principal.text}';                
-            }
-                        
         }
-               
     }
     
     Future<void> load_state_of_the_browser_storage() async {
@@ -209,14 +201,6 @@ class CustomState {
                 state: this,
                 caller: ii_caller
             );    
-            
-            String? user_cycles_bank = window.localStorage['user_cycles_bank'];
-            if (user_cycles_bank != null) {
-                List<String> user_cycles_bank_data = user_cycles_bank.split(':');
-                if (user_cycles_bank_data[0] == user_of_the_idb.principal.text) {
-                    user_of_the_idb.cycles_bank = CyclesBank(Principal.text(user_cycles_bank_data[1]), user_of_the_idb);
-                }
-            }
             if (user_of_the_idb.expiration_timestamp_nanoseconds == null) {
                 this.user = user_of_the_idb;
             } else if (get_current_time_nanoseconds() < user_of_the_idb.expiration_timestamp_nanoseconds! - BigInt.from(1000000000*60*10)) {

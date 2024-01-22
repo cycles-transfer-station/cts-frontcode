@@ -2,10 +2,11 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-
+import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
-import 'package:ic_tools/common.dart' as ic_tools_common;
-import 'package:ic_tools/candid.dart' show candid_text_hash, Blob;
+import 'package:ic_tools/common.dart';
+import 'package:ic_tools/candid.dart' show match_variant, Nat64, Nat, Variant, Bool, Record;
+
 
 import '../user.dart';
 import '../config/state.dart';
@@ -146,8 +147,8 @@ class CyclesTransferListItem extends StatelessWidget {
             'Mint': (mint_rc) {
                 operation = 'mint';
                 Record mint = mint_rc as Record;
-                to = bank_countid_as_icrc1account(mint['to']);
-                match_variant(mint['kind'], {
+                to = bank_countid_as_icrc1account(mint['to']!);
+                match_variant(mint['kind'] as Variant, {
                     'CMC': (mint_cmc_) {
                         Record mint_cmc = mint_cmc_ as Record;
                         mint_kind_cmc_icp_block_height = (mint_cmc['icp_block_height'] as Nat64).value;
@@ -162,14 +163,14 @@ class CyclesTransferListItem extends StatelessWidget {
             'Burn': (burn_c) {
                 operation = 'burn';
                 Record burn = burn_c as Record;
-                from = bank_countid_as_icrc1account(burn['from']);
+                from = bank_countid_as_icrc1account(burn['from']!);
                 burn_for_canister = burn['for_canister'] as Principal;
             },
             'Xfer': (xfer_c) {
                 operation = 'transfer';
                 Record xfer = xfer_c as Record;
-                from = bank_countid_as_icrc1account(xfer['from']);
-                to = bank_countid_as_icrc1account(xfer['to']);
+                from = bank_countid_as_icrc1account(xfer['from']!);
+                to = bank_countid_as_icrc1account(xfer['to']!);
             }
         });
         
@@ -197,7 +198,7 @@ class CyclesTransferListItem extends StatelessWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                             Text('operation: ${operation}'),
-                                            Text('amount: ${Cycles(cycles: cycles_transfer.amount)}'),
+                                            Text('amount: ${Cycles(cycles: cycles_transfer.amt)}'),
                                             if (from != null) SelectableText('from: ${from}'),
                                             if (to != null) SelectableText('to: ${to}'),
                                             if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),

@@ -9,7 +9,6 @@ import '../config/state_bind.dart';
 import 'forms.dart';
 import 'cards.dart';
 import 'configure.dart';
-import 'create_bank.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
@@ -19,7 +18,7 @@ import '../transfer_icp/icp_ledger.dart';
 import '../transfer_icp/scaffold_body.dart';
 import '../transfer_icp/cards.dart';
 import '../cycles_market/scaffold_body.dart' show show_tokens_with_symbol, cycles_symbol;
-
+import '../user.dart';
 
 final GlobalKey transfer_cycles_form_container_key = GlobalKey();
 
@@ -86,7 +85,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                         SizedBox(
                                             width: 1,
                                             height: 11
-                                        )
+                                        ),
                                         if (state.user!.current_icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
                                             BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
                                         else BankTransferIcrc1Form(
@@ -124,9 +123,11 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                             ),
                                     ],
                                     value: state.user!.current_icrc1_ledger,
-                                    onChanged: (Icrc1Ledger select_icrc1_ledger) { 
-                                        state.user!.current_icrc1_ledger = select_icrc1_ledger;
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
+                                        if (select_icrc1_ledger != null) {
+                                            state.user!.current_icrc1_ledger = select_icrc1_ledger;
+                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        }
                                     }
                                 )
                             ),
