@@ -22,14 +22,14 @@ class User {
     Principal get principal => caller.principal;
     
     late final String icp_id;
-    List<Icrc1Ledger> known_icrc1_ledgers = [common.Icrc1Ledgers.ICP];
+    List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, common.Icrc1Ledgers.ICP];
     Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
     List<CyclesTransfer> cycles_transfers = []; // cycles-transfer logs are different than the icrc1-transfer-logs
     Map<Icrc1TokenTradeContract, UserCMTradeContractData> cm_trade_contracts = {};
     
-    Icrc1Ledger? current_icrc1_ledger = null;
+    Icrc1Ledger current_icrc1_ledger = CYCLES_BANK_LEDGER;
     
     // for the mint_cycles through the cycles-bank.
     late final Uint8List bank_mint_cycles_user_icp_subaccount_bytes;
@@ -60,7 +60,7 @@ class User {
     }
     
     Future<void> fresh_icrc1_balances([List<Icrc1Ledger>? icrc1_ledgers]) async {
-        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? [...this.known_icrc1_ledgers, CYCLES_BANK_LEDGER];
+        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.known_icrc1_ledgers;
         await Future.wait(
             ledgers.map((l)=>Future(()async{
                 BigInt balance = await check_icrc1_balance(
@@ -109,7 +109,41 @@ class User {
                         ...this.icp_transfers
                     ];
                 } else if (l == CYCLES_BANK_LEDGER) {
-                    throw Exception(':PLEMENT!');
+                    
+                    BigInt? earliest_known_id;
+                    List<CyclesTransfer> gather = [];
+                    while (true) {
+                        Record sponse = c_backwards_one(await this.call(
+                            CYCLES_BANK_LEDGER.ledger,
+                            method_name: 'get_logs_backwards',
+                            put_bytes: c_forwards([
+                                Icrc1Account(owner: this.principal), 
+                                Option<Nat>(value: earliest_known_id.nullmap((id)=>Nat(id)), value_type: Nat())
+                            ]),
+                            calltype: CallType.query,
+                        )) as Record;
+                        
+                        List<CyclesTransfer> logs = (sponse['logs'] as Vector).cast_vector<Record>().map(CyclesTransfer.of_the_record).toList();
+                        
+                        gather = [
+                            logs,
+                            ...gather
+                        ];
+                        
+                        if (this.cycles_transfers.length != 0 && gather.length != 0 && this.cycles_transfers.last.id >= gather.first.id) {
+                            gather = gather.skipWhile((l)=>l.id <= this.cycles_transfers.last.id).toList();
+                            break;
+                        }                    
+                        
+                        if ((sponse['is_last_chunk'] as Bool).value == true || gather.length == 0) {
+                            break;
+                        }
+                        
+                        earliest_known_id = logs.first.id;
+                    }
+    
+                    this.cycles_transfers.addAll(gather);                
+                    
                 } else /*tokens besides icp or cycles*/ {
                     if (this.icrc1_transactions_cache[l] == null) { 
                         this.icrc1_transactions_cache[l] = []; 
@@ -1081,6 +1115,78 @@ Future<BigInt> check_icrc1_balance({required Principal icrc1_ledger_canister_id,
     )).first as Nat).value;
     return balance;
 }
+
+// ----
+
+Icrc1Account bank_countid_as_icrc1account(CandidType rc) {
+    Record r = rc as Record;
+    return Icrc1Account(
+        owner: r[0] as Principal,
+        subaccount_bytes: r.find_option<Vector>(1).nullmap((v)=>Blob.of_the_vector(v.cast_vector<Nat8>()).bytes)
+    );
+}
+
+class CyclesTransfer {
+    
+    final BigInt id; // block-height.
+    final BigInt timestamp_nanos;
+    final BigInt amt;
+    final BigInt fee;
+    final Uint8List? memo;
+    final Variant op;
+    
+    CyclesTransfer._({
+        required this.id,
+        required this.timestamp_nanos,
+        required this.amt,
+        required this.fee,
+        required this.memo,
+        required this.op,
+    });
+    
+    static CyclesTransfer.of_the_record(Record r) {
+        Record log = (r[1] as Record);
+        Record tx = log['tx'] as Record; 
+        return CyclesTransfer._(
+            id: (r[0] as Nat).value,
+            timestamp_nanos: (log['ts'] as Nat64).value,
+            amt: (tx['amt'] as Nat).value,
+            fee: (log.find_option<Nat>('fee') ?? tx.find_option<Nat>('fee')!).value,
+            memo: tx.find_option<Vector>('memo').nullmap((v)=>Blob.of_the_vector(v.cast_vector<Nat8>()).bytes),
+            op: tx['op'] as Variant,
+        );
+    }
+}
+/*
+enum CyclesTransferLogOperation {
+    Burn
+    Mint
+    Xfer
+}
+
+type Operation = variant {
+  Burn : record {
+    from : record { principal; opt vec nat8 };
+    for_canister : principal;
+  };
+  Mint : record { to : record { principal; opt vec nat8 }; kind : MintKind };
+  Xfer : record {
+    to : record { principal; opt vec nat8 };
+    from : record { principal; opt vec nat8 };
+  };
+};
+
+type MintKind = variant {
+  CMC : record { icp_block_height : nat64; caller : principal };
+  CyclesIn : record { from_canister : principal };
+};
+
+
+*/
+
+
+
+
 
 // ----
 

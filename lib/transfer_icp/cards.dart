@@ -45,7 +45,7 @@ class IcpTransferListItem extends StatelessWidget {
                                         mainAxisAlignment: MainAxisAlignment.start,
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                            SelectableText((is_out ? 'for: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? '${is_out ? '\n' : ''}by: ${icp_transfer.from_account_identifier}' : '')),
+                                            SelectableText((is_out ? 'to: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? '${is_out ? '\n' : ''}from: ${icp_transfer.from_account_identifier}' : '')),
                                             SelectableText('icp: ${icp_transfer.amount}'),
                                             SelectableText('memo: ${icp_transfer.memo}'),
                                             SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),

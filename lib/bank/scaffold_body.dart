@@ -54,231 +54,195 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             
             List<Widget> column_children = [];
             
-            if (state.user!.cycles_bank == null) {
-                column_children.add(
-                    Text('Maintenance, come back soon.', style: TextStyle(fontSize: 17))
-                );
-                //column_children.add(CreateBank());
-            } else {
-                Future<void> Function() show_transfer_dialog = () async {
-                    showDialog<void>(
-                        barrierDismissible: true,
-                        context: context,
-                        builder: (BuildContext context) => AlertDialog(
-                            key: transfer_dialog_key,
-                            title: null,//Center(child: Text('')),
-                            content: Container(
-                                constraints: BoxConstraints(
-                                    maxWidth: 700
-                                ),
-                                //width: double.infinity,
-                                //margin: EdgeInsets.all(11.0),
-                                //padding: const EdgeInsets.all(8.0),
-                                child: SingleChildScrollView(
-                                    child: Column(
-                                        children: [
-                                            Container(
-                                                width: double.infinity,
-                                                padding: EdgeInsets.fromLTRB(7,11,7,11),
-                                                child: Center(
-                                                    child: Text('TRANSFER-${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}', style: TextStyle(fontSize:17))
-                                                ),
+            Future<void> Function() show_transfer_dialog = () async {
+                showDialog<void>(
+                    barrierDismissible: true,
+                    context: context,
+                    builder: (BuildContext context) => AlertDialog(
+                        key: transfer_dialog_key,
+                        title: null,//Center(child: Text('')),
+                        content: Container(
+                            constraints: BoxConstraints(
+                                maxWidth: 700
+                            ),
+                            //width: double.infinity,
+                            //margin: EdgeInsets.all(11.0),
+                            //padding: const EdgeInsets.all(8.0),
+                            child: SingleChildScrollView(
+                                child: Column(
+                                    children: [
+                                        Container(
+                                            width: double.infinity,
+                                            padding: EdgeInsets.fromLTRB(7,11,7,11),
+                                            child: Center(
+                                                child: Text('TRANSFER-${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
                                             ),
-                                            SizedBox(
-                                                height: 11,
-                                                width: 3,
-                                            ),
-                                            if (state.user!.bank!.current_icrc1_ledger != null) ...[ 
-                                                BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.user!.bank!.current_icrc1_ledger!, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.user!.bank!.current_icrc1_ledger!.symbol}')),
-                                                SizedBox(
-                                                    width: 1,
-                                                    height: 11
-                                                )
-                                            ],
-                                            if (state.user!.cycles_bank!.current_icrc1_ledger == null) 
-                                                CyclesBankTransferCyclesForm(key: ValueKey('CyclesBankScaffoldBody CyclesBankTransferCyclesForm ${state.current_url.string}'))
-                                            else if (state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
-                                                BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
-                                            else BankTransferIcrc1Form(
-                                                key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal.bytes}'),
-                                                icrc1_ledger: state.user!.cycles_bank!.current_icrc1_ledger!    
-                                            )
-                                        ]
-                                    )
+                                        ),
+                                        SizedBox(
+                                            height: 11,
+                                            width: 3,
+                                        ),
+                                        BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.user!.current_icrc1_ledger, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.user!.current_icrc1_ledger.symbol}')),
+                                        SizedBox(
+                                            width: 1,
+                                            height: 11
+                                        )
+                                        if (state.user!.current_icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
+                                            BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
+                                        else BankTransferIcrc1Form(
+                                            key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.current_icrc1_ledger.ledger.principal.text}'),
+                                            icrc1_ledger: state.user!.current_icrc1_ledger    
+                                        )
+                                    ]
                                 )
                             )
                         )
-                    );
-                };
-                
-                
-                List<CyclesTransferOut> cycles_transfers_out_reversed = state.user!.cycles_bank!.cycles_transfers_out.reversed.toList();
-                List<CyclesTransferIn> cycles_transfers_in_reversed = state.user!.cycles_bank!.cycles_transfers_in.reversed.toList();
-                
-                //List<CyclesTransfer> cycles_transfers = [];
-                
-                column_children.addAll([
-                    Container(
-                        margin: EdgeInsets.symmetric(vertical: 33),
-                        child: Column(
-                            children: [
-                                Container(
-                                    child: DropdownButton<Icrc1Ledger?>(
-                                        underline: Container(
-                                            height: 0,
-                                            color: Colors.deepPurpleAccent,
-                                        ),
-                                        isExpanded: false,
-                                        items: [
-                                            DropdownMenuItem<Icrc1Ledger?>(
+                    )
+                );
+            };
+                        
+            column_children.addAll([
+                Container(
+                    margin: EdgeInsets.symmetric(vertical: 33),
+                    child: Column(
+                        children: [
+                            Container(
+                                child: DropdownButton<Icrc1Ledger>(
+                                    underline: Container(
+                                        height: 0,
+                                        color: Colors.deepPurpleAccent,
+                                    ),
+                                    isExpanded: false,
+                                    items: [
+                                        for (Icrc1Ledger icrc1_ledger in state.user!.known_icrc1_ledgers)                 
+                                            DropdownMenuItem<Icrc1Ledger>(
                                                 child: Padding(
                                                     padding: EdgeInsets.symmetric(horizontal:4),
-                                                    child: Text('CYCLES', style: TextStyle(fontSize: 22)), 
+                                                    child: Text(state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol, style: TextStyle(fontSize: 22)), 
                                                 ),
-                                                value: null
-                                            ),  
-                                            for (Icrc1Ledger icrc1_ledger in state.user!.cycles_bank!.known_icrc1_ledgers)                 
-                                                DropdownMenuItem<Icrc1Ledger?>(
-                                                    child: Padding(
-                                                        padding: EdgeInsets.symmetric(horizontal:4),
-                                                        child: Text('${icrc1_ledger.symbol}', style: TextStyle(fontSize: 22)), 
-                                                    ),
-                                                    value: icrc1_ledger
-                                                ),
-                                        ],
-                                        value: state.user!.cycles_bank!.current_icrc1_ledger,
-                                        onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
-                                            state.user!.cycles_bank!.current_icrc1_ledger = select_icrc1_ledger;
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        }
-                                    )
-                                ),
+                                                value: icrc1_ledger
+                                            ),
+                                    ],
+                                    value: state.user!.current_icrc1_ledger,
+                                    onChanged: (Icrc1Ledger select_icrc1_ledger) { 
+                                        state.user!.current_icrc1_ledger = select_icrc1_ledger;
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                    }
+                                )
+                            ),
+                            SizedBox(
+                                width: 3,
+                                height: 13
+                            ),
+                            DefaultTextStyle.merge(
+                                style: TextStyle(fontSize: 27, fontFamily: 'CourierNewBold'),
+                                child: Text(state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER 
+                                    ? Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!).toString()
+                                    : Tokens(
+                                        quantums: state.user!.icrc1_balances_cache[state.user!.current_icrc1_ledger]!,
+                                        decimal_places: state.user!.current_icrc1_ledger.decimals 
+                                    ).toString()
+                                )
+                            ),
+                            SizedBox(
+                                width: 3,
+                                height: 27
+                            ),
+                            Container(
+                                padding: EdgeInsets.all(7),
+                                child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                    child: Text('TRANSFER ${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}'),
+                                    onPressed: () async {
+                                        await show_transfer_dialog();
+                                    }
+                                )
+                            ),
+                            if (state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER) ...[
                                 SizedBox(
                                     width: 3,
-                                    height: 13
-                                ),
-                                DefaultTextStyle.merge(
-                                    style: TextStyle(fontSize: 27, fontFamily: 'CourierNewBold'),
-                                    child: Text(state.user!.cycles_bank!.current_icrc1_ledger == null 
-                                        ? (state.user!.bank!.metrics != null 
-                                            ? state.user!.bank!.metrics!.cycles_balance.toString()
-                                            : '...')    
-                                        : Tokens(
-                                            quantums: state.user!.cycles_bank!.icrc1_balances_cache[state.user!.cycles_bank!.current_icrc1_ledger!]!,
-                                            decimal_places: state.user!.cycles_bank!.current_icrc1_ledger!.decimals 
-                                        ).toString()
-                                    )
-                                ),
-                                SizedBox(
-                                    width: 3,
-                                    height: 27
+                                    height: 10
                                 ),
                                 Container(
                                     padding: EdgeInsets.all(7),
-                                    child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                        child: Text('TRANSFER ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}'),
-                                        onPressed: () async {
-                                            await show_transfer_dialog();
-                                        }
-                                    )
+                                    child: MintCyclesButton(),
                                 ),
-                                if (state.user!.cycles_bank!.current_icrc1_ledger == null) ...[
-                                    SizedBox(
-                                        width: 3,
-                                        height: 10
-                                    ),
-                                    Container(
-                                        padding: EdgeInsets.all(7),
-                                        child: MintCyclesButton(),
-                                    ),
-                                ]
                             ]
-                        )
-                    ),
-                    Container(
-                        child: Column(
-                            children: [
-                                Container(
-                                    padding: EdgeInsets.symmetric(horizontal: 7, vertical: 17),
-                                    child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                        child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
-                                        onPressed: () async {
-                                            state.loading_text = 'loading bank \$${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol} transfers ...';
-                                            state.is_loading = true;
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                            try {
-                                                List<Future<void>> futures = [];
-                                                if (state.user!.cycles_bank!.current_icrc1_ledger == null) {
-                                                    futures.addAll([
-                                                        state.user!.cycles_bank!.fresh_cycles_transfers_in(),
-                                                        state.user!.cycles_bank!.fresh_cycles_transfers_out(),
-                                                        state.user!.cycles_bank!.fresh_metrics(),
-                                                    ]); 
-                                                } else {
-                                                    futures.addAll([
-                                                        state.user!.bank!.fresh_icrc1_transactions(state.user!.bank!.current_icrc1_ledger!),
-                                                        state.user!.bank!.fresh_icrc1_balances(state.user!.bank!.current_icrc1_ledger!),
-                                                    ]);
-                                                }
-                                                await Future.wait(futures);
-                                            } catch(e) {
-                                                await showDialog(
-                                                    context: state.context,
-                                                    builder: (BuildContext context) {
-                                                        return AlertDialog(
-                                                            title: Text('Error when loading the bank ${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol} transfers:'),
-                                                            content: Text('${etext(e)}'),
-                                                            actions: <Widget>[
-                                                                TextButton(
-                                                                    onPressed: () => Navigator.pop(context),
-                                                                    child: const Text('OK'),
-                                                                ),
-                                                            ]
-                                                        );
-                                                    }   
-                                                );                                    
-                                            }
-                                            state.is_loading = false;
-                                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                        }
-                                    )
-                                ),
-                                Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.fromLTRB(11,0,0,0),
-                                    child: Text('${state.user!.cycles_bank!.current_icrc1_ledger == null ? 'CYCLES' : state.user!.cycles_bank!.current_icrc1_ledger!.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),
-                                ),                
-                                if (state.user!.cycles_bank!.current_icrc1_ledger != null) ...[
-                                    if (state.user!.cycles_bank!.current_icrc1_ledger!.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal) IcpTransfersLogs(key: ValueKey('CyclesBankScaffoldBody IcpTransfersLogs'))
-                                    else BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.bank!.current_icrc1_ledger}'))
-                                ]
-                                else ...[
-                                    BankCyclesTransfersLog(key: ValueKey('BankScaffoldBody BankCyclesTransfersLog')),
-                                ]
-                            ]
-                        )
+                        ]
                     )
-                ]);
-                
-                if (state.current_url.name == 'cycles_bank_pay') {
-                    if (ModalRoute.of(context)?.isCurrent == true) { // show if there are no open dialogs                    
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                            print('showing transfer dialog');
-                            show_transfer_dialog();
-                        });
-                    }
-                    /*
+                ),
+                Container(
+                    child: Column(
+                        children: [
+                            Container(
+                                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 17),
+                                child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                    child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
+                                    onPressed: () async {
+                                        state.loading_text = 'loading bank \$${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol} transfers ...';
+                                        state.is_loading = true;
+                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        try {
+                                            await Future.wait([
+                                                state.user!.fresh_icrc1_transactions([state.user!.current_icrc1_ledger]),
+                                                state.user!.fresh_icrc1_balances([state.user!.current_icrc1_ledger]),
+                                            ]);
+                                        } catch(e) {
+                                            await showDialog(
+                                                context: state.context,
+                                                builder: (BuildContext context) {
+                                                    return AlertDialog(
+                                                        title: Text('Error when loading the bank ${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol} transfers:'),
+                                                        content: Text('${etext(e)}'),
+                                                        actions: <Widget>[
+                                                            TextButton(
+                                                                onPressed: () => Navigator.pop(context),
+                                                                child: const Text('OK'),
+                                                            ),
+                                                        ]
+                                                    );
+                                                }   
+                                            );                                    
+                                        }
+                                        state.is_loading = false;
+                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    }
+                                )
+                            ),
+                            Container(
+                                width: double.infinity,
+                                padding: EdgeInsets.fromLTRB(11,0,0,0),
+                                child: Text('${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),
+                            ),              
+                            if (state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER)
+                                BankCyclesTransfersLog(key: ValueKey('BankScaffoldBody BankCyclesTransfersLog'))  
+                            else if (state.user!.current_icrc1_ledger == common.Icrc1Ledgers.ICP) 
+                                IcpTransfersLogs(key: ValueKey('CyclesBankScaffoldBody IcpTransfersLogs'))
+                            else 
+                                BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.current_icrc1_ledger.ledger.principal.text}'))
+                        ]
+                    )
+                )
+            ]);
+            
+            if (state.current_url.name == 'cycles_bank_pay') {
+                if (ModalRoute.of(context)?.isCurrent == true) { // show if there are no open dialogs                    
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                        RenderBox box = transfer_cycles_form_container_key.currentContext!.findRenderObject()! as RenderBox;
-                        Offset offset = box.localToGlobal(Offset.zero);
-                        double animationHeight = main_listview_scroll_controller.offset + offset.dy - MediaQuery.of(context).padding.top - 56.0/*scaffold appbar*/ - 77/*page header*/;
-                        main_listview_scroll_controller.animateTo(animationHeight, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
+                        print('showing transfer dialog');
+                        show_transfer_dialog();
                     });
-                    */
                 }
+                /*
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                    RenderBox box = transfer_cycles_form_container_key.currentContext!.findRenderObject()! as RenderBox;
+                    Offset offset = box.localToGlobal(Offset.zero);
+                    double animationHeight = main_listview_scroll_controller.offset + offset.dy - MediaQuery.of(context).padding.top - 56.0/*scaffold appbar*/ - 77/*page header*/;
+                    main_listview_scroll_controller.animateTo(animationHeight, duration: Duration(milliseconds: 500), curve: Curves.decelerate);
+                });
+                */
             }
+            
             
             body_widget = LayoutBuilder(builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -307,15 +271,15 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     child: Column(
                                         children: [
                                             Text('CYCLES-BANK', style: TextStyle(fontSize: 19)),
-                                            if (state.user != null && state.user!.cycles_bank != null) ...[
-                                                SelectableText('${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 17)),
+                                            if (state.user != null ) ...[
+                                                SelectableText('${state.user!.principal.text}', style: TextStyle(fontSize: 17)),
                                             ]
                                         ]
                                     )
                                 )),
                                 Flexible(flex:1, fit: FlexFit.tight, child:Container(
                                     width: double.infinity, 
-                                    child: state.user != null && state.user!.bank != null ? Align(
+                                    child: state.user != null ? Align(
                                         alignment: Alignment.topRight, 
                                         child: Container(
                                             padding: EdgeInsets.all(3),
@@ -379,8 +343,8 @@ class BankTokenTransfersLog extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
     
-        Icrc1Ledger ledger = state.user!.bank!.current_icrc1_ledger!;
-        List<Icrc1Transaction> ts = state.user!.bank!.icrc1_transactions_cache[ledger]!;
+        Icrc1Ledger ledger = state.user!.current_icrc1_ledger;
+        List<Icrc1Transaction> ts = state.user!.icrc1_transactions_cache[ledger]!;
     
         return LimitedBox(
             maxHeight: 370,
@@ -440,8 +404,8 @@ class Icrc1TransactionCard extends StatelessWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                             Text('kind: ${t.icrc1_transaction_kind.name}'),
-                                            Text('for: ${t.to}'),
-                                            Text('by: ${t.from}'),
+                                            Text('from: ${t.from}'),
+                                            Text('to: ${t.to}'),
                                             Text('tokens: ${Tokens(quantums: t.tokens, decimal_places: ledger.decimals)}'),
                                             Row(children: [
                                                 Text('memo: '),
@@ -492,9 +456,9 @@ class IcpTransfersLogs extends StatelessWidget {
                             shrinkWrap: false,
                             padding: EdgeInsets.all(11),
                             itemBuilder: (BuildContext context, int i) {
-                                return IcpTransferListItem(state.user!.bank!.icp_transfers[i], state.user!.bank!.icp_id);
+                                return IcpTransferListItem(state.user!.icp_transfers[i], state.user!.icp_id);
                             },
-                            itemCount: state.user!.bank!.icp_transfers.length,
+                            itemCount: state.user!.icp_transfers.length,
                             addAutomaticKeepAlives: true,
                         )
                     )
@@ -508,27 +472,23 @@ class IcpTransfersLogs extends StatelessWidget {
 class BankCyclesTransfersLog extends StatelessWidget {
     BankCyclesTransfersLog({super.key});
     
-    final ScrollController token_transfers_log_scroll_controller = ScrollController();
+    final ScrollController log_scroll_controller = ScrollController();
     
     Widget build(BuildContext context) {
         
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
     
-        List<CyclesTransfer> cycles_transfers = <CyclesTransfer>[
-            ...state.user!.bank!.cycles_transfers_out,
-            ...state.user!.bank!.cycles_transfers_in,
-        ]
-        ..sort((t1, t2)=>t1.id.compareTo(t2.id));
+        List<CyclesTransfer> cycles_transfers = state.user!.cycles_transfers;
     
         return LimitedBox(
             maxHeight: 307,
             child: Container(
                 child: ScrollConfigurationWithTheMouse(
                     Scrollbar(
-                        controller: token_transfers_log_scroll_controller,
+                        controller: log_scroll_controller,
                         child: ListView.builder(
-                            controller: token_transfers_log_scroll_controller,    
+                            controller: log_scroll_controller,    
                             key: UniqueKey(),
                             scrollDirection: Axis.horizontal,
                             reverse: false,
@@ -536,12 +496,7 @@ class BankCyclesTransfersLog extends StatelessWidget {
                             padding: EdgeInsets.all(11),
                             itemBuilder: (BuildContext context, int i) {
                                 CyclesTransfer t = cycles_transfers.elementAt(cycles_transfers.length -1 -i);
-                                if (t is CyclesTransferOut) {
-                                    return CyclesTransferOutListItem(t as CyclesTransferOut);
-                                } else if (t is CyclesTransferIn) {
-                                    return CyclesTransferInListItem(t as CyclesTransferIn);
-                                }
-                                return null;
+                                return CyclesTransferListItem(t);
                             },
                             itemCount: cycles_transfers.length,
                         )

@@ -15,6 +15,8 @@ import '../tools/tools.dart';
 
 const double ct_list_item_body_font_size = 17;
 
+
+/*
 class CyclesTransferInListItem extends StatelessWidget {
     final CyclesTransferIn cycles_transfer_in;
     CyclesTransferInListItem(CyclesTransferIn cycles_transfer_in): cycles_transfer_in = cycles_transfer_in, super(key: ValueKey('CyclesTransferInListItem: ${cycles_transfer_in.id}'));
@@ -111,6 +113,100 @@ class CyclesTransferOutListItem extends StatelessWidget {
                                             SelectableText('memo: ${cycles_transfer_out.cycles_transfer_memo}'),
                                             SelectableText('status: ${cycles_transfer_out.cycles_refunded == null ? 'waiting for the callback' : cycles_transfer_out.opt_cycles_transfer_call_error == null ? 'complete' : 'error: ${cycles_transfer_out.opt_cycles_transfer_call_error!}'}'),
                                             SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer_out.timestamp_nanos).toInt()))}'),
+                                        ]                            
+                                    )
+                                ),
+                            )
+                        )
+                    ]
+                )
+            )            
+        );
+    }
+}
+*/
+
+
+class CyclesTransferListItem extends StatelessWidget {
+    final CyclesTransfer cycles_transfer;
+    CyclesTransferListItem(CyclesTransfer cycles_transfer): cycles_transfer = cycles_transfer, super(key: ValueKey('CyclesTransferListItem: ${cycles_transfer.id}'));
+    Widget build(BuildContext context) {
+        
+        Variant op = cycles_transfer.op;
+        
+        late String operation;
+        Icrc1Account? from;
+        Icrc1Account? to;
+        Principal? burn_for_canister;
+        BigInt? mint_kind_cmc_icp_block_height;
+        Principal? mint_kind_cmc_caller;
+        Principal? mint_kind_cycles_in_from_canister;
+        
+        match_variant(op, {
+            'Mint': (mint_rc) {
+                operation = 'mint';
+                Record mint = mint_rc as Record;
+                to = bank_countid_as_icrc1account(mint['to']);
+                match_variant(mint['kind'], {
+                    'CMC': (mint_cmc_) {
+                        Record mint_cmc = mint_cmc_ as Record;
+                        mint_kind_cmc_icp_block_height = (mint_cmc['icp_block_height'] as Nat64).value;
+                        mint_kind_cmc_caller = (mint_cmc['caller'] as Principal);
+                    },
+                    'CyclesIn': (c) {
+                        Record cin = c as Record;
+                        mint_kind_cycles_in_from_canister = cin['from_canister'] as Principal;
+                    }
+                });
+            },
+            'Burn': (burn_c) {
+                operation = 'burn';
+                Record burn = burn_c as Record;
+                from = bank_countid_as_icrc1account(burn['from']);
+                burn_for_canister = burn['for_canister'] as Principal;
+            },
+            'Xfer': (xfer_c) {
+                operation = 'transfer';
+                Record xfer = xfer_c as Record;
+                from = bank_countid_as_icrc1account(xfer['from']);
+                to = bank_countid_as_icrc1account(xfer['to']);
+            }
+        });
+        
+        
+        return Container(
+            constraints: BoxConstraints(maxWidth: 350),
+            padding: EdgeInsets.all(11),
+            child: Card(
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                        ListTile(
+                            title: Text('CYCLES TRANSFER'),
+                            subtitle: Text('ID: ${cycles_transfer.id}'),
+                        ),
+                        Container(
+                            padding: EdgeInsets.fromLTRB(17,7,17,7),
+                            width: double.infinity, 
+                            child: SingleChildScrollView(
+                                child: DefaultTextStyle.merge(
+                                    style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size),
+                                    child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            Text('operation: ${operation}'),
+                                            Text('amount: ${Cycles(cycles: cycles_transfer.amount)}'),
+                                            if (from != null) SelectableText('from: ${from}'),
+                                            if (to != null) SelectableText('to: ${to}'),
+                                            if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
+                                            if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
+                                            //if (mint_kind_cmc_icp_block_height != null) Text('icp-transfer-block-height: ${mint_kind_cmc_icp_block_height}'),
+                                            if (mint_kind_cycles_in_from_canister != null) Text('cycles-in from canister: ${mint_kind_cycles_in_from_canister}'),
+                                            Text('fee: ${Cycles(cycles: cycles_transfer.fee)}'),
+                                            if (cycles_transfer.memo != null) Text('memo: ${bytesasahexstring(cycles_transfer.memo!)}'),
+                                            Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer.timestamp_nanos).toInt()))}'),
                                         ]                            
                                     )
                                 ),

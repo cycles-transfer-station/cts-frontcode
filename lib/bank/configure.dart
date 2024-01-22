@@ -19,25 +19,7 @@ class ConfigureCyclesBank extends StatelessWidget {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-
-        String cycles_balance = 'unknown';
-        String creation_timestamp = 'unknown';
-        String lifetime_remaining = 'unknown';
-        String ctsfuel = 'unknown';
-        String storage_usage = 'unknown';
-        String storage_size = 'unknown';
-        
-        if (state.user!.cycles_bank!.metrics != null) {
-            CyclesBankMetrics metrics = state.user!.cycles_bank!.metrics!;
-            cycles_balance = '${metrics.cycles_balance}';
-            DateTime creation_datetime = DateTime.fromMillisecondsSinceEpoch((metrics.user_canister_creation_timestamp_nanos/BigInt.from(Duration.microsecondsPerSecond)).toInt());
-            creation_timestamp = '${creation_datetime.year}-${creation_datetime.month}-${creation_datetime.day}\n${creation_datetime.hour}:${creation_datetime.minute}';
-            lifetime_remaining = '${DateTime.fromMillisecondsSinceEpoch((metrics.lifetime_termination_timestamp_seconds*BigInt.from(Duration.millisecondsPerSecond)).toInt()).difference(DateTime.now()).inDays}-days';
-            ctsfuel = '${(metrics.ctsfuel_balance.cycles/Cycles.T_CYCLES_DIVIDABLE_BY).toStringAsFixed(5)}';
-            storage_usage = '${(metrics.storage_usage / BigInt.from(1024*1024)).toStringAsFixed(1)}-MiB';
-            storage_size = '${metrics.storage_size_mib}-MiB';
-        }
-
+    
         return Center(
             child: Container(
                 constraints: BoxConstraints(maxWidth: 900),
@@ -47,7 +29,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                     children: [
                         ScaffoldBodyHeader(Center(child:Column(children: [
                             Text('SETTINGS', style: TextStyle(fontSize: 17)),
-                            SelectableText('BANK-ID: ${state.user!.cycles_bank!.principal.text}', style: TextStyle(fontSize: 14)),
+                            SelectableText('USER-ID: ${state.user!.principal.text}', style: TextStyle(fontSize: 14)),
                         ]))),
                         Expanded(
                             child: ListView(
@@ -60,7 +42,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                             SizedBox(
                                                 width: 2.0,
                                                 height: 13.0
-                                            ),
+                                            ),/*
                                             Padding(
                                                 padding: EdgeInsets.all(17),
                                                 child: ElevatedButton(
@@ -95,6 +77,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                     }
                                                 )
                                             ),
+                                            */
                                             Wrap(
                                                 children: [
                                                     Center(
@@ -105,6 +88,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                             padding: EdgeInsets.fromLTRB(0,11,0,0),
                                                             child: Column(
                                                                 children: [
+                                                                    /*
                                                                     Center(
                                                                         child: DataTable(
                                                                             headingRowHeight: 0,
@@ -155,6 +139,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             ]    
                                                                         )
                                                                     ),
+                                                                    */
                                                                     SizedBox(
                                                                         width: 3,
                                                                         height: 27
@@ -174,31 +159,6 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             width: double.infinity,
                                                                             padding: EdgeInsets.all(17),
                                                                             child: MintCyclesButton(),                    
-                                                                        ),
-                                                                        // lengthen membership
-                                                                        Container(
-                                                                            width: double.infinity,
-                                                                            padding: EdgeInsets.all(17),
-                                                                            child: ElevatedButton(
-                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('LENGTHEN MEMBERSHIP'),
-                                                                                onPressed: () async {
-                                                                                    await showDialog(
-                                                                                        context: context,
-                                                                                        builder: (BuildContext context) {
-                                                                                            return AlertDialog(
-                                                                                                title: Center(child: Text('LENGTHEN MEMBERSHIP')),
-                                                                                                content: Container(
-                                                                                                    padding: EdgeInsets.all(0),
-                                                                                                    child: SingleChildScrollView(
-                                                                                                        child: LengthenMembershipForm(key: ValueKey('CyclesBankScaffoldBody LengthenMembershipForm'))
-                                                                                                    )
-                                                                                                ),
-                                                                                            );
-                                                                                        }   
-                                                                                    );
-                                                                                }
-                                                                            )                     
                                                                         ),
                                                                         // management_canister_deposit_cycles,  
                                                                         Container(
