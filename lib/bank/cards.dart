@@ -147,7 +147,7 @@ class CyclesTransferListItem extends StatelessWidget {
             'Mint': (mint_rc) {
                 operation = 'mint';
                 Record mint = mint_rc as Record;
-                to = bank_countid_as_icrc1account(mint['to']!);
+                to = Icrc1Account.of_the_record(mint['to'] as Record);
                 match_variant(mint['kind'] as Variant, {
                     'CMC': (mint_cmc_) {
                         Record mint_cmc = mint_cmc_ as Record;
@@ -163,14 +163,14 @@ class CyclesTransferListItem extends StatelessWidget {
             'Burn': (burn_c) {
                 operation = 'burn';
                 Record burn = burn_c as Record;
-                from = bank_countid_as_icrc1account(burn['from']!);
+                from = Icrc1Account.of_the_record(burn['from'] as Record);
                 burn_for_canister = burn['for_canister'] as Principal;
             },
             'Xfer': (xfer_c) {
                 operation = 'transfer';
                 Record xfer = xfer_c as Record;
-                from = bank_countid_as_icrc1account(xfer['from']!);
-                to = bank_countid_as_icrc1account(xfer['to']!);
+                from = Icrc1Account.of_the_record(xfer['from'] as Record);
+                to = Icrc1Account.of_the_record(xfer['to'] as Record);
             }
         });
         

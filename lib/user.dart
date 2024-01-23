@@ -1116,14 +1116,6 @@ Future<BigInt> check_icrc1_balance({required Principal icrc1_ledger_canister_id,
 
 // ----
 
-Icrc1Account bank_countid_as_icrc1account(CandidType rc) {
-    Record r = rc as Record;
-    return Icrc1Account(
-        owner: r[0] as Principal,
-        subaccount: r.find_option<Vector>(1).nullmap((v)=>Blob.of_the_vector_nat8(v.cast_vector<Nat8>()).bytes)
-    );
-}
-
 class CyclesTransfer {
     
     final BigInt id; // block-height.
