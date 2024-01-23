@@ -71,9 +71,11 @@ class CustomState {
         if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com')) {
             cts = Canister(Principal.text(em3jm));
             cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
+            bank = Canister(Principal.text('wwikr-gqaaa-aaaar-qacva-cai'));
         } else if (window.location.hostname!.contains(x3ncx)) {
             cts = Canister(Principal.text(x3ncx)); 
             cycles_market = Canister(Principal.text('x4med-gqaaa-aaaam-qbcfq-cai'));
+            bank = Canister(Principal.text('ul6ir-xiaaa-aaaam-qbcna-cai'));
         } else if (is_on_local) {
             /// local replica 
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
@@ -143,9 +145,49 @@ class CustomState {
                     print('load user');
                     await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                     this.user!.fresh_known_cm_trade_contracts_of_the_cm_main();
+                    
+                    Future get_back_cm_escrow_funds_future = Future.wait(this.cm_main.trade_contracts.map((tc)=>Future(()async{
+                        await this.user!.fresh_cm_trade_contracts_balances(tc);
+                        if (this.user!.cm_trade_contracts[tc]!.trade_contract_token_balance > tc.ledger_data.fee) {
+                            try{
+                                await this.user!.cm_transfer_balance(
+                                    tc,
+                                    CyclesMarketTransferBalanceQuest(                                
+                                        amount: this.user!.cm_trade_contracts[tc]!.trade_contract_token_balance - tc.ledger_data.fee,
+                                        ledger_transfer_fee: tc.ledger_data.fee,
+                                        to: Icrc1Account(owner: this.user!.principal),
+                                    ),
+                                    PositionKind.Token
+                                );
+                            } catch(cm_transfer_balance_error) {
+                                print('Error transfer cm token balance:\n${cm_transfer_balance_error}');
+                            }
+                        } 
+                        if (this.user!.cm_trade_contracts[tc]!.trade_contract_cycles_balance > CYCLES_BANK_LEDGER.fee) {
+                            try{
+                                await this.user!.cm_transfer_balance(
+                                    tc,
+                                    CyclesMarketTransferBalanceQuest(                                
+                                        amount: this.user!.cm_trade_contracts[tc]!.trade_contract_cycles_balance - CYCLES_BANK_LEDGER.fee,
+                                        ledger_transfer_fee: CYCLES_BANK_LEDGER.fee,
+                                        to: Icrc1Account(owner: this.user!.principal),
+                                    ),
+                                    PositionKind.Cycles
+                                );
+                            } catch(cm_transfer_balance_error) {
+                                print('Error transfer cm cycles balance:\n${cm_transfer_balance_error}');
+                            }
+                        }
+                    }))); 
+                    
                     await Future.wait([
-                        this.user!.fresh_icrc1_balances(),
-                        this.user!.fresh_icrc1_transactions(),
+                        Future(()async{
+                            await get_back_cm_escrow_funds_future;
+                            await Future.wait([
+                                this.user!.fresh_icrc1_balances(),
+                                this.user!.fresh_icrc1_transactions(),
+                            ]);
+                        }),
                         this.user!.load_cm_data(),
                     ]);
                 } 

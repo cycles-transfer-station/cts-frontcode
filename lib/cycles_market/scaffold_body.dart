@@ -731,7 +731,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                         await Future.wait([
                                             state.user!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
                                             state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
-                                            state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                                            /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                             state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_data()
                                         ]);
                                     } catch(e) {
@@ -962,7 +962,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                                 await Future.wait([
                                     state.user!.load_cm_data(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
                                     state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
-                                    state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                                    /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                     state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data()
                                 ]);
                             } catch(e) {
