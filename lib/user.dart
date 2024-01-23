@@ -126,10 +126,9 @@ class User {
                             ...logs,
                             ...gather
                         ];
-                        print('gather.length: ${gather.length}');
+                        
                         if (this.cycles_transfers.length != 0 && gather.length != 0 && this.cycles_transfers.last.id >= gather.first.id) {
                             gather = gather.skipWhile((l)=>l.id <= this.cycles_transfers.last.id).toList();
-                            print('gather.length after skipwhile: ${gather.length}');
                             break;
                         }                    
                         

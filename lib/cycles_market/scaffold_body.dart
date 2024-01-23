@@ -611,7 +611,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     ),
                     Container(
                         width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 11),
+                        padding: EdgeInsets.fromLTRB(0,10,0,4),
                         child: Text(
                             'CYCLES-BALANCE: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}', 
                             style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
@@ -619,7 +619,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     ),
                     Container(
                         width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 11),
+                        padding: EdgeInsets.symmetric(vertical: 4),
                         child: Text(
                             '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
                             style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
@@ -627,15 +627,29 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     ),
                     Container(
                         width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 11),
-                        child: Text(
-                            'LEDGER-FEES: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
-                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
+                        padding: EdgeInsets.symmetric(vertical: 4),
+                        child: Tooltip(
+                            message: 'When a trade is made, this fee is on the payout of the opposite token.', 
+                            child: Text(
+                                'CTS-FEE: 0.5%', 
+                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                            )
                         ),
                     ),
                     Container(
                         width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(0, 17, 0,7),
+                        padding: EdgeInsets.symmetric(vertical: 4),
+                        child: Tooltip(
+                            message: 'The ledger fees needed to create the position.',
+                            child: Text(
+                                'LEDGER-FEES: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
+                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
+                            ),
+                        )
+                    ),
+                    Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(0, 7, 0,7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
