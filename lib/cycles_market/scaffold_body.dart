@@ -629,7 +629,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 4),
                         child: Tooltip(
-                            message: 'When a trade is made, this fee is on the payout of the opposite token.', 
+                            message: 'CTS-FEE: When a trade is made, this fee is on the payout of the opposite token.', 
                             child: Text(
                                 'CTS-FEE: 0.5%', 
                                 style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
@@ -640,7 +640,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 4),
                         child: Tooltip(
-                            message: 'The ledger fees needed to create the position.',
+                            message: 'LEDGER-FEES: The ledger fees needed to create the position.',
                             child: Text(
                                 'LEDGER-FEES: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
                                 style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
@@ -1208,22 +1208,28 @@ class PositionDialogState extends State<PositionDialog> {
                                                             : 
                                                             show_tokens_with_symbol(Cycles(cycles: pl.payouts_fees_sum), cycles_symbol)     
                                                         ),
-                                                        if (pl.position_kind == PositionKind.Cycles) (
-                                                            Text('${token_symbol}-LEDGER-FEES:'),
+                                                        (
+                                                            Text('${pl.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}-PAYOUT-LEDGER-FEES:'),
                                                             FutureBuilder(
                                                                 future: load_cm_user_position_trade_logs_future,
                                                                 builder: (BuildContext context, AsyncSnapshot snapshot) {
                                                                     CustomState state = MainStateBind.get_state<CustomState>(context);
                                                                     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-                                                                    BigInt trades_token_payouts_ledger_fees_sum =
+                                                                    BigInt trades_payouts_ledger_fees_sum =
                                                                         (state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
                                                                             .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
-                                                                            .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + l.tl.tokens_payout_ledger_transfer_fee);
+                                                                            .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + (pl.position_kind == PositionKind.Cycles ? l.tl.tokens_payout_ledger_transfer_fee : l.tl.cycles_payout_ledger_transfer_fee));
                                                                     return switch (snapshot.connectionState) {
-                                                                        ConnectionState.none || ConnectionState.done => show_tokens_with_symbol(
-                                                                            Tokens(quantums: trades_token_payouts_ledger_fees_sum, decimal_places: token_decimal_places), 
-                                                                            token_symbol
-                                                                        ),
+                                                                        ConnectionState.none || ConnectionState.done => 
+                                                                            pl.position_kind == PositionKind.Cycles 
+                                                                            ? show_tokens_with_symbol(
+                                                                                Tokens(quantums: trades_payouts_ledger_fees_sum, decimal_places: token_decimal_places), 
+                                                                                token_symbol
+                                                                            )
+                                                                            : show_tokens_with_symbol(
+                                                                                Cycles(cycles: trades_payouts_ledger_fees_sum), 
+                                                                                cycles_symbol
+                                                                            ),
                                                                         _ => Center(child: Text('loading ...'))
                                                                     };
                                                                 }
@@ -1265,7 +1271,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                                 Cycles final_cycles_payout = tlaps_list.fold(
                                                                                     Cycles(cycles: BigInt.zero),
                                                                                     (v, l) {
-                                                                                        return v + l.tl.cycles - l.tl.cycles_payout_fee;
+                                                                                        return v + l.tl.cycles - l.tl.cycles_payout_fee - Cycles(cycles: l.tl.cycles_payout_ledger_transfer_fee);
                                                                                     }
                                                                                 );
                                                                                 return show_tokens_with_symbol(final_cycles_payout, cycles_symbol);
@@ -1434,9 +1440,13 @@ class TradeLogDialog extends StatelessWidget {
                                                             : 
                                                             show_tokens_with_symbol(tl.cycles_payout_fee, cycles_symbol)     
                                                         ),
-                                                        if (pl.position_kind == PositionKind.Cycles) (
-                                                            Text('${token_symbol}-LEDGER-FEE:'),
-                                                            show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_ledger_transfer_fee, decimal_places: token_decimal_places), token_symbol),
+                                                        (
+                                                            Text('${pl.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}-PAYOUT-LEDGER-FEE:'),
+                                                            pl.position_kind == PositionKind.Cycles
+                                                            ?
+                                                            show_tokens_with_symbol(Tokens(quantums: tl.tokens_payout_ledger_transfer_fee, decimal_places: token_decimal_places), token_symbol)
+                                                            :
+                                                            show_tokens_with_symbol(Cycles(cycles: tl.cycles_payout_ledger_transfer_fee), cycles_symbol)
                                                         ),
                                                         if (
                                                             (pl.position_kind == PositionKind.Cycles && tlaps.tokens_payout_complete && tl.token_payout_dust_collection) 
@@ -1456,7 +1466,7 @@ class TradeLogDialog extends StatelessWidget {
                                                             )
                                                             : 
                                                             show_tokens_with_symbol(
-                                                                tl.cycles - tl.cycles_payout_fee,
+                                                                tl.cycles - tl.cycles_payout_fee - Cycles(cycles: tl.cycles_payout_ledger_transfer_fee),
                                                                 cycles_symbol
                                                             )
                                                         )
