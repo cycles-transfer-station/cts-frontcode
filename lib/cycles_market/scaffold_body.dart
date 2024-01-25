@@ -591,6 +591,25 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         
         int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
         
+        List<Widget> cycles_balance_and_token_balance = [
+            Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                    'CYCLES-BALANCE: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}', 
+                    style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                ),
+            ),
+            Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                    '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
+                    style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                ),
+            ),
+        ];
+        
         return Form(
             key: form_key,
             child: Column(
@@ -609,29 +628,28 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
                         validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
                     ),
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(0,10,0,4),
-                        child: Text(
-                            'CYCLES-BALANCE: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}', 
-                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
-                        ),
-                    ),
+                    SizedBox(height:6),
+                    if (widget.position_kind == PositionKind.Cycles) ...cycles_balance_and_token_balance
+                    else ...(cycles_balance_and_token_balance.reversed.toList()),
+                    Divider(),
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                            '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
-                            style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
-                        ),
+                        child: Tooltip(
+                            message: 'ledger-fees: The ledger transfer fees needed to create the position.',
+                            child: Text(
+                                'ledger-fees: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
+                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
+                            ),
+                        )
                     ),
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 4),
                         child: Tooltip(
-                            message: 'CTS-FEE: When a trade is made, this fee is on the payout of the opposite token.', 
+                            message: 'trade-fee: When a trade is made, this fee is on the payout of the opposite token.', 
                             child: Text(
-                                'CTS-FEE: 0.5%', 
+                                'trade-fee: 0.5%', 
                                 style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
                             )
                         ),
@@ -640,12 +658,12 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(vertical: 4),
                         child: Tooltip(
-                            message: 'LEDGER-FEES: The ledger fees needed to create the position.',
+                            message: 'payout-transfer-fee: When a trade is made, this ledger transfer fee is on the payout of the opposite token. Payouts happen on every order match.', 
                             child: Text(
-                                'LEDGER-FEES: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
-                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
-                            ),
-                        )
+                                'payout-transfer-fee: ' + (widget.position_kind == PositionKind.Token ? '${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}-${cycles_symbol}' : '${Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places)}-${token_symbol}'), 
+                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
+                            )
+                        ),
                     ),
                     Container(
                         width: double.infinity,
