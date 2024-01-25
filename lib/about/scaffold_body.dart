@@ -25,9 +25,9 @@ class AboutScaffoldBody extends StatelessWidget {
                 child: Text(
 """The goal of the CYCLES-TRANSFER-STATION is for the mainstream-usage of the native CYCLES as the stable-currency of the world-computer. 
 
-Each user creates their own personal cycles-bank that mints, holds, and transfers the cycles, and keeps logs of the transfers. The cycles-bank holds other ICRC-1 tokens too. 
+The CYCLES-BANK mints, holds, and transfers the cycles, and keeps logs of the transfers. At the CTS, people can hold other ICRC-1 tokens too. 
 
-The cycles-market is the place where people can trade the native CYCLES and various tokens back and forth in both ways. 
+The cycles-market is the place where people trade the native CYCLES and various tokens back and forth in both ways. 
 """
                     , style: TextStyle(fontSize: 17)
                 )
@@ -44,6 +44,7 @@ The cycles-market is the place where people can trade the native CYCLES and vari
                 ),
             ),
             */
+            /*
             Container(
                 width: double.infinity,
                 padding: EdgeInsets.fromLTRB(11,11,11,27),
@@ -121,6 +122,7 @@ Users can click on the payment-url and it will fill out the cycles-transfer for 
                     , style: TextStyle(fontSize: 17)
                 )
             ),
+            */
         ]);
         
         return Center(
