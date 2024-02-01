@@ -248,7 +248,7 @@ class ViewPositionBookSponse {
     }
 }
 
-typedef TradeItem = ({BigInt id, Tokens quantity, CyclesPerTokenRate rate, BigInt time_nanos, PositionKind kind});
+typedef TradeItem = ({BigInt id, Tokens quantity, CyclesPerTokenRate rate, BigInt time_nanos});
 
 class ViewTradesSponse {
         
@@ -271,7 +271,6 @@ class ViewTradesSponse {
                             token_decimal_places: token_decimal_places,
                         ),
                         time_nanos: (item[3] as Nat64).value,
-                        kind: match_variant(item[4] as Variant, { for (var k in PositionKind.values) k.name: (n)=>k })
                     );
                 }).toList(),
             is_last_chunk_on_this_canister: (r['is_last_chunk_on_this_canister'] as Bool).value,
