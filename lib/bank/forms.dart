@@ -420,7 +420,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
             child: Column(
                 children: [
-                    Text('BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
+                    Text('${this.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : this.icrc1_ledger.symbol}-BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : this.icrc1_ledger == CYCLES_BANK_LEDGER ? Cycles(cycles: state.user!.icrc1_balances_cache[this.icrc1_ledger]!) : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
                     //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
@@ -465,7 +465,8 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
 
 class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
     final Icrc1Ledger icrc1_ledger;
-    BankIcrc1IdAndBalanceAndLoadBalanceAndFee(this.icrc1_ledger, {super.key});
+    final bool show_transfer_fee;
+    BankIcrc1IdAndBalanceAndLoadBalanceAndFee(this.icrc1_ledger, {super.key, this.show_transfer_fee = true});
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -477,7 +478,7 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
                     child: Column(
                         children: [
                             Center(
-                                child: SelectableText('BANK-${icrc1_ledger.symbol}-ID:', style: TextStyle(fontSize: 13)),
+                                child: SelectableText('BANK-${icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol}-ID:', style: TextStyle(fontSize: 13)),
                             ),
                             Center(
                                 child: SelectableText('${bank_icrc1_account_id}', style: TextStyle(fontSize: 11)),
@@ -490,14 +491,16 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
                         ]
                     )
                 ),
-                SizedBox(
-                    width: 1,
-                    height: 11
-                ),
-                Container(
-                    width: double.infinity,
-                    child: Text('ledger-transfer-fee: ${Tokens(quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize: 13))
-                ),
+                if (this.show_transfer_fee) ...[
+                    SizedBox(
+                        width: 1,
+                        height: 11
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Text('ledger-transfer-fee: ${Tokens(quantums: this.icrc1_ledger.fee, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize: 13))
+                    ),
+                ],
                 /*
                 Container(
                     width: double.infinity,
@@ -606,7 +609,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('TRANSFER ${widget.icrc1_ledger.symbol}'),
+                            child: Text('TRANSFER ${widget.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : widget.icrc1_ledger.symbol}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
                                     
@@ -988,25 +991,11 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                 children: <Widget>[
                     Container(
                         padding: EdgeInsets.all(7),
-                        child: BankIcrc1IdAndBalanceAndLoadBalanceAndFee(Icrc1Ledgers.ICP, key: ValueKey('BurnIcpMintCyclesForm BankIcrc1IdAndBalanceAndLoadBalanceAndFee')),
-                        /*
-                        Column(
-                            children: [
-                                
-                                Center(
-                                    child: SelectableText('USER-CTS-ICP-ID:', style: TextStyle(fontSize: 13)),
-                                ),
-                                Center(
-                                    child: SelectableText('${state.user!.user_icp_id}', style: TextStyle(fontSize: 11)),
-                                ),
-                                IcpBalanceAndLoadIcpBalance(key: ValueKey('CyclesBankScaffoldBody BurnIcpMintCyclesDialog IcpBalanceAndLoadIcpBalance'))
-                            ]
-                        )
-                        */
+                        child: BankIcrc1IdAndBalanceAndLoadBalanceAndFee(Icrc1Ledgers.ICP, show_transfer_fee: false, key: ValueKey('BurnIcpMintCyclesForm BankIcrc1IdAndBalanceAndLoadBalanceAndFee')),
                     ),
                     SizedBox(
                         width: 1,
-                        height: 17
+                        height: 11
                     ),
                     Container(
                         width: double.infinity,
@@ -1032,12 +1021,24 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             rows: [
                                 DataRow(
                                     cells: [
-                                        DataCell(Text('TCYCLES PER ICP RATE: ', )),
+                                        DataCell(Text('CYCLES PER ICP RATE:', )),
                                         DataCell(Text('${state.cmc_cycles_per_icp_rate}')),
                                     ]
                                 ),
                             ]
                         )
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 17
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Text('ICP-ledger-fees: ${IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2))}', style: TextStyle(fontSize: 13))
+                    ),
+                    Container(
+                        width: double.infinity,
+                        child: Text('CYCLES-fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 13))
                     ),
                     SizedBox(
                         width: 1,
@@ -1055,7 +1056,6 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             return icp_validator(v) ?? (IcpTokens.of_the_double_string(v!).e8s > max_burn_icp.e8s ? 'Max burn icp at once: ${max_burn_icp}' : null);
                         }
                     ),
-                    Text('ICP ledger fees: ${IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2))}\nCYCLES fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
                         child: ElevatedButton(
