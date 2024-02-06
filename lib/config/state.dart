@@ -83,12 +83,6 @@ class CustomState {
             cts = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cts_local_'))));
             cycles_market = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cm_local__'))));
             bank = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('bank_local'))));
-            
-            Future.wait([
-                load_local_root_key_onto_a_canister(cts),
-                load_local_root_key_onto_a_canister(cycles_market),
-            ]).then((_x){});
-        
         } else {
             throw Exception('unknown stance');
         }
@@ -136,7 +130,6 @@ class CustomState {
             this.fresh_xdr_icp_rate(),
             Future(()async{ 
                 await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>load_local_root_key_onto_a_canister(c.canister)));
                 await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_data()));
             }),
             Future(()async{ 
@@ -259,16 +252,6 @@ class CustomState {
     
 }
 
-
-Future<void> load_local_root_key_onto_a_canister(Canister c) async {
-    if (is_on_local) {
-        await c.call(
-            method_name: 'local_put_ic_root_key',
-            calltype: CallType.call,
-            put_bytes: c_forwards_one(Blob(ic_root_key.sublist(ic_root_key.length-96))),
-        );
-    }
-}
 
 
 
