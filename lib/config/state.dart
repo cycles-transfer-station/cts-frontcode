@@ -178,7 +178,7 @@ class CustomState {
                             await get_back_cm_escrow_funds_future;
                             await Future.wait([
                                 this.user!.fresh_icrc1_balances(),
-                                this.user!.fresh_icrc1_transactions(),
+                                this.user!.fresh_icrc1_transactions([CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP]),
                             ]);
                         }),
                         this.user!.load_cm_data(),
