@@ -81,7 +81,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                                     DropdownMenuItem<int>(
                                         child: Container(
                                             padding: EdgeInsets.all(8),
-                                            child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol + '/CYCLES', style: TextStyle(fontSize: 22)), 
+                                            child: Text(state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol, style: TextStyle(fontSize: 22)), 
                                         ),
                                         value: i
                                     ),

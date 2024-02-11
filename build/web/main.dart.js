@@ -45130,7 +45130,7 @@ p=A.cm(j,10,j)
 o=A.an(j,j,B.f,B.rI,j,j,j,0,j,j,j,j,j)
 n=A.a([],t.sd)
 for(m=t.kZ,l=0;l<J.bc(s.a);++l){k=J.a5(s.a,l).r
-n.push(new A.m4(l,A.an(j,A.J(k.b+"/CYCLES",j,j,j,j,j,new A.o(!0,j,j,j,j,j,22,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j),j,j),B.f,j,j,j,j,j,j,new A.a6(8,8,8,8),j,j,j),B.bR,j,m))}s=h.r
+n.push(new A.m4(l,A.an(j,A.J(k.b,j,j,j,j,j,new A.o(!0,j,j,j,j,j,22,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j,j),j,j),B.f,j,j,j,j,j,j,new A.a6(8,8,8,8),j,j,j),B.bR,j,m))}s=h.r
 B.b.J(q,A.a([p,A.an(j,A.an(j,new A.f8(B.dr,j,j,A.aG2(24,!1,n,new A.a6r(h,a),j,o,s,t.S),j),B.f,j,j,j,j,j,new A.a6(13,13,13,13),j,j,j,j),B.f,j,j,j,j,j,j,j,j,j,1300),new A.zL(s,new A.bx("CyclesMarketTradeContractTradePage cm_main_icrc1token_trade_contracts_i "+s,t.W))],i))
 s=A.an(j,new A.oQ(A.J("CYCLES-MARKET",j,j,j,j,j,A.bi(j,j,j,j,j,j,j,j,j,j,j,19,j,j,j,j,j,!0,j,j,j,j,j,j,j,j),j,j),j),B.f,j,new A.ac(0,1300,0,1/0),j,j,j,j,j,j,j,j)
 return A.cx(A.an(j,A.bq(A.a([s,A.kV(A.NR(!0,A.a([A.bq(q,B.u,B.q,B.z)],i),j,new A.a6(0,0,0,0),j,j,!1),1)],i),B.u,B.q,B.z),B.f,j,j,j,j,j,j,j,j,j,j),j,j)}}
