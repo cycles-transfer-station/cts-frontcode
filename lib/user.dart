@@ -84,11 +84,20 @@ class User {
     }
     // helper for fresh_icrc1_transactions
     Future<Variant> _call_icrc1_index_transactions(Icrc1Ledger l, [Nat? start]) async {
-        final Map<Canister, Canister> ledger_index = {
-            Canister(Principal.text('zfcdd-tqaaa-aaaaq-aaaga-cai')): Canister(Principal.text('zlaol-iaaaa-aaaaq-aaaha-cai')), // DKP
-            Canister(Principal.text('2ouva-viaaa-aaaaq-aaamq-cai')): Canister(Principal.text('2awyi-oyaaa-aaaaq-aaanq-cai')), // CHAT
+        final Map<String, String> ledger_index = {
+            'zfcdd-tqaaa-aaaaq-aaaga-cai': 'zlaol-iaaaa-aaaaq-aaaha-cai', // DKP
+            '2ouva-viaaa-aaaaq-aaamq-cai': '2awyi-oyaaa-aaaaq-aaanq-cai', // CHAT
+            '73mez-iiaaa-aaaaq-aaasq-cai': '7vojr-tyaaa-aaaaq-aaatq-cai', // Kinic
+            '6rdgd-kyaaa-aaaaq-aaavq-cai': '6dfr2-giaaa-aaaaq-aaawq-cai', // Hot or Not
+            '4c4fd-caaaa-aaaaq-aaa3a-cai': '5ithz-aqaaa-aaaaq-aaa4a-cai', // ICGhost
+            'xsi2v-cyaaa-aaaaq-aabfq-cai': 'xaonm-oiaaa-aaaaq-aabgq-cai', // Modclub
+            'rxdbk-dyaaa-aaaaq-aabtq-cai': 'q5mdq-biaaa-aaaaq-aabuq-cai', // Nuance
+            'tyyy3-4aaaa-aaaaq-aab7a-cai': 'efv5g-kqaaa-aaaaq-aacaa-cai', // Gold DAO
+            'emww2-4yaaa-aaaaq-aacbq-cai': 'e6qbd-qiaaa-aaaaq-aaccq-cai', // TRAX
+            'f54if-eqaaa-aaaaq-aacea-cai': 'ft6fn-7aaaa-aaaaq-aacfa-cai', // Neutrinite
+            'hvgxa-wqaaa-aaaaq-aacia-cai': 'h3e2i-naaaa-aaaaq-aacja-cai', // Sneed 
         }; 
-        return c_backwards(await ledger_index[l.ledger]!.call(
+        return c_backwards(await Canister(Principal.text(ledger_index[l.ledger.principal.text]!)).call(
             calltype: CallType.call,
             method_name: 'get_account_transactions',
             put_bytes: c_forwards([
