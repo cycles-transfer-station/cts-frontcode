@@ -181,13 +181,16 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         const double tb_padding_market_trades_and_position_book = 11;
+        const double runSpacing = 13;
         
         return Container(
             child: Column(
                 children: [ 
                     Wrap(
                         alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         spacing: 37,
+                        runSpacing: runSpacing,
                         children: [
                             Container(
                                 padding: EdgeInsets.symmetric(vertical: tb_padding_market_trades_and_position_book),
@@ -218,9 +221,11 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         ]
                     ),
                     if (state.user != null) ...[
-                        SizedBox(height: 61),
+                        SizedBox(height: runSpacing),
                         Wrap(
                             alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            runSpacing: runSpacing,
                             spacing: 20,
                             children: [
                                 Container(
@@ -232,7 +237,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                             ]
                         ),
                     ],
-                    SizedBox(height: 17),
+                    SizedBox(height: 13),
                 ]
             )
         );   
@@ -536,6 +541,7 @@ class CreatePositionWidget extends StatelessWidget {
             child: DefaultTabController(
                 length: 2,
                 child: Column(
+                    mainAxisSize: MainAxisSize.min, 
                     children: [
                         Text('TRADE'),
                         Container(
@@ -548,7 +554,7 @@ class CreatePositionWidget extends StatelessWidget {
                             )
                         ),
                         Container(
-                            height: 300,
+                            height: 286,
                             //width: 300,
                             child: TabBarView(
                                 children: [
@@ -613,6 +619,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         return Form(
             key: form_key,
             child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                     TextFormField(
                         decoration: InputDecoration(
@@ -802,7 +809,7 @@ class UserCMLogsState extends State<UserCMLogs> {
                 
         return Column(
             children: [
-                Text('POSITIONS'),
+                Text('LOGS'),
                 SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Container(
