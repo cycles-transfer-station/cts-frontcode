@@ -281,11 +281,10 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                 Flexible(flex:1, fit: FlexFit.tight, child:Container(
                                     width: double.infinity, 
                                     child: state.user != null ? Align(
-                                        alignment: Alignment.topRight, 
+                                        alignment: Alignment.centerRight, 
                                         child: Container(
-                                            padding: EdgeInsets.all(3),
                                             child: IconButton(
-                                                icon: const Icon(Icons.settings_sharp, size: 17.0),
+                                                icon: const Icon(Icons.settings_sharp, size: 19),
                                                 tooltip: 'Settings', 
                                                 onPressed: () async {
                                                     showDialog<void>(
