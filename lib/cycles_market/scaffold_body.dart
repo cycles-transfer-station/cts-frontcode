@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:autoscale_tabbarview/autoscale_tabbarview.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
@@ -536,7 +537,6 @@ class CreatePositionWidget extends StatelessWidget {
         
         
         return Container(
-            //height: 300,
             width: 300,
             child: DefaultTabController(
                 length: 2,
@@ -545,7 +545,6 @@ class CreatePositionWidget extends StatelessWidget {
                     children: [
                         Text('TRADE'),
                         Container(
-                            //height: 50,
                             child: TabBar(
                                 tabs: [
                                     Tab(text: 'CYCLES'),
@@ -554,9 +553,7 @@ class CreatePositionWidget extends StatelessWidget {
                             )
                         ),
                         Container(
-                            height: 286,
-                            //width: 300,
-                            child: TabBarView(
+                            child: AutoScaleTabBarView(
                                 children: [
                                     CreatePositionForm(position_kind: PositionKind.Cycles, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
                                     CreatePositionForm(position_kind: PositionKind.Token, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
