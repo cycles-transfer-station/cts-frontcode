@@ -56,6 +56,12 @@ class User {
         for (Icrc1TokenTradeContract tc in this.state.cm_main.trade_contracts) {
             if (this.known_icrc1_ledgers.contains(tc.ledger_data) == false) {
                 this.known_icrc1_ledgers.add(tc.ledger_data);
+                if (this.icrc1_balances_cache.containsKey(tc.ledger_data) == false) {
+                    this.icrc1_balances_cache[tc.ledger_data] = BigInt.zero;
+                }
+                if (this.icrc1_transactions_cache.containsKey(tc.ledger_data) == false) {
+                    this.icrc1_transactions_cache[tc.ledger_data] = [];
+                }
             }
             if (this.cm_trade_contracts.containsKey(tc) == false) {
                 this.cm_trade_contracts[tc] = UserCMTradeContractData();
