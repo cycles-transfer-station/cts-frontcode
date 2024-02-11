@@ -37,6 +37,9 @@ wp-content/*
 build/*
 !build/web/
 
+old_index.html
+new_manifest.json
+
 # Web related
 
 # Symbolication related
