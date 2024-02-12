@@ -42,18 +42,6 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
     
-        // set the state.cm_main_icrc1token_trade_contracts_i
-        int cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol 
-            = state.cm_main.icrc1token_trade_contracts.indexWhere((tc)=>tc.ledger_data.ledger.principal.text == state.current_url.variables['token_ledger_id']!);
-        
-        if (cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol < 0) {
-            state.current_url = CustomUrl('void');
-            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-        } else {
-            state.cm_main_icrc1token_trade_contracts_i = cm_main_icrc1token_trade_contracts_index_where_current_url_token_ledger_symbol_matches_token_trade_contract_ledger_data_symbol;
-        }
-        
-        
         double width = 1300;
         
         List<Widget> column_children = [];
@@ -91,6 +79,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                             onChanged: (int? select_i) { 
                                 if (select_i is int) {
                                     if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
+                                        state.cm_main_icrc1token_trade_contracts_i = select_i;
                                         state.current_url = CustomUrl(
                                             'cycles_market', 
                                             variables: {
@@ -161,9 +150,9 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
             Future.wait([
                 state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_data(),
                 if (state.user != null) ...[
-                    state.user!.load_cm_data(state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                    state.user!.load_cm_data([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]]),
                     state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
-                    state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                    //state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                 ]
             ])
             .then((x){
@@ -751,7 +740,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     try {
                                         await Future.wait([
-                                            state.user!.load_cm_data(state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]),
+                                            state.user!.load_cm_data([state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i]]),
                                             state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                             /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                             state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].load_data()
@@ -982,7 +971,7 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                             
                             try {
                                 await Future.wait([
-                                    state.user!.load_cm_data(state.cm_main.trade_contracts[cm_main_trade_contracts_i]),
+                                    state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]),
                                     state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                     /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
                                     state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data()

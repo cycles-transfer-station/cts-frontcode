@@ -74,10 +74,7 @@ ii_login(BuildContext context) async {
             return;
         }
     }
-    
-    state.loading_text = 'loading user ...';
-    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                
+            
     state.user = User(
         state: state,
         caller: ii_caller,

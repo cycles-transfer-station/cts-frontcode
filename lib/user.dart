@@ -27,10 +27,15 @@ class User {
     
     late final String icp_id;
     List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP];
-    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
+    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {CYCLES_BANK_LEDGER: BigInt.zero, Icrc1Ledgers.ICP: BigInt.zero};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
     List<CyclesTransfer> cycles_transfers = []; // cycles-transfer logs are different than the icrc1-transfer-logs
+    
+    Map<Icrc1Ledger, Future> first_load_icrc1ledgers_balances = {};
+    Map<Icrc1Ledger, Future> first_load_icrc1ledgers_transactions = {};
+    Map<Icrc1TokenTradeContract, Future> first_load_tcs = {};
+    
     Map<Icrc1TokenTradeContract, UserCMTradeContractData> cm_trade_contracts = {};
     
     Icrc1Ledger current_icrc1_ledger = CYCLES_BANK_LEDGER;
@@ -113,13 +118,18 @@ class User {
         List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.known_icrc1_ledgers;
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
-                //print('fresh icrc1 transactions future ${l.name}');
-                if (l.ledger.principal == SYSTEM_CANISTERS.ledger.principal && is_on_local == false) {
+                // ICP transactions
+                if (l.ledger.principal == SYSTEM_CANISTERS.ledger.principal) {
+                    if (is_on_local == true) {
+                        await Future.delayed(Duration(milliseconds: 50)); // for the frames
+                        return;
+                    }                    
                     // for the do! hook up with the new icp index canister
                     this.icp_transfers = [
                         ...await get_icp_transfers(this.icp_id, already_have: this.icp_transfers.length),
                         ...this.icp_transfers
                     ];
+                    
                 } else if (l == CYCLES_BANK_LEDGER) {
                     
                     BigInt? earliest_known_id;
@@ -154,9 +164,14 @@ class User {
                         earliest_known_id = logs.first.id;
                     }
     
-                    this.cycles_transfers.addAll(gather);                
+                    this.cycles_transfers.addAll(gather);     
                     
-                } else if (is_on_local == false)/*tokens besides icp or cycles*/ {
+                } else /*tokens besides icp or cycles*/{ 
+                    if (is_on_local == true) {
+                        await Future.delayed(Duration(milliseconds: 50)); // for the frames
+                        return;
+                    }
+                    
                     if (this.icrc1_transactions_cache[l] == null) { 
                         this.icrc1_transactions_cache[l] = []; 
                     }
@@ -465,8 +480,8 @@ class User {
     // ----
     
     // market methods.
-    Future<void> fresh_cm_trade_contracts_balances([Icrc1TokenTradeContract? icrc1token_trade_contract]) async {
-        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = icrc1token_trade_contract != null ? [icrc1token_trade_contract] : this.cm_trade_contracts.keys.toList();
+    Future<void> fresh_cm_trade_contracts_balances([List<Icrc1TokenTradeContract>? tcs]) async {
+        List<Icrc1TokenTradeContract> icrc1token_trade_contracts = tcs ?? this.cm_trade_contracts.keys.toList();
         await Future.wait(
             icrc1token_trade_contracts.map((tc)=>Future.wait([
                 Future(()async{
@@ -503,7 +518,7 @@ class User {
         
         await Future.wait([
             this.fresh_icrc1_balances([ledger_data]),
-            this.fresh_cm_trade_contracts_balances(trade_contract),
+            this.fresh_cm_trade_contracts_balances([trade_contract]),
         ]);
         
         BigInt trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[trade_contract]!.trade_contract_token_balance : this.cm_trade_contracts[trade_contract]!.trade_contract_cycles_balance;
@@ -568,7 +583,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
             return position_id;        
         } catch(cm_trade_error) {
             try {
-                await this.fresh_cm_trade_contracts_balances(trade_contract);
+                await this.fresh_cm_trade_contracts_balances([trade_contract]);
                 trade_contract_balance = kind == PositionKind.Token ? this.cm_trade_contracts[trade_contract]!.trade_contract_token_balance : this.cm_trade_contracts[trade_contract]!.trade_contract_cycles_balance;
                 
                 if (trade_contract_balance > ledger_data.fee) {
@@ -676,8 +691,8 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
         );
     }
 
-    Future<void> load_cm_user_positions([Icrc1TokenTradeContract? tc]) async {
-        List<Icrc1TokenTradeContract> tcs = tc != null ? [tc] : this.cm_trade_contracts.keys.toList();
+    Future<void> load_cm_user_positions([List<Icrc1TokenTradeContract>? trade_contracts]) async {
+        List<Icrc1TokenTradeContract> tcs = trade_contracts ?? this.cm_trade_contracts.keys.toList();
         await Future.wait(
             tcs.map((tc)=>Future(()async{
                 // current_positions
@@ -1044,15 +1059,15 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
     
         
     
-    Future<void> load_cm_data([Icrc1TokenTradeContract? trade_contract]) async {
+    Future<void> load_cm_data([List<Icrc1TokenTradeContract>? trade_contracts]) async {
         await Future.wait([
-            this.fresh_cm_trade_contracts_balances(trade_contract),
-            this.load_cm_user_positions(trade_contract),
+            this.fresh_cm_trade_contracts_balances(trade_contracts),
+            this.load_cm_user_positions(trade_contracts),
             // loads the latest trades of those positions whos trades have been already loaded at least once. because those positions that have not loaded the trades at least once, will load if clicked on.
             Future(()async{
-                List<Icrc1TokenTradeContract> trade_contracts = trade_contract != null ? [trade_contract] : this.cm_trade_contracts.keys.toList();
+                List<Icrc1TokenTradeContract> tcs = trade_contracts ?? this.cm_trade_contracts.keys.toList();
                 await Future.wait(
-                    trade_contracts.map((tc)=>Future(()async{
+                    tcs.map((tc)=>Future(()async{
                         await Future.wait(
                             this.cm_trade_contracts[tc]!.user_positions_trade_logs.keys.map((pl_id)=>Future(()async{
                                 await this.load_cm_user_position_trade_logs(tc, pl_id);     

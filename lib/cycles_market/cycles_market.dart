@@ -57,7 +57,7 @@ class Icrc1TokenTradeContract extends Record {
     Canister get canister => Canister(this.trade_contract_canister_id);
     
    
-    
+    Future<void>? first_load_data = null;
     
     Future<void> load_data() async {
         await Future.wait([

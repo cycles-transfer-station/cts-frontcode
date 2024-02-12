@@ -119,7 +119,6 @@ class CustomState {
     int cm_main_icrc1token_trade_contracts_i = 0;
     
     User? user;
-        
 
     Future<void> loadfirststate() async { 
         print('load first state');
@@ -128,10 +127,7 @@ class CustomState {
         
         await Future.wait([
             this.fresh_xdr_icp_rate(),
-            Future(()async{ 
-                await cycles_market_main_fresh_icrc1token_trade_contracts_future;
-                await Future.wait(this.cm_main.icrc1token_trade_contracts.map((c)=>c.load_data()));
-            }),
+            cycles_market_main_fresh_icrc1token_trade_contracts_future,
             Future(()async{ 
                 await this.load_state_of_the_browser_storage();
                 if (this.user != null) {
@@ -139,8 +135,9 @@ class CustomState {
                     await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                     this.user!.fresh_known_cm_trade_contracts_of_the_cm_main();
                     
-                    Future get_back_cm_escrow_funds_future = Future.wait(this.cm_main.trade_contracts.map((tc)=>Future(()async{
-                        await this.user!.fresh_cm_trade_contracts_balances(tc);
+                    // get back cm escrow funds
+                    Future.wait(this.cm_main.trade_contracts.map((tc)=>Future(()async{
+                        await this.user!.fresh_cm_trade_contracts_balances([tc]);
                         if (this.user!.cm_trade_contracts[tc]!.trade_contract_token_balance > tc.ledger_data.fee) {
                             try{
                                 await this.user!.cm_transfer_balance(
@@ -171,18 +168,7 @@ class CustomState {
                                 print('Error transfer cm cycles balance:\n${cm_transfer_balance_error}');
                             }
                         }
-                    }))); 
-                    
-                    await Future.wait([
-                        Future(()async{
-                            await get_back_cm_escrow_funds_future;
-                            await Future.wait([
-                                this.user!.fresh_icrc1_balances(),
-                                this.user!.fresh_icrc1_transactions([CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP]),
-                            ]);
-                        }),
-                        this.user!.load_cm_data(),
-                    ]);
+                    }))).then((_x){});
                 } 
             }),
         ]);
@@ -269,7 +255,7 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
 
 Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
     ledger: bank, 
-    symbol: 'TCYCLES', 
+    symbol: 'CYCLES', 
     name: 'CYCLES', 
     decimals: 12, 
     fee: BigInt.parse('10000000000'), 
