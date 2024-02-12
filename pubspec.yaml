@@ -47,7 +47,7 @@ dependencies:
   candlesticks: 
     path: '/home/levi/Documents/code/candlesticks'
     
-  autoscale_tabbarview: ^1.0.2
+  contentsize_tabbarview: ^0.0.2
 
 
 dev_dependencies:

@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
 import 'package:data_table_2/data_table_2.dart';
-import 'package:autoscale_tabbarview/autoscale_tabbarview.dart';
+import 'package:contentsize_tabbarview/contentsize_tabbarview.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
@@ -553,7 +553,7 @@ class CreatePositionWidget extends StatelessWidget {
                             )
                         ),
                         Container(
-                            child: AutoScaleTabBarView(
+                            child: ContentSizeTabBarView(
                                 children: [
                                     CreatePositionForm(position_kind: PositionKind.Cycles, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
                                     CreatePositionForm(position_kind: PositionKind.Token, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
