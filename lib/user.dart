@@ -31,7 +31,7 @@ class User {
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
     List<CyclesTransfer> cycles_transfers = []; // cycles-transfer logs are different than the icrc1-transfer-logs
-    
+        
     Map<Icrc1Ledger, Future> first_load_icrc1ledgers_balances = {};
     Map<Icrc1Ledger, Future> first_load_icrc1ledgers_transactions = {};
     Map<Icrc1TokenTradeContract, Future> first_load_tcs = {};
@@ -43,6 +43,8 @@ class User {
     // for the mint_cycles through the cycles-bank.
     late final Uint8List bank_mint_cycles_user_icp_subaccount_bytes;
     late final String bank_mint_cycles_user_icp_id;
+    BigInt bank_user_subaccount_icp_balance = BigInt.zero; // is load in the loadfirststate
+
     
     User({
         required this.state,
@@ -313,6 +315,60 @@ class User {
     
     // ----
     // burn icp mint cycles
+    Future<void> fresh_bank_user_subaccount_icp_balance() async {
+        this.bank_user_subaccount_icp_balance = await check_icrc1_balance(
+            icrc1_ledger_canister_id: SYSTEM_CANISTERS.ledger.principal, 
+            owner: CYCLES_BANK_LEDGER.ledger.principal, 
+            subaccount: bank_mint_cycles_user_icp_subaccount_bytes, 
+            calltype: CallType.query
+        );
+    }
+    
+    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(BigInt burn_icp) async {
+        await this.fresh_bank_user_subaccount_icp_balance();
+        if (this.bank_user_subaccount_icp_balance < burn_icp + Icrc1Ledgers.ICP.fee) {
+            await transfer_icp(
+                c_forwards_one(Record.of_the_map({
+                    'memo': Nat64(BigInt.from(4)),
+                    'amount': IcpTokens(e8s: burn_icp + Icrc1Ledgers.ICP.fee - this.bank_user_subaccount_icp_balance),
+                    'fee': ICP_LEDGER_TRANSFER_FEE,
+                    'from_subaccount': Option<Blob>(value: null, value_type: Blob.type_mode()),
+                    'to': Blob(hexstringasthebytes(this.bank_mint_cycles_user_icp_id)),
+                }))
+            );
+        }
+        Variant mint_cycles_result = c_backwards_one(
+            await this.call(
+                CYCLES_BANK_LEDGER.ledger,
+                calltype: CallType.call,
+                method_name: 'mint_cycles',
+                put_bytes: c_forwards([
+                    Record.of_the_map({
+                        'to' : Icrc1Account(owner: this.principal),
+                        'fee' : Option<Nat>(value: Nat(CYCLES_BANK_LEDGER.fee)),
+                        'burn_icp': Nat(burn_icp),
+                        'burn_icp_transfer_fee': Nat(Icrc1Ledgers.ICP.fee),
+                        'memo' : Option<Blob>(value: Blob(utf8.encode('CTSF'))),
+                        'created_at_time' : Option<Nat64>(value:null, value_type: Nat64()),
+                    })
+                ])
+            )
+        ) as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(mint_cycles_result, mint_cycles_result_match_map);
+    }
+    
+    Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
+        Variant complete_mint_cycles_result = c_backwards(
+            await this.call(
+                CYCLES_BANK_LEDGER.ledger,
+                calltype: CallType.call,
+                method_name: 'complete_mint_cycles',
+                put_bytes: c_forwards([])
+            )
+        )[0] as Variant;
+        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_mint_cycles_result, complete_mint_cycles_result_match_map);
+    }
+    
     Map<String, Future<BurnIcpMintCyclesSuccess> Function(CandidType)> get mint_cycles_result_match_map => {
         Ok: (burn_icp_mint_cycles_success) async {
             return BurnIcpMintCyclesSuccess.of_the_record(burn_icp_mint_cycles_success);
@@ -340,7 +396,7 @@ class User {
             throw Exception('The Bank is busy. Try soon.');
         },
         'MinimumBurnIcp' : (r) async {
-            throw Exception('The minimum ICP is ${IcpTokens(e8s: (((r as Record)['minimum_burn_icp'] as Record) as Nat).value)}.');
+            throw Exception('The minimum ICP is ${IcpTokens(e8s: ((r as Record)['minimum_burn_icp'] as Nat).value)}.');
         },
         'MidCallError':(mint_cycles_mid_call_error) async {
             print('mint_cycles_mid_call_error: ${mint_cycles_mid_call_error}');
@@ -387,56 +443,6 @@ class User {
             return await match_variant<Future<BurnIcpMintCyclesSuccess>>(mint_cycles_error as Variant, mint_cycles_error_match_map);
         }
     };
-    
-    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(BigInt burn_icp) async {
-        BigInt current_bank_user_icp_subaccount_balance = await check_icrc1_balance(
-            icrc1_ledger_canister_id: SYSTEM_CANISTERS.ledger.principal, 
-            owner: CYCLES_BANK_LEDGER.ledger.principal, 
-            subaccount: bank_mint_cycles_user_icp_subaccount_bytes, 
-            calltype: CallType.query
-        );
-        if (current_bank_user_icp_subaccount_balance < burn_icp + Icrc1Ledgers.ICP.fee) {
-            await transfer_icp(
-                c_forwards_one(Record.of_the_map({
-                    'memo': Nat64(BigInt.from(4)),
-                    'amount': IcpTokens(e8s: burn_icp + Icrc1Ledgers.ICP.fee - current_bank_user_icp_subaccount_balance),
-                    'fee': ICP_LEDGER_TRANSFER_FEE,
-                    'from_subaccount': Option<Blob>(value: null, value_type: Blob.type_mode()),
-                    'to': Blob(hexstringasthebytes(this.bank_mint_cycles_user_icp_id)),
-                }))
-            );
-        }
-        Variant mint_cycles_result = c_backwards_one(
-            await this.call(
-                CYCLES_BANK_LEDGER.ledger,
-                calltype: CallType.call,
-                method_name: 'mint_cycles',
-                put_bytes: c_forwards([
-                    Record.of_the_map({
-                        'to' : Icrc1Account(owner: this.principal),
-                        'fee' : Option<Nat>(value: Nat(CYCLES_BANK_LEDGER.fee)),
-                        'burn_icp': Nat(burn_icp),
-                        'burn_icp_transfer_fee': Nat(Icrc1Ledgers.ICP.fee),
-                        'memo' : Option<Blob>(value: Blob(utf8.encode('CTSF'))),
-                        'created_at_time' : Option<Nat64>(value:null, value_type: Nat64()),
-                    })
-                ])
-            )
-        ) as Variant;
-        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(mint_cycles_result, mint_cycles_result_match_map);
-    }
-    
-    Future<BurnIcpMintCyclesSuccess> complete_burn_icp_mint_cycles() async {
-        Variant complete_mint_cycles_result = c_backwards(
-            await this.call(
-                CYCLES_BANK_LEDGER.ledger,
-                calltype: CallType.call,
-                method_name: 'complete_mint_cycles',
-                put_bytes: c_forwards([])
-            )
-        )[0] as Variant;
-        return await match_variant<Future<BurnIcpMintCyclesSuccess>>(complete_mint_cycles_result, complete_mint_cycles_result_match_map);
-    }
     
     // ----
     // cycles-out

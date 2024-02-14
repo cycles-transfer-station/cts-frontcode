@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:html' show window;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -990,9 +991,22 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
             child: Column(
                 children: <Widget>[
                     Container(
-                        padding: EdgeInsets.all(7),
+                        padding: EdgeInsets.all(0),
                         child: BankIcrc1IdAndBalanceAndLoadBalanceAndFee(Icrc1Ledgers.ICP, show_transfer_fee: false, key: ValueKey('BurnIcpMintCyclesForm BankIcrc1IdAndBalanceAndLoadBalanceAndFee')),
                     ),
+                    if (state.user!.bank_user_subaccount_icp_balance > BigInt.zero) ...[
+                        Container(
+                            width: double.infinity,
+                            child: Tooltip(
+                                message: 'These funds will be used first.',
+                                child: Text(/*'BANK-MINT-CYCLES-ICP-*/'ESCROW-BALANCE: ${IcpTokens(e8s: state.user!.bank_user_subaccount_icp_balance)}', style: TextStyle(fontSize: 15))
+                            )
+                        ),
+                        SizedBox(
+                            width: 1,
+                            height: 7
+                        ),
+                    ],
                     SizedBox(
                         width: 1,
                         height: 11
@@ -1075,8 +1089,10 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     try {
                                         this.burn_icp_mint_cycles_future = state.user!.burn_icp_mint_cycles(burn_icp.e8s);
                                         burn_icp_mint_cycles_success = await this.burn_icp_mint_cycles_future;
-                                    } catch(e) {
-                                        await showDialog(
+                                    } catch(e, s) {
+                                        print(e);
+                                        print(s);
+                                        Future sd = showDialog(
                                             context: state.context,
                                             builder: (BuildContext context) {
                                                 return AlertDialog(
@@ -1090,7 +1106,13 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                                     ]
                                                 );
                                             }   
-                                        );                                    
+                                        );          
+                                        try {
+                                            await state.user!.fresh_bank_user_subaccount_icp_balance();
+                                        } catch(e) {
+                                            window.alert('Error loading Bank-user-subaccount-icp-balance: \n${etext(e)}');
+                                        }
+                                        await sd;
                                         state.is_loading = false;
                                         main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
                                         return;
@@ -1120,6 +1142,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                         this.fresh_data_after_burn_icp_mint_cycles_future = Future.wait([
                                             state.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP, CYCLES_BANK_LEDGER]),
                                             state.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP, CYCLES_BANK_LEDGER]),
+                                            state.user!.fresh_bank_user_subaccount_icp_balance(),
                                         ]);
                                         await this.fresh_data_after_burn_icp_mint_cycles_future;
                                     } catch(e) {

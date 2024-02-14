@@ -169,6 +169,19 @@ class CustomState {
                             }
                         }
                     }))).then((_x){});
+                    
+                    // makes sure that the loads are set in the first_load_.. maps so that the router does not load them again.
+                    this.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = this.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]);
+                    this.user!.first_load_icrc1ledgers_balances[Icrc1Ledgers.ICP] = this.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP]);
+                    this.user!.first_load_icrc1ledgers_transactions[CYCLES_BANK_LEDGER] = this.user!.fresh_icrc1_transactions([CYCLES_BANK_LEDGER]);
+                    this.user!.first_load_icrc1ledgers_transactions[Icrc1Ledgers.ICP] = this.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP]);
+                    await Future.wait([
+                        this.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!,
+                        this.user!.first_load_icrc1ledgers_balances[Icrc1Ledgers.ICP]!,
+                        this.user!.first_load_icrc1ledgers_transactions[CYCLES_BANK_LEDGER]!,
+                        this.user!.first_load_icrc1ledgers_transactions[Icrc1Ledgers.ICP]!,
+                        this.user!.fresh_bank_user_subaccount_icp_balance(),
+                    ]);
                 } 
             }),
         ]);
