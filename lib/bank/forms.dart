@@ -1108,9 +1108,14 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                             }   
                                         );          
                                         try {
-                                            await state.user!.fresh_bank_user_subaccount_icp_balance();
+                                            // might have transferred to the bank-user-subaccount
+                                            await Future.wait([
+                                                state.user!.fresh_bank_user_subaccount_icp_balance(),
+                                                state.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP]),
+                                                state.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP]),
+                                            ]);
                                         } catch(e) {
-                                            window.alert('Error loading Bank-user-subaccount-icp-balance: \n${etext(e)}');
+                                            window.alert('Error loading icp balances and/or transactions: \n${etext(e)}');
                                         }
                                         await sd;
                                         state.is_loading = false;

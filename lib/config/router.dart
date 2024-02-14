@@ -107,6 +107,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                 if (wait_futures.isNotEmpty) {
                     state.loading_text = 'loading ${state.user!.current_icrc1_ledger.symbol} balance and transactions ...';
                     state.is_loading = true;
+                    // put LoadingPage as the page instead of putting it as a branch on top of the bank page. this way, it won't have to load these pages before loading the first state.  
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
                         Future.delayed(Duration(milliseconds: 1)/*make sure notifyListeners gets called after this build finishes*/, ()=>notifyListeners());
