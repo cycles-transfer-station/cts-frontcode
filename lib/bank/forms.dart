@@ -1065,9 +1065,21 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         ),
                         onSaved: (String? value) { burn_icp = IcpTokens.of_the_double_string(value!.trim()); },
                         validator: (String? v) {
+                            String? icp_validator_result = icp_validator(v);
+                            if (icp_validator_result != null) {
+                                return icp_validator_result;
+                            }
+                            IcpTokens quest_burn_icp = IcpTokens.of_the_double_string(v!);
                             Cycles max_mint_cycles = Cycles.oftheTCyclesDoubleString('40000');
                             IcpTokens max_burn_icp = IcpTokens(e8s: cycles_transform_tokens(max_mint_cycles, state.cmc_cycles_per_icp_rate));
-                            return icp_validator(v) ?? (IcpTokens.of_the_double_string(v!).e8s > max_burn_icp.e8s ? 'Max burn icp at once: ${max_burn_icp}' : null);
+                            IcpTokens min_burn_icp = IcpTokens(e8s: BigInt.from(10000000));
+                            if (quest_burn_icp.e8s > max_burn_icp.e8s) {
+                                return 'Max burn icp at once: ${max_burn_icp}';
+                            } 
+                            if (quest_burn_icp.e8s < min_burn_icp.e8s) {
+                                return 'Minimum burn icp: ${min_burn_icp}';
+                            }
+                            return null;
                         }
                     ),
                     Padding(
