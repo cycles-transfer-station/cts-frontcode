@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart' show Icrc1Ledger, Tokens;
 import 'package:ic_tools/common.dart' as common;
 
-
 import '../config/state.dart';
 import '../config/state_bind.dart';
+import '../config/urls.dart';
 import 'forms.dart';
 import 'cards.dart';
 import 'configure.dart';
@@ -74,23 +76,23 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                             width: double.infinity,
                                             padding: EdgeInsets.fromLTRB(7,11,7,11),
                                             child: Center(
-                                                child: Text('TRANSFER-${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
+                                                child: Text('TRANSFER-${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
                                             ),
                                         ),
                                         SizedBox(
                                             height: 11,
                                             width: 3,
                                         ),
-                                        BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.user!.current_icrc1_ledger, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.user!.current_icrc1_ledger.symbol}')),
+                                        BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.current_icrc1_ledger, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.current_icrc1_ledger.symbol}')),
                                         SizedBox(
                                             width: 1,
                                             height: 11
                                         ),
-                                        if (state.user!.current_icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
+                                        if (state.current_icrc1_ledger.ledger.principal == common.SYSTEM_CANISTERS.ledger.principal)
                                             BankTransferIcpForm(key: ValueKey('CyclesBankScaffoldBody BankTransferIcpForm'))
                                         else BankTransferIcrc1Form(
-                                            key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.user!.current_icrc1_ledger.ledger.principal.text}'),
-                                            icrc1_ledger: state.user!.current_icrc1_ledger    
+                                            key: ValueKey('CyclesBankScaffoldBody BankTransferIcrc1Form ${state.current_icrc1_ledger.ledger.principal.text}'),
+                                            icrc1_ledger: state.current_icrc1_ledger    
                                         )
                                     ]
                                 )
@@ -113,7 +115,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     ),
                                     isExpanded: false,
                                     items: [
-                                        for (Icrc1Ledger icrc1_ledger in state.user!.known_icrc1_ledgers)                 
+                                        for (Icrc1Ledger icrc1_ledger in state.known_icrc1_ledgers)                 
                                             DropdownMenuItem<Icrc1Ledger>(
                                                 child: Padding(
                                                     padding: EdgeInsets.symmetric(horizontal:4),
@@ -122,11 +124,12 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                 value: icrc1_ledger
                                             ),
                                     ],
-                                    value: state.user!.current_icrc1_ledger,
+                                    value: state.current_icrc1_ledger,
                                     onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
                                         if (select_icrc1_ledger != null) {
-                                            state.user!.current_icrc1_ledger = select_icrc1_ledger;
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                            if (select_icrc1_ledger != state.current_icrc1_ledger) {
+                                                change_url_into_cb(select_icrc1_ledger, context);
+                                            }
                                         }
                                     }
                                 )
@@ -137,11 +140,11 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             ),
                             DefaultTextStyle.merge(
                                 style: TextStyle(fontSize: 27, fontFamily: 'CourierNewBold'),
-                                child: Text(state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER 
+                                child: Text(state.current_icrc1_ledger == CYCLES_BANK_LEDGER 
                                     ? Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!).toString()
                                     : Tokens(
-                                        quantums: state.user!.icrc1_balances_cache[state.user!.current_icrc1_ledger]!,
-                                        decimal_places: state.user!.current_icrc1_ledger.decimals 
+                                        quantums: state.user!.icrc1_balances_cache[state.current_icrc1_ledger]!,
+                                        decimal_places: state.current_icrc1_ledger.decimals 
                                     ).toString()
                                 )
                             ),
@@ -153,13 +156,13 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                 padding: EdgeInsets.all(7),
                                 child: ElevatedButton(
                                     style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                    child: Text('TRANSFER ${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}'),
+                                    child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}'),
                                     onPressed: () async {
                                         await show_transfer_dialog();
                                     }
                                 )
                             ),
-                            if (state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER) ...[
+                            if (state.current_icrc1_ledger == CYCLES_BANK_LEDGER) ...[
                                 SizedBox(
                                     width: 3,
                                     height: 10
@@ -181,20 +184,20 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     style: ElevatedButton.styleFrom(backgroundColor: blue),
                                     child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
                                     onPressed: () async {
-                                        state.loading_text = 'loading bank \$${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol} transfers ...';
+                                        state.loading_text = 'loading bank \$${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers ...';
                                         state.is_loading = true;
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                         try {
                                             await Future.wait([
-                                                state.user!.fresh_icrc1_transactions([state.user!.current_icrc1_ledger]),
-                                                state.user!.fresh_icrc1_balances([state.user!.current_icrc1_ledger]),
+                                                state.user!.fresh_icrc1_transactions([state.current_icrc1_ledger]),
+                                                state.user!.fresh_icrc1_balances([state.current_icrc1_ledger]),
                                             ]);
                                         } catch(e) {
                                             await showDialog(
                                                 context: state.context,
                                                 builder: (BuildContext context) {
                                                     return AlertDialog(
-                                                        title: Text('Error when loading the bank ${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol} transfers:'),
+                                                        title: Text('Error when loading the bank ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers:'),
                                                         content: Text('${etext(e)}'),
                                                         actions: <Widget>[
                                                             TextButton(
@@ -214,14 +217,14 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(11,0,0,0),
-                                child: Text('${state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.user!.current_icrc1_ledger.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),
+                                child: Text('${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}-TRANSFERS', style: TextStyle(fontSize: 17)),
                             ),              
-                            if (state.user!.current_icrc1_ledger == CYCLES_BANK_LEDGER)
+                            if (state.current_icrc1_ledger == CYCLES_BANK_LEDGER)
                                 BankCyclesTransfersLog(key: ValueKey('BankScaffoldBody BankCyclesTransfersLog'))  
-                            else if (state.user!.current_icrc1_ledger == common.Icrc1Ledgers.ICP) 
+                            else if (state.current_icrc1_ledger == common.Icrc1Ledgers.ICP) 
                                 IcpTransfersLogs(key: ValueKey('CyclesBankScaffoldBody IcpTransfersLogs'))
                             else 
-                                BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.user!.current_icrc1_ledger.ledger.principal.text}'))
+                                BankTokenTransfersLog(key: ValueKey('BankScaffoldBody BankTokenTransfersLog ${state.current_icrc1_ledger.ledger.principal.text}'))
                         ]
                     )
                 )
@@ -343,7 +346,7 @@ class BankTokenTransfersLog extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
     
-        Icrc1Ledger ledger = state.user!.current_icrc1_ledger;
+        Icrc1Ledger ledger = state.current_icrc1_ledger;
         List<Icrc1Transaction> ts = state.user!.icrc1_transactions_cache[ledger]!;
     
         return LimitedBox(
@@ -507,4 +510,47 @@ class BankCyclesTransfersLog extends StatelessWidget {
     } 
 }
 
+List<Future> generate_possible_cb_first_load_futures(Icrc1Ledger select_icrc1_ledger, CustomState state) {
+    List<Future> wait_futures = [];
+    if (state.user != null) {
+        if (state.user!.first_load_icrc1ledgers_balances.containsKey(select_icrc1_ledger) == false) {
+            state.user!.first_load_icrc1ledgers_balances[select_icrc1_ledger] = state.user!.fresh_icrc1_balances([select_icrc1_ledger]);
+            wait_futures.add(state.user!.first_load_icrc1ledgers_balances[select_icrc1_ledger]!);
+            print('bank ${select_icrc1_ledger.symbol} balances first load');
+        }
+        if (state.user!.first_load_icrc1ledgers_transactions.containsKey(select_icrc1_ledger) == false) {
+            state.user!.first_load_icrc1ledgers_transactions[select_icrc1_ledger] = state.user!.fresh_icrc1_transactions([select_icrc1_ledger]);
+            wait_futures.add(state.user!.first_load_icrc1ledgers_transactions[select_icrc1_ledger]!);
+            print('bank ${select_icrc1_ledger.symbol} transactions first load');
+        }
+    }
+    return wait_futures;
+}
 
+
+void change_url_into_cb(Icrc1Ledger select_icrc1_ledger, BuildContext context) {
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+    List<Future> wait_futures = generate_possible_cb_first_load_futures(select_icrc1_ledger, state);
+   
+    Function d = () {
+        state.current_icrc1_ledger = select_icrc1_ledger;
+        state.current_url = CustomUrl('cycles_bank', variables: {'token_ledger_id': select_icrc1_ledger.ledger.principal.text});
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                        
+    };
+    
+    if (wait_futures.isNotEmpty) {
+        state.loading_text = 'loading ${select_icrc1_ledger.symbol} balance and transactions ...';
+        state.is_loading = true;
+        state.show_loading_page_transition_completer = Completer();
+        wait_futures.add(state.show_loading_page_transition_completer.future);
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+        Future.wait(wait_futures).then((_x){
+            state.is_loading = false;
+            d();
+        });
+    } else {
+        d();
+    }
+}

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:html' show window, CryptoKey, Event;
 import 'dart:js_util';
+import 'dart:async';
 
 
 import 'package:js/js.dart';
@@ -94,6 +95,9 @@ class CustomState {
         
         dataTableShowLogs = false; // for the data_table_2 package
         
+        current_icrc1_ledger = CYCLES_BANK_LEDGER; // set here cause can only use CYCLES_BANK_LEDGER after bank-variable is set.
+        known_icrc1_ledgers = [CYCLES_BANK_LEDGER];
+        
     }    
     
     
@@ -104,7 +108,7 @@ class CustomState {
     String loading_text = 'loading ...';
     bool is_loading = true; // state starts loading. the router sets the is_loading=false and calls tifyListeners() on a successfull completion of the load_first_state function. 
     
-    
+    Completer show_loading_page_transition_completer = Completer();
     
     late BuildContext _scontext; 
     
@@ -119,11 +123,17 @@ class CustomState {
     int cm_main_icrc1token_trade_contracts_i = 0;
     
     User? user;
+    
+    late Icrc1Ledger current_icrc1_ledger; // for the selection of the bank-page-token // late cause bank is set in the constructor; 
+    late List<Icrc1Ledger> known_icrc1_ledgers;// late cause bank is set in the constructor;
 
     Future<void> loadfirststate() async { 
         print('load first state');
         
-        Future cycles_market_main_fresh_icrc1token_trade_contracts_future = this.cm_main.fresh_icrc1token_trade_contracts();
+        Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
+            await this.cm_main.fresh_icrc1token_trade_contracts();
+            this.known_icrc1_ledgers.addAll(this.cm_main.trade_contracts.map((tc)=>tc.ledger_data));
+        });
         
         await Future.wait([
             this.fresh_xdr_icp_rate(),
@@ -170,18 +180,23 @@ class CustomState {
                         }
                     }))).then((_x){});
                     
+                    /*
                     // makes sure that the loads are set in the first_load_.. maps so that the router does not load them again.
                     this.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = this.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]);
                     this.user!.first_load_icrc1ledgers_balances[Icrc1Ledgers.ICP] = this.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP]);
                     this.user!.first_load_icrc1ledgers_transactions[CYCLES_BANK_LEDGER] = this.user!.fresh_icrc1_transactions([CYCLES_BANK_LEDGER]);
                     this.user!.first_load_icrc1ledgers_transactions[Icrc1Ledgers.ICP] = this.user!.fresh_icrc1_transactions([Icrc1Ledgers.ICP]);
+                    */
                     await Future.wait([
+                        /*
                         this.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!,
                         this.user!.first_load_icrc1ledgers_balances[Icrc1Ledgers.ICP]!,
                         this.user!.first_load_icrc1ledgers_transactions[CYCLES_BANK_LEDGER]!,
                         this.user!.first_load_icrc1ledgers_transactions[Icrc1Ledgers.ICP]!,
+                        */
                         this.user!.fresh_bank_user_subaccount_icp_balance(),
                     ]);
+                    
                 } 
             }),
         ]);

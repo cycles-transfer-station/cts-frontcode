@@ -8,7 +8,8 @@ import 'state.dart';
 import 'state_bind.dart';
 import 'pages.dart';
 import '../tools/widgets.dart';
-
+import '../cycles_market/scaffold_body.dart';
+import '../bank/scaffold_body.dart';
 
 class CustomRouteParser extends RouteInformationParser<CustomUrl> {
     @override
@@ -69,6 +70,17 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             } else {
                 state.current_url = CustomUrl('void');
             }
+        } 
+        else if (custom_url.name == 'cycles_bank') {
+            int known_icrc1_ledger_i_of_the_url = 
+                state.known_icrc1_ledgers
+                .indexWhere((l)=>l.ledger.principal.text == custom_url.variables['token_ledger_id']!);
+                
+            if (known_icrc1_ledger_i_of_the_url >= 0) {
+                state.current_icrc1_ledger = state.known_icrc1_ledgers[known_icrc1_ledger_i_of_the_url];
+            } else {
+                state.current_url = CustomUrl('void');
+            }
         }
         
         // does this re-build the state? yes.
@@ -84,92 +96,61 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         state = new_state;
         if (tifyListeners==true) { notifyListeners(); }
     }
-
-
+    
     @override
     Widget build(BuildContext context) {
         
+        List<Future> wait_futures = [];
         if (state.is_loading == false) { // portant. Don't mess with other loading flows. this can run after.
             if (state.current_url.name == 'cycles_bank') {
-                List<Future> wait_futures = [];
-                if (state.user != null) {
-                    if (state.user!.first_load_icrc1ledgers_balances.containsKey(state.user!.current_icrc1_ledger) == false) {
-                        state.user!.first_load_icrc1ledgers_balances[state.user!.current_icrc1_ledger] = state.user!.fresh_icrc1_balances([state.user!.current_icrc1_ledger]);
-                        wait_futures.add(state.user!.first_load_icrc1ledgers_balances[state.user!.current_icrc1_ledger]!);
-                        print('bank ${state.user!.current_icrc1_ledger.symbol} balances first load');
-                    }
-                    if (state.user!.first_load_icrc1ledgers_transactions.containsKey(state.user!.current_icrc1_ledger) == false) {
-                        state.user!.first_load_icrc1ledgers_transactions[state.user!.current_icrc1_ledger] = state.user!.fresh_icrc1_transactions([state.user!.current_icrc1_ledger]);
-                        wait_futures.add(state.user!.first_load_icrc1ledgers_transactions[state.user!.current_icrc1_ledger]!);
-                        print('bank ${state.user!.current_icrc1_ledger.symbol} transactions first load');
-                    }
-                }
+                wait_futures = generate_possible_cb_first_load_futures(state.current_icrc1_ledger, state);
                 if (wait_futures.isNotEmpty) {
-                    state.loading_text = 'loading ${state.user!.current_icrc1_ledger.symbol} balance and transactions ...';
+                    state.loading_text = 'loading ${state.current_icrc1_ledger.symbol} balance and transactions ...';
                     state.is_loading = true;
-                    // put LoadingPage as the page instead of putting it as a branch on top of the bank page. this way, it won't have to load these pages before loading the first state.  
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
-                        Future.delayed(Duration(milliseconds: 1)/*make sure notifyListeners gets called after this build finishes*/, ()=>notifyListeners());
+                        Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             } else if (state.current_url.name == 'cycles_market') {
-                List<Future> wait_futures = [];
-                if (state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].first_load_data == null) { // state.cm_main.trade_contracts[i] will not be null, because the setNewRoutePath waits till the loadfirststate which loads the view_tcs. so it can only be a cycles_market current url when the loadfirststate is done.
-                    state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].first_load_data = state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].load_data();                
-                    wait_futures.add(state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].first_load_data!);
-                    print('cm ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} first load_data');
-                }
-                if (state.user != null) {
-                    if (state.user!.first_load_tcs.containsKey(state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i]) == false) {
-                        state.user!.first_load_tcs[state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i]] = state.user!.load_cm_data([state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i]]);
-                        wait_futures.add(state.user!.first_load_tcs[state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i]]!);
-                        print('cm ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} user first load_cm_data');
-                    }
-                    if (state.user!.first_load_icrc1ledgers_balances.containsKey(state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data) == false) {
-                        state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data] = state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data]); 
-                        wait_futures.add(state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data]!);
-                        print('cm ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} user load balance');
-                    }
-                    if (state.user!.first_load_icrc1ledgers_balances.containsKey(CYCLES_BANK_LEDGER) == false) {
-                        state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = state.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]); 
-                        wait_futures.add(state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!);
-                        print('cm ${'CYCLES'} user load balance');
-                    }
-                }
+                wait_futures = generate_possible_cm_page_first_load_futures(state.cm_main_icrc1token_trade_contracts_i, state);
                 if (wait_futures.isNotEmpty) {
-                    state.loading_text = 'loading ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} market ...';
+                    state.loading_text = 'loading ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} market ...';    
                     state.is_loading = true;
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
-                        Future.delayed(Duration(milliseconds: 1)/*make sure notifyListeners gets called after this build finishes*/, ()=>notifyListeners());
+                        Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             }
         }
         
-        // url branches config
+        late List<Page> navigator_pages;
+        late List<String> page_branches;
         
-        List<String> page_branches = state.current_url.name.split('__');
+        if (wait_futures.isNotEmpty) {
+            navigator_pages = [LoadingPage()];    
+        } else {
+            page_branches = state.current_url.name.split('__');
+            navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() );              
+            if (state.is_loading == true) {
+                navigator_pages.add(LoadingPage());
+            }
+        }
         
-        // yes i know the last CustomUrl is already in the state, ... i could generate only the parent-branches and + with the state.current_url.get_page() but is the [] + [] faster than the CustomUrl()-stantiation?
-        List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() );
-    
         late bool Function(Route route, dynamic sult) onPopPage; 
         
-        if (state.is_loading) {
-            navigator_pages.add(LoadingPage());
+        if (state.is_loading == true) {
             onPopPage = (r,s)=>false;
         } else {
             onPopPage = (route, sult) {
                 if (route.didPop(sult)==false) { return false; }
                 state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
-                //_changeState(state, tifyListeners: true);
                 return true;
             };
-            
         }
         
+        print('router build. loading: ${state.is_loading}, navigator pages: ${navigator_pages.map((p)=>p.runtimeType).toList()}, current-url: ${state.current_url.name}');
         return MainStateBind<CustomState>(
             key: ValueKey<String>('mainstatebind'),
             getState: _getState,
@@ -177,11 +158,41 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             child: Navigator(
                 key: navigatorKey,
                 pages: navigator_pages,
-                onPopPage: onPopPage
+                onPopPage: onPopPage,
+                transitionDelegate: CustomTransitionDelegate(),
             )
         );
     }
 }
 
-
-
+class CustomTransitionDelegate extends DefaultTransitionDelegate<void> {
+    @override
+    Iterable<RouteTransitionRecord> resolve({
+        required List<RouteTransitionRecord> newPageRouteHistory,
+        required Map<RouteTransitionRecord?, RouteTransitionRecord> locationToExitingPageRoute,
+        required Map<RouteTransitionRecord?, List<RouteTransitionRecord>> pageRouteToPagelessRoutes,
+    }) {
+        for (RouteTransitionRecord exiting_page_route in locationToExitingPageRoute.values) {
+            if (exiting_page_route.isWaitingForExitingDecision) {
+                if ((exiting_page_route.route.settings as Page) is LoadingPage) {
+                    exiting_page_route.markForPop(); // with an animation
+                    assert(exiting_page_route.isWaitingForExitingDecision == false); 
+                }
+            }
+        } 
+        
+        List<RouteTransitionRecord> super_results = super.resolve(
+            newPageRouteHistory: newPageRouteHistory, 
+            locationToExitingPageRoute: locationToExitingPageRoute, 
+            pageRouteToPagelessRoutes: pageRouteToPagelessRoutes
+        ).toList();
+        
+        for (int i=0;i<super_results.length;i++) {
+            if ((super_results[i].route.settings as Page) is LoadingPage) {
+                super_results.add(super_results.removeAt(i)); // put at the end.
+            }    
+        }
+        
+        return super_results;
+    }
+}
