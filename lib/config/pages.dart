@@ -50,7 +50,7 @@ class LoadingPage extends Page {
             settings: this,
             // do a cool fade in and fade out 
             transitionDuration: const Duration(milliseconds: 275),
-            reverseTransitionDuration: const Duration(milliseconds: 17500), // 175
+            reverseTransitionDuration: const Duration(milliseconds: 175),
             pageBuilder: (context, animation, animation2) {
                 animation.addStatusListener((AnimationStatus animation_status){
                     if (animation_status == AnimationStatus.completed) {
