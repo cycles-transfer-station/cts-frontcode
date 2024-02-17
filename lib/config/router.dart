@@ -102,28 +102,25 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     @override
     Widget build(BuildContext context) {
         
-        List<Future> wait_futures = [];
         if (state.is_loading == false) { // portant. Don't mess with other loading flows. this can run after.
             if (state.current_url.name == 'cycles_bank') {
-                wait_futures = generate_possible_cb_first_load_futures(state.current_icrc1_ledger, state);
+                List<Future> wait_futures = generate_possible_cb_first_load_futures(state.current_icrc1_ledger, state);
                 if (wait_futures.isNotEmpty) {
                     state.loading_text = 'loading ${state.current_icrc1_ledger.symbol} balance and transactions ...';
                     state.is_loading = true;
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
                         notifyListeners();
-                        //Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             } else if (state.current_url.name == 'cycles_market') {
-                wait_futures = generate_possible_cm_page_first_load_futures(state.cm_main_icrc1token_trade_contracts_i, state);
+                List<Future> wait_futures = generate_possible_cm_page_first_load_futures(state.cm_main_icrc1token_trade_contracts_i, state);
                 if (wait_futures.isNotEmpty) {
                     state.loading_text = 'loading ${state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol} market ...';    
                     state.is_loading = true;
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
                         notifyListeners();
-                        //Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             }
@@ -133,7 +130,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page());
         late bool Function(Route route, dynamic sult) onPopPage; 
         
-        if (state.is_loading == true) {
+        if (state.is_loading) {
             navigator_pages.add(LoadingPage());
             onPopPage = (r,s)=>false;
         } else {
@@ -154,7 +151,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             child: Navigator(
                 key: navigatorKey,
                 pages: navigator_pages,
-                onPopPage: onPopPage,
+                onPopPage: onPopPage
             )
         );
     }

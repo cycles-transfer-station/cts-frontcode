@@ -49,8 +49,8 @@ class LoadingPage extends Page {
         return PageRouteBuilder(
             settings: this,
             // do a cool fade in and fade out 
-            transitionDuration: const Duration(milliseconds: 275),
-            reverseTransitionDuration: const Duration(milliseconds: 17500),
+            transitionDuration: const Duration(milliseconds: 250),
+            reverseTransitionDuration: const Duration(milliseconds: 175),
             pageBuilder: (context, animation, animation2) {
                 animation.addStatusListener((AnimationStatus animation_status){
                     if (animation_status == AnimationStatus.completed) {
@@ -154,28 +154,13 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                     state.current_url = CustomUrl('welcome');
                                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                                     Navigator.pop(context);
-                                                    
                                                 },
                                             ),
-                                            /*
-                                            ListTile(
-                                                title: const Text('TRANSFER-ICP'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('transfer_icp');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
-                                            ),
-                                            */
                                             ListTile(
                                                 title: const Text('BANK'),
                                                 onTap: () {
                                                     Navigator.pop(context);
                                                     change_url_into_cb(state.current_icrc1_ledger, context);
-                                                    /*
-                                                    state.current_url = CustomUrl('cycles_bank', variables: {'token_ledger_id': state.current_icrc1_ledger.ledger.principal.text});
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    */
                                                 },
                                             ),
                                             ListTile(
@@ -183,15 +168,6 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                 onTap: () {
                                                     Navigator.pop(context);
                                                     change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
-                                                    /*
-                                                    state.current_url = CustomUrl(
-                                                        'cycles_market', 
-                                                        variables: {
-                                                            'token_ledger_id': state.cm_main.icrc1token_trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.ledger.principal.text
-                                                        }
-                                                    );
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    */
                                                 },
                                             ),
                                             ListTile(

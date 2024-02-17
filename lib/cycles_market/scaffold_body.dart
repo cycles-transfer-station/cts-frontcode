@@ -1710,23 +1710,23 @@ List<Future> generate_possible_cm_page_first_load_futures(int cm_main_trade_cont
     if (state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data == null) { // state.cm_main.trade_contracts[i] will not be null, because the setNewRoutePath waits till the loadfirststate which loads the view_tcs. so it can only be a cycles_market current url when the loadfirststate is done.
         state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data = state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data();                
         wait_futures.add(state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data!);
-        print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} first load_data');
+        //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} first load_data');
     }
     if (state.user != null) {
         if (state.user!.first_load_tcs.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i]) == false) {
             state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]] = state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]);
             wait_futures.add(state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]]!);
-            print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user first load_cm_data');
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user first load_cm_data');
         }
         if (state.user!.first_load_icrc1ledgers_balances.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data) == false) {
             state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data] = state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]); 
             wait_futures.add(state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]!);
-            print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user load balance');
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user load balance');
         }
         if (state.user!.first_load_icrc1ledgers_balances.containsKey(CYCLES_BANK_LEDGER) == false) {
             state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = state.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]); 
             wait_futures.add(state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!);
-            print('cm ${'CYCLES'} user load balance');
+            //print('cm ${'CYCLES'} user load balance');
         }
     }
     return wait_futures;

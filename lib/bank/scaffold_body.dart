@@ -520,12 +520,12 @@ List<Future> generate_possible_cb_first_load_futures(Icrc1Ledger select_icrc1_le
         if (state.user!.first_load_icrc1ledgers_balances.containsKey(select_icrc1_ledger) == false) {
             state.user!.first_load_icrc1ledgers_balances[select_icrc1_ledger] = state.user!.fresh_icrc1_balances([select_icrc1_ledger]);
             wait_futures.add(state.user!.first_load_icrc1ledgers_balances[select_icrc1_ledger]!);
-            print('bank ${select_icrc1_ledger.symbol} balances first load');
+            //print('bank ${select_icrc1_ledger.symbol} balances first load');
         }
         if (state.user!.first_load_icrc1ledgers_transactions.containsKey(select_icrc1_ledger) == false) {
             state.user!.first_load_icrc1ledgers_transactions[select_icrc1_ledger] = state.user!.fresh_icrc1_transactions([select_icrc1_ledger]);
             wait_futures.add(state.user!.first_load_icrc1ledgers_transactions[select_icrc1_ledger]!);
-            print('bank ${select_icrc1_ledger.symbol} transactions first load');
+            //print('bank ${select_icrc1_ledger.symbol} transactions first load');
         }
     }
     return wait_futures;
