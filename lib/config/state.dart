@@ -101,7 +101,7 @@ class CustomState {
     }    
     
     
-    
+    bool first_show_scaffold = false;
 
     CustomUrl current_url = CustomUrl('welcome');
     

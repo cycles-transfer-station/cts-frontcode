@@ -83,6 +83,8 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
             }
         }
         
+        state.first_show_scaffold = false; // when url changes, treat it like a fresh url load. // :portant.
+        print('setNewRoutePath');
         // does this re-build the state? yes.
     }
 
@@ -109,7 +111,8 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                     state.is_loading = true;
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
-                        Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
+                        notifyListeners();
+                        //Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             } else if (state.current_url.name == 'cycles_market') {
@@ -119,38 +122,31 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                     state.is_loading = true;
                     Future.wait(wait_futures).then((_x){
                         state.is_loading = false;
-                        Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
+                        notifyListeners();
+                        //Future.delayed(Duration(milliseconds: 1), ()=>notifyListeners()); /*make sure notifyListeners gets called after this build finishes*/
                     });
                 }
             }
         }
         
-        late List<Page> navigator_pages;
-        late List<String> page_branches;
-        
-        if (wait_futures.isNotEmpty) {
-            navigator_pages = [LoadingPage()];    
-        } else {
-            page_branches = state.current_url.name.split('__');
-            navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page() );              
-            if (state.is_loading == true) {
-                navigator_pages.add(LoadingPage());
-            }
-        }
-        
+        List<String> page_branches = state.current_url.name.split('__');
+        List<Page> navigator_pages = List.generate(page_branches.length, (int i) => CustomUrl(page_branches.take(i+1).join('__'), variables: state.current_url.variables).get_page());
         late bool Function(Route route, dynamic sult) onPopPage; 
         
         if (state.is_loading == true) {
+            navigator_pages.add(LoadingPage());
             onPopPage = (r,s)=>false;
         } else {
+            if (state.first_show_scaffold == false) { state.first_show_scaffold = true; }
             onPopPage = (route, sult) {
                 if (route.didPop(sult)==false) { return false; }
                 state.current_url = CustomUrl(page_branches.take(page_branches.length - 1).join('__'), variables: state.current_url.variables);
                 return true;
             };
+
         }
-        
-        print('router build. loading: ${state.is_loading}, navigator pages: ${navigator_pages.map((p)=>p.runtimeType).toList()}, current-url: ${state.current_url.name}');
+                
+        print('router build. loading: ${state.is_loading}, current-url: ${state.current_url.name}, navigator pages: ${navigator_pages.map((p)=>p.runtimeType).toList()}');
         return MainStateBind<CustomState>(
             key: ValueKey<String>('mainstatebind'),
             getState: _getState,
@@ -159,40 +155,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
                 key: navigatorKey,
                 pages: navigator_pages,
                 onPopPage: onPopPage,
-                transitionDelegate: CustomTransitionDelegate(),
             )
         );
-    }
-}
-
-class CustomTransitionDelegate extends DefaultTransitionDelegate<void> {
-    @override
-    Iterable<RouteTransitionRecord> resolve({
-        required List<RouteTransitionRecord> newPageRouteHistory,
-        required Map<RouteTransitionRecord?, RouteTransitionRecord> locationToExitingPageRoute,
-        required Map<RouteTransitionRecord?, List<RouteTransitionRecord>> pageRouteToPagelessRoutes,
-    }) {
-        for (RouteTransitionRecord exiting_page_route in locationToExitingPageRoute.values) {
-            if (exiting_page_route.isWaitingForExitingDecision) {
-                if ((exiting_page_route.route.settings as Page) is LoadingPage) {
-                    exiting_page_route.markForPop(); // with an animation
-                    assert(exiting_page_route.isWaitingForExitingDecision == false); 
-                }
-            }
-        } 
-        
-        List<RouteTransitionRecord> super_results = super.resolve(
-            newPageRouteHistory: newPageRouteHistory, 
-            locationToExitingPageRoute: locationToExitingPageRoute, 
-            pageRouteToPagelessRoutes: pageRouteToPagelessRoutes
-        ).toList();
-        
-        for (int i=0;i<super_results.length;i++) {
-            if ((super_results[i].route.settings as Page) is LoadingPage) {
-                super_results.add(super_results.removeAt(i)); // put at the end.
-            }    
-        }
-        
-        return super_results;
     }
 }

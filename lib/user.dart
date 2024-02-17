@@ -26,8 +26,7 @@ class User {
     Principal get principal => caller.principal;
     
     late final String icp_id;
-    //List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP];
-    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {CYCLES_BANK_LEDGER: BigInt.zero, Icrc1Ledgers.ICP: BigInt.zero};
+    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
     List<CyclesTransfer> cycles_transfers = []; // cycles-transfer logs are different than the icrc1-transfer-logs
@@ -59,11 +58,6 @@ class User {
             
     void fresh_known_cm_trade_contracts_of_the_cm_main() {
         for (Icrc1TokenTradeContract tc in this.state.cm_main.trade_contracts) {
-            /*
-            if (this.known_icrc1_ledgers.contains(tc.ledger_data) == false) {
-                this.known_icrc1_ledgers.add(tc.ledger_data);
-            }
-            */
             if (this.cm_trade_contracts.containsKey(tc) == false) {
                 this.cm_trade_contracts[tc] = UserCMTradeContractData();
             }

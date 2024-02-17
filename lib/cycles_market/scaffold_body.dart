@@ -37,7 +37,11 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    
+        
+        if (state.first_show_scaffold == false) {
+            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+        }
+        
         double width = 1300;
         
         List<Widget> column_children = [];

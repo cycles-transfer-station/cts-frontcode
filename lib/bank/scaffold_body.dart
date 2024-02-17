@@ -40,6 +40,10 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
+        if (state.first_show_scaffold == false) {
+            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+        }
+        
         late Widget body_widget;
         
         if (state.user == null) {
@@ -229,7 +233,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     )
                 )
             ]);
-            
+            /*
             if (state.current_url.name == 'cycles_bank_pay') {
                 if (ModalRoute.of(context)?.isCurrent == true) { // show if there are no open dialogs                    
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -246,7 +250,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                 });
                 */
             }
-            
+            */
             
             body_widget = LayoutBuilder(builder: (context, constraints) {
                 return SingleChildScrollView(
