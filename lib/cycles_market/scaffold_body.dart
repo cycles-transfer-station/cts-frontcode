@@ -25,10 +25,6 @@ import '../user.dart';
 
 
 
-// check the stop scroll functionality 
-
-
-
 class CyclesMarketScaffoldBody extends StatefulWidget {
     CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
@@ -41,7 +37,11 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    
+        
+        if (state.first_show_scaffold == false) {
+            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+        }
+        
         double width = 1300;
         
         List<Widget> column_children = [];
@@ -79,14 +79,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                             onChanged: (int? select_i) { 
                                 if (select_i is int) {
                                     if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
-                                        state.cm_main_icrc1token_trade_contracts_i = select_i;
-                                        state.current_url = CustomUrl(
-                                            'cycles_market', 
-                                            variables: {
-                                                'token_ledger_id': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.ledger.principal.text
-                                            }
-                                        );
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        change_url_into_cm_market(select_i, context);
                                     }
                                 }
                             }
@@ -1710,4 +1703,64 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
 }
 
 
+
+
+List<Future> generate_possible_cm_page_first_load_futures(int cm_main_trade_contracts_i, CustomState state) {
+    List<Future> wait_futures = [];
+    if (state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data == null) { // state.cm_main.trade_contracts[i] will not be null, because the setNewRoutePath waits till the loadfirststate which loads the view_tcs. so it can only be a cycles_market current url when the loadfirststate is done.
+        state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data = state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data();                
+        wait_futures.add(state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data!);
+        //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} first load_data');
+    }
+    if (state.user != null) {
+        if (state.user!.first_load_tcs.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i]) == false) {
+            state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]] = state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]);
+            wait_futures.add(state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]]!);
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user first load_cm_data');
+        }
+        if (state.user!.first_load_icrc1ledgers_balances.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data) == false) {
+            state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data] = state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]); 
+            wait_futures.add(state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]!);
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user load balance');
+        }
+        if (state.user!.first_load_icrc1ledgers_balances.containsKey(CYCLES_BANK_LEDGER) == false) {
+            state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = state.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]); 
+            wait_futures.add(state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!);
+            //print('cm ${'CYCLES'} user load balance');
+        }
+    }
+    return wait_futures;
+}
+
+void change_url_into_cm_market(int cm_main_trade_contracts_i, BuildContext context) {
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+    List<Future> wait_futures = generate_possible_cm_page_first_load_futures(cm_main_trade_contracts_i, state);
+    
+    Function d = () {
+        state.cm_main_icrc1token_trade_contracts_i = cm_main_trade_contracts_i;
+        state.current_url = CustomUrl(
+            'cycles_market', 
+            variables: {
+                'token_ledger_id': state.cm_main.icrc1token_trade_contracts[cm_main_trade_contracts_i].ledger_data.ledger.principal.text
+            }
+        );
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+    };
+    
+    if (wait_futures.isNotEmpty) {
+        state.loading_text = 'loading ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} market ...';
+        state.is_loading = true;
+        state.show_loading_page_transition_completer = Completer();
+        wait_futures.add(state.show_loading_page_transition_completer.future);
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+        Future.wait(wait_futures).then((_x){
+            state.is_loading = false;
+            d();
+        });
+    } else {
+        d();
+    }
+}
 
