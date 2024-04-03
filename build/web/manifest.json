@@ -3,9 +3,9 @@
     "short_name": "CTS",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Mint, transfer, and trade the native stable-currency on the world-computer.",
+    "background_color": "#485b86",
+    "theme_color": "#485b86",
+    "description": "Mint, transfer, and trade the native stable-currency on the world-computer: CYCLES.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
