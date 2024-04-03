@@ -31,7 +31,7 @@ final Map<String, Map> urlmap = {
     },
     */
     'cycles_bank': {
-        'path': '/bank',
+        'path': '/bank/<token_ledger_id>',
         'page': WelcomePage.create,
         'main_page_scaffold_body': CyclesBankScaffoldBody.create
     },

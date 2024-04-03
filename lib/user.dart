@@ -26,8 +26,7 @@ class User {
     Principal get principal => caller.principal;
     
     late final String icp_id;
-    List<Icrc1Ledger> known_icrc1_ledgers = [CYCLES_BANK_LEDGER, Icrc1Ledgers.ICP];
-    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {CYCLES_BANK_LEDGER: BigInt.zero, Icrc1Ledgers.ICP: BigInt.zero};
+    Map<Icrc1Ledger, BigInt> icrc1_balances_cache = {};
     Map<Icrc1Ledger, List<Icrc1Transaction>> icrc1_transactions_cache = {};
     List<IcpTransfer> icp_transfers = []; // icp-transfer logs are different than the icrc1-transfer-logs    
     List<CyclesTransfer> cycles_transfers = []; // cycles-transfer logs are different than the icrc1-transfer-logs
@@ -37,8 +36,6 @@ class User {
     Map<Icrc1TokenTradeContract, Future> first_load_tcs = {};
     
     Map<Icrc1TokenTradeContract, UserCMTradeContractData> cm_trade_contracts = {};
-    
-    Icrc1Ledger current_icrc1_ledger = CYCLES_BANK_LEDGER;
     
     // for the mint_cycles through the cycles-bank.
     late final Uint8List bank_mint_cycles_user_icp_subaccount_bytes;
@@ -61,15 +58,6 @@ class User {
             
     void fresh_known_cm_trade_contracts_of_the_cm_main() {
         for (Icrc1TokenTradeContract tc in this.state.cm_main.trade_contracts) {
-            if (this.known_icrc1_ledgers.contains(tc.ledger_data) == false) {
-                this.known_icrc1_ledgers.add(tc.ledger_data);
-                if (this.icrc1_balances_cache.containsKey(tc.ledger_data) == false) {
-                    this.icrc1_balances_cache[tc.ledger_data] = BigInt.zero;
-                }
-                if (this.icrc1_transactions_cache.containsKey(tc.ledger_data) == false) {
-                    this.icrc1_transactions_cache[tc.ledger_data] = [];
-                }
-            }
             if (this.cm_trade_contracts.containsKey(tc) == false) {
                 this.cm_trade_contracts[tc] = UserCMTradeContractData();
             }
@@ -77,7 +65,7 @@ class User {
     }
     
     Future<void> fresh_icrc1_balances([List<Icrc1Ledger>? icrc1_ledgers]) async {
-        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.known_icrc1_ledgers;
+        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.state.known_icrc1_ledgers;
         await Future.wait(
             ledgers.map((l)=>Future(()async{
                 BigInt balance = await check_icrc1_balance(
@@ -117,7 +105,7 @@ class User {
         )).first as Variant;
     } 
     Future<void> fresh_icrc1_transactions([List<Icrc1Ledger>? icrc1_ledgers]) {
-        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.known_icrc1_ledgers;
+        List<Icrc1Ledger> ledgers = icrc1_ledgers ?? this.state.known_icrc1_ledgers;
         return Future.wait(
             ledgers.map<Future<void>>((l)=>Future(()async{
                 // ICP transactions

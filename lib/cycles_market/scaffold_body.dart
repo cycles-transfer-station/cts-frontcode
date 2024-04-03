@@ -15,17 +15,12 @@ import '../config/state_bind.dart';
 import '../config/pages.dart';
 import '../config/urls.dart';
 import './cycles_market.dart';
-import './chart.dart';
 import '../bank/forms.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
 import '../tools/tools.dart';
 import '../user.dart';
-
-
-
-// check the stop scroll functionality 
 
 
 
@@ -41,7 +36,11 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-    
+        
+        if (state.first_show_scaffold == false) {
+            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+        }
+        
         double width = 1300;
         
         List<Widget> column_children = [];
@@ -79,14 +78,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                             onChanged: (int? select_i) { 
                                 if (select_i is int) {
                                     if (select_i != state.cm_main_icrc1token_trade_contracts_i) { 
-                                        state.cm_main_icrc1token_trade_contracts_i = select_i;
-                                        state.current_url = CustomUrl(
-                                            'cycles_market', 
-                                            variables: {
-                                                'token_ledger_id': state.cm_main.icrc1token_trade_contracts[select_i].ledger_data.ledger.principal.text
-                                            }
-                                        );
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                        change_url_into_cm_market(select_i, context);
                                     }
                                 }
                             }
@@ -156,7 +148,9 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                 ]
             ])
             .then((x){
-                setState((){});
+                if (this.mounted) {     // this function can run when this widget is no longer in the widget tree. make sure to call setState only if this widget is still in the widget tree.  
+                    setState((){});
+                }
             });
         });
         super.initState();
@@ -176,6 +170,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         return Container(
             child: Column(
                 children: [ 
+                    VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -233,6 +228,66 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         );   
     }
     
+}
+
+class VolumeStats extends StatelessWidget {
+    int cm_main_trade_contracts_i;
+    VolumeStats({super.key, required this.cm_main_trade_contracts_i});
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
+        ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
+        
+        return Container(
+            padding: EdgeInsets.fromLTRB(0,0,0,35),
+            height: 56*3+2, // +2 for the divider space that gets taken up. 
+            child: ListView(
+                shrinkWrap: true,
+                scrollDirection: Axis.horizontal,
+                children: [
+                    DividerTheme(
+                        data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
+                        child: DataTable(
+                            //headingRowHeight: 0,
+                            headingTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNewBold'),
+                            dataTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNew'),
+                            //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
+                            //border: TableBorder.all(width: 1), 
+                            columns: [
+                                DataColumn(label: Text('VOLUME-STATS')),
+                                DataColumn(label: Text('24-HOUR')),
+                                DataColumn(label: Text('7-DAY')),
+                                DataColumn(label: Text('30-DAY')),
+                                DataColumn(label: Text('TOTAL')),
+                            ],
+                            rows: [
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('CYCLES:')),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_24_hour), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_7_day), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_30_day), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_sum), cycles_symbol)),
+                                    ]
+                                ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('${tc.ledger_data.symbol}:')),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_24_hour, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_7_day, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_30_day, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_sum, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),                            
+                                    ]
+                                ),
+                            ]
+                        )
+                    )
+                ]
+            )
+        );
+    }
 }
 
 
@@ -1710,4 +1765,64 @@ class ViewTradesForASpecificUserPositionState extends State<ViewTradesForASpecif
 }
 
 
+
+
+List<Future> generate_possible_cm_page_first_load_futures(int cm_main_trade_contracts_i, CustomState state) {
+    List<Future> wait_futures = [];
+    if (state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data == null) { // state.cm_main.trade_contracts[i] will not be null, because the setNewRoutePath waits till the loadfirststate which loads the view_tcs. so it can only be a cycles_market current url when the loadfirststate is done.
+        state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data = state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data();                
+        wait_futures.add(state.cm_main.trade_contracts[cm_main_trade_contracts_i].first_load_data!);
+        //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} first load_data');
+    }
+    if (state.user != null) {
+        if (state.user!.first_load_tcs.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i]) == false) {
+            state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]] = state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]);
+            wait_futures.add(state.user!.first_load_tcs[state.cm_main.trade_contracts[cm_main_trade_contracts_i]]!);
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user first load_cm_data');
+        }
+        if (state.user!.first_load_icrc1ledgers_balances.containsKey(state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data) == false) {
+            state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data] = state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]); 
+            wait_futures.add(state.user!.first_load_icrc1ledgers_balances[state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data]!);
+            //print('cm ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} user load balance');
+        }
+        if (state.user!.first_load_icrc1ledgers_balances.containsKey(CYCLES_BANK_LEDGER) == false) {
+            state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = state.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]); 
+            wait_futures.add(state.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER]!);
+            //print('cm ${'CYCLES'} user load balance');
+        }
+    }
+    return wait_futures;
+}
+
+void change_url_into_cm_market(int cm_main_trade_contracts_i, BuildContext context) {
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+    
+    List<Future> wait_futures = generate_possible_cm_page_first_load_futures(cm_main_trade_contracts_i, state);
+    
+    Function d = () {
+        state.cm_main_icrc1token_trade_contracts_i = cm_main_trade_contracts_i;
+        state.current_url = CustomUrl(
+            'cycles_market', 
+            variables: {
+                'token_ledger_id': state.cm_main.icrc1token_trade_contracts[cm_main_trade_contracts_i].ledger_data.ledger.principal.text
+            }
+        );
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+    };
+    
+    if (wait_futures.isNotEmpty) {
+        state.loading_text = 'loading ${state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data.symbol} market ...';
+        state.is_loading = true;
+        state.show_loading_page_transition_completer = Completer();
+        wait_futures.add(state.show_loading_page_transition_completer.future);
+        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+        Future.wait(wait_futures).then((_x){
+            state.is_loading = false;
+            d();
+        });
+    } else {
+        d();
+    }
+}
 
