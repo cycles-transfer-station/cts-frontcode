@@ -15,7 +15,6 @@ import '../config/state_bind.dart';
 import '../config/pages.dart';
 import '../config/urls.dart';
 import './cycles_market.dart';
-import './chart.dart';
 import '../bank/forms.dart';
 import '../main.dart';
 import '../tools/widgets.dart';
