@@ -149,7 +149,9 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                 ]
             ])
             .then((x){
-                setState((){});
+                if (this.mounted) {     // this function can run when this widget is no longer in the widget tree. make sure to call setState only if this widget is still in the widget tree.  
+                    setState((){});
+                }
             });
         });
         super.initState();
