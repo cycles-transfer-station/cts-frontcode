@@ -169,6 +169,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         return Container(
             child: Column(
                 children: [ 
+                    VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -226,6 +227,66 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         );   
     }
     
+}
+
+class VolumeStats extends StatelessWidget {
+    int cm_main_trade_contracts_i;
+    VolumeStats({super.key, required this.cm_main_trade_contracts_i});
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
+        ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
+        
+        return Container(
+            padding: EdgeInsets.fromLTRB(0,0,0,35),
+            height: 56*3+2, // +2 for the divider space that gets taken up. 
+            child: ListView(
+                shrinkWrap: true,
+                scrollDirection: Axis.horizontal,
+                children: [
+                    DividerTheme(
+                        data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
+                        child: DataTable(
+                            //headingRowHeight: 0,
+                            headingTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNewBold'),
+                            dataTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNew'),
+                            //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
+                            //border: TableBorder.all(width: 1), 
+                            columns: [
+                                DataColumn(label: Text('VOLUME-STATS')),
+                                DataColumn(label: Text('24-HOUR')),
+                                DataColumn(label: Text('7-DAY')),
+                                DataColumn(label: Text('30-DAY')),
+                                DataColumn(label: Text('TOTAL')),
+                            ],
+                            rows: [
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('CYCLES:')),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_24_hour), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_7_day), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_30_day), cycles_symbol)),
+                                        DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_sum), cycles_symbol)),
+                                    ]
+                                ),
+                                DataRow(
+                                    cells: [
+                                        DataCell(Text('${tc.ledger_data.symbol}:')),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_24_hour, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_7_day, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_30_day, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
+                                        DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_sum, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),                            
+                                    ]
+                                ),
+                            ]
+                        )
+                    )
+                ]
+            )
+        );
+    }
 }
 
 
