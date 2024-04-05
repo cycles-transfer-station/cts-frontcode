@@ -171,6 +171,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
             child: Column(
                 children: [ 
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                    CandlestickChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -291,8 +292,24 @@ class VolumeStats extends StatelessWidget {
 }
 
 
+class CandlestickChart extends StatefulWidget {
+    int cm_main_trade_contracts_i;    
+    CandlestickChart({super.key, required this.cm_main_trade_contracts_i});
+    State createState() => CandlestickChartState();
+}
+class CandlestickChartState extends State<CandlestickChart> {
+    
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        
+        return Text('');
+    }
 
-
+}
+    
+    
+    
 class MarketTrades extends StatefulWidget {
     int cm_main_trade_contracts_i;
     MarketTrades({required this.cm_main_trade_contracts_i}) : super(key: ValueKey('CyclesMarketTradeContractTradePage MarketTrades cm_main_trade_contracts_i ${cm_main_trade_contracts_i}'));

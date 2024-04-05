@@ -59,15 +59,22 @@ class Icrc1TokenTradeContract extends Record {
    
     Future<void>? first_load_data = null;
     
+    // make sure only one load_data at a time.
+    Future<void>? load_data_future = null;
     Future<void> load_data() async {
-        await Future.wait([
-            this.load_position_book(),
-            this.check_new_trades(),
-            this.load_volume_stats()
-        ]);
-    }
-    
-    
+        if (this.load_data_future == null) {
+            this.load_data_future = Future(()async{
+                await Future.wait([
+                    this.load_position_book(),
+                    this.check_new_trades(),
+                    this.load_volume_stats(),
+                    this.load_candles()
+                ]);
+                this.load_data_future = null;
+            });
+        }
+        return this.load_data_future;
+    }    
     
     List<PositionBookItem> buy_position_book = [];
     List<PositionBookItem> sell_position_book = [];
@@ -215,6 +222,42 @@ class Icrc1TokenTradeContract extends Record {
             ) as Record
         );
     }
+    
+    
+    List<Candle> candles = []; // one-minute segments
+    Future<void> load_candles() async {
+        List<Candle> gather = [];
+        while (true) {
+            Record sponse = await _call_view_candles(gather.isEmpty ? null : gather.first.time_nanos);
+            gather = [
+                ...(sponse['candles'] as Vector).cast_vector<Record>().map(Candle.of_the_record),
+                ...gather,
+            ];
+            if (this.candles.isNotEmpty && this.candles.last.time_nanos >= gather.first.time_nanos) {
+                gather = gather.skipWhile((gc)=>gc.time_nanos <= this.candles.last.time_nanos).toList();
+                break;
+            }
+            if ((sponse['is_earliest_chunk'] as Bool).value) {
+                break;
+            }
+        }
+        this.candles.addAll(gather);
+    }
+    Future<Record> _call_view_candles(BigInt? opt_start_before_time_nanos) async {
+        return c_backwards_one(
+            await this.canister.call(
+                method_name: "view_candles",
+                calltype: CallType.query,
+                put_bytes: c_forwards_one(Record.of_the_map({
+                    'opt_start_before_time_nanos': Option<Nat64>(
+                        value: opt_start_before_time_nanos.nullmap((i)=>Nat64(i)), 
+                        value_type: Nat64()
+                    ),
+                }))
+            )
+        ) as Record;
+    }
+    
     
 }
 
@@ -437,6 +480,35 @@ class Volume {
 }
 
 
+class Candle {
+    Cycles volume_cycles;
+    BigInt volume_tokens;
+    BigInt open_rate;
+    BigInt close_rate;
+    BigInt high_rate;
+    BigInt low_rate;
+    BigInt time_nanos;
+    Candle._({
+        required this.volume_cycles,
+        required this.volume_tokens,
+        required this.open_rate,
+        required this.close_rate,
+        required this.high_rate,
+        required this.low_rate,
+        required this.time_nanos,
+    });
+    static Candle of_the_record(Record r) {
+        return Candle._(
+            volume_cycles: Cycles.of_the_nat(['volume_cycles'] as Nat),
+            volume_tokens: (r['volume_tokens'] as Nat).value,
+            open_rate: (r['open_rate'] as Nat).value,
+            close_rate: (r['close_rate'] as Nat).value,
+            high_rate: (r['high_rate'] as Nat).value,
+            low_rate: (r['low_rate'] as Nat).value,
+            time_nanos: (r['time_nanos'] as Nat64).value,
+        );
+    }
+}
 
 
 abstract class Icrc1TokenTradeContractPosition {
