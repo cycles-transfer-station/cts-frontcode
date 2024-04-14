@@ -251,8 +251,8 @@ class VolumeStats extends StatelessWidget {
                         data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
                         child: DataTable(
                             //headingRowHeight: 0,
-                            headingTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNewBold'),
-                            dataTextStyle: TextStyle(fontSize: 21, fontFamily: 'CourierNew'),
+                            headingTextStyle: TextStyle(fontSize: 19, fontFamily: 'CourierNewBold'),
+                            dataTextStyle: TextStyle(fontSize: 19, fontFamily: 'CourierNew'),
                             //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
                             //border: TableBorder.all(width: 1), 
                             columns: [
@@ -436,13 +436,6 @@ class PositionBook extends StatelessWidget {
         state = MainStateBind.get_state<CustomState>(context);
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        CyclesPerTokenRate latest_trade_rate = 
-            state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].latest_trades.length >= 1 
-            ?
-            state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].latest_trades.last.rate
-            : 
-            CyclesPerTokenRate(cycles_per_token_quantum_rate: BigInt.from(0), token_decimal_places: state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.decimals);
-        
         List<DataColumn> header_columns = <DataColumn>[                                 
             DataColumn(label: Text('${state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].ledger_data.symbol}')),
             DataColumn(label:Text('RATE')),
@@ -500,7 +493,12 @@ class PositionBook extends StatelessWidget {
                             Center(
                                 child: Container(
                                     padding: EdgeInsets.symmetric(vertical: 11),
-                                    child: Text('${latest_trade_rate}', style: TextStyle(fontSize: 19, fontFamily: 'CourierNewBold'))
+                                    child: Text(
+                                        '${
+                                            state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i].compute_weight_average_rate_of_the_current_positions()
+                                        }', 
+                                        style: TextStyle(fontSize: 19, fontFamily: 'CourierNewBold')
+                                    )
                                 )
                             ),
                             Flexible(child: DataTable2(
