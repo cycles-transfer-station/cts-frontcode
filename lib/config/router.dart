@@ -58,6 +58,15 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
     Future<void> setNewRoutePath(CustomUrl custom_url) async {
         await loadfirststatefuture; // for the cycles-market urls, must know the trading pairs before solving for the url.
         
+        if (custom_url.name == 'welcome') {
+            custom_url = CustomUrl(
+                'cycles_market',
+                variables: {
+                    'token_ledger_id': state.cm_main.trade_contracts[state.cm_main_icrc1token_trade_contracts_i].ledger_data.ledger.principal.text
+                }
+            );
+        }
+
         state.current_url = custom_url;
         
         if (custom_url.name == 'cycles_market') {
