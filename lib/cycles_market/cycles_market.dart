@@ -117,10 +117,26 @@ class Icrc1TokenTradeContract extends Record {
         return gather; 
     }
     
+    // returns 0 if there are no current positions
+    CyclesPerTokenRate compute_weight_average_rate_of_the_current_positions() {
+        BigInt sum_rates_times_quantities = BigInt.zero;
+        BigInt sum_quantity = BigInt.zero;
+        for (List<PositionBookItem> position_book in [this.buy_position_book, this.sell_position_book]) {
+            for (PositionBookItem pbi in position_book) {
+                sum_rates_times_quantities += pbi.rate.cycles_per_token_quantum_rate * pbi.quantity;
+                sum_quantity += pbi.quantity;
+            }
+        }
+        return CyclesPerTokenRate(
+            cycles_per_token_quantum_rate: sum_quantity == BigInt.zero ? BigInt.zero : sum_rates_times_quantities ~/ sum_quantity,
+            token_decimal_places: this.ledger_data.decimals,
+        );    
+    }
+    
+    
+    
     
     List<TradeItem> latest_trades = [];
-    
-    
     
     Future<void> check_new_trades() async {
         await this.fresh_trades_storage_canisters();
@@ -192,6 +208,18 @@ class Icrc1TokenTradeContract extends Record {
             ]),            
         )) as Record, token_decimal_places: this.ledger_data.decimals);
     }
+        
+    // returns 0 if there are no trades
+    CyclesPerTokenRate latest_trade_rate() {
+        return
+            this.latest_trades.length >= 1 
+            ?
+            this.latest_trades.last.rate
+            : 
+            CyclesPerTokenRate(cycles_per_token_quantum_rate: BigInt.zero, token_decimal_places: this.ledger_data.decimals);
+        
+    }
+        
         
     
     Future<List<StorageCanister>> view_positions_storage_canisters() async {
