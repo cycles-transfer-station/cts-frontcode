@@ -112,16 +112,18 @@ class Icrc1TokenTradeContract extends Record {
     
     // returns 0 if there are no current positions
     CyclesPerTokenRate compute_weight_average_rate_of_the_current_positions() {
-        BigInt sum_rates_times_quantities = BigInt.zero;
-        BigInt sum_quantity = BigInt.zero;
-        for (List<PositionBookItem> position_book in [this.buy_position_book, this.sell_position_book]) {
-            for (PositionBookItem pbi in position_book) {
-                sum_rates_times_quantities += pbi.rate.cycles_per_token_quantum_rate * pbi.quantity;
-                sum_quantity += pbi.quantity;
-            }
+        BigInt sum_rates_times_cycles_quantities = BigInt.zero;
+        BigInt sum_cycles_quantity = BigInt.zero;
+        for (PositionBookItem pbi in this.buy_position_book) {
+            sum_rates_times_cycles_quantities += pbi.rate.cycles_per_token_quantum_rate * pbi.quantity;
+            sum_cycles_quantity += pbi.quantity;
+        }
+        for (PositionBookItem pbi in this.sell_position_book) {
+            sum_rates_times_cycles_quantities += pbi.rate.cycles_per_token_quantum_rate * (pbi.quantity*pbi.rate.cycles_per_token_quantum_rate); // because we are counting the cycles quantity of the sell-position
+            sum_cycles_quantity += (pbi.quantity*pbi.rate.cycles_per_token_quantum_rate);
         }
         return CyclesPerTokenRate(
-            cycles_per_token_quantum_rate: sum_quantity == BigInt.zero ? BigInt.zero : sum_rates_times_quantities ~/ sum_quantity,
+            cycles_per_token_quantum_rate: sum_cycles_quantity == BigInt.zero ? BigInt.zero : sum_rates_times_cycles_quantities ~/ sum_cycles_quantity,
             token_decimal_places: this.ledger_data.decimals,
         );    
     }
