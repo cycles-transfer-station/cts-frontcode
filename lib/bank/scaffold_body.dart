@@ -113,6 +113,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                         children: [
                             Container(
                                 child: DropdownButton<Icrc1Ledger>(
+                                    style: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold'),
                                     underline: Container(
                                         height: 0,
                                         color: Colors.deepPurpleAccent,

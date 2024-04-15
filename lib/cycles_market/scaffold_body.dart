@@ -56,6 +56,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
                     child: Align(
                         alignment: Alignment.centerLeft,
                         child: DropdownButton<int>(
+                            style: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold'),
                             //decoration: InputDecoration(
                             //    labelText: 'Token'//state.user!.current_icrc1_ledger.symbol,
                             //),
