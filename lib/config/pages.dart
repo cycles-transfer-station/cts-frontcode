@@ -17,6 +17,7 @@ import 'package:ic_tools/common.dart' as common;
 import '../main.dart';
 import '../tools/widgets.dart';
 import '../tools/ii_login.dart';
+import '../tools/tools.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
@@ -218,31 +219,17 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: IconTheme(
                             data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
                             child: Container(
-                                constraints: BoxConstraints(minHeight: 30),
                                 child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: <Widget>[
-                                        /*
-                                        IconButton(
-                                            tooltip: 'Navigation',
-                                            icon: const Icon(Icons.menu),
-                                            onPressed: () {
-                                                scaffold_key.currentState!.openDrawer();
-                                            },
+                                        Container(
+                                            child: state.user == null 
+                                                ? OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); }) 
+                                                : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
+                                            padding: EdgeInsets.symmetric(horizontal: 17, vertical: 13),  
                                         ),
-                                        */
-                                        /*
-                                        if (true) const Spacer(),
-                                        IconButton(
-                                            tooltip: 'Search',
-                                            icon: const Icon(Icons.search),
-                                            onPressed: () {},
-                                        ),
-                                        IconButton(
-                                            tooltip: 'Favorite',
-                                            icon: const Icon(Icons.favorite),
-                                            onPressed: () {},
-                                        ),
-                                        */
+                                        const Spacer(),
                                     ]
                                 )
                             ) 

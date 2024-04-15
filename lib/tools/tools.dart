@@ -40,3 +40,8 @@ extension Chunks<T extends List> on T {
         return chunks;
     }
 } 
+
+
+String principal_short(Principal p) {
+    return p.text.substring(0,9) + '...' + p.text.substring(p.text.length - 7);
+}
