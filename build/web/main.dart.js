@@ -44418,7 +44418,7 @@ A.tO.prototype={
 L(a){var s,r,q=null,p=t.p,o=A.a([],p)
 B.b.J(o,A.a([A.an(q,A.J("The goal of the CYCLES-TRANSFER-STATION is for the mainstream-usage of the native CYCLES as the stable-currency of the world-computer. \n\nThe CYCLES-BANK mints, holds, and transfers the cycles, and keeps logs of the transfers. At the CTS, people can hold other ICRC-1 tokens too. \n\nThe cycles-market is the place where people trade the native CYCLES and various tokens back and forth in both ways. \n",q,q,q,q,q,A.ba(q,q,q,q,q,q,q,q,q,q,q,17,q,q,q,q,q,!0,q,q,q,q,q,q,q,q),q,q),B.f,q,q,q,q,q,q,q,new A.aa(0,34,0,27),q,q,1/0)],p))
 s=A.J("ABOUT THE CTS",q,q,q,q,q,A.ba(q,q,q,q,q,q,q,q,q,q,q,19,q,q,q,q,q,!0,q,q,q,q,q,q,q,q),q,q)
-r=A.ba(q,q,q,q,q,q,q,q,"ChakraPetch",q,q,q,q,q,q,q,q,!0,q,q,q,q,q,q,q,q)
+r=A.ba(q,q,q,q,q,q,q,q,"CourierNew",q,q,q,q,q,q,q,q,!0,q,q,q,q,q,q,q,q)
 return A.cC(A.an(q,A.bz(A.a([new A.oN(s,q),A.kQ(A.uu(A.BI(!0,A.a([A.bz(o,B.u,B.r,B.B)],p),this.c,new A.aa(17,0,17,0),q,q,B.W,!1),r),1)],p),B.u,B.r,B.B),B.f,q,new A.af(0,900,0,1/0),q,q,q,q,q,q,q,q,q),q,q)}}
 A.us.prototype={
 L(a){var s,r,q,p,o,n=null,m={},l=this.c,k=A.ay("operation")

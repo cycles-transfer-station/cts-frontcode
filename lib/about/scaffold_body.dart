@@ -134,7 +134,7 @@ Users can click on the payment-url and it will fill out the cycles-transfer for 
                         ScaffoldBodyHeader(Text('ABOUT THE CTS', style: TextStyle(fontSize: 19))),
                         Expanded(
                             child: DefaultTextStyle.merge(
-                                style: TextStyle(fontFamily: 'ChakraPetch'),
+                                style: TextStyle(fontFamily: 'CourierNew'),
                                 child: ListView(
                                     controller: main_listview_scroll_controller,
                                     padding: EdgeInsets.fromLTRB(17,0,17,0),
