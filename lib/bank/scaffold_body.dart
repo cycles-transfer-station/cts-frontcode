@@ -47,13 +47,8 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         late Widget body_widget;
         
         if (state.user == null) {
-            body_widget = Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                    OutlineButtonIILogin(key: ValueKey('cb-scaffold_body-ii-login-button')),
-                    SizedBox(height: 21),
-                    Text('Log in for the cycles-bank.'),
-                ]
+            body_widget = Center(
+                child: OutlineButtonIILogin(key: ValueKey('cb-scaffold_body-ii-login-button')),
             );  
         } else {
             
