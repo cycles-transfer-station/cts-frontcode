@@ -215,6 +215,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: state.current_url.main_page_scaffold_body()!,
                     ),
                     bottomNavigationBar: BottomAppBar(
+                        padding: EdgeInsets.zero,
                         //color: Colors.blue,
                         child: IconTheme(
                             data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),

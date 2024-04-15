@@ -41,6 +41,13 @@ class BaseState extends State<Base> {
                     //shadowColor: Color?,  
                 ),
                 useMaterial3: false,
+                inputDecorationTheme: InputDecorationTheme(
+                    labelStyle: TextStyle(fontFamily: 'CourierNew'),
+                    errorMaxLines: 5,
+                ),
+                textTheme: TextTheme(
+                    titleMedium: TextStyle(fontFamily: 'CourierNew'), // setting the font for the TextFormField input text.
+                ),
             ),
             debugShowCheckedModeBanner: false,
         );
