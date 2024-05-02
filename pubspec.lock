@@ -209,10 +209,11 @@ packages:
   ic_tools:
     dependency: "direct main"
     description:
-      path: "../../ic_tools"
-      relative: true
-    source: path
-    version: "2.0.1"
+      name: ic_tools
+      sha256: b22dab87bea2b65bfceb7021b703d7e3eefb54e1f92a3cd11dabf97e8d8e3211
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   ieee754:
     dependency: transitive
     description:
