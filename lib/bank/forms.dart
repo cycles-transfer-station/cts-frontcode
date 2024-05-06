@@ -661,7 +661,6 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                             'amount' : tokens,
                                             'fee' : Option<Nat>(value: widget.icrc1_ledger.fee_tokens),
                                             'memo' : Option<Vector<Nat8>>(value: memo != null ? Blob(memo) : null, value_type: Blob.type_mode()),
-                                            'created_at_time' : Option<Nat64>(value: Nat64(BigInt.from(DateTime.now().millisecondsSinceEpoch) * BigInt.from(1000000)), value_type: Nat64()),
                                         })
                                     ]);
                                 
@@ -877,7 +876,6 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                                             'fee': ICP_LEDGER_TRANSFER_FEE,
                                             'from_subaccount': Option<Blob>(value: null, value_type: Blob.type_mode()),
                                             'to': Blob(hexstringasthebytes(to)),
-                                            'created_at_time': Option<Record>(value: Record.of_the_map({'timestamp_nanos': Nat64(get_current_time_nanoseconds())})),
                                         })
                                     ]);
                                     
