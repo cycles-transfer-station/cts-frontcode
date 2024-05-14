@@ -22,5 +22,4 @@ COPY . /cts-frontcode
 WORKDIR /cts-frontcode
 
 ENV TAR_OPTIONS=--no-same-owner
-RUN fvm install
-RUN bash scripts/flutter_build_web.sh
+RUN fvm install && bash scripts/flutter_build_web.sh && rm -rf .dart_tool && rm -rf .fvm
