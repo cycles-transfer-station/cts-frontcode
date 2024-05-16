@@ -160,17 +160,17 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                             ),
                                             */
                                             ListTile(
-                                                title: const Text('MARKET'),
-                                                onTap: () {
-                                                    Navigator.pop(context);
-                                                    change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
-                                                },
-                                            ),
-                                            ListTile(
                                                 title: const Text('BANK'),
                                                 onTap: () {
                                                     Navigator.pop(context);
                                                     change_url_into_cb(state.current_icrc1_ledger, context);
+                                                },
+                                            ),
+                                            ListTile(
+                                                title: const Text('MARKET'),
+                                                onTap: () {
+                                                    Navigator.pop(context);
+                                                    change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
                                                 },
                                             ),
                                             ListTile(
