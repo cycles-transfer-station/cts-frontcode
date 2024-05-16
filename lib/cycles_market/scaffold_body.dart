@@ -210,7 +210,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         SizedBox(height: runSpacing),
                         Wrap(
                             alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.start,
                             runSpacing: runSpacing,
                             spacing: 20,
                             children: [
