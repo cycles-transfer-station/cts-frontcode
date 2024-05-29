@@ -538,7 +538,7 @@ class BankTransferIcrc1Form extends StatefulWidget {
 class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
     
-    late Principal for_the_icrc1_id;
+    late Icrc1Account for_the_icrc1_id;
     late Tokens tokens;
     late Uint8List memo;    
     
@@ -555,16 +555,16 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                         decoration: InputDecoration(
                             labelText: 'For: ',
                         ),
-                        onSaved: (String? v) { for_the_icrc1_id = Principal.text(v!.trim()); },
+                        onSaved: (String? v) { for_the_icrc1_id = Icrc1Account.of_the_id(v!.trim()); },
                         validator: (String? v) {
                             if (v == null || v.trim() == '') {
-                                return 'type the account-id';
+                                return 'Type the account-id';
                             }
-                            late Principal p;
+                            late Icrc1Account icrc_id;
                             try {
-                                p = Principal.text(v);
+                                icrc_id = Icrc1Account.of_the_id(v);
                             } catch(e) {
-                                return 'must be a valid principal-id.';
+                                return 'Must be a valid ICRC ID.';
                             }
                             return null;
                         }
@@ -637,8 +637,10 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                             return AlertDialog(
                                                 title: Text("Confirm"),
                                                 content: Text(
-"""Transfer ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id.text}?
-"""                                             
+(widget.icrc1_ledger.ledger.principal == CYCLES_BANK_LEDGER.ledger.principal
+&& for_the_icrc1_id.owner.bytes.length < 29 
+? 'Looks like you are trying to send CYCLES to a canister. This form transfers CYCLES to an account at the CTS. If you are looking to topup a canister with CYCLES or deposit CYCLES onto a canister, use the MANAGEMENT-CANISTER-DEPOSIT-CYCLES form in the BANK settings by clicking the gears icon on the BANK page. If you are looking to send CYCLES to an account at the CTS, then continue with this form.\n\n'  
+: '') + 'Transfer ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id}?'                                             
                                                 ),
                                                 actions: [
                                                     cancelButton,
@@ -654,17 +656,14 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                                     Uint8List icrc1_transfer_arg_raw = candid.c_forwards([
                                         Record.of_the_map({
                                             //'from_subaccount' : opt Subaccount;
-                                            'to' : Record.of_the_map({
-                                                'owner' : for_the_icrc1_id,
-                                                //'subaccount' : opt Subaccount;
-                                            }),
+                                            'to' : for_the_icrc1_id,
                                             'amount' : tokens,
                                             'fee' : Option<Nat>(value: widget.icrc1_ledger.fee_tokens),
                                             'memo' : Option<Vector<Nat8>>(value: memo != null ? Blob(memo) : null, value_type: Blob.type_mode()),
                                         })
                                     ]);
                                 
-                                    state.loading_text = 'transferring ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id.text} ...';
+                                    state.loading_text = 'transferring ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id} ...';
                                     state.is_loading = true;
                                     //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
@@ -1215,7 +1214,7 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                 children: <Widget>[
                     Container(
                         child: Text(
-                            'Warning: The canister receiving the cycles sent through this method will not be able to log or record this transfer. This method calls the management-canister\'s deposit_cycles method. If you don\'t know what that is, this form is not for you.', 
+                            'Warning: This form deposits CYCLES onto a canister, topping up the canister with CYCLES. If you are looking to transfer CYCLES to an account at the CTS, use the TRANSFER-CYCLES form on the main BANK page when selecting the CYCLES token.', 
                             style: TextStyle(fontSize: 13, fontFamily: 'ChakraPetch')
                         )
                     ),
