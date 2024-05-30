@@ -25,5 +25,5 @@ Future<void> main() async {
         }
     }
     
-    print('batch_hash: ${bytesasahexstring(ic_data_hash(files_hash))}');
+    print('\nbatch_hash: ${bytesasahexstring(ic_data_hash(files_hash))}');
 }

@@ -24,7 +24,12 @@ class BaseState extends State<Base> {
             title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(
                 brightness: Brightness.dark,
-                backgroundColor: grey_background, 
+                //backgroundColor: grey_background, // old deprecated field
+                //colorScheme: ColorScheme.fromSeed(
+                //      seedColor: blue,
+                //      brightness: Brightness.dark,
+                //    surface: grey_background,
+                //), 
                 fontFamily: 'AxaxaxBold',
                 /* try this on a child widget of this materialapp
                 textTheme: Theme.of(context).textTheme.apply(

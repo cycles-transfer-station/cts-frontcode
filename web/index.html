@@ -31,7 +31,9 @@
 
   <title>CTS</title>
   <link rel="manifest" href="manifest.json">
-
+	
+  <script src="ic_tools_webfiles/rust_wasm_bls12381/rust_wasm_bls12381.js" defer></script>    
+  
   <!-- style in the index.html because the styles must load together with the splash-screen -->
   <style> 
     .center {
@@ -46,55 +48,16 @@
 
   <script>
     if (window.location.href.includes('.raw.icp0.io')) {
-        window.location.replace('https://' + window.location.hostname.split('.')[0] + '.icp0.io'); // hostname + '.icp0.io'
+        window.location.replace('https://' + window.location.hostname.split('.')[0] + '.icp0.io');
     }
-  </script>
-  <script src="ic_tools_webfiles/unpkg_bignumber.js" defer></script>  
-  <script src="ic_tools_webfiles/cbor-web.js" defer></script>  
-  <script src="ic_tools_webfiles/rust_wasm_bls12381/rust_wasm_bls12381.js" defer></script>    
-  <script>  
-    var logBackup = console.log;
-    var logMessages = [];
-    function start_logMessages() {
-        console.log = function() {
-            logMessages.push.apply(logMessages, arguments);
-            logBackup.apply(console, arguments);
-        };
-    }
-    function get_last_logMessage_toString() {
-        console.log = logBackup; 
-        console.log(typeof(logMessages[logMessages.length-1]));
-        return logMessages[logMessages.length-1].toString();    
-    }
-  </script>
-
-
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
   </script>
   
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
 </head>
 
 <body style="background-color: #485b86">
   <img src="splash_screen/splash_screen.png" class="center" />
 
-  <script>
-    window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
-        }
-      });
-    });
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  
 </body>
 </html>
