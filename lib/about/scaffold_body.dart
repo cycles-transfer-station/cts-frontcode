@@ -23,13 +23,20 @@ class AboutScaffoldBody extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(0, 34.0, 0, 27.0), 
                 width: double.infinity,
                 child: Text(
-"""The goal of the CYCLES-TRANSFER-STATION is for the mainstream-usage of the native CYCLES as the stable-currency of the world-computer. 
+"""Welcome! The CYCLES-TRANSFER-STATION is the home for the native CYCLES on the world-computer. 
 
-The CYCLES-BANK mints, holds, and transfers the cycles, and keeps logs of the transfers. At the CTS, people can hold other ICRC-1 tokens too. 
+The CTS facilitates the mainstream general trade of the CYCLES. 
 
-The cycles-market is the place where people trade the native CYCLES and various tokens back and forth in both ways. 
+The first main service is a place where you can mint and hold your CYCLES. On the BANK page, select CYCLES in the dropdown menu, and then click the "MINT CYCLES" button. A form will pop up where you can mint CYCLES by burning ICP. In the background, this form uses the NNS to burn ICP and mint CYCLES and then sends the CYCLES to your account on the CTS-CYCLES-BANK. Once the CYCLES mint is complete, your current CYCLES balance will show on the BANK page.
+
+You can transfer CYCLES to another account on the BANK page, select CYCLES in the dropdown menu, and click the "TRANSFER CYCLES" button. A form will pop up where you can transfer your CYCLES.
+
+You can also transfer CYCLES out of the CTS-CYCLES-BANK to top-up a canister with CYCLES by clicking the settings icon on the BANK page on the top right, then click the "MANAGEMENT CANISTER DEPOSIT CYCLES" button. A form will pop up where you can top-up canisters with your CYCLES.  
+
+The second main service is the CTS market, an on-chain order-book market trading platform. At the CTS market, many ICRC-1 tokens trade against the stable CYCLES, creating a stable base for trading. The market is an order-book so you set the rate (price) for the tokens you are willing to trade, and the market matches compatible orders. You can trade in and out of many different tokens using the stable CYCLES as the base.
+
 """
-                    , style: TextStyle(fontSize: 17)
+                    , style: TextStyle(fontSize: 19)
                 )
             ),
             /*
