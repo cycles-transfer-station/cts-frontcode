@@ -69,7 +69,7 @@ class CustomState {
 
     CustomState() {
         
-        if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com')) {
+        if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com') || is_on_local) {
             cts = Canister(Principal.text(em3jm));
             cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
             bank = Canister(Principal.text('wwikr-gqaaa-aaaar-qacva-cai'));
@@ -77,18 +77,15 @@ class CustomState {
             cts = Canister(Principal.text(x3ncx)); 
             cycles_market = Canister(Principal.text('x4med-gqaaa-aaaam-qbcfq-cai'));
             bank = Canister(Principal.text('ul6ir-xiaaa-aaaam-qbcna-cai'));
-        } else if (is_on_local) {
-            /// local replica 
-            ic_base_url = Uri.parse('http://127.0.0.1:8080');
-            fetch_root_key().then((_x){});
-            cts = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cts_local_'))));
-            cycles_market = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('cm_local__'))));
-            bank = Canister(Principal.bytes(Uint8List.fromList(utf8.encode('bank_local'))));
         } else {
             throw Exception('unknown stance');
         }
         
-        
+        if (is_on_local) {
+            ic_base_url = Uri.parse('http://127.0.0.1:8080');
+            fetch_root_key().then((_x){});
+        }
+
         cts_main_icp_id = common.icp_id(cts.principal);
         
         print('CTS-MAIN: ${cts.principal.text}.');
