@@ -1383,11 +1383,13 @@ class PositionDialogState extends State<PositionDialog> {
                                                                         pl.position_kind == PositionKind.Token 
                                                                         ? show_tokens_with_symbol(
                                                                             Tokens(quantums: pl.mainder_position_quantity - pl.void_position_payout_ledger_transfer_fee, decimal_places: token_decimal_places),
-                                                                            token_symbol
+                                                                            token_symbol,
+                                                                            round_main_show: false,
                                                                         )
                                                                         : show_tokens_with_symbol(
                                                                             Cycles(cycles: pl.mainder_position_quantity - pl.void_position_payout_ledger_transfer_fee),
-                                                                            cycles_symbol
+                                                                            cycles_symbol,
+                                                                            round_main_show: false,
                                                                         )
                                                                     )
                                                                 ]
@@ -1561,14 +1563,12 @@ class TradeLogDialog extends StatelessWidget {
 String cycles_symbol = 'CYCLES';
 
 Tooltip show_tokens_with_symbol(Tokens tokens, String token_symbol, {bool show_token_symbol_in_main = true, bool round_main_show = true}) {
-    late Tokens tokens_for_the_main_show;
     Tokens tokens_round = tokens.round_decimal_places(3);
     Tokens possible_round_up = tokens.add_quantums(BigInt.from(pow(10, tokens.decimal_places-3))).round_decimal_places(0); 
     if (possible_round_up.quantums > tokens_round.quantums) {
-        tokens_for_the_main_show = possible_round_up;
-    } else {
-        tokens_for_the_main_show = round_main_show ? (tokens_round.quantums == BigInt.from(0) ? tokens : tokens_round) : tokens; 
+        tokens_round = possible_round_up;
     }
+    Tokens tokens_for_the_main_show = round_main_show ? (tokens_round.quantums == BigInt.from(0) ? tokens : tokens_round) : tokens;
     return Tooltip(
         richMessage: TextSpan(
             style: TextStyle(fontFamily: 'ChakraPetchBold', fontSize: 17),
