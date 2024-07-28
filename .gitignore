@@ -32,3 +32,5 @@ lib/t.dart
 logs
 
 .fvm/
+
+lib/tests/t.dart
