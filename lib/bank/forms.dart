@@ -640,7 +640,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
 (widget.icrc1_ledger.ledger.principal == CYCLES_BANK_LEDGER.ledger.principal
 && for_the_icrc1_id.owner.bytes.length < 29 
 ? 'Looks like you are trying to send CYCLES to a canister. This form transfers CYCLES to an account at the CTS. If you are looking to topup a canister with CYCLES or deposit CYCLES onto a canister, use the MANAGEMENT-CANISTER-DEPOSIT-CYCLES form in the BANK settings by clicking the gears icon on the BANK page. If you are looking to send CYCLES to an account at the CTS, then continue with this form.\n\n'  
-: '') + 'Transfer ${tokens}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id}?'                                             
+: '') + 'Transfer ${tokens.toString() + (widget.icrc1_ledger.ledger.principal == CYCLES_BANK_LEDGER.ledger.principal ? 'T' : '')}-${widget.icrc1_ledger.symbol} to ${for_the_icrc1_id}?'
                                                 ),
                                                 actions: [
                                                     cancelButton,
