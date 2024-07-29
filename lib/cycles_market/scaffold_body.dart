@@ -172,6 +172,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
             child: Column(
                 children: [ 
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                    SizedBox(height: 40),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -242,7 +243,6 @@ class VolumeStats extends StatelessWidget {
         ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
         
         return Container(
-            padding: EdgeInsets.fromLTRB(0,0,0,35),
             height: 56*3+2, // +2 for the divider space that gets taken up. 
             child: ListView(
                 shrinkWrap: true,
@@ -252,8 +252,8 @@ class VolumeStats extends StatelessWidget {
                         data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
                         child: DataTable(
                             //headingRowHeight: 0,
-                            headingTextStyle: TextStyle(fontSize: 19, fontFamily: 'CourierNewBold'),
-                            dataTextStyle: TextStyle(fontSize: 19, fontFamily: 'CourierNew'),
+                            headingTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNewBold'),
+                            dataTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNew'),
                             //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
                             //border: TableBorder.all(width: 1), 
                             columns: [
