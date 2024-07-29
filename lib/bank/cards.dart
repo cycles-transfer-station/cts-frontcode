@@ -161,7 +161,7 @@ class CyclesTransferListItem extends StatelessWidget {
                 });
             },
             'Burn': (burn_c) {
-                operation = 'burn';
+                operation = 'top-up';
                 Record burn = burn_c as Record;
                 from = Icrc1Account.of_the_record(burn['from'] as Record);
                 burn_for_canister = burn['for_canister'] as Principal;
@@ -201,8 +201,8 @@ class CyclesTransferListItem extends StatelessWidget {
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
                                                     Text('operation: ${operation}'),
-                                                    Text('amount: ${Cycles(cycles: cycles_transfer.amt)}'),
-                                                    if (from != null) SelectableText('from: ${from}'),
+                                                    Text('amount: ${Cycles(cycles: (burn_for_canister != null ? cycles_transfer.amt - cycles_transfer.fee : cycles_transfer.amt))}'),
+                                                    if (from != null && burn_for_canister == null) SelectableText('from: ${from}'),
                                                     if (to != null) SelectableText('to: ${to}'),
                                                     if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
                                                     if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
