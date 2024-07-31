@@ -20,23 +20,23 @@ class AboutScaffoldBody extends StatelessWidget {
         
         column_children.addAll([
             Container(
-                padding: EdgeInsets.fromLTRB(0, 34.0, 0, 27.0), 
+                padding: EdgeInsets.symmetric(vertical: 13),
+                child: Card(child: Container(
+                padding: EdgeInsets.all(13),
                 width: double.infinity,
                 child: Text(
 """Mint, hold, transfer, and trade the native stable currency on the world-computer: CYCLES. 
 
 For minting CYCLES, on the BANK page select CYCLES in the dropdown menu, and then click the "MINT CYCLES" button. A form will pop up where you can mint CYCLES by burning ICP. In the background, this form uses the NNS to burn ICP and mint CYCLES and then sends the CYCLES to your account on the CTS-CYCLES-BANK. Once the CYCLES mint is complete, your current CYCLES balance will show on the BANK page.
 
-You can transfer CYCLES to another account, on the BANK page select CYCLES in the dropdown menu, and click the "TRANSFER CYCLES" button. A form will pop up where you can transfer your CYCLES. You can also transfer CYCLES out of the CTS-CYCLES-BANK to top-up a canister with CYCLES by clicking the settings icon on the BANK page on the top right, then click the "MANAGEMENT CANISTER DEPOSIT CYCLES" button. A form will pop up where you can top-up canisters with your CYCLES.  
+You can transfer CYCLES to another account, on the BANK page select CYCLES in the dropdown menu, and click the "TRANSFER CYCLES" button. A form will pop up where you can transfer your CYCLES. You can also transfer CYCLES out of the CTS-CYCLES-BANK to top-up a canister with CYCLES by clicking the settings icon on the BANK page on the top right, then click the "TOP-UP A CANISTER" button. A form will pop up where you can top-up canisters with your CYCLES.
 
 The CTS market is an on-chain order-book market trading platform. At the CTS market, ICRC-1 tokens trade with the CYCLES. The market is an order-book so you set the rate (price) for the tokens you are willing to trade, and the market matches compatible orders. You can trade in and out of the different tokens using the CYCLES as the base.
 
-When creating a position at the market, choose how many tokens you want to trade and the rate (limit price) for what you are willing to trade. The rate is in the form of T-CYCLES (TRILLION-CYCLES) per token. The market will match positions that have the same or better rates. If there are no matches when a position is created, the position stays on the order-book until the user cancels it or it finds a match.
-
-"""
-                    , style: TextStyle(fontSize: 19)
+When creating a position at the market, choose how many tokens you want to trade and the rate (limit price) for what you are willing to trade. The rate is in the form of T-CYCLES (TRILLION-CYCLES) per token. The market will match positions that have the same or better rates. If there are no matches when a position is created, the position stays on the order-book until the user cancels it or it finds a match."""
+                    , style: TextStyle(fontSize: 19, fontFamily: 'ChakraPetch')
                 )
-            ),
+            ))),
             /*
             Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 27.0),

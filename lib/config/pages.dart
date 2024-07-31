@@ -131,7 +131,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                     key: scaffold_key,
                     appBar: AppBar(
                         title: Center(child: Padding(
-                            child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
+                            child: const Text('CYCLES-TRANSFER-STATION', style: TextStyle(fontFamily: 'AxaxaxBold')),
                             padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
                         )),
                         automaticallyImplyLeading: true,
@@ -141,9 +141,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: Column(
                             children: [
                                 DrawerHeader(
-                                    child: state.user == null ? 
-                                        Center(child: OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); })) 
-                                    : SelectableText('USER-ID: ${state.user!.principal.text}')
+                                    child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
                                 ),
                                 Expanded(
                                     child: ListView(
@@ -215,6 +213,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: state.current_url.main_page_scaffold_body()!,
                     ),
                     bottomNavigationBar: BottomAppBar(
+                        height: 50,
                         padding: EdgeInsets.zero,
                         //color: Colors.blue,
                         child: IconTheme(
@@ -225,16 +224,14 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: <Widget>[
                                         Container(
-                                            child: state.user == null 
-                                                ? OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); }) 
-                                                : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
+                                            child: state.user == null ? IILoginButton() : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
                                             padding: EdgeInsets.symmetric(horizontal: 17, vertical: 13),  
                                         ),
                                         const Spacer(),
                                     ]
                                 )
                             ) 
-                        )       
+                        )
                     )
                 
             )

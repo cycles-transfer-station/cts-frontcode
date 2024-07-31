@@ -29,6 +29,9 @@ class ConfigureCyclesBank extends StatelessWidget {
                     children: [
                         ScaffoldBodyHeader(Center(child:Column(children: [
                             Text('SETTINGS', style: TextStyle(fontSize: 17)),
+                            SizedBox(
+                                height: 13,
+                            ),
                             SelectableText('USER-ID: ${state.user!.principal.text}', style: TextStyle(fontSize: 14)),
                         ]))),
                         Expanded(
@@ -85,7 +88,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                             constraints: BoxConstraints(maxWidth: 450),
                                                             //width: double.infinity,
                                                             //alignment: Alignment.centerLeft,
-                                                            padding: EdgeInsets.fromLTRB(0,11,0,0),
+                                                            //padding: EdgeInsets.fromLTRB(0,11,0,0),
                                                             child: Column(
                                                                 children: [
                                                                     /*
@@ -139,11 +142,11 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                             ]    
                                                                         )
                                                                     ),
-                                                                    */
                                                                     SizedBox(
                                                                         width: 3,
                                                                         height: 27
                                                                     ),
+                                                                    */
                                                                 ]
                                                             )
                                                         )
@@ -164,9 +167,9 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                         Container(
                                                                             width: double.infinity,
                                                                             padding: EdgeInsets.all(17),
-                                                                            child: ElevatedButton(
-                                                                                style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                                                                child: Text('MANAGEMENT CANISTER DEPOSIT CYCLES'),
+                                                                            child: FilledButton(
+                                                                                //style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                                                                child: Text('TOP-UP A CANISTER'),
                                                                                 onPressed: () async {
                                                                                     await showDialog(
                                                                                         context: context,
@@ -201,6 +204,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                         Divider(
                             
                         ),
+                        SizedBox(height: 11),
                         OutlineButton(
                             button_text: 'Done',
                             on_press_complete: () {
@@ -217,8 +221,8 @@ class ConfigureCyclesBank extends StatelessWidget {
 
 class MintCyclesButton extends StatelessWidget {
     Widget build(BuildContext context) {
-        return ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: blue),
+        return FilledButton(
+            //style: ElevatedButton.styleFrom(backgroundColor: blue),
             child: Text('MINT CYCLES'),
             onPressed: () async {
                 await showDialog(

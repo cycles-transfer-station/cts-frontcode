@@ -48,7 +48,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         
         if (state.user == null) {
             body_widget = Center(
-                child: OutlineButtonIILogin(key: ValueKey('cb-scaffold_body-ii-login-button')),
+                child: IILoginButton(key: ValueKey('cb-scaffold_body-ii-login-button')),
             );  
         } else {
             
@@ -102,41 +102,16 @@ class CyclesBankScaffoldBody extends StatelessWidget {
             };
                         
             column_children.addAll([
-                Container(
-                    margin: EdgeInsets.symmetric(vertical: 33),
-                    child: Column(
+                SizedBox(height: 13),
+                Card(
+                    child: Container(margin: EdgeInsets.all(33), child: Column(
                         children: [
                             Container(
-                                child: DropdownButton<Icrc1Ledger>(
-                                    style: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold'),
-                                    underline: Container(
-                                        height: 0,
-                                        color: Colors.deepPurpleAccent,
-                                    ),
-                                    isExpanded: false,
-                                    items: [
-                                        for (Icrc1Ledger icrc1_ledger in state.known_icrc1_ledgers)                 
-                                            DropdownMenuItem<Icrc1Ledger>(
-                                                child: Padding(
-                                                    padding: EdgeInsets.symmetric(horizontal:4),
-                                                    child: Text(icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol, style: TextStyle(fontSize: 22)), 
-                                                ),
-                                                value: icrc1_ledger
-                                            ),
-                                    ],
-                                    value: state.current_icrc1_ledger,
-                                    onChanged: (Icrc1Ledger? select_icrc1_ledger) { 
-                                        if (select_icrc1_ledger != null) {
-                                            if (select_icrc1_ledger != state.current_icrc1_ledger) {
-                                                change_url_into_cb(select_icrc1_ledger, context);
-                                            }
-                                        }
-                                    }
-                                )
+                                child: CyclesBankTokenSelector(),
                             ),
                             SizedBox(
                                 width: 3,
-                                height: 13
+                                height: 26
                             ),
                             DefaultTextStyle.merge(
                                 style: TextStyle(fontSize: 27, fontFamily: 'CourierNewBold'),
@@ -150,12 +125,12 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             ),
                             SizedBox(
                                 width: 3,
-                                height: 27
+                                height: 26
                             ),
                             Container(
-                                padding: EdgeInsets.all(7),
-                                child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                padding: EdgeInsets.fromLTRB(7,0,7,7),
+                                child: FilledButton(
+                                    //style: ElevatedButton.styleFrom(backgroundColor: blue),
                                     child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}'),
                                     onPressed: () async {
                                         await show_transfer_dialog();
@@ -171,49 +146,54 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     padding: EdgeInsets.all(7),
                                     child: MintCyclesButton(),
                                 ),
-                            ]
+                            ],
+                            SizedBox(
+                                width: 3,
+                                height: 10
+                            ),
+                            Container(
+                                padding: EdgeInsets.all(7),
+                                child: FilledButton.tonal(
+                                    //style: ElevatedButton.styleFrom(backgroundColor: blue),
+                                    child: Text('LOAD TRANSFERS'),
+                                    onPressed: () async {
+                                        state.loading_text = 'loading bank \$${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await Future.wait([
+                                        state.user!.fresh_icrc1_transactions([state.current_icrc1_ledger]),
+                                        state.user!.fresh_icrc1_balances([state.current_icrc1_ledger]),
+                                    ]);
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when loading the bank ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers:'),
+                                                content: Text('${etext(e)}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                                    }
+                                )
+                            ),
+
                         ]
-                    )
+                    ))
                 ),
                 Container(
                     child: Column(
                         children: [
-                            Container(
-                                padding: EdgeInsets.symmetric(horizontal: 7, vertical: 17),
-                                child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: blue),
-                                    child: Text('LOAD TRANSFERS', style: TextStyle(fontSize:11)),
-                                    onPressed: () async {
-                                        state.loading_text = 'loading bank \$${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers ...';
-                                        state.is_loading = true;
-                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                        try {
-                                            await Future.wait([
-                                                state.user!.fresh_icrc1_transactions([state.current_icrc1_ledger]),
-                                                state.user!.fresh_icrc1_balances([state.current_icrc1_ledger]),
-                                            ]);
-                                        } catch(e) {
-                                            await showDialog(
-                                                context: state.context,
-                                                builder: (BuildContext context) {
-                                                    return AlertDialog(
-                                                        title: Text('Error when loading the bank ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers:'),
-                                                        content: Text('${etext(e)}'),
-                                                        actions: <Widget>[
-                                                            TextButton(
-                                                                onPressed: () => Navigator.pop(context),
-                                                                child: const Text('OK'),
-                                                            ),
-                                                        ]
-                                                    );
-                                                }   
-                                            );                                    
-                                        }
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    }
-                                )
-                            ),
                             Container(
                                 width: double.infinity,
                                 padding: EdgeInsets.fromLTRB(11,0,0,0),
@@ -320,6 +300,85 @@ class CyclesBankScaffoldBody extends StatelessWidget {
         );
     }
 }
+
+
+
+
+
+class CyclesBankTokenSelector extends StatefulWidget {
+    CyclesBankTokenSelector({super.key});
+    State<CyclesBankTokenSelector> createState() => CyclesBankTokenSelectorState();
+}
+class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
+
+    late TextEditingController text_controller;
+    late FocusNode focus_node;
+
+    late CustomState state; // need for the focus_node listener
+    late MainStateBindScope<CustomState> main_state_bind_scope;
+
+    void initState() {
+        super.initState();
+        text_controller = TextEditingController();
+        focus_node = FocusNode(debugLabel: 'bank token selector');
+        focus_node.addListener(focus_node_listener);
+    }
+    void dispose() {
+        text_controller.dispose();
+        focus_node.removeListener(focus_node_listener);
+        focus_node.dispose();
+        super.dispose();
+    }
+
+    void focus_node_listener() {
+        // if go away from focus, set the text back to the current token symbol in case someone left something else in the text field.
+        if (focus_node.hasPrimaryFocus == false) {
+            print('setting token selector text back to the current token symbol');
+            text_controller.text = state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol;
+        }
+    }
+
+    Widget build(BuildContext context) {
+        state = MainStateBind.get_state<CustomState>(context);
+        main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+        return DropdownMenu<Icrc1Ledger>(
+            // remove the border
+            inputDecorationTheme: InputDecorationTheme(
+                outlineBorder: BorderSide.none,
+            ),
+            controller: text_controller,
+            focusNode: focus_node,
+            enableSearch: true,
+            enableFilter: false, // we want the user to always be able to know that there are many tokens. the search already moves the highlighted selection so no need for this flag.
+            textStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 22),
+            dropdownMenuEntries: <DropdownMenuEntry<Icrc1Ledger>>[
+                for (Icrc1Ledger icrc1_ledger in state.known_icrc1_ledgers)
+                    DropdownMenuEntry<Icrc1Ledger>(
+                        label: icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol,
+                        value: icrc1_ledger,
+                        style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'CourierNewBold', fontSize: 22)))
+                    ),
+            ],
+            initialSelection: state.current_icrc1_ledger,
+            onSelected: (Icrc1Ledger? select_icrc1_ledger) {
+                if (select_icrc1_ledger != null) {
+                    if (select_icrc1_ledger != state.current_icrc1_ledger) {
+                        change_url_into_cb(select_icrc1_ledger, context);
+                    } else {
+                        setState((){});
+                    }
+                }
+            }
+        );
+    }
+}
+
+
+
+
+
+
 
 
 

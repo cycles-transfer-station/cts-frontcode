@@ -52,9 +52,9 @@ class OutlineButton extends StatelessWidget {
         
         return OutlinedButton(
             child: this.button_text != null ? Text(this.button_text!) : child!,
-            style: ButtonStyle(
-                foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-            ),
+            //style: ButtonStyle(
+            //    foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
+            //),
             onPressed: on_press_complete
         );
     }
@@ -80,7 +80,13 @@ class OutlineButtonIILoginState extends State<OutlineButtonIILogin> {
         );   
     }
 }
-    
+
+class IILoginButton extends StatelessWidget {
+    IILoginButton({super.key});
+    Widget build(BuildContext context) {
+        return FilledButton(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
+    }
+}
 
 
 
