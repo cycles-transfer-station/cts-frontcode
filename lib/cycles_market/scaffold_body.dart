@@ -1045,151 +1045,163 @@ String position_log_timestamp_format(DateTime t) {
 }
 
 
+
+
+Widget create_trades_quantities_widget(PositionLog pl, Icrc1Ledger token_ledger_data) {
+    Widget position_purchases_sum_widget = pl.position_kind == PositionKind.Cycles
+        ?
+        show_tokens_with_symbol(Cycles(cycles: pl.position_purchases_sum_quantity()), cycles_symbol)
+        :
+        show_tokens_with_symbol(Tokens(quantums: pl.position_purchases_sum_quantity(), decimal_places: token_ledger_data.decimals), token_ledger_data.symbol);
+
+    Widget fill_widget = pl.position_kind == PositionKind.Cycles
+        ?
+        show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity, decimal_places: token_ledger_data.decimals), token_ledger_data.symbol)
+        :
+        show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
+
+    Widget trades_quantities_widget = Row(children: [position_purchases_sum_widget, Text(' <> '), fill_widget]);
+
+    return trades_quantities_widget;
+}
+
+Widget create_position_quantity_widget(PositionLog pl, Icrc1Ledger token_ledger_data) {
+    return
+        pl.position_kind == PositionKind.Cycles
+        ?
+        show_tokens_with_symbol(Cycles(cycles: pl.quest.quantity), cycles_symbol)
+        :
+        show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_ledger_data.decimals), token_ledger_data.symbol);
+}
+
+Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_data, BuildContext context, int cm_main_trade_contracts_i) {
+
+    CustomState state = MainStateBind.get_state<CustomState>(context);
+    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+    return
+    pl.position_termination != null
+    ?
+    Container(
+        child: Text(switch (pl.position_termination!.cause) {
+            PositionTerminationCause.Fill => 'COMPLETE',
+            PositionTerminationCause.Bump => 'BUMP',
+            PositionTerminationCause.TimePass => 'TIMEOUT',
+            PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',
+        })
+    )
+    :
+    Row(
+        children: [
+            pl.position_kind == PositionKind.Cycles
+            ?
+            show_tokens_with_symbol(Cycles(cycles: pl.mainder_position_quantity), cycles_symbol)
+            :
+            show_tokens_with_symbol(Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_ledger_data.decimals), token_ledger_data.symbol)
+            ,
+            //SizedBox(width: 11),
+            Spacer(),
+            OutlineButton(
+                child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
+                on_press_complete: () async {
+                    state.loading_text = 'closing position ${pl.id} ...';
+                    state.is_loading = true;
+                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+
+                    try {
+                        await state.user!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
+                    } catch(e,s) {
+                        //print(e);
+                        //print(s);
+                        await showDialog(
+                            context: state.context,
+                            barrierDismissible: false,
+                            builder: (BuildContext context) {
+                                return AlertDialog(
+                                    title: Text('cancel position error'),
+                                    content: Text('${etext(e)}'),
+                                    actions: <Widget>[
+                                        TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('OK'),
+                                        ),
+                                    ]
+                                );
+                            }
+                        );
+                        state.is_loading = false;
+                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                        return;
+                    }
+
+                    state.loading_text = 'cancel position success.\nposition-id: ${pl.id}\nloading positions ...';
+                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+
+                    Future success_dialog = showDialog(
+                        context: state.context,
+                        builder: (BuildContext context) {
+                            return AlertDialog(
+                                title: Text('cancel position success!'),
+                                content: Text('position-id: ${pl.id}'),
+                                actions: <Widget>[
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('OK'),
+                                    ),
+                                ]
+                            );
+                        }
+                    );
+
+                    try {
+                        await Future.wait([
+                            state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]),
+                            state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                            /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
+                            state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data()
+                        ]);
+                    } catch(e) {
+                        await showDialog(
+                            context: state.context,
+                            builder: (BuildContext context) {
+                                return AlertDialog(
+                                    title: Text('Error when loading current positions:'),
+                                    content: Text('${etext(e)}'),
+                                    actions: <Widget>[
+                                        TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('OK'),
+                                        ),
+                                    ]
+                                );
+                            }
+                        );
+                    }
+
+                    await success_dialog;
+
+                    state.is_loading = false;
+                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+
+                }
+            )
+        ]
+    );
+}
+
 DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade_contracts_i, PositionLogAndVoidPositionPayoutStatus plavpps) {
     PositionLog pl = plavpps.pl;
     
     CustomState state = MainStateBind.get_state<CustomState>(context);
-    MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
             
     Icrc1Ledger ledger_data = state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data;
-    String token_symbol = ledger_data.symbol;
-    int token_decimal_places = ledger_data.decimals;
+
+    Widget trades_quantities_widget = create_trades_quantities_widget(pl, ledger_data);
     
-    Tokens? fill_tokens;
-    Cycles? fill_cycles;
+    Widget position_quantity_widget = create_position_quantity_widget(pl, ledger_data);
     
-    BigInt position_purchases_sum_quantity = pl.quest.quantity - pl.mainder_position_quantity;
-    Widget position_purchases_sum_widget = pl.position_kind == PositionKind.Cycles 
-        ? 
-        show_tokens_with_symbol(Cycles(cycles: position_purchases_sum_quantity), cycles_symbol) 
-        : 
-        show_tokens_with_symbol(Tokens(quantums: position_purchases_sum_quantity, decimal_places: token_decimal_places), token_symbol);
-    
-    Widget fill_widget = pl.position_kind == PositionKind.Cycles 
-        ? 
-        show_tokens_with_symbol(Tokens(quantums: pl.fill_quantity, decimal_places: token_decimal_places), token_symbol) 
-        : 
-        show_tokens_with_symbol(Cycles(cycles: pl.fill_quantity), cycles_symbol);
-    
-    Widget position_quantity = 
-        pl.position_kind == PositionKind.Cycles 
-        ? 
-        show_tokens_with_symbol(Cycles(cycles: pl.quest.quantity), cycles_symbol)
-        : 
-        show_tokens_with_symbol(Tokens(quantums: pl.quest.quantity, decimal_places: token_decimal_places), token_symbol);
-    
-    Widget trades_quantities_widget = Row(children: [position_purchases_sum_widget, Text(' <> '), fill_widget]);
-    
-    Widget current_position_widget = 
-        pl.position_termination != null 
-        ? 
-        Container(
-            child: Text(switch (pl.position_termination!.cause) {
-                PositionTerminationCause.Fill => 'COMPLETE',
-                PositionTerminationCause.Bump => 'BUMP',
-                PositionTerminationCause.TimePass => 'TIMEOUT',
-                PositionTerminationCause.UserCallVoidPosition => 'CANCELLED',   
-            })
-        ) 
-        :
-        Row(
-            children: [
-                pl.position_kind == PositionKind.Cycles
-                ? 
-                show_tokens_with_symbol(Cycles(cycles: pl.mainder_position_quantity), cycles_symbol)
-                : 
-                show_tokens_with_symbol(Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), token_symbol)        
-                ,
-                //SizedBox(width: 11),
-                Spacer(),
-                OutlineButton(
-                    child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
-                    on_press_complete: () async {
-                            state.loading_text = 'closing position ${pl.id} ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            
-                            try {
-                                await state.user!.cm_void_position(state.cm_main.trade_contracts[cm_main_trade_contracts_i], pl.id);
-                            } catch(e,s) {
-                                //print(e);
-                                //print(s);
-                                await showDialog(
-                                    context: state.context,
-                                    barrierDismissible: false,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('cancel position error'),
-                                            content: Text('${etext(e)}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );                                    
-                                state.is_loading = false;
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                return;
-                            }
-                            
-                            state.loading_text = 'cancel position success.\nposition-id: ${pl.id}\nloading positions ...';
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                            
-                            Future success_dialog = showDialog(
-                                context: state.context,
-                                builder: (BuildContext context) {
-                                    return AlertDialog(
-                                        title: Text('cancel position success!'),
-                                        content: Text('position-id: ${pl.id}'),
-                                        actions: <Widget>[
-                                            TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: const Text('OK'),
-                                            ),
-                                        ]
-                                    );
-                                }   
-                            ); 
-                            
-                            try {
-                                await Future.wait([
-                                    state.user!.load_cm_data([state.cm_main.trade_contracts[cm_main_trade_contracts_i]]),
-                                    state.user!.fresh_icrc1_balances([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
-                                    /*too slow*///state.user!.fresh_icrc1_transactions([state.cm_main.trade_contracts[cm_main_trade_contracts_i].ledger_data, CYCLES_BANK_LEDGER]),
-                                    state.cm_main.trade_contracts[cm_main_trade_contracts_i].load_data()
-                                ]);
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Error when loading current positions:'),
-                                            content: Text('${etext(e)}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );                                    
-                            }
-                            
-                            await success_dialog;
-                            
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                            
-                    }
-                )
-            ]
-        );
-    
-        
+    Widget current_position_widget = create_current_position_widget(pl, ledger_data, context, cm_main_trade_contracts_i);
+
     return DataRow2(
         onTap: () async {
             await showDialog(
@@ -1197,43 +1209,22 @@ DataRow datarow_of_the_user_position_log(BuildContext context, int cm_main_trade
                 builder: (BuildContext context) {
                     return PositionDialog(
                         cm_main_trade_contracts_i: cm_main_trade_contracts_i, 
-                        plavpps: plavpps,
-                        position_quantity: position_quantity,
-                        position_purchases_sum_quantity: position_purchases_sum_quantity,
-                        trades_quantities_widget: trades_quantities_widget,
-                        current_position_widget: current_position_widget,
+                        pl_id: pl.id,
                     );
                 }                
             );
         },
         cells: <DataCell>[
-            /*
-            DataCell(
-                Text(pl.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL'), /*+ '-' + (pl.position_termination == null ? 'OPEN' : 'CLOSED')*/
-                /*
-                {bool placeholder = false, 
-                bool showEditIcon = false, 
-                GestureTapCallback? onTap, 
-                GestureLongPressCallback? onLongPress, 
-                GestureTapDownCallback? onTapDown, 
-                GestureTapCallback? onDoubleTap, 
-                GestureTapCancelCallback? onTapCancel}) 
-                */
-            ),
-            */
             DataCell(Text(pl.id.toString())),
             //DataCell(Text('${position_log_timestamp_format(datetime_of_the_nanos(pl.creation_timestamp_nanos))}')),
-            DataCell(position_quantity),
+            DataCell(position_quantity_widget),
             DataCell(Text('${pl.quest.cycles_per_token_rate.toString()/*.replaceFirst('T', '')*/}')),
             DataCell(
                 trades_quantities_widget
             ),
-            //DataCell(Text('${pl.fill_average_rate.toString().replaceFirst('T', '')}')),
             DataCell(
                 current_position_widget
-            ),            
-            //DataCell(Text('${pl.position_kind == PositionKind.Cycles ? Tokens(quantums: pl.payouts_fees_sum, decimal_places: token_decimal_places) : Cycles(cycles: pl.payouts_fees_sum)}')), 
-            
+            ),
         ]
     );
             
@@ -1285,26 +1276,17 @@ class HeaderWithACloseButton extends StatelessWidget {
                     ]),
             ]
         );
-     }
- }
+    }
+}
  
 
 class PositionDialog extends StatefulWidget {
     final int cm_main_trade_contracts_i;
-    PositionLogAndVoidPositionPayoutStatus plavpps;
-    PositionLog get pl => plavpps.pl;
-    Widget position_quantity;
-    BigInt position_purchases_sum_quantity;
-    Widget trades_quantities_widget;
-    Widget current_position_widget;
+    final BigInt pl_id;
     PositionDialog({
-        required this.cm_main_trade_contracts_i, 
-        required this.plavpps,
-        required this.position_quantity,
-        required this.position_purchases_sum_quantity,
-        required this.trades_quantities_widget,
-        required this.current_position_widget,
-    }) : super(key: ValueKey('PositionDialog pl-id: ${plavpps.pl.id} cm_main_trade_contracts_i: ${cm_main_trade_contracts_i}'));
+        required this.cm_main_trade_contracts_i,
+        required this.pl_id,
+    }) : super(key: ValueKey('PositionDialog pl-id: ${pl_id} cm_main_trade_contracts_i: ${cm_main_trade_contracts_i}'));
     State createState() => PositionDialogState();
 }
 class PositionDialogState extends State<PositionDialog> {
@@ -1315,26 +1297,18 @@ class PositionDialogState extends State<PositionDialog> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        if (load_cm_user_position_trade_logs_future == null && state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl.id] == null) {
-            load_cm_user_position_trade_logs_future = state.user!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl.id); 
+        if (load_cm_user_position_trade_logs_future == null && state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!.user_positions_trade_logs[widget.pl_id] == null) {
+            load_cm_user_position_trade_logs_future = state.user!.load_cm_user_position_trade_logs(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i], widget.pl_id);
         }
         
         Icrc1Ledger ledger_data = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].ledger_data;
         String token_symbol = ledger_data.symbol;
         int token_decimal_places = ledger_data.decimals;
         
-        PositionLog pl = widget.pl;
-        
-        Widget mainder_position_widget = pl.position_kind == PositionKind.Cycles
-            ? show_tokens_with_symbol(
-                Cycles(cycles: pl.mainder_position_quantity), 
-                cycles_symbol,
-            )
-            : show_tokens_with_symbol(
-                Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places), 
-                token_symbol,
-            );
-        
+        // find plavpps in this build method because after a position-cancellation, the position needs to re-fresh on the set-state with the new-values.
+        PositionLogAndVoidPositionPayoutStatus plavpps = find_plavpps_of_id(widget.pl_id, state, widget.cm_main_trade_contracts_i);
+        PositionLog pl = plavpps.pl;
+
         return Dialog(
             child: Container(
                 constraints: BoxConstraints(maxWidth: 555),
@@ -1373,7 +1347,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                         ),
                                                         (
                                                             Text('POSITION:'),
-                                                            widget.position_quantity,
+                                                            create_position_quantity_widget(pl, ledger_data),
                                                         ),
                                                         (
                                                             Text('RATE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/),
@@ -1383,14 +1357,14 @@ class PositionDialogState extends State<PositionDialog> {
                                                             Text('FILL-PERCENTAGE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/),
                                                             Builder(
                                                                 builder: (BuildContext context) {
-                                                                    double percentage_fill = widget.position_purchases_sum_quantity.toDouble() / (pl.quest.quantity / BigInt.from(100));
+                                                                    double percentage_fill = pl.position_purchases_sum_quantity().toDouble() / (pl.quest.quantity / BigInt.from(100));
                                                                     return Text('${percentage_fill.toStringAsFixed(0)}%');
                                                                 }
                                                             )
                                                         ),
                                                         (
                                                             Text('TRADES:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/),
-                                                            widget.trades_quantities_widget
+                                                            create_trades_quantities_widget(pl, ledger_data),
                                                         ),
                                                         (
                                                             Text('FILL-AVERAGE-RATE:', /*style: TextStyle(fontFamily: 'CourierNewBold')*/),
@@ -1413,7 +1387,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                     MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                                                                     BigInt trades_payouts_ledger_fees_sum =
                                                                         (state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
-                                                                            .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? [])
+                                                                            .user_positions_trade_logs[pl.id].nullmap((m)=>m.values) ?? [])
                                                                             .fold(BigInt.from(0), (BigInt value, TradeLogAndPayoutStatus l)=> value + (pl.position_kind == PositionKind.Cycles ? l.tl.tokens_payout_ledger_transfer_fee : l.tl.cycles_payout_ledger_transfer_fee));
                                                                     return switch (snapshot.connectionState) {
                                                                         ConnectionState.none || ConnectionState.done => 
@@ -1445,7 +1419,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                         case ConnectionState.none || ConnectionState.done: 
                                                                             Iterable<TradeLogAndPayoutStatus> tlaps_list = 
                                                                                 (state.user!.cm_trade_contracts[state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]]!
-                                                                                .user_positions_trade_logs[widget.pl.id].nullmap((m)=>m.values) ?? []);
+                                                                                .user_positions_trade_logs[pl.id].nullmap((m)=>m.values) ?? []);
                                                                             bool is_pending =
                                                                                 tlaps_list.map(
                                                                                     pl.position_kind == PositionKind.Cycles 
@@ -1480,23 +1454,31 @@ class PositionDialogState extends State<PositionDialog> {
                                                         ),
                                                         (
                                                             Text('CURRENT-POSITION:'),
-                                                            widget.current_position_widget,
+                                                            create_current_position_widget(pl, ledger_data, context, widget.cm_main_trade_contracts_i),
                                                         ),
                                                         if (pl.position_termination != null) ...[
                                                             (
                                                                 Text('POSITION-LEFTOVER:'),
-                                                                mainder_position_widget
+                                                                pl.position_kind == PositionKind.Cycles
+                                                                ? show_tokens_with_symbol(
+                                                                    Cycles(cycles: pl.mainder_position_quantity),
+                                                                    cycles_symbol,
+                                                                )
+                                                                : show_tokens_with_symbol(
+                                                                    Tokens(quantums: pl.mainder_position_quantity, decimal_places: token_decimal_places),
+                                                                    token_symbol,
+                                                                ),
                                                             ),
-                                                            if (widget.pl.void_position_payout_dust_collection && pl.mainder_position_quantity != BigInt.zero) (
+                                                            if (pl.void_position_payout_dust_collection && pl.mainder_position_quantity != BigInt.zero) (
                                                                 Text('LEFTOVER-DUST-COLLECTION:'),
                                                                 Text('true'),
                                                             ),
-                                                            if (widget.pl.void_position_payout_dust_collection == false) ...[
+                                                            if (pl.void_position_payout_dust_collection == false) ...[
                                                                 (
                                                                     Text('LEFTOVER-TRANSFER-STATUS:'),
-                                                                    Text(widget.plavpps.void_position_payout_complete ? 'COMPLETE' : 'PENDING')
+                                                                    Text(plavpps.void_position_payout_complete ? 'COMPLETE' : 'PENDING')
                                                                 ),
-                                                                if (widget.plavpps.void_position_payout_complete) ...[
+                                                                if (plavpps.void_position_payout_complete) ...[
                                                                     (
                                                                         Text('LEFTOVER-TRANSFER-LEDGER-FEE:'),
                                                                         pl.position_kind == PositionKind.Token 
@@ -1719,6 +1701,23 @@ Tooltip show_tokens_with_symbol(Tokens tokens, String token_symbol, {bool show_t
     );
 }
 
+// will throw if non existant id.
+PositionLogAndVoidPositionPayoutStatus find_plavpps_of_id(BigInt plid, CustomState state, int cm_main_trade_contracts_i) {
+    PositionLogAndVoidPositionPayoutStatus? plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_trade_contracts_i]]!.current_user_positions[plid].nullmap((pl)=>PositionLogAndVoidPositionPayoutStatus(pl, false));
+    if (plavpps == null) {
+        plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_trade_contracts_i]]!
+        .user_void_positions_pending[plid];
+    }
+    if (plavpps == null) {
+        plavpps = PositionLogAndVoidPositionPayoutStatus(
+            state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_trade_contracts_i]]!
+            .user_positions_storage[plid]!,
+            true,
+        );
+    }
+    return plavpps;
+}
+
 
 class UserCMLogsDataTableSource extends DataTableSource {
     int cm_main_icrc1token_trade_contracts_i;
@@ -1738,19 +1737,7 @@ class UserCMLogsDataTableSource extends DataTableSource {
             state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
             .user_positions_storage.keys;
         BigInt plid = user_positions_storage_keys.elementAt(user_positions_storage_keys.length - 1 - i);
-        PositionLogAndVoidPositionPayoutStatus? plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-            .current_user_positions[plid].nullmap((pl)=>PositionLogAndVoidPositionPayoutStatus(pl, false));
-        if (plavpps == null) {
-            plavpps = state.user!.cm_trade_contracts[state.cm_main.trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                .user_void_positions_pending[plid];
-        }
-        if (plavpps == null) {
-            plavpps = PositionLogAndVoidPositionPayoutStatus(
-                state.user!.cm_trade_contracts[state.cm_main.icrc1token_trade_contracts[cm_main_icrc1token_trade_contracts_i]]!
-                .user_positions_storage[plid]!,
-                true,
-            );
-        }
+        PositionLogAndVoidPositionPayoutStatus plavpps = find_plavpps_of_id(plid, state, cm_main_icrc1token_trade_contracts_i);
         return datarow_of_the_user_position_log(context, cm_main_icrc1token_trade_contracts_i, plavpps);
     }
     

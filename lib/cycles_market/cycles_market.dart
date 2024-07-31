@@ -339,7 +339,8 @@ class PositionLog {
     bool void_position_payout_dust_collection;
     BigInt void_position_payout_ledger_transfer_fee;
     
-    //BigInt trade_log_ids
+    BigInt position_purchases_sum_quantity() => this.quest.quantity - this.mainder_position_quantity;
+
     
     PositionLog._({
         required this.id,
