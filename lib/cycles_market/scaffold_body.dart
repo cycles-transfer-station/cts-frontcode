@@ -833,14 +833,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(0, 7, 0,7),
-                        child: /*ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: blue,
-                                foregroundColor: Theme.of(context).colorScheme.primary,
-                                textStyle: Theme.of(context).textTheme.bodyMedium,
-                            ),//ElevatedButton.styleFrom(backgroundColor: blue),
-                            */
-                            FilledButton(
+                        child: FilledButton(
                             child: Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
