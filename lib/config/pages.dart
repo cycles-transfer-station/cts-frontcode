@@ -131,7 +131,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                     key: scaffold_key,
                     appBar: AppBar(
                         title: Center(child: Padding(
-                            child: const Text('CYCLES-TRANSFER-STATION', style: TextStyle(fontFamily: 'AxaxaxBold')),
+                            child: const Text('.CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
                             padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
                         )),
                         automaticallyImplyLeading: true,
