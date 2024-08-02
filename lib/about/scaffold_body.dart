@@ -32,7 +32,7 @@ class AboutScaffoldBody extends StatelessWidget {
                                     width: double.infinity,
                                     alignment: Alignment.center,
                                     child: Text(
-                                        'Mint, hold, transfer, and trade the native stable currency on the world-computer: CYCLES.',
+                                        'Mint, hold, transfer, and trade the native currency on the world-computer: CYCLES.',
                                         style: TextStyle(fontSize: 25),
                                         textAlign: TextAlign.center,
                                     ),
