@@ -47,7 +47,6 @@ class OutlineButton extends StatelessWidget {
         }    
     }
     
-    
     Widget build(BuildContext context) {    
         
         return OutlinedButton(
@@ -63,23 +62,6 @@ class OutlineButton extends StatelessWidget {
 
 
 
-class OutlineButtonIILogin extends StatefulWidget {
-    OutlineButtonIILogin({super.key});
-    State createState() => OutlineButtonIILoginState();
-}
-class OutlineButtonIILoginState extends State<OutlineButtonIILogin> {
-    Future? ii_login_future;
-    
-    Widget build(BuildContext context) {
-        return OutlineButton(
-            button_text: 'LOG-IN',
-            on_press_complete: () async {
-                ii_login_future = ii_login(context);  
-                await ii_login_future; 
-            }
-        );   
-    }
-}
 
 class IILoginButton extends StatelessWidget {
     IILoginButton({super.key});
