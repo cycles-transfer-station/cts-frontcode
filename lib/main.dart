@@ -29,14 +29,11 @@ class BaseState extends State<Base> {
                       brightness: Brightness.dark,
                 ).copyWith(
                     background: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
-                    surfaceTint: Colors.transparent,
                 ),
                 fontFamily: 'AxaxaxBold',
                 appBarTheme: AppBarTheme(
                     color: blue,
-                    elevation: 0, //1.5,
-                    //surfaceTintColor: null,
-                    shadowColor: Theme.of(context).colorScheme.shadow,
+                    elevation: 1.0,
                 ),
                 useMaterial3: true,
                 inputDecorationTheme: InputDecorationTheme(
