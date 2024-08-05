@@ -83,7 +83,7 @@ class CustomState {
         
         if (is_on_local) {
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
-            fetch_root_key().then((_x){});
+            local_fetch_root_key_future = fetch_root_key();
         }
 
         cts_main_icp_id = common.icp_id(cts.principal);
@@ -96,7 +96,8 @@ class CustomState {
         known_icrc1_ledgers = [CYCLES_BANK_LEDGER];
         
     }    
-    
+
+    Future? local_fetch_root_key_future;
     
     bool first_show_scaffold = false;
 
@@ -126,6 +127,11 @@ class CustomState {
 
     Future<void> loadfirststate() async { 
         print('load first state');
+
+        if (is_on_local) {
+            await local_fetch_root_key_future;
+        }
+
         
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
             await this.cm_main.fresh_icrc1token_trade_contracts();

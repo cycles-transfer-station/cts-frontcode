@@ -125,13 +125,13 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
         state.context = context;
         
         const double appbar_leading_width = 56.0;
-        
+
         return /*SelectionArea(
             child: */Scaffold(
                     key: scaffold_key,
                     appBar: AppBar(
                         title: Center(child: Padding(
-                            child: const Text(':CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
+                            child: const Text('.CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
                             padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
                         )),
                         automaticallyImplyLeading: true,
@@ -141,45 +141,42 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: Column(
                             children: [
                                 DrawerHeader(
-                                    child: state.user == null ? 
-                                        Center(child: OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); })) 
-                                    : SelectableText('USER-ID: ${state.user!.principal.text}')
+                                    child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
                                 ),
                                 Expanded(
                                     child: ListView(
                                         padding: EdgeInsets.zero,
                                         children: [
-                                            /*
-                                            ListTile(
-                                                title: const Text('HOME'),
-                                                onTap: () {
-                                                    state.current_url = CustomUrl('welcome');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    Navigator.pop(context);
-                                                },
-                                            ),
-                                            */
                                             ListTile(
                                                 title: const Text('BANK'),
                                                 onTap: () {
+                                                    if (state.current_url.name != 'cycles_bank') {
+                                                        change_url_into_cb(state.current_icrc1_ledger, context);
+                                                    }
                                                     Navigator.pop(context);
-                                                    change_url_into_cb(state.current_icrc1_ledger, context);
                                                 },
+                                                selected: state.current_url.name == 'cycles_bank'
                                             ),
                                             ListTile(
                                                 title: const Text('MARKET'),
                                                 onTap: () {
+                                                    if (state.current_url.name != 'cycles_market') {
+                                                        change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
+                                                    }
                                                     Navigator.pop(context);
-                                                    change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
                                                 },
+                                                selected: state.current_url.name == 'cycles_market'
                                             ),
                                             ListTile(
                                                 title: const Text('ABOUT'),
                                                 onTap: () {
-                                                    state.current_url = CustomUrl('about');
-                                                    MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    if (state.current_url.name != 'about') {
+                                                        state.current_url = CustomUrl('about');
+                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    }
                                                     Navigator.pop(context);
                                                 },
+                                                selected: state.current_url.name == 'about'
                                             )
                                         ]
                                     )
@@ -198,12 +195,12 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                             state.user!.caller.indexdb_delete();
                                                             window.localStorage.remove('user_cycles_bank');
                                                             state.user = null;
-                                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);            
+                                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                                             Navigator.pop(context);
                                                         }
                                                     )
                                                 )
-                                                else/*if (state.user == null)*/ SizedBox(height: 20) 
+                                                else/*if (state.user == null)*/ SizedBox(height: 20)
                                             ]
                                         )
                                     )
@@ -215,6 +212,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                         child: state.current_url.main_page_scaffold_body()!,
                     ),
                     bottomNavigationBar: BottomAppBar(
+                        height: 50,
                         padding: EdgeInsets.zero,
                         //color: Colors.blue,
                         child: IconTheme(
@@ -225,16 +223,14 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: <Widget>[
                                         Container(
-                                            child: state.user == null 
-                                                ? OutlineButton(button_text: 'LOG-IN', on_press_complete: () async { await ii_login(context); }) 
-                                                : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
+                                            child: state.user == null ? IILoginButton() : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
                                             padding: EdgeInsets.symmetric(horizontal: 17, vertical: 13),  
                                         ),
                                         const Spacer(),
                                     ]
                                 )
                             ) 
-                        )       
+                        )
                     )
                 
             )

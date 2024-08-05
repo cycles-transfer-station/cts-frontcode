@@ -117,294 +117,6 @@ final String? Function(String?) cycles_bank_principal_validator = (String? v) {
 };
 
 
-/*
-
-class CyclesBankTransferCyclesForm extends StatefulWidget {
-    CyclesBankTransferCyclesForm({super.key});
-    State createState() => CyclesBankTransferCyclesFormState();
-}
-class CyclesBankTransferCyclesFormState extends State<CyclesBankTransferCyclesForm> {
-    GlobalKey<FormState> form_key = GlobalKey<FormState>();
-    
-    late Principal for_the_canister;
-    late Cycles cycles;
-    late CyclesTransferMemo cycles_transfer_memo;
-    
-    CyclesTransferMemoType cycles_transfer_memo_type = CyclesTransferMemoType.Text;
-    
-    
-    Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        
-        String? for_the_cycles_bank_initial_value;
-        String? tcycles_initial_value;
-        String? memo_initial_value;
-        
-        if (state.current_url.name == 'cycles_bank_pay') {
-            if (
-                cycles_bank_principal_validator(state.current_url.variables['for_the_cycles_bank']) == null
-                && tcycles_validator(state.current_url.variables['Tcycles']) == null
-                && CyclesTransferMemoType.values.map((mt)=>mt.name).toList().contains(state.current_url.variables['memo_type'])
-                && cycles_transfer_memo_validators_map[CyclesTransferMemoType.values.byName(state.current_url.variables['memo_type']!)]!(state.current_url.variables['memo']) == null
-            ) {
-                for_the_cycles_bank_initial_value = state.current_url.variables['for_the_cycles_bank'];
-                tcycles_initial_value = state.current_url.variables['Tcycles'];
-                cycles_transfer_memo_type = CyclesTransferMemoType.values.byName(state.current_url.variables['memo_type']!);
-                memo_initial_value = state.current_url.variables['memo'];                            
-            } else {
-                print('pre-fill payment data is invalid');
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                    state.current_url = CustomUrl('cycles_bank');
-                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                    Future(()async{
-                        await Future.delayed(Duration(milliseconds: 500));
-                        showDialog(
-                            context: state.context,
-                            builder: (BuildContext context) {
-                                return AlertDialog(
-                                    title: Text("Alert"),
-                                    content: Text('The pre-fill payment data is invalid.'),
-                                    actions: [
-                                        TextButton(
-                                            child: Text("OK"),
-                                            onPressed:  () {
-                                                Navigator.of(context).pop();
-                                            },
-                                        )
-                                    ],
-                                );
-                            }
-                        );
-                    });
-                });
-            }
-        }
-                
-        
-        return Form(
-            key: form_key,
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                    /*
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.fromLTRB(7,11,7,11),
-                        child: Center(
-                            child: Text('TRANSFER-CYCLES', style: TextStyle(fontSize:17))
-                        ),
-                    ),
-                    */
-                    TextFormField(
-                        decoration: InputDecoration(
-                            labelText: 'For the cycles-bank: ',
-                        ),
-                        initialValue: for_the_cycles_bank_initial_value,
-                        onSaved: (String? v) { for_the_canister = Principal.text(v!.trim()); },
-                        validator: cycles_bank_principal_validator
-                    ),
-                    TextFormField(
-                        decoration: InputDecoration(
-                            labelText: 'TCYCLES: ',
-                        ),
-                        initialValue: tcycles_initial_value,
-                        onSaved: (String? v) { cycles = Cycles.oftheTCyclesDoubleString(v!.trim()); },
-                        validator: tcycles_validator
-                    ),
-                    DropdownButtonFormField<CyclesTransferMemoType>(
-                        decoration: InputDecoration(
-                            labelText: 'Cycles Transfer Memo: ',
-                        ),
-                        items: const [
-                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Text'), value: CyclesTransferMemoType.Text ),
-                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Int'), value: CyclesTransferMemoType.Int ),
-                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Nat'), value: CyclesTransferMemoType.Nat ),
-                            DropdownMenuItem<CyclesTransferMemoType>(child: Text('Blob'), value: CyclesTransferMemoType.Blob ),                            
-                        ],
-                        value: cycles_transfer_memo_type,
-                        onChanged: (CyclesTransferMemoType? select_cycles_transfer_memo_type) { 
-                            if (select_cycles_transfer_memo_type is CyclesTransferMemoType) { 
-                                setState(() {
-                                    this.cycles_transfer_memo_type = select_cycles_transfer_memo_type; 
-                                });
-                            }
-                        }
-                    ),
-                    TextFormField(
-                        initialValue: memo_initial_value,
-                        onSaved: (String? v) { 
-                            switch (cycles_transfer_memo_type) {
-                                case CyclesTransferMemoType.Text: 
-                                    cycles_transfer_memo = CyclesTransferMemo.text(candid.Text(v ?? ''));
-                                break;
-                                case CyclesTransferMemoType.Int: 
-                                    cycles_transfer_memo = CyclesTransferMemo.int_(Int(BigInt.parse((v == null || v.trim() == '') ? '0' : v, radix: 10)));
-                                break;
-                                case CyclesTransferMemoType.Nat: 
-                                    cycles_transfer_memo = CyclesTransferMemo.nat(Nat(BigInt.parse((v == null || v.trim() == '') ? '0' : v, radix: 10)));
-                                break;
-                                case CyclesTransferMemoType.Blob: 
-                                    cycles_transfer_memo = CyclesTransferMemo.blob(Blob((v == null || v.trim() == '') ? [] : hexstringasthebytes(v.trim().toLowerCase())));
-                                break;
-                            }
-                        },
-                        validator: cycles_transfer_memo_validators_map[cycles_transfer_memo_type]!
-                    ),
-                    Padding(
-                        padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
-                            child: Text('TRANSFER CYCLES'),
-                            onPressed: () async {
-                                if (form_key.currentState!.validate()==true) {
-                                    
-                                    form_key.currentState!.save();
-                                    /*
-                                    bool _continue = false;
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            Widget cancelButton = TextButton(
-                                                child: Text("Cancel"),
-                                                onPressed:  () {
-                                                    Navigator.of(context).pop();
-                                                },
-                                            );
-                                            Widget continueButton = TextButton(
-                                                child: Text("Continue"),
-                                                onPressed:  () {
-                                                    _continue = true;
-                                                    Navigator.of(context).pop();
-                                                },
-                                            );
-                                            return AlertDialog(
-                                                title: Text("Confirm"),
-                                                content: Text(
-"""Cycles transfers are sent using the cycles-transfer-specification.
-For a temporary safegaurd, cycles-transfers are routed through a safe-transferrer with a fee: 0.02-xdr and cycles-transfers sent to external (not made by the CYCLES-TRANSFER-STATION) cycles-banks (or canister-smart-contracts) will not see the cycles-bank-id as the transferrer. (Soon when the smart-contract safe-upgrades feature is complete, there will be no fee, and transfers to external smart-contracts will see the correct cycles-bank-id as the transferrer.)
-"""                                             
-                                                ),
-                                                actions: [
-                                                    cancelButton,
-                                                    continueButton,
-                                                ],
-                                            );
-                                        }
-                                    );     
-                                    if (_continue == false) {
-                                        return;
-                                    }
-                                    */
-                                
-                                    UserTransferCyclesQuest transfer_cycles_quest = UserTransferCyclesQuest(
-                                        for_the_canister:for_the_canister,
-                                        cycles:cycles, 
-                                        cycles_transfer_memo:cycles_transfer_memo,
-                                    );
-                                    
-                                    state.loading_text = 'transferring cycles ...';
-                                    state.is_loading = true;
-                                    //MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    late TransferCyclesSponse transfer_cycles_sponse;
-                                    try {
-                                        transfer_cycles_sponse = await state.user!.cycles_bank!.transfer_cycles(transfer_cycles_quest);
-                                    } catch(e) {
-                                        print(e);
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Transfer Cycles Error:'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );
-                                        state.is_loading = false;
-                                        main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);                                                                    
-                                        return;
-                                    }
-                                    
-                                    form_key.currentState!.reset();
-                                    state.loading_text = 
-"""cycles-transfer-id: ${transfer_cycles_sponse.cycles_transfer_id}
-cycles-sent: ${transfer_cycles_quest.cycles}
-cycles-refunded: ${transfer_cycles_sponse.cycles_refund}
-transfer-call-response: ${transfer_cycles_sponse.opt_cycles_transfer_call_error == null ? 'success' : transfer_cycles_sponse.opt_cycles_transfer_call_error!.toString()}  
-
-loading cycles balance and transfers list ...""";
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                
-                                    Future success_dialog = showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Transfer sent:'),
-                                                content: Text(state.loading_text),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );
-                                
-                                    try {
-                                        await Future.wait([
-                                            state.user!.cycles_bank!.fresh_metrics(),
-                                            state.user!.cycles_bank!.fresh_cycles_transfers_out()
-                                        ]);
-                                    } catch(e) {
-                                        await showDialog(
-                                            context: state.context,
-                                            builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                    title: Text('Error when loading the cycles balance and the transfers list:'),
-                                                    content: Text('${etext(e)}'),
-                                                    actions: <Widget>[
-                                                        TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
-                                                        ),
-                                                    ]
-                                                );
-                                            }   
-                                        );                                    
-                                    }
-                                    
-                                    await success_dialog;
-                                    
-                                    state.is_loading = false;
-                                    
-                                    if (state.current_url.name == 'cycles_bank_pay') {
-                                        state.current_url = CustomUrl('cycles_bank');
-                                    } 
-                                    
-                                    main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                                    
-                                    Future.delayed(Duration(milliseconds: 20), () async { Navigator.pop(state.context); });
-                                }
-                            }
-                        )
-                    )
-                ]
-            )
-        );  
-    }
-}
-*/
-
 
 
 
@@ -425,8 +137,7 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
                     //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7,13,7,7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: FilledButton.tonal(
                             child: Text('LOAD BALANCE', style: TextStyle(fontSize:11)),
                             onPressed: () async {
                                 state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
@@ -608,8 +319,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: FilledButton(
                             child: Text('TRANSFER ${widget.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : widget.icrc1_ledger.symbol}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
@@ -860,8 +570,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                     ),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7, 17, 7,7),
-                        child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
+                        child: FilledButton(
                             child: Text('TRANSFER ICP'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
@@ -1081,9 +790,8 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
+                        child: FilledButton(
                             key: ValueKey('BurnIcpMintCyclesForm MINT CYCLES GO BUTTON'),
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('MINT CYCLES'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
@@ -1252,9 +960,8 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                     Text('Fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: ElevatedButton(
+                        child: FilledButton(
                             key: ValueKey('ManagementCanisterDepositCyclesForm DEPOSIT CYCLES GO BUTTON'),
-                            style: ElevatedButton.styleFrom(backgroundColor: blue),
                             child: Text('DEPOSIT CYCLES'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {

@@ -23,29 +23,19 @@ class BaseState extends State<Base> {
             backButtonDispatcher   : RootBackButtonDispatcher(),
             title: 'CTS',//':C.-T.-S.',
             theme: ThemeData(
-                brightness: Brightness.dark,
-                //backgroundColor: grey_background, // old deprecated field
-                //colorScheme: ColorScheme.fromSeed(
-                //      seedColor: blue,
-                //      brightness: Brightness.dark,
-                //    surface: grey_background,
-                //), 
+                //brightness: Brightness.dark,
+                colorScheme: ColorScheme.fromSeed(
+                      seedColor: blue,
+                      brightness: Brightness.dark,
+                ).copyWith(
+                    background: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
+                ),
                 fontFamily: 'AxaxaxBold',
-                /* try this on a child widget of this materialapp
-                textTheme: Theme.of(context).textTheme.apply(
-                    fontSizeFactor: 1.1,
-                    fontSizeDelta: 1.0,
-                ),
-                */
-                //typography: Typography.material2018(platform: platform)
                 appBarTheme: AppBarTheme(
-                    color: blue, 
-                    //backgroundColor Color?, 
-                    //foregroundColor: double?, 
-                    elevation: 1.5,  
-                    //shadowColor: Color?,  
+                    color: blue,
+                    elevation: 1.0,
                 ),
-                useMaterial3: false,
+                useMaterial3: true,
                 inputDecorationTheme: InputDecorationTheme(
                     labelStyle: TextStyle(fontFamily: 'CourierNew'),
                     errorMaxLines: 5,
@@ -63,16 +53,8 @@ class BaseState extends State<Base> {
 
 const Color grey_background = Color.fromRGBO(30, 30, 31, 0.9);
 const Color blue = Color.fromRGBO(76,97,145, 0.9);
+const Color purple = Color(0xFF2a254b); // 26365b // 27375c // 42456d
 
 
-
-/*
-
-this.debugShowMaterialGrid = false,
-this.showPerformanceOverlay = false,
-  
-
-
-
-*/
+// when seed-color = FF2a254b, then #1c1b20 is the color of the card
 
