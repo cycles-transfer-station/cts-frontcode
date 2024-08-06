@@ -22,7 +22,7 @@ class IcpTransferListItem extends StatelessWidget {
         if (is_cts_transfer_icp_fee) {
             listtile_title = 'CTS TRANSFER-ICP FEE';
         } else {
-            listtile_title = 'ICP-TRANSFER' + (is_out ? ' OUT' : '') + (is_in ? ' IN' : '');
+            listtile_title = 'ICP TRANSFER';
         }
         
         return Container(
@@ -34,7 +34,7 @@ class IcpTransferListItem extends StatelessWidget {
                     children: <Widget>[
                         ListTile(
                             title: Text(listtile_title),
-                            subtitle: Text('BLOCK: ${icp_transfer.block_height}'),
+                            subtitle: Text('ID: ${icp_transfer.block_height}'),
                         ),
                         Expanded(
                             child: Container(
@@ -45,10 +45,12 @@ class IcpTransferListItem extends StatelessWidget {
                                         mainAxisAlignment: MainAxisAlignment.start,
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                            SelectableText((is_out ? 'to: ${icp_transfer.to_account_identifier} ' : '') + (is_in ? '${is_out ? '\n' : ''}from: ${icp_transfer.from_account_identifier}' : '')),
-                                            SelectableText('icp: ${icp_transfer.amount}'),
+                                            Text('operation: ${icp_transfer.transfer_type}'),
+                                            SelectableText('tokens: ${icp_transfer.amount}'),
+                                            SelectableText('from: ${icp_transfer.from_account_identifier}'),
+                                            SelectableText('to: ${icp_transfer.to_account_identifier}'),
                                             SelectableText('memo: ${icp_transfer.memo}'),
-                                            SelectableText('icp-ledger-fee: ${icp_transfer.fee}'),
+                                            SelectableText('fee: ${icp_transfer.fee}'),
                                             SelectableText('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(icp_transfer.timestamp_seconds.toInt() * 1000))}'),
                                         ]
                                     )

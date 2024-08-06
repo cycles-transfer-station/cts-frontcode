@@ -180,47 +180,43 @@ class CyclesTransferListItem extends StatelessWidget {
             padding: EdgeInsets.all(11),
             child: Card(
                 child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    //mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                         ListTile(
                             title: Text('CYCLES TRANSFER'),
                             subtitle: Text('ID: ${cycles_transfer.id}'),
                         ),
-                        Container(
-                            padding: EdgeInsets.fromLTRB(17,7,17,7),
-                            width: double.infinity, 
-                            child: SingleChildScrollView(
+                        Expanded(
+                            child: Container(
+                                padding: EdgeInsets.fromLTRB(17,7,17,7),
                                 child: DefaultTextStyle.merge(
                                     style: TextStyle(fontFamily: 'CourierNew', fontSize: ct_list_item_body_font_size),
-                                    child: Container(
-                                        height: 170,
-                                        child: SingleChildScrollView(
-                                            child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                mainAxisAlignment: MainAxisAlignment.start,
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                    Text('operation: ${operation}'),
-                                                    Text('amount: ${Cycles(cycles: (burn_for_canister != null ? cycles_transfer.amt - cycles_transfer.fee : cycles_transfer.amt))}'),
-                                                    if (from != null && burn_for_canister == null) SelectableText('from: ${from}'),
-                                                    if (to != null) SelectableText('to: ${to}'),
-                                                    if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
-                                                    if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
-                                                    //if (mint_kind_cmc_icp_block_height != null) Text('icp-transfer-block-height: ${mint_kind_cmc_icp_block_height}'),
-                                                    if (mint_kind_cycles_in_from_canister != null) Text('cycles-in from canister: ${mint_kind_cycles_in_from_canister}'),
-                                                    Text('fee: ${Cycles(cycles: cycles_transfer.fee)}'),
-                                                    if (cycles_transfer.memo != null) Text('memo: ${bytesasahexstring(cycles_transfer.memo!)}'),
-                                                    Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer.timestamp_nanos).toInt()))}'),
-                                                ]                            
-                                            )
+                                    child: SingleChildScrollView(
+                                        child: Column(
+                                            //mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                                Text('operation: ${operation}'),
+                                                Text('cycles: ${Cycles(cycles: (burn_for_canister != null ? cycles_transfer.amt - cycles_transfer.fee : cycles_transfer.amt))}'),
+                                                if (from != null && burn_for_canister == null) SelectableText('from: ${from}'),
+                                                if (to != null) SelectableText('to: ${to}'),
+                                                if (burn_for_canister != null) Text('for canister: ${burn_for_canister}'),
+                                                if (mint_kind_cmc_caller != null) Text('mint caller: ${mint_kind_cmc_caller}'),
+                                                //if (mint_kind_cmc_icp_block_height != null) Text('icp-transfer-block-height: ${mint_kind_cmc_icp_block_height}'),
+                                                if (mint_kind_cycles_in_from_canister != null) Text('cycles-in from canister: ${mint_kind_cycles_in_from_canister}'),
+                                                if (cycles_transfer.memo != null && cycles_transfer.memo!.length != 0) Text('memo: ${bytesasahexstring(cycles_transfer.memo!)}'),
+                                                Text('fee: ${Cycles(cycles: cycles_transfer.fee)}'),
+                                                Text('timestamp: ${log_timestamp_format(DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(cycles_transfer.timestamp_nanos).toInt()))}'),
+                                            ]
                                         )
                                     )
-                                ),
+                                )
                             )
                         )
                     ]
                 )
-            )            
+            )
         );
     }
 }
@@ -228,10 +224,12 @@ class CyclesTransferListItem extends StatelessWidget {
 
 String log_timestamp_format(DateTime t) {
     DateTime now = DateTime.now();
-    String s = '${t.hour}:${t.minute}:${t.second}';
+    String s = '';
     if ((now.year, now.month, now.day) != (t.year, t.month, t.day)) {
-        s = s + ' ${t.month}/${t.day}/${t.year}';
-    } 
+        s = '${t.month}/${t.day}/${t.year} ';
+    }
+    s = s + '${t.hour}:${t.minute}:${t.second}';
+
     return s;
 }
 
