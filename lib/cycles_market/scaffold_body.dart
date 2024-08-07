@@ -267,6 +267,8 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                     ),
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                     SizedBox(height: runSpacing),
+                    CandlesChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                    SizedBox(height: runSpacing),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -361,6 +363,7 @@ class VolumeStats extends StatelessWidget {
                                     DataColumn(label: Text('TOTAL')),
                                 ],
                                 rows: [
+                                    /*
                                     DataRow(
                                         cells: [
                                             DataCell(Text('CYCLES:')),
@@ -370,7 +373,7 @@ class VolumeStats extends StatelessWidget {
                                             DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_sum), cycles_symbol)),
                                         ]
                                     ),
-                                    /*
+                                    */
                                      // maybe on hover ask if user wants to view the token volume in token-units
                                     DataRow(
                                         cells: [
@@ -381,7 +384,7 @@ class VolumeStats extends StatelessWidget {
                                             DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_sum, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
                                         ]
                                     ),
-                                    */
+
                                 ]
                             )
                         )
@@ -392,6 +395,36 @@ class VolumeStats extends StatelessWidget {
     }
 }
 
+
+
+// volume of the candles is the quantity of the number of tokens traded during that time. (not the number of cycles.)
+
+class CandlesChart extends StatefulWidget {
+    final int cm_main_trade_contracts_i;
+    CandlesChart({required this.cm_main_trade_contracts_i}) : super(key: ValueKey('CandlesChart ${cm_main_trade_contracts_i}'));
+    State createState() => CandlesChartState();
+}
+class CandlesChartState extends State<CandlesChart> {
+
+    Widget build(BuildContext context) {
+        CustomState state = MainStateBind.get_state<CustomState>(context);
+        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+
+        return Card(
+            semanticContainer: false,
+            child: Container(
+                height: 300,
+                child: Column(
+                    children: [
+                        for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles)
+                            Text('time: ${candle.time_nanos}, open: ${candle.open_rate}, high: ${candle.high_rate}, low: ${candle.low_rate}, close: ${candle.close_rate}, volume: ${candle.volume_tokens}')
+                    ]
+                )
+            )
+        );
+    }
+}
 
 
 

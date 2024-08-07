@@ -470,7 +470,11 @@ class CyclesPerTokenRate extends Cycles {
     }
     String toString() => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
     
-    
+    static CyclesPerTokenRate of_the_nat(CandidType nat, {required int token_decimal_places}) => CyclesPerTokenRate(
+        cycles_per_token_quantum_rate: (nat as Nat).value,
+        token_decimal_places: token_decimal_places
+    );
+
     
     
     // operators
