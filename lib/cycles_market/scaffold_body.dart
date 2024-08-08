@@ -254,6 +254,10 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         return Container(
             child: Column(
                 children: [ 
+                    //temp
+                    for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].candles)
+                        Text('time: ${candle.time_nanos}, open: ${candle.open_rate}, high: ${candle.high_rate}, low: ${candle.low_rate}, close: ${candle.close_rate}, volume: ${candle.volume_tokens}'),
+
                     LayoutBuilder(
                         builder: (BuildContext context, BoxConstraints constraints) {
                             double sbheight = 23;
@@ -414,17 +418,239 @@ class CandlesChartState extends State<CandlesChart> {
         return Card(
             semanticContainer: false,
             child: Container(
-                height: 300,
+                constraints: BoxConstraints(
+                    maxWidth: 900,
+                ),
                 child: Column(
                     children: [
-                        for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles)
-                            Text('time: ${candle.time_nanos}, open: ${candle.open_rate}, high: ${candle.high_rate}, low: ${candle.low_rate}, close: ${candle.close_rate}, volume: ${candle.volume_tokens}')
+                        // candlestick chart
+                        Container(
+                            height: 350,
+                            margin: EdgeInsets.symmetric(vertical: 11),
+                            child: CustomPaint(
+                                size: Size.infinite,
+                                painter: CandleChartPainter(
+                                    candles: state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]
+                                        .candles,
+                                )
+                            ),
+                        ),
+                        SizedBox(height: 7),
+                        // volume chart
+                        Container(
+                            height: 50,
+                            child: CustomPaint(
+                                size: Size.infinite,
+                                painter: VolumeChartPainter(
+                                    candles: state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]
+                                        .candles,
+                                )
+                            )
+                        ),
+                        SizedBox(height: 7),
+
+
                     ]
                 )
             )
         );
     }
 }
+
+
+double width_between_bar_centers = 17;
+double bar_width = width_between_bar_centers - 5;
+
+
+
+class CandleChartPainter extends CustomPainter {
+
+    List<Candle> candles;
+    final Paint red_paint = Paint()..color = red.withOpacity(0.9);
+    final Paint green_paint = Paint()..color = green.withOpacity(0.9);
+    final double wick_width = 3;
+
+    CandleChartPainter({
+        required this.candles,
+    });
+
+    @override
+    void paint(Canvas canvas, Size size) {
+
+        List<CandleChartCandle> chart_candles = generate_chart_candles(size);
+
+        for (CandleChartCandle chart_candle in chart_candles) {
+            //print('drawing candle');
+            // draw wick
+            canvas.drawRect(
+                Rect.fromLTRB(
+                    chart_candle.center_x - (wick_width / 2),
+                    size.height - chart_candle.wick_high_y,
+                    chart_candle.center_x + (wick_width / 2),
+                    size.height - chart_candle.wick_low_y,
+                ),
+                chart_candle.paint,
+            );
+            // draw wax
+            canvas.drawRect(
+                Rect.fromLTRB(
+                    chart_candle.center_x - (bar_width / 2),
+                    size.height - chart_candle.wax_high_y,
+                    chart_candle.center_x + (bar_width / 2),
+                    size.height - chart_candle.wax_low_y,
+                ),
+                chart_candle.paint,
+            );
+
+
+        }
+
+    }
+
+    List<CandleChartCandle> generate_chart_candles(Size size) {
+
+        int global_high_rate = candles.fold(1, (v,c)=>max(v, c.high_rate.cycles_per_token_quantum_rate.toInt()));
+        int global_low_rate = candles.fold(0, (v,c)=>min(v, c.low_rate.cycles_per_token_quantum_rate.toInt()));
+
+        double height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
+
+        List<CandleChartCandle> chart_candles = [];
+        for (int i=0; i<candles.length; i++) {
+            Candle candle = candles[i];
+
+
+            double wick_high_y = max((candle.high_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate), 1) * height_per_rate_quantum;
+            double wick_low_y = max((candle.low_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate), 1) * height_per_rate_quantum;
+
+            double open_y = max((candle.open_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate), 1) * height_per_rate_quantum;
+            double close_y = max((candle.close_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate), 1) * height_per_rate_quantum;
+
+            double wax_high_y = open_y >= close_y ? open_y : close_y;
+            double wax_low_y = open_y >= close_y ? close_y : open_y;
+
+            // make sure candles are at least a few pixels wide.
+            // add to all candles for consistency, even ones that don't need it.
+            wick_high_y += 1;
+            wick_low_y -= 1;
+            wax_high_y += 1;
+            wax_low_y -= 1;
+
+            chart_candles.add(
+                CandleChartCandle(
+                    center_x: (i + 1) * width_between_bar_centers,
+                    wick_high_y: wick_high_y,
+                    wick_low_y: wick_low_y,
+                    wax_high_y: wax_high_y,
+                    wax_low_y: wax_low_y,
+                    paint: candle.open_rate > candle.close_rate ? red_paint : green_paint,
+                )
+            );
+        }
+
+        return chart_candles;
+    }
+
+    bool shouldRepaint(CustomPainter old) {
+        return true; // optimize this
+    }
+}
+
+class CandleChartCandle {
+    final double wick_high_y;
+    final double wick_low_y;
+    final double wax_high_y;
+    final double wax_low_y;
+    final double center_x;
+    final Paint paint;
+
+    CandleChartCandle({
+        required this.wick_high_y,
+        required this.wick_low_y,
+        required this.wax_high_y,
+        required this.wax_low_y,
+        required this.center_x,
+        required this.paint,
+    });
+
+}
+
+
+
+
+
+
+class VolumeChartPainter extends CustomPainter {
+
+    List<Candle> candles;
+    final Paint red_paint = Paint()..color = red.withOpacity(0.5);
+    final Paint green_paint = Paint()..color = green.withOpacity(0.5);
+
+    VolumeChartPainter({
+        required this.candles,
+    });
+
+    @override
+    void paint(Canvas canvas, Size size) {
+
+        List<VolumeChartBar> bars = generate_bars(size);
+
+        for (VolumeChartBar bar in bars) {
+            canvas.drawRect(
+                Rect.fromLTWH(
+                    bar.center_x - (bar.width / 2),
+                    size.height - bar.height,
+                    bar.width,
+                    bar.height,
+                ),
+                bar.paint,
+            );
+        }
+    }
+
+    List<VolumeChartBar> generate_bars(Size size) {
+
+        double height_per_volume_quantum = size.height / candles.fold(1, (v,c)=>max(v, c.volume_tokens.quantums.toInt())); // initial-value = 1 so that we don't divide by zero'
+
+        List<VolumeChartBar> bars = [];
+        for (int i=0; i < candles.length; i++) {
+            Candle candle = candles[i];
+            bars.add(
+                VolumeChartBar(
+                    width: bar_width,
+                    height: height_per_volume_quantum * candle.volume_tokens.quantums.toInt(),
+                    center_x: (i + 1) * width_between_bar_centers,
+                    paint: candle.open_rate > candle.close_rate ? red_paint : green_paint,
+                )
+            );
+        }
+        return bars;
+    }
+
+
+    @override
+    bool shouldRepaint(CustomPainter old) {
+        return true; // optimize this.
+    }
+}
+
+
+class VolumeChartBar {
+    final double width;
+    final double height;
+    final double center_x;
+    final Paint paint;
+    VolumeChartBar({
+        required this.width,
+        required this.height,
+        required this.center_x,
+        required this.paint,
+    });
+
+}
+
+
+
+
 
 
 
@@ -1127,7 +1353,7 @@ Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_d
             ,
             //SizedBox(width: 11),
             Spacer(),
-            OutlineButton(
+            Container(height: 30, width: 70, child: OutlineButton(
                 child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
                 on_press_complete: () async {
                     state.loading_text = 'closing position ${pl.id} ...';
@@ -1210,7 +1436,7 @@ Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_d
                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
 
                 }
-            )
+            ))
         ]
     );
 }
