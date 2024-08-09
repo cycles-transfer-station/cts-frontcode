@@ -1,3 +1,4 @@
+import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'dart:math';
 
@@ -50,7 +51,7 @@ class CandlesChartState extends State<CandlesChart> {
 
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
         int candles_length = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.length;
 
@@ -74,7 +75,7 @@ class CandlesChartState extends State<CandlesChart> {
                 child: Column(
                     children: [
                         // candlestick chart
-                        Container(
+                        SizedBox(
                             height: 350,
                             child: CustomPaint(
                                 size: Size.infinite,
@@ -85,7 +86,7 @@ class CandlesChartState extends State<CandlesChart> {
                         ),
                         SizedBox(height: 7),
                         // volume chart
-                        Container(
+                        SizedBox(
                             height: 50,
                             child: CustomPaint(
                                 size: Size.infinite,
@@ -117,7 +118,7 @@ class CandleChartPainter extends CustomPainter {
     @override
     void paint(Canvas canvas, Size size) {
 
-        if (candles.length == 0) {
+        if (candles.isEmpty) {
             return; // do something else like maybe still draw the rate markers $0-$5 or say something like make a trade.
         }
 
@@ -132,9 +133,9 @@ class CandleChartPainter extends CustomPainter {
             .reduce((a,b)=>min(a,b));
 
         //if (global_low_rate == global_high_rate) {
-        final int make_rate_room_after_global_lows_and_highs = 4;
+        const int make_rate_room_after_global_lows_and_highs = 4;
         global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
-        global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs;
+        global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
         //}
 
         double height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
@@ -142,8 +143,8 @@ class CandleChartPainter extends CustomPainter {
 
         // draw rate markers
         // draw vertical line
-        final double rate_marker_vertical_line_width = 2;
-        final double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 4;
+        const double rate_marker_vertical_line_width = 2;
+        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 4;
         canvas.drawRect(
             Rect.fromLTRB(
                 size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line,
@@ -154,20 +155,42 @@ class CandleChartPainter extends CustomPainter {
             Paint()..color = Colors.grey,
         );
         // draw horizontal rate markers
-        final double pixel_width_between_rate_markers = 20;
+        const double pixel_width_between_rate_markers = 30;
         final int number_of_rate_markers = size.height ~/ pixel_width_between_rate_markers;
         final int rate_width_between_rate_markers = (global_high_rate - global_low_rate) ~/ number_of_rate_markers;
         for (int i=0; i<number_of_rate_markers; i++) {
             final int marker_rate = global_low_rate + i*rate_width_between_rate_markers;
             print('marker_rate: ${marker_rate}');
+
+            double marker_base_y = size.height - (marker_rate - global_low_rate) * height_per_rate_quantum;
+            double marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
+            double marker_finish_x = marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
+
             canvas.drawRect(
                 Rect.fromLTRB(
-                    size.width - save_space_on_the_right_for_the_rate_marks,
-                    size.height - (marker_rate - global_low_rate) * height_per_rate_quantum + 1, // base it on the marker_rate, not on the pixel-width-between-markers. because the candles are based on the candle-rates.
-                    size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line,
-                    size.height - (marker_rate - global_low_rate) * height_per_rate_quantum - 1
+                    marker_start_x,
+                    marker_base_y + 1, // base it on the marker_rate, not on the pixel-width-between-markers. because the candles are based on the candle-rates.
+                    marker_finish_x,
+                    marker_base_y - 1
                 ),
                 Paint()..color = Colors.grey,
+            );
+
+            dart_ui.ParagraphBuilder paragraph_builder = dart_ui.ParagraphBuilder(dart_ui.ParagraphStyle())
+                ..pushStyle(dart_ui.TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11
+                ))
+                ..addText('${CyclesPerTokenRate(cycles_per_token_quantum_rate: BigInt.from(marker_rate), token_decimal_places: candles[0].volume_tokens.decimal_places)}');
+            dart_ui.Paragraph paragraph = paragraph_builder.build();
+            paragraph.layout(dart_ui.ParagraphConstraints(width: 55));
+
+            canvas.drawParagraph(
+                paragraph,
+                Offset(
+                    marker_finish_x + 5, // plus a few for some space
+                    marker_base_y - 6// minus a few to make the marker in the center-left of the text not on the top-left
+                )
             );
         }
 

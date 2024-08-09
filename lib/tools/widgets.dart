@@ -66,7 +66,7 @@ class OutlineButton extends StatelessWidget {
 class IILoginButton extends StatelessWidget {
     IILoginButton({super.key});
     Widget build(BuildContext context) {
-        return FilledButton(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
+        return FilledButton.tonal(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
     }
 }
 
@@ -76,28 +76,46 @@ class IILoginButton extends StatelessWidget {
 class ScaffoldBodyHeader extends StatelessWidget {
     final Widget header;
     ScaffoldBodyHeader(this.header);
+
+
+    BorderRadius border_radius = BorderRadius.only(
+        bottomLeft: Radius.circular(30),
+        bottomRight: Radius.circular(30),
+    );
+
     Widget build(BuildContext context) {
-        return Column(
-            children: [
-                Padding(
-                    padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
-                    child: Center(
-                        child: header,
-                    )
+        return /*Material(
+            elevation: 1.5,
+            borderRadius: border_radius,
+            child: Container(
+                decoration: BoxDecoration(
+                    borderRadius: border_radius,
                 ),
-                Container(
-                    padding: EdgeInsets.fromLTRB(0,4.5,0,0),
-                    margin: EdgeInsets.symmetric(horizontal: 13),
-                    child: Divider(
-                        height: 4.0,   
-                        thickness: 4.0,
-    //                    indent: 34.0,
-    //                    endIndent: 34.0,
-                        //color: 
-                    )
-                )
-            ]
-        ); 
+                child: */Column(
+                    children: [
+                        Padding(
+                            padding: EdgeInsets.fromLTRB(17.0, 19.0, 17.0, 17.0),
+                            child: Center(
+                                child: header,
+                            )
+                        ),
+                        Container(
+                            padding: EdgeInsets.fromLTRB(0,4.5,0,0),
+                            margin: EdgeInsets.symmetric(horizontal: 13),
+
+                            child: Divider(
+                                height: 4.0,
+                                thickness: 4.0,
+            //                    indent: 34.0,
+            //                    endIndent: 34.0,
+                                //color:
+                            )
+
+                        )
+                    ]
+                )/*
+            ),
+        )*/;
     }
 }
 

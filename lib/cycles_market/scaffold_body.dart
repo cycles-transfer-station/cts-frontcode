@@ -12,13 +12,10 @@ import 'package:contentsize_tabbarview/contentsize_tabbarview.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
-import '../config/pages.dart';
 import '../config/urls.dart';
 import './cycles_market.dart';
 import '../bank/forms.dart';
-import '../main.dart';
 import '../tools/widgets.dart';
-import '../tools/ii_login.dart';
 import '../tools/tools.dart';
 import '../user.dart';
 import './candles.dart';
@@ -26,7 +23,7 @@ import './candles.dart';
 
 
 class CyclesMarketScaffoldBody extends StatefulWidget {
-    CyclesMarketScaffoldBody({Key? key}) : super(key: key);
+    const CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
     State<CyclesMarketScaffoldBody> createState() => CyclesMarketScaffoldBodyState();
 }
@@ -36,10 +33,10 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         if (state.first_show_scaffold == false) {
-            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+            return const Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages.
         }
         
         double scaffold_body_header_max_width = 1300;
@@ -346,9 +343,9 @@ class VolumeStats extends StatelessWidget {
         Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
         ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
         
-        return /*Card(
+        return Card(
             semanticContainer: false,
-            child: */Container(
+            child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
                 height: 56*2+2, // +2 for the divider space that gets taken up.
                 child: ListView(
@@ -399,7 +396,7 @@ class VolumeStats extends StatelessWidget {
                     ]
                 )
             )
-        /*)*/;
+        );
     }
 }
 
@@ -848,7 +845,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(0, 7, 0,7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             child: Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {

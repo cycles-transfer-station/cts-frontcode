@@ -131,7 +131,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             ),
                             Container(
                                 padding: EdgeInsets.fromLTRB(7,0,7,7),
-                                child: FilledButton(
+                                child: FilledButton.tonal(
                                     //style: ElevatedButton.styleFrom(backgroundColor: blue),
                                     child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}'),
                                     onPressed: () async {

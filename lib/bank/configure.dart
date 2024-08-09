@@ -167,7 +167,7 @@ class ConfigureCyclesBank extends StatelessWidget {
                                                                         Container(
                                                                             width: double.infinity,
                                                                             padding: EdgeInsets.all(17),
-                                                                            child: FilledButton(
+                                                                            child: FilledButton.tonal(
                                                                                 //style: ElevatedButton.styleFrom(backgroundColor: blue),
                                                                                 child: Text('TOP-UP A CANISTER'),
                                                                                 onPressed: () async {
@@ -221,7 +221,7 @@ class ConfigureCyclesBank extends StatelessWidget {
 
 class MintCyclesButton extends StatelessWidget {
     Widget build(BuildContext context) {
-        return FilledButton(
+        return FilledButton.tonal(
             //style: ElevatedButton.styleFrom(backgroundColor: blue),
             child: Text('MINT CYCLES'),
             onPressed: () async {

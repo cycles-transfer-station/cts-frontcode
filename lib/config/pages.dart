@@ -1,32 +1,13 @@
-import 'dart:typed_data';
 import 'dart:html';
-import 'dart:js' as js;
-import 'dart:js_util';
-import 'dart:convert';
-import 'dart:ui' as dart_ui;
 
 import 'package:flutter/material.dart';
 
-import 'package:ic_tools/ic_tools.dart';
-import 'package:ic_tools/candid.dart' show c_backwards, PrincipalReference, Nat64, Nat, Blob;
-import 'package:ic_tools/candid.dart' as candid;
-import 'package:ic_tools/tools.dart';
-import 'package:ic_tools/common.dart' show IcpTokens;
-import 'package:ic_tools/common.dart' as common;
-
-import '../main.dart';
 import '../tools/widgets.dart';
-import '../tools/ii_login.dart';
 import '../tools/tools.dart';
 import 'urls.dart';
 import 'state.dart';
 import 'state_bind.dart';
-import '../user.dart';
-import '../transfer_icp/icp_ledger.dart';
-import '../transfer_icp/scaffold_body.dart';
 import '../bank/scaffold_body.dart';
-import '../about/scaffold_body.dart';
-import '../welcome/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
 
 
@@ -46,7 +27,7 @@ class LoadingPage extends Page {
     
     Route createRoute(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);        
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         return PageRouteBuilder(
             settings: this,
             // do a cool fade in and fade out 
@@ -82,6 +63,7 @@ class VoidPage {
     static create({LocalKey? key}) => MaterialPage(key: key, child: VoidPageWidget());
 }
 class VoidPageWidget extends StatelessWidget {
+    VoidPageWidget({super.key});
     Widget build(BuildContext context) {
         return Loading('page not found');
     }
@@ -121,120 +103,107 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
     Widget build(BuildContext context) {
     
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
         
         const double appbar_leading_width = 56.0;
 
-        return /*SelectionArea(
-            child: */Scaffold(
-                    key: scaffold_key,
-                    appBar: AppBar(
-                        title: Center(child: Padding(
-                            child: const Text('.CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
-                            padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
-                        )),
-                        automaticallyImplyLeading: true,
-                        leadingWidth: appbar_leading_width,
+        return Scaffold(
+            key: scaffold_key,
+            appBar: AppBar(
+                title: Center(child: Padding(
+                    child: const Text('.CYCLES-TRANSFER-STATION.', style: TextStyle(fontFamily: 'AxaxaxBold')),
+                    padding: EdgeInsets.fromLTRB(0,0,appbar_leading_width,0)
+                )),
+                automaticallyImplyLeading: true,
+                leadingWidth: appbar_leading_width,
+            ),
+            drawer: NavigationDrawer(
+                children: [
+                    DrawerHeader(
+                        child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
                     ),
-                    drawer: Drawer(
+                    ListTile(
+                        title: const Text('BANK'),
+                        onTap: () {
+                            if (state.current_url.name != 'cycles_bank') {
+                                change_url_into_cb(state.current_icrc1_ledger, context);
+                            }
+                            Navigator.pop(context);
+                        },
+                        selected: state.current_url.name == 'cycles_bank',
+                    ),
+                    ListTile(
+                        title: const Text('MARKET'),
+                        onTap: () {
+                            if (state.current_url.name != 'cycles_market') {
+                                change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
+                            }
+                            Navigator.pop(context);
+                        },
+                        selected: state.current_url.name == 'cycles_market'
+                    ),
+                    ListTile(
+                        title: const Text('ABOUT'),
+                        onTap: () {
+                            if (state.current_url.name != 'about') {
+                                state.current_url = CustomUrl('about');
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            }
+                            Navigator.pop(context);
+                        },
+                        selected: state.current_url.name == 'about'
+                    ),
+                    Align(
+                        alignment: FractionalOffset.bottomCenter,
                         child: Column(
-                            children: [
-                                DrawerHeader(
-                                    child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
-                                ),
-                                Expanded(
-                                    child: ListView(
-                                        padding: EdgeInsets.zero,
-                                        children: [
-                                            ListTile(
-                                                title: const Text('BANK'),
-                                                onTap: () {
-                                                    if (state.current_url.name != 'cycles_bank') {
-                                                        change_url_into_cb(state.current_icrc1_ledger, context);
-                                                    }
-                                                    Navigator.pop(context);
-                                                },
-                                                selected: state.current_url.name == 'cycles_bank'
-                                            ),
-                                            ListTile(
-                                                title: const Text('MARKET'),
-                                                onTap: () {
-                                                    if (state.current_url.name != 'cycles_market') {
-                                                        change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
-                                                    }
-                                                    Navigator.pop(context);
-                                                },
-                                                selected: state.current_url.name == 'cycles_market'
-                                            ),
-                                            ListTile(
-                                                title: const Text('ABOUT'),
-                                                onTap: () {
-                                                    if (state.current_url.name != 'about') {
-                                                        state.current_url = CustomUrl('about');
-                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                    }
-                                                    Navigator.pop(context);
-                                                },
-                                                selected: state.current_url.name == 'about'
-                                            )
-                                        ]
+                            children: <Widget>[
+                                Divider(),
+                                if (state.user != null) Container(
+                                    padding: EdgeInsets.all(17),
+                                    child: OutlineButton(
+                                        button_text: 'LOG-OUT',
+                                        on_press_complete: () {
+                                            state.user!.caller.indexdb_delete();
+                                            window.localStorage.remove('user_cycles_bank');
+                                            state.user = null;
+                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                            Navigator.pop(context);
+                                        }
                                     )
-                                ),
-                                Container(
-                                    child: Align(
-                                        alignment: FractionalOffset.bottomCenter,
-                                        child: Column(
-                                            children: <Widget>[
-                                                Divider(),
-                                                if (state.user != null) Container(
-                                                    padding: EdgeInsets.all(17),
-                                                    child: OutlineButton(
-                                                        button_text: 'LOG-OUT',
-                                                        on_press_complete: () {
-                                                            state.user!.caller.indexdb_delete();
-                                                            window.localStorage.remove('user_cycles_bank');
-                                                            state.user = null;
-                                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                                            Navigator.pop(context);
-                                                        }
-                                                    )
-                                                )
-                                                else/*if (state.user == null)*/ SizedBox(height: 20)
-                                            ]
-                                        )
-                                    )
-                                ),
+                                )
+                                else/*if (state.user == null)*/ SizedBox(height: 20)
                             ]
                         )
                     ),
-                    body: SafeArea(
-                        child: state.current_url.main_page_scaffold_body()!,
-                    ),
-                    bottomNavigationBar: BottomAppBar(
-                        height: 50,
-                        padding: EdgeInsets.zero,
-                        //color: Colors.blue,
-                        child: IconTheme(
-                            data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
-                            child: Container(
-                                child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: <Widget>[
-                                        Container(
-                                            child: state.user == null ? IILoginButton() : SelectableText(principal_short(state.user!.principal), style: TextStyle(fontFamily: 'CourierNew')),
-                                            padding: EdgeInsets.symmetric(horizontal: 17, vertical: 13),  
-                                        ),
-                                        const Spacer(),
-                                    ]
-                                )
-                            ) 
-                        )
+                ]
+            ),
+            body: SafeArea(
+                child: state.current_url.main_page_scaffold_body()!,
+            ),
+            bottomNavigationBar: BottomAppBar(
+                height: 50,
+                padding: EdgeInsets.zero,
+                //color: Colors.blue,
+                child: IconTheme(
+                    data: IconThemeData(color: Theme.of(context).colorScheme.onPrimary),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                            Container(
+                                child: state.user == null ?
+                                    IILoginButton()
+                                    :
+                                    SelectableText(principal_short(state.user!.principal), style: const TextStyle(fontFamily: 'CourierNew')),
+                                padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 7),
+                            ),
+                            const Spacer(),
+                        ]
                     )
-                
+                )
             )
-        /*)*/;
+        );
     }
 }
 
