@@ -25,15 +25,23 @@ class BaseState extends State<Base> {
             theme: ThemeData(
                 //brightness: Brightness.dark,
                 colorScheme: ColorScheme.fromSeed(
-                      seedColor: blue,
-                      brightness: Brightness.dark,
+                    seedColor: blue,
+                    brightness: Brightness.dark,
                 ).copyWith(
                     background: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
                 ),
                 fontFamily: 'AxaxaxBold',
                 appBarTheme: AppBarTheme(
                     color: blue,
-                    elevation: 1.0,
+                    elevation: 1.5,
+                    surfaceTintColor: Colors.transparent,
+                    shadowColor: Theme.of(context).colorScheme.shadow,
+                ),
+                bottomAppBarTheme: BottomAppBarTheme(
+                    elevation: 1.5,
+                    color: Color(0xFF575B6B),
+                    surfaceTintColor: Colors.transparent,
+                    shadowColor: Theme.of(context).colorScheme.shadow,
                 ),
                 useMaterial3: true,
                 inputDecorationTheme: InputDecorationTheme(
@@ -43,6 +51,10 @@ class BaseState extends State<Base> {
                 textTheme: TextTheme(
                     titleMedium: TextStyle(fontFamily: 'CourierNew'), // setting the font for the TextFormField input text.
                 ),
+                cardTheme: CardTheme(
+                    color: Color(0xFF3B4A6B),
+                    elevation: 2.0
+                )
             ),
             debugShowCheckedModeBanner: false,
         );
@@ -51,8 +63,8 @@ class BaseState extends State<Base> {
 
 
 
-const Color grey_background = Color.fromRGBO(30, 30, 31, 0.9);
-const Color blue = Color.fromRGBO(76,97,145, 0.9);
+const Color grey_background = Color(0xFF22242a);//Color.fromRGBO(30, 30, 31, 1/*0.9*/);
+const Color blue = Color(0xFF2A3854);//FF3B4A6B);//Color.fromRGBO(76,97,145, 1);
 const Color purple = Color(0xFF2a254b); // 26365b // 27375c // 42456d
 
 
