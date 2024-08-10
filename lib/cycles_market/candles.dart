@@ -81,6 +81,10 @@ class CandlesChartState extends State<CandlesChart> {
                                 size: Size.infinite,
                                 painter: CandleChartPainter(
                                     candles: page_candles,
+                                    is_latest_page: page == 0,
+                                    latest_candle: state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.isNotEmpty
+                                        ? state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.last
+                                        : null,
                                 )
                             ),
                         ),
@@ -107,12 +111,17 @@ class CandlesChartState extends State<CandlesChart> {
 class CandleChartPainter extends CustomPainter {
 
     List<Candle> candles;
-    final Paint red_paint = Paint()..color = red.withOpacity(0.9);
-    final Paint green_paint = Paint()..color = green.withOpacity(0.9);
+    final bool is_latest_page;
+    final Candle? latest_candle; // null if there are no trades yet
+
+    final Paint red_paint = Paint()..color = red;
+    final Paint green_paint = Paint()..color = green;
     final double wick_width = 3;
 
     CandleChartPainter({
         required this.candles,
+        required this.is_latest_page,
+        required this.latest_candle,
     });
 
     @override
@@ -122,8 +131,7 @@ class CandleChartPainter extends CustomPainter {
             return; // do something else like maybe still draw the rate markers $0-$5 or say something like make a trade.
         }
 
-        // set up
-
+        // draw horizontal rate markers
         int global_high_rate = candles
             .map((c)=>c.high_rate.cycles_per_token_quantum_rate.toInt())
             .reduce((a,b)=>max(a,b));
@@ -132,45 +140,94 @@ class CandleChartPainter extends CustomPainter {
             .map((c)=>c.low_rate.cycles_per_token_quantum_rate.toInt())
             .reduce((a,b)=>min(a,b));
 
-        //if (global_low_rate == global_high_rate) {
         const int make_rate_room_after_global_lows_and_highs = 4;
-        global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
-        global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
-        //}
+        if (global_high_rate - global_low_rate < make_rate_room_after_global_lows_and_highs) {
+            global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
+            global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
+        } else {
+            global_low_rate -= (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
+            global_high_rate += (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
+        }
 
+        const double starting_pixel_width_between_rate_markers = 30;
+        final int number_of_rate_markers = size.height ~/ starting_pixel_width_between_rate_markers;
+        int rate_width_between_rate_markers = (global_high_rate - global_low_rate) ~/ number_of_rate_markers;
         double height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
 
+        if (rate_width_between_rate_markers == 0) {
+            rate_width_between_rate_markers = 1;
+        }
 
-        // draw rate markers
-        // draw vertical line
-        const double rate_marker_vertical_line_width = 2;
-        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 4;
-        canvas.drawRect(
-            Rect.fromLTRB(
-                size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line,
-                0,
-                size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width,
-                size.height,
-            ),
-            Paint()..color = Colors.grey,
-        );
-        // draw horizontal rate markers
-        const double pixel_width_between_rate_markers = 30;
-        final int number_of_rate_markers = size.height ~/ pixel_width_between_rate_markers;
-        final int rate_width_between_rate_markers = (global_high_rate - global_low_rate) ~/ number_of_rate_markers;
+        List<int> marker_rates_low_high = [];
         for (int i=0; i<number_of_rate_markers; i++) {
             final int marker_rate = global_low_rate + i*rate_width_between_rate_markers;
-            print('marker_rate: ${marker_rate}');
+            marker_rates_low_high.add(marker_rate);
+        }
+
+        if (marker_rates_low_high.first.toString().length >= 2) {
+            int change_last_digits_to_zero = 0;
+            for (int i=0; i<marker_rates_low_high.first.toString().length-1; i++) { // lowest rate
+                Set<int> set_of_marker_rates_without_last_digit = marker_rates_low_high.toList()
+                    .map((r){
+                        return int.parse(r.toString().substring(0, r.toString().length - 1 - i));
+                    }).toSet();
+                if (set_of_marker_rates_without_last_digit.length == marker_rates_low_high.length) {
+                    // still unique, change last digit to zero
+                    change_last_digits_to_zero += 1;
+                    // continue
+                } else {
+                    break;
+                }
+            }
+            if (change_last_digits_to_zero > 0) {
+                // change last digits to zero
+                marker_rates_low_high = marker_rates_low_high.map((r){
+                    return int.parse(
+                        r.toString().replaceRange(
+                            r.toString().length - change_last_digits_to_zero,
+                            null,
+                            ''.padRight(change_last_digits_to_zero, '0')
+                        )
+                    );
+                }).toList();
+
+                // update global_low_rate, global_high_rate, rate_width_between_rate_markers, and height_per_rate_quantum
+                global_low_rate = marker_rates_low_high.first;
+                global_high_rate = marker_rates_low_high.last;
+                rate_width_between_rate_markers = marker_rates_low_high[1] - marker_rates_low_high[0];
+                height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
+
+                // now make same space between rates.
+                for (int i=0; i<marker_rates_low_high.length; i++) {
+                    marker_rates_low_high[i] = global_low_rate + i*rate_width_between_rate_markers;
+                }
+
+                // update number of markers if need
+                while (size.height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum < 0) {
+                    marker_rates_low_high.removeLast();
+                }
+                while (size.height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum >= rate_width_between_rate_markers * height_per_rate_quantum) {
+                    marker_rates_low_high.add(global_low_rate + marker_rates_low_high.length * rate_width_between_rate_markers);
+                }
+
+            }
+        }
+
+        const double rate_marker_vertical_line_width = 2;
+        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 20;//4;
+        final double horizontal_rate_marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
+        final double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
+
+
+        for (int marker_rate in marker_rates_low_high) {
 
             double marker_base_y = size.height - (marker_rate - global_low_rate) * height_per_rate_quantum;
-            double marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
-            double marker_finish_x = marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
 
             canvas.drawRect(
                 Rect.fromLTRB(
-                    marker_start_x,
+                    horizontal_rate_marker_start_x,
                     marker_base_y + 1, // base it on the marker_rate, not on the pixel-width-between-markers. because the candles are based on the candle-rates.
-                    marker_finish_x,
+                    horizontal_rate_marker_finish_x,
                     marker_base_y - 1
                 ),
                 Paint()..color = Colors.grey,
@@ -188,18 +245,22 @@ class CandleChartPainter extends CustomPainter {
             canvas.drawParagraph(
                 paragraph,
                 Offset(
-                    marker_finish_x + 5, // plus a few for some space
+                    horizontal_rate_marker_finish_x + 5, // plus a few for some space
                     marker_base_y - 6// minus a few to make the marker in the center-left of the text not on the top-left
                 )
             );
         }
 
-
-
-
-
-
-
+        // draw vertical line for the rate markers
+        canvas.drawRect(
+            Rect.fromLTRB(
+                size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line,
+                size.height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum,
+                size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width,
+                size.height,
+            ),
+            Paint()..color = Colors.grey,
+        );
 
         // draw wicks and wax.
         List<CandleChartCandle> chart_candles = generate_chart_candles(
@@ -230,6 +291,60 @@ class CandleChartPainter extends CustomPainter {
                 chart_candle.paint,
             );
         }
+
+        // draw latest trade rate
+        if (latest_candle != null) {
+            double latest_trade_marker_base_y = size.height - (latest_candle!.close_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate) * height_per_rate_quantum;
+
+            TextPainter text_painter = TextPainter(
+                text: TextSpan(
+                    text: '${latest_candle!.close_rate}',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 13,
+                        fontFamily: 'CourierNewBold',
+
+                        //fontFeatures: [
+                        //    FontFeature.tabularFigures(),
+                        //],
+                    ),
+                ),
+                textDirection: TextDirection.ltr,
+            );
+            text_painter.layout(
+                minWidth: 0,
+                maxWidth: size.width,
+            );
+
+            final double text_center_x = size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + (rate_marker_vertical_line_width / 2);
+
+            const double text_padding_x = 4;
+            const double text_padding_y = 2;
+            canvas.drawRRect(
+                RRect.fromRectAndRadius(
+                    Rect.fromLTRB(
+                        text_center_x - (text_painter.size.width / 2) - text_padding_x,
+                        latest_trade_marker_base_y - (text_painter.size.height / 2) - text_padding_y,
+                        text_center_x + (text_painter.size.width / 2) + text_padding_x,
+                        latest_trade_marker_base_y + (text_painter.size.height / 2) + text_padding_y,
+                    ),
+                    Radius.circular(20)
+                ),
+                latest_candle!.open_rate > latest_candle!.close_rate ? red_paint : green_paint,
+            );
+
+            text_painter.paint(
+                canvas,
+                Offset(
+                    text_center_x - (text_painter.size.width / 2),
+                    latest_trade_marker_base_y - (text_painter.size.height / 2),
+                )
+            );
+
+            text_painter.dispose();
+
+        }
+
 
     }
 

@@ -688,8 +688,8 @@ class PositionBook extends StatelessWidget {
 }
 
 
-const Color green = const Color(0xFF26a69a);
-const Color red = const Color(0xFFef5350);
+const Color green = /*Color(0xFF4B6D3C);*/Color(0xFF45635E);//const Color(0xFF26a69a);
+const Color red = /*Color(0xFF6D3C4B);*/Color(0xFF63454A);//const Color(0xFFef5350);
 
 
 
