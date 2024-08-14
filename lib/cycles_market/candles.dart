@@ -149,6 +149,8 @@ class CandlesChartState extends State<CandlesChart> {
 										      	('15 minutes', 15),
 										      	('30 minutes', 30),
 										      	('1 hour', 60),
+    											('6 hours', 60 * 6),
+    											('24 hours', 60 * 24),
 										    ])
 										  	   	DropdownMenuItem<int>(
                                                 	child: Container(
@@ -233,7 +235,9 @@ class CandlesChartState extends State<CandlesChart> {
                                         }
                                     )
                                 ),     
-                                */                       
+                                */           
+                                Spacer(),
+                                SizedBox(width: save_space_on_the_right_for_the_rate_marks),            
                             ]
                         ),
                         // candlestick chart
@@ -263,7 +267,7 @@ class CandlesChartState extends State<CandlesChart> {
                         ),
                         SizedBox(height: 7),
                         // candles-timestamps chart
-                        /*
+                        
                         SizedBox(
                             height: timestamp_markers_painter_height,
                             child: CustomPaint(
@@ -274,7 +278,7 @@ class CandlesChartState extends State<CandlesChart> {
                             )
                         ),
                         SizedBox(height: 7),
-                        */
+                        
                         
                     ]
                 )
@@ -679,12 +683,13 @@ class TimestampsMarkersPainter extends CustomPainter {
     final List<Candle> candles;
     TimestampsMarkersPainter({required this.candles});
         
+    Paint horizontal_border_paint = Paint()..color = Colors.white30;
+        
     void paint(Canvas canvas, Size size) {
 		
-		
-		
-		
 		late double i_minus_1_text_painter_height;
+		
+		const double horizontal_border_width = 0.3;
 		
 		for (int i=0; i < candles.length; i++) {
             Candle candle = candles[i];
@@ -692,19 +697,43 @@ class TimestampsMarkersPainter extends CustomPainter {
 			TextPainter text_painter = create_text_painter_for_timestamp_markers(candle);
 
             final double text_center_x = (i + 1) * width_between_bar_centers;
-			
+
+            final double paint_text_left = text_center_x - (text_painter.size.width / 2); 
+            final double paint_text_top = i % 2 == 0 ? 0 : i_minus_1_text_painter_height + height_between_timestamp_markers;
             text_painter.paint(
                 canvas,
                 Offset(
-                    text_center_x - (text_painter.size.width / 2),
-                    i % 2 == 0 ? 0 : i_minus_1_text_painter_height + height_between_timestamp_markers,
+                    paint_text_left,
+                    paint_text_top,
                 )
             );
 
-    		i_minus_1_text_painter_height = text_painter.size.height;
+            i_minus_1_text_painter_height = text_painter.size.height;
     		
-            text_painter.dispose();    		
-    	}
+            
+            canvas.drawRect(
+                Rect.fromLTWH(
+                    ((i + 1) * width_between_bar_centers) - width_between_bar_centers - (horizontal_border_width / 2),
+                    paint_text_top,
+                    horizontal_border_width,
+                    text_painter.size.height,
+                	 
+                ),
+                horizontal_border_paint,
+            );
+            canvas.drawRect(
+                Rect.fromLTWH(
+                    ((i + 1) * width_between_bar_centers) + width_between_bar_centers - (horizontal_border_width / 2),
+                    paint_text_top,
+                    horizontal_border_width,
+                    text_painter.size.height,
+                ),
+                horizontal_border_paint,
+            );
+            
+            
+            text_painter.dispose();
+        }
         
     }
     
