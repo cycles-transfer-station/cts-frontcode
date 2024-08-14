@@ -145,7 +145,7 @@ class Icrc1TokenTradeContract extends Record {
                     ...sponse.trades_data,  
                     ...gather
                 ];
-                if (this.latest_trades.isNotEmpty && gather.first.id <= this.latest_trades.last.id) {
+                if (this.latest_trades.isNotEmpty && gather.isNotEmpty && gather.first.id <= this.latest_trades.last.id) {
                     gather = gather.skipWhile((e)=>e.id <= this.latest_trades.last.id).toList();
                     catch_up_complete = true;
                     break;
