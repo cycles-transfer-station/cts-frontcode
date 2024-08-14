@@ -43,7 +43,7 @@ dependencies:
       ref: cb1b401d0b2ff630f1d3c8be3566771b2f8d0dd7
   data_table_2: ^2.5.6
   contentsize_tabbarview: ^0.0.2
-
+  dropdown_button2: ^2.3.9 
 
 dev_dependencies:
   flutter_test:

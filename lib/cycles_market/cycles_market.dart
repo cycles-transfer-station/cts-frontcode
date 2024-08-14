@@ -542,6 +542,20 @@ class Candle {
             close_rate: CyclesPerTokenRate.of_the_nat(r['close_rate'] as Nat, token_decimal_places: token_decimal_places)
         );
     }
+    
+    // deep copy useful when changing segment lengths in the charts.
+    factory Candle.clone(Candle c) {
+      	int token_decimal_places = c.volume_tokens.decimal_places;
+      	return Candle._(
+        		time_nanos: c.time_nanos,
+        		volume_cycles: Cycles(cycles: c.volume_cycles.cycles),
+        		volume_tokens: Tokens(quantums: c.volume_tokens.quantums, decimal_places: token_decimal_places),
+        		open_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.open_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+        		high_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.high_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+        		low_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.low_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+        		close_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.close_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+      	);
+    }
 }
 
 

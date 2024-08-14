@@ -2,6 +2,9 @@ import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'package:ic_tools/tools.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+
 import './cycles_market.dart';
 import '../config/state.dart';
 import './scaffold_body.dart';
@@ -18,11 +21,12 @@ const double bar_width = width_between_bar_centers - 5;
 
 const double card_max_width = 900;
 
-const double save_space_on_the_right_for_the_rate_marks = card_max_width / 9;
+const double save_space_on_the_right_for_the_rate_marks = card_max_width / 13;
+
+const double height_between_timestamp_markers = 3;
 
 
 
-/*
 enum CandleSegmentLength {
     one_minute,
     five_minutes,
@@ -35,7 +39,13 @@ enum CandleSegmentLength {
     seven_days,
     one_month,
 }
-*/
+
+// returns time_nanos
+BigInt lign_candle_time_nanos(BigInt time_nanos, BigInt nanos_per_segment) {
+    return time_nanos - (time_nanos % nanos_per_segment);
+}
+
+
 
 class CandlesChart extends StatefulWidget {
     final int cm_main_trade_contracts_i;
@@ -52,28 +62,181 @@ class CandlesChartState extends State<CandlesChart> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-
-        int candles_length = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.length;
+		
+        // make segment lengths  
+        // be careful about references and copying. use Candle.clone().
+        List<Candle> candles = [];
+        if (segment_length_minutes == 1) {
+            candles = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles; 
+        } else {
+            if (state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.isNotEmpty) {
+                
+                BigInt nanos_per_segment = BigInt.from(NANOS_IN_A_SECOND * 60 * segment_length_minutes);
+                
+                Candle current_candle = Candle.clone(state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.first); 
+                current_candle.time_nanos = lign_candle_time_nanos(current_candle.time_nanos, nanos_per_segment); 
+                
+                for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.skip(1)) {
+                    BigInt time_nanos = lign_candle_time_nanos(candle.time_nanos, nanos_per_segment); 
+					if (time_nanos == current_candle.time_nanos) {
+						current_candle.volume_tokens = current_candle.volume_tokens.add_quantums(candle.volume_tokens.quantums);
+						current_candle.volume_cycles += candle.volume_cycles;
+						current_candle.high_rate = CyclesPerTokenRate.max(current_candle.high_rate, candle.high_rate);
+						current_candle.low_rate = CyclesPerTokenRate.min(current_candle.low_rate, candle.low_rate);
+						current_candle.close_rate = candle.close_rate;					
+					} else { // should be greater than the current_candle.time_nanos
+						candles.add(current_candle); // flush
+						current_candle = Candle.clone(candle)..time_nanos = time_nanos;
+					}
+                }
+                candles.add(current_candle);
+            }           
+        }
+        
+        
+        int candles_length = candles.length;
 
         // overlapping chunks between pages
         int candles_start_i = max(candles_length - candles_per_page - (page * (candles_per_page ~/ 4 * 3)), 0); // each page moves 3/4ths of the candles_per_page
         int candles_finish_i = min(candles_start_i + candles_per_page, candles_length);
 
-        List<Candle> page_candles = state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i]
-            .candles
+        List<Candle> page_candles = 
+        		candles
             .getRange(candles_start_i, candles_finish_i).toList(); // toList for now. later maybe optimize painters to work with iterable.
 
-
-
+		final double timestamp_markers_painter_height = switch (page_candles.length) {
+			>= 2 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height + height_between_timestamp_markers + create_text_painter_for_timestamp_markers(page_candles[1]).size.height,
+			1 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height,
+			_ => 0,  
+		};
+		
+		
+		const double candle_segment_length_selector_font_size = 11;
+        const String candle_segment_length_selector_font_family = 'CourierNew';
+        const double segment_length_selector_left_padding = 3;
+        const double segment_length_selector_height = 22;
+        
         return Card(
             semanticContainer: false,
             child: Container(
                 constraints: BoxConstraints(
                     maxWidth: card_max_width,
                 ),
-                margin: EdgeInsets.symmetric(vertical: 7),
                 child: Column(
                     children: [
+                        SizedBox(height: 7),
+                        // controls
+                        Row(
+                            children: [
+                            	SizedBox(width: 7),
+                                // change to a menubar or menu anchor
+                                
+                                DropdownButtonHideUnderline(
+        								child: DropdownButton2<int>(
+        									value: segment_length_minutes,
+        									onChanged: (int? select) {
+                                            if (select is int) {
+                                                if (select != segment_length_minutes) {
+                                                    segment_length_minutes = select;
+                                                    page = 0; // portant!
+                                                    setState((){});                                                
+                                                }
+                                            }
+                                        },
+        									items: [
+        									    for (var (String label, int value) in [
+										  		('1 minute', 1),
+										  		('5 minutes', 5),
+										      	('15 minutes', 15),
+										      	('30 minutes', 30),
+										      	('1 hour', 60),
+										    ])
+										  	   	DropdownMenuItem<int>(
+                                                	child: Container(
+                                                	    padding: EdgeInsets.only(left: segment_length_selector_left_padding),
+                                                	    child: Text(label)
+                                                	),
+                                                	value: value,
+                                    		  	),
+        									],
+        									style: TextStyle(color: Colors.white70, fontFamily: candle_segment_length_selector_font_family, fontSize: candle_segment_length_selector_font_size),
+        									buttonStyleData: ButtonStyleData(
+                                            padding: EdgeInsets.zero,
+                                            height: segment_length_selector_height,
+                                            width: 97,
+                                            decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(
+                                                    color: Colors.white10,
+                                                ),
+                                            ),
+                                        ),
+                                        iconStyleData: IconStyleData(
+                                            iconSize: 13,
+                                        ),
+                                        menuItemStyleData: const MenuItemStyleData(
+                                            height: segment_length_selector_height,
+                                            padding: EdgeInsets.zero,
+                                        ),
+                                        dropdownStyleData: const DropdownStyleData(
+                                            padding: EdgeInsets.zero,
+                                            scrollPadding: EdgeInsets.zero,
+                                            elevation: 0,
+                                        )
+        								),
+                                ),
+                                /*
+                                Container(
+                                    child: DropdownMenu<int>( // int is the number of minutes
+                                        //menuHeight: 17,
+                                        menuStyle: MenuStyle(
+                                            //side: WidgetStatePropertyAll(BorderSide.none),
+                                        	//maximumSize: WidgetStatePropertyAll(Size.fromHeight(17)),
+                                        ),
+                                        inputDecorationTheme: InputDecorationTheme(
+                                            isCollapsed: true,
+                                            isDense: true,
+                                            activeIndicatorBorder: BorderSide(style: BorderStyle.none),
+                                            contentPadding: EdgeInsets.zero,
+                                            border: InputBorder.none, // gets rid of the underline
+                                    		constraints: BoxConstraints(
+                                    		    maxWidth: 129,
+                                    		    maxHeight: 48, //48
+                                    		),                                        
+                                        ),
+                                        requestFocusOnTap: false,
+                                        enableSearch: false,
+                                        enableFilter: false,
+                                        textStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: candle_segment_length_selector_font_family, fontSize: candle_segment_length_selector_font_size),
+                                        dropdownMenuEntries: <DropdownMenuEntry<int>>[
+										  for (var (String label, int value) in [
+										      ('1 minute', 1),
+										      ('5 minutes', 5),
+										      ('15 minutes', 15),
+										      ('30 minutes', 30),
+										      ('1 hour', 60),
+										      
+										  ])
+										  	   DropdownMenuEntry<int>(
+                                                    label: label,
+                                                    value: value,
+                                                    style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: candle_segment_length_selector_font_family, fontSize: candle_segment_length_selector_font_size)))
+                                    		  ),
+                                        ],
+                                        initialSelection: segment_length_minutes,
+                                        onSelected: (int? select_minutes) {
+                                            if (select_minutes is int) {
+                                                if (select_minutes != segment_length_minutes) {
+                                                    segment_length_minutes = select_minutes;
+                                                    setState((){});
+                                                }
+                                            }
+                                        }
+                                    )
+                                ),     
+                                */                       
+                            ]
+                        ),
                         // candlestick chart
                         SizedBox(
                             height: 350,
@@ -99,6 +262,21 @@ class CandlesChartState extends State<CandlesChart> {
                                 )
                             )
                         ),
+                        SizedBox(height: 7),
+                        // candles-timestamps chart
+                        /*
+                        SizedBox(
+                            height: timestamp_markers_painter_height,
+                            child: CustomPaint(
+                                size: Size.infinite,
+                                painter: TimestampsMarkersPainter(
+                                    candles: page_candles,
+                                )
+                            )
+                        ),
+                        SizedBox(height: 7),
+                        */
+                        
                     ]
                 )
             )
@@ -110,7 +288,7 @@ class CandlesChartState extends State<CandlesChart> {
 
 class CandleChartPainter extends CustomPainter {
 
-    List<Candle> candles;
+    final List<Candle> candles;
     final bool is_latest_page;
     final Candle? latest_candle; // null if there are no trades yet
 
@@ -214,7 +392,7 @@ class CandleChartPainter extends CustomPainter {
         }
 
         const double rate_marker_vertical_line_width = 2;
-        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 20;//4;
+        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 10;//4;
         final double horizontal_rate_marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
         final double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
 
@@ -293,7 +471,7 @@ class CandleChartPainter extends CustomPainter {
         }
 
         // draw latest trade rate
-        if (latest_candle != null) {
+        if (latest_candle != null && is_latest_page) { // is_latest_trade bc earlier pages might not be in the same rate-marker-range as the latest trade.
             double latest_trade_marker_base_y = size.height - (latest_candle!.close_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate) * height_per_rate_quantum;
 
             TextPainter text_painter = TextPainter(
@@ -418,7 +596,7 @@ class CandleChartCandle {
 
 class VolumeChartPainter extends CustomPainter {
 
-    List<Candle> candles;
+    final List<Candle> candles;
     final Paint red_paint = Paint()..color = red.withOpacity(0.5);
     final Paint green_paint = Paint()..color = green.withOpacity(0.5);
 
@@ -487,5 +665,88 @@ class VolumeChartBar {
 
 
 
+class TimestampsMarkersPainter extends CustomPainter {
+    final List<Candle> candles;
+    TimestampsMarkersPainter({required this.candles});
+        
+    void paint(Canvas canvas, Size size) {
+		
+		
+		
+		
+		late double i_minus_1_text_painter_height;
+		
+		for (int i=0; i < candles.length; i++) {
+            Candle candle = candles[i];
+            
+			TextPainter text_painter = create_text_painter_for_timestamp_markers(candle);
 
+            final double text_center_x = (i + 1) * width_between_bar_centers;
+			
+            text_painter.paint(
+                canvas,
+                Offset(
+                    text_center_x - (text_painter.size.width / 2),
+                    i % 2 == 0 ? 0 : i_minus_1_text_painter_height + height_between_timestamp_markers,
+                )
+            );
+
+    		i_minus_1_text_painter_height = text_painter.size.height;
+    		
+            text_painter.dispose();    		
+    	}
+        
+    }
+    
+    bool shouldRepaint(CustomPainter old) {
+        return true; // optimize this.
+    }
+}
+
+
+
+
+
+
+// tools
+
+bool is_same_day(DateTime dt1, DateTime dt2) {
+    if (dt1.month == dt2.month && dt1.year == dt2.year && dt1.day == dt2.day) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
+    // create timestamp string	
+    DateTime dt = DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(candle.time_nanos).toInt());
+    String s = '';			
+    if (is_same_day(dt, DateTime.now()) == false) {
+    	s += '${dt.month}/${dt.day}\n';
+    }
+    s += '${dt.hour}:';
+    if (dt.minute < 10) {
+    	s += '0';
+    }
+    s += '${dt.minute}';					  	
+					  			  
+	TextPainter text_painter = TextPainter(
+        text: TextSpan(
+            text: s,
+            style: TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+                fontFamily: 'CourierNew',
+            ),
+        ),
+        textDirection: TextDirection.ltr,
+    );
+    text_painter.layout(
+        minWidth: 0,
+        maxWidth: double.infinity,
+    );
+    return text_painter;
+    
+}
 

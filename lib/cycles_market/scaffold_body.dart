@@ -169,8 +169,8 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
         state = MainStateBind.get_state<CustomState>(context);
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
-        return /*Card(
-            child: */DropdownMenu<int>(
+        return Card(
+            child: DropdownMenu<int>(
                 menuStyle: MenuStyle(
                     side: WidgetStatePropertyAll(BorderSide.none),
                 ),
@@ -198,7 +198,7 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
                     }
                 }
             )
-        /*)*/;
+        );
     }
 }
 
@@ -338,7 +338,7 @@ class VolumeStats extends StatelessWidget {
     VolumeStats({super.key, required this.cm_main_trade_contracts_i});
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
         ViewVolumeStatsSponse volume_stats = tc.volume_stats!;

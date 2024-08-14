@@ -478,7 +478,7 @@ class CyclesPerTokenRate extends Cycles {
     
     
     // operators
-    _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+    static void _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         if (a.token_decimal_places != b.token_decimal_places) {
             throw Exception('Cannot perform operation on a CyclesPerTokenRate with a different token_decimal_places.');
         }
@@ -527,6 +527,25 @@ class CyclesPerTokenRate extends Cycles {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate <= t.cycles_per_token_quantum_rate;
     } 
+       
+    static CyclesPerTokenRate max(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+        _check_same_token_decimal_places(a, b);
+        if (a >= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+       
+	static CyclesPerTokenRate min(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+        _check_same_token_decimal_places(a, b);
+        if (a <= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+       
        
 }
 

@@ -120,61 +120,74 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
             ),
             drawer: NavigationDrawer(
                 children: [
-                    DrawerHeader(
-                        child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
-                    ),
-                    ListTile(
-                        title: const Text('BANK'),
-                        onTap: () {
-                            if (state.current_url.name != 'cycles_bank') {
-                                change_url_into_cb(state.current_icrc1_ledger, context);
-                            }
-                            Navigator.pop(context);
-                        },
-                        selected: state.current_url.name == 'cycles_bank',
-                    ),
-                    ListTile(
-                        title: const Text('MARKET'),
-                        onTap: () {
-                            if (state.current_url.name != 'cycles_market') {
-                                change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
-                            }
-                            Navigator.pop(context);
-                        },
-                        selected: state.current_url.name == 'cycles_market'
-                    ),
-                    ListTile(
-                        title: const Text('ABOUT'),
-                        onTap: () {
-                            if (state.current_url.name != 'about') {
-                                state.current_url = CustomUrl('about');
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            }
-                            Navigator.pop(context);
-                        },
-                        selected: state.current_url.name == 'about'
-                    ),
-                    Align(
-                        alignment: FractionalOffset.bottomCenter,
+                    Container(
+                        height: MediaQuery.of(context).size.height,
                         child: Column(
-                            children: <Widget>[
-                                Divider(),
-                                if (state.user != null) Container(
-                                    padding: EdgeInsets.all(17),
-                                    child: OutlineButton(
-                                        button_text: 'LOG-OUT',
-                                        on_press_complete: () {
-                                            state.user!.caller.indexdb_delete();
-                                            window.localStorage.remove('user_cycles_bank');
-                                            state.user = null;
-                                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                            Navigator.pop(context);
-                                        }
+                            children: [
+                                DrawerHeader(
+                                    child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
+                        		), 
+                            	Expanded(
+                            	    child: ListView(
+                            	    	children: [
+                            	    	    ListTile(
+                                                title: const Text('BANK'),
+                                                onTap: () {
+                                                    if (state.current_url.name != 'cycles_bank') {
+                                                        change_url_into_cb(state.current_icrc1_ledger, context);
+                                                    }
+                                                    Navigator.pop(context);
+                                                },
+                                                selected: state.current_url.name == 'cycles_bank',
+                                            ),
+                                            ListTile(
+                                                title: const Text('MARKET'),
+                                                onTap: () {
+                                                    if (state.current_url.name != 'cycles_market') {
+                                                        change_url_into_cm_market(state.cm_main_icrc1token_trade_contracts_i, context);
+                                                    }
+                                                    Navigator.pop(context);
+                                                },
+                                                selected: state.current_url.name == 'cycles_market'
+                                            ),
+                                            ListTile(
+                                                title: const Text('ABOUT'),
+                                                onTap: () {
+                                                    if (state.current_url.name != 'about') {
+                                                        state.current_url = CustomUrl('about');
+                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                    }
+                                                    Navigator.pop(context);
+                                                },
+                                                selected: state.current_url.name == 'about'
+                                            ),
+                            	    	]
+                            		)	
+                            	),
+                            	Align(
+                                    alignment: FractionalOffset.bottomCenter,
+                                    child: Column(
+                                        children: <Widget>[
+                                            Divider(),
+                                            if (state.user != null) Container(
+                                                padding: EdgeInsets.all(17),
+                                                child: OutlineButton(
+                                                    button_text: 'LOG-OUT',
+                                                    on_press_complete: () {
+                                                        state.user!.caller.indexdb_delete();
+                                                        window.localStorage.remove('user_cycles_bank');
+                                                        state.user = null;
+                                                        MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                                        Navigator.pop(context);
+                                                    }
+                                                )
+                                            )
+                                            else/*if (state.user == null)*/ SizedBox(height: 20)
+                                        ]
                                     )
-                                )
-                                else/*if (state.user == null)*/ SizedBox(height: 20)
+                                ),
                             ]
-                        )
+                    	)
                     ),
                 ]
             ),
