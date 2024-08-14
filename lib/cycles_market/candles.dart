@@ -93,7 +93,6 @@ class CandlesChartState extends State<CandlesChart> {
             }           
         }
         
-        
         int candles_length = candles.length;
 
         // overlapping chunks between pages
@@ -139,7 +138,7 @@ class CandlesChartState extends State<CandlesChart> {
                                                 if (select != segment_length_minutes) {
                                                     segment_length_minutes = select;
                                                     page = 0; // portant!
-                                                    setState((){});                                                
+                                                    setState((){});
                                                 }
                                             }
                                         },
@@ -323,7 +322,7 @@ class CandleChartPainter extends CustomPainter {
             global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
             global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
         } else {
-            global_low_rate -= (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
+            global_low_rate = max(0, global_low_rate - ((global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs));
             global_high_rate += (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
         }
 
@@ -342,33 +341,44 @@ class CandleChartPainter extends CustomPainter {
             marker_rates_low_high.add(marker_rate);
         }
 
-        if (marker_rates_low_high.first.toString().length >= 2) {
+        // possible change last digits to zero
+        final int marker_rates_last_str_length = marker_rates_low_high.last.toString().length; 
+        if (marker_rates_last_str_length >= 2) {
+            
             int change_last_digits_to_zero = 0;
-            for (int i=0; i<marker_rates_low_high.first.toString().length-1; i++) { // lowest rate
-                Set<int> set_of_marker_rates_without_last_digit = marker_rates_low_high.toList()
+            
+            for (int i=0; i<marker_rates_last_str_length-1; i++) { // lowest rate
+                
+                Set<int> set_of_marker_rates_with_last_digit_zeros = 
+                	marker_rates_low_high
                     .map((r){
-                        return int.parse(r.toString().substring(0, r.toString().length - 1 - i));
-                    }).toSet();
-                if (set_of_marker_rates_without_last_digit.length == marker_rates_low_high.length) {
+                        String r_str = r.toString();
+                        if (r_str.length >= marker_rates_last_str_length - i) {
+                            return int.parse(
+                                r_str.replaceRange(
+                            		max(0, r_str.length - 1 - i),
+                            		null,
+                            		''.padRight(1 + i, '0')
+                        		)
+                            );
+                        } else {
+                            return r;
+                        }
+                    }) 
+                    .toSet();
+                				                
+                if (set_of_marker_rates_with_last_digit_zeros.length == marker_rates_low_high.length) {
                     // still unique, change last digit to zero
+                    marker_rates_low_high = set_of_marker_rates_with_last_digit_zeros.toList();
                     change_last_digits_to_zero += 1;
                     // continue
                 } else {
                     break;
                 }
             }
+            
             if (change_last_digits_to_zero > 0) {
-                // change last digits to zero
-                marker_rates_low_high = marker_rates_low_high.map((r){
-                    return int.parse(
-                        r.toString().replaceRange(
-                            r.toString().length - change_last_digits_to_zero,
-                            null,
-                            ''.padRight(change_last_digits_to_zero, '0')
-                        )
-                    );
-                }).toList();
-
+                
                 // update global_low_rate, global_high_rate, rate_width_between_rate_markers, and height_per_rate_quantum
                 global_low_rate = marker_rates_low_high.first;
                 global_high_rate = marker_rates_low_high.last;
