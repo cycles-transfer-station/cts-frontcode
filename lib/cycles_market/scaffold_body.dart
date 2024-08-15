@@ -853,7 +853,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     form_key.currentState!.save();
                                     
-                                    state.loading_text = 'creating position';
+                                    state.loading_text = 'Creating position';
                                     state.is_loading = true;
                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     

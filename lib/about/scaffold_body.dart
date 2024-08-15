@@ -14,8 +14,7 @@ class AboutScaffoldBody extends StatelessWidget {
     Widget build(BuildContext context) {
         //CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-        
-        
+
         List<Widget> column_children = [];
         
         column_children.addAll([
