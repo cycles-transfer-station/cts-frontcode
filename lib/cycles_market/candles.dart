@@ -694,7 +694,7 @@ class TimestampsMarkersPainter extends CustomPainter {
 
             i_minus_1_text_painter_height = text_painter.size.height;
 
-            /*
+
             canvas.drawRect(
                 Rect.fromLTWH(
                     ((i + 1) * width_between_bar_centers) - width_between_bar_centers - (horizontal_border_width / 2),
@@ -714,7 +714,7 @@ class TimestampsMarkersPainter extends CustomPainter {
                 ),
                 horizontal_border_paint,
             );
-            */
+
             
             text_painter.dispose();
         }
@@ -764,6 +764,7 @@ TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
             ),
         ),
         textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
     );
     text_painter.layout(
         minWidth: 0,
