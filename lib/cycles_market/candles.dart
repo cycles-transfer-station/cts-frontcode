@@ -2,6 +2,7 @@ import 'dart:ui' as dart_ui;
 import 'package:flutter/material.dart';
 import 'dart:math';
 
+import 'package:ic_tools/common.dart';
 import 'package:ic_tools/tools.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
@@ -62,6 +63,10 @@ class CandlesChartState extends State<CandlesChart> {
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+
+
+        // TESTTEMP! DELETE THIS!
+        state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles = make_test_candles();
 
         // make segment lengths  
         // be careful about references and copying. use Candle.clone().
@@ -128,6 +133,19 @@ class CandlesChartState extends State<CandlesChart> {
                         Row(
                             children: [
                                 SizedBox(width: 7),
+                                Container(
+                                    height: segment_length_selector_height,
+                                    child: IconButton(
+                                        iconSize: 14,
+                                        icon: const Icon(Icons.arrow_back_ios_new),
+                                        padding: EdgeInsets.zero,
+                                        onPressed: candles_start_i == 0 ? null : (){
+                                            page += 1;
+                                            setState((){});
+                                        },
+                                    ),
+                                ),
+                                SizedBox(width: 7),
                                 DropdownButtonHideUnderline(
                                     child: DropdownButton2<int>(
                                         value: segment_length_minutes,
@@ -185,7 +203,25 @@ class CandlesChartState extends State<CandlesChart> {
                                     ),
                                 ),
                                 Spacer(),
-                                SizedBox(width: save_space_on_the_right_for_the_rate_marks),            
+                                SizedBox(width: 7),
+                                Container(
+                                    height: segment_length_selector_height,
+                                    child: Transform.flip(
+                                        flipX: true,
+                                        //FilterQuality? filterQuality,
+                                        child: IconButton(
+                                            iconSize: 14,
+                                            icon: const Icon(Icons.arrow_back_ios_new),
+                                            padding: EdgeInsets.zero,
+                                            onPressed: candles_finish_i == candles_length ? null : (){
+                                                page -= 1;
+                                                setState((){});
+                                            },
+                                        )
+                                    ),
+                                ),
+                                SizedBox(width: 7),
+                                SizedBox(width: save_space_on_the_right_for_the_rate_marks),
                             ]
                         ),
                         // candlestick chart
@@ -658,7 +694,7 @@ class TimestampsMarkersPainter extends CustomPainter {
 
             i_minus_1_text_painter_height = text_painter.size.height;
 
-            
+            /*
             canvas.drawRect(
                 Rect.fromLTWH(
                     ((i + 1) * width_between_bar_centers) - width_between_bar_centers - (horizontal_border_width / 2),
@@ -678,7 +714,7 @@ class TimestampsMarkersPainter extends CustomPainter {
                 ),
                 horizontal_border_paint,
             );
-            
+            */
             
             text_painter.dispose();
         }
@@ -722,8 +758,8 @@ TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
         text: TextSpan(
             text: s,
             style: TextStyle(
-                color: Colors.grey,
-                fontSize: 11,
+                color: Colors.white70,
+                fontSize: 9,
                 fontFamily: 'CourierNew',
             ),
         ),
@@ -735,5 +771,31 @@ TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
     );
     return text_painter;
     
+}
+
+
+
+
+
+
+List<Candle> make_test_candles() {
+    List<Candle> candles = [];
+    CyclesPerTokenRate base_rate = CyclesPerTokenRate.oftheTCyclesDoubleString('10', token_decimal_places: 8);
+    for (int i=0;i<1000; i++) {
+        BigInt change_quantums_quantity = BigInt.from(i * 10000);
+        CyclesPerTokenRate rate = CyclesPerTokenRate(cycles_per_token_quantum_rate: base_rate.quantums + change_quantums_quantity, token_decimal_places: 8);
+        candles.add(
+            Candle(
+                volume_tokens: Tokens.of_the_double_string('5', decimal_places: 8),
+                volume_cycles: Cycles.oftheTCyclesDoubleString('50'),
+                open_rate: rate,
+                high_rate: rate,
+                low_rate: rate,
+                close_rate: rate,
+                time_nanos: BigInt.from(i * NANOS_IN_A_SECOND * 60),
+            )
+        );
+    }
+    return candles;
 }
 

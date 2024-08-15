@@ -521,7 +521,7 @@ class Candle {
     CyclesPerTokenRate low_rate;
     CyclesPerTokenRate close_rate;
 
-    Candle._({
+    Candle({
         required this.time_nanos,
         required this.volume_cycles,
         required this.volume_tokens,
@@ -532,7 +532,7 @@ class Candle {
     });
 
     static Candle of_the_record(Record r, {required int token_decimal_places}) {
-        return Candle._(
+        return Candle(
             time_nanos: (r['time_nanos'] as Nat64).value,
             volume_cycles: Cycles.of_the_nat(r['volume_cycles'] as Nat),
             volume_tokens: Tokens.of_the_nat(r['volume_tokens'] as Nat, decimal_places: token_decimal_places),
@@ -546,7 +546,7 @@ class Candle {
     // deep copy useful when changing segment lengths in the charts.
     factory Candle.clone(Candle c) {
         int token_decimal_places = c.volume_tokens.decimal_places;
-        return Candle._(
+        return Candle(
             time_nanos: c.time_nanos,
             volume_cycles: Cycles(cycles: c.volume_cycles.cycles),
             volume_tokens: Tokens(quantums: c.volume_tokens.quantums, decimal_places: token_decimal_places),
