@@ -132,6 +132,7 @@ class CustomState {
             await local_fetch_root_key_future;
         }
 
+        this.first_show_scaffold = false;
         
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
             await this.cm_main.fresh_icrc1token_trade_contracts();

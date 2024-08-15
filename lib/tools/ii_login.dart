@@ -92,10 +92,7 @@ ii_login(BuildContext context) async {
 
     // portant
     await state.user!.caller.indexdb_save();
-	
-    // portant before running loadfirststate.
-    state.first_show_scaffold = false;
-    
+
     try {
         await state.loadfirststate();
     } catch(e) {
