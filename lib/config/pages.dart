@@ -126,11 +126,11 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                             children: [
                                 DrawerHeader(
                                     child: state.user == null ? Center(child: IILoginButton()) : SelectableText('USER-ID: ${state.user!.principal.text}')
-                        		), 
-                            	Expanded(
-                            	    child: ListView(
-                            	    	children: [
-                            	    	    ListTile(
+                                ),
+                                Expanded(
+                                    child: ListView(
+                                        children: [
+                                            ListTile(
                                                 title: const Text('BANK'),
                                                 onTap: () {
                                                     if (state.current_url.name != 'cycles_bank') {
@@ -161,10 +161,10 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                                 },
                                                 selected: state.current_url.name == 'about'
                                             ),
-                            	    	]
-                            		)	
-                            	),
-                            	Align(
+                                        ]
+                                    )
+                                ),
+                                Align(
                                     alignment: FractionalOffset.bottomCenter,
                                     child: Column(
                                         children: <Widget>[
@@ -187,7 +187,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                     )
                                 ),
                             ]
-                    	)
+                        )
                     ),
                 ]
             ),

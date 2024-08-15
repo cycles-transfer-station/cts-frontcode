@@ -259,7 +259,7 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                     /*
                     for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].candles)
                         Text('time: ${candle.time_nanos}, open: ${candle.open_rate}, high: ${candle.high_rate}, low: ${candle.low_rate}, close: ${candle.close_rate}, volume: ${candle.volume_tokens}'),
-					*/
+                    */
                     LayoutBuilder(
                         builder: (BuildContext context, BoxConstraints constraints) {
                             double sbheight = 23;

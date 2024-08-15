@@ -538,7 +538,7 @@ class CyclesPerTokenRate extends Cycles {
         }
     }
        
-	static CyclesPerTokenRate min(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+    static CyclesPerTokenRate min(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         _check_same_token_decimal_places(a, b);
         if (a <= b) {
             return a;
