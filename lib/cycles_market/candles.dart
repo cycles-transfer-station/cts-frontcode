@@ -1,6 +1,8 @@
 import 'dart:ui' as dart_ui;
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:ic_tools/common.dart';
 import 'package:ic_tools/tools.dart';
@@ -25,6 +27,13 @@ const double card_max_width = 900;
 const double save_space_on_the_right_for_the_rate_marks = card_max_width / 13;
 
 const double height_between_timestamp_markers = 3;
+
+const double candle_chart_painter_height = 350;
+
+const double rate_marker_vertical_line_width = 2;
+const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 10;//4;
+const double horizontal_rate_marker_start_x = card_max_width - save_space_on_the_right_for_the_rate_marks;
+const double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
 
 
 
@@ -55,7 +64,7 @@ class CandlesChart extends StatefulWidget {
 }
 class CandlesChartState extends State<CandlesChart> {
 
-    final int candles_per_page = (card_max_width - save_space_on_the_right_for_the_rate_marks) ~/ width_between_bar_centers;
+    final int candles_per_page = ((card_max_width - save_space_on_the_right_for_the_rate_marks) ~/ width_between_bar_centers) - 1;
 
     int segment_length_minutes = 1; // option user can change this dropdown setState
     int page = 0; // first page is zero. first page is latest candles.
@@ -108,18 +117,19 @@ class CandlesChartState extends State<CandlesChart> {
             candles
             .getRange(candles_start_i, candles_finish_i).toList(); // toList for now. later maybe optimize painters to work with iterable.
 
-        final double timestamp_markers_painter_height = switch (page_candles.length) {
+        final double timestamp_markers_painter_height = create_text_painter_for_timestamp_markers(page_candles[0]).size.height;
+        /*switch (page_candles.length) {
             >= 2 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height + height_between_timestamp_markers + create_text_painter_for_timestamp_markers(page_candles[1]).size.height,
             1 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height,
             _ => 0,
-        };
+        };*/
 
 
         const double candle_segment_length_selector_font_size = 11;
         const String candle_segment_length_selector_font_family = 'CourierNew';
         const double segment_length_selector_left_padding = 3;
         const double segment_length_selector_height = 22;
-        
+
         return Card(
             semanticContainer: false,
             child: Container(
@@ -224,46 +234,58 @@ class CandlesChartState extends State<CandlesChart> {
                                 SizedBox(width: save_space_on_the_right_for_the_rate_marks),
                             ]
                         ),
-                        // candlestick chart
-                        SizedBox(
-                            height: 350,
-                            child: CustomPaint(
-                                size: Size.infinite,
-                                painter: CandleChartPainter(
-                                    candles: page_candles,
-                                    is_latest_page: page == 0,
-                                    latest_candle: state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.isNotEmpty
-                                        ? state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.last
-                                        : null,
-                                )
-                            ),
+                        SizedBox(height: 7),
+                        Stack(
+                            children: [
+                                Column(
+                                    children: [
+                                        // candlestick chart
+                                        SizedBox(
+                                            height: candle_chart_painter_height,
+                                            child: CustomPaint(
+                                                size: Size.infinite,
+                                                painter: CandleChartPainter(
+                                                    candles: page_candles,
+                                                    is_latest_page: page == 0,
+                                                    latest_candle: state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.isNotEmpty
+                                                        ? state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles.last
+                                                        : null,
+                                                )
+                                            ),
+                                        ),
+                                        SizedBox(height: 7),
+                                        // volume chart
+                                        SizedBox(
+                                            height: 50,
+                                            child: CustomPaint(
+                                                size: Size.infinite,
+                                                painter: VolumeChartPainter(
+                                                    candles: page_candles,
+                                                )
+                                            )
+                                        ),
+                                        SizedBox(height: 7),
+                                        // candles-timestamps chart
+                                        SizedBox(
+                                            height: timestamp_markers_painter_height,
+                                            child: CustomPaint(
+                                                size: Size.infinite,
+                                                painter: TimestampsMarkersPainter(
+                                                    candles: page_candles,
+                                                )
+                                            )
+                                        ),
+                                    ]
+                                ),
+                                Positioned.fill( // size with the largest sibling in the stack
+                                    child: ChartMouseRegion(
+                                        candles: page_candles,
+                                        hovercolor: Theme.of(context).hoverColor,
+                                    )
+                                ),
+                            ]
                         ),
                         SizedBox(height: 7),
-                        // volume chart
-                        SizedBox(
-                            height: 50,
-                            child: CustomPaint(
-                                size: Size.infinite,
-                                painter: VolumeChartPainter(
-                                    candles: page_candles,
-                                )
-                            )
-                        ),
-                        SizedBox(height: 7),
-                        // candles-timestamps chart
-                        
-                        SizedBox(
-                            height: timestamp_markers_painter_height,
-                            child: CustomPaint(
-                                size: Size.infinite,
-                                painter: TimestampsMarkersPainter(
-                                    candles: page_candles,
-                                )
-                            )
-                        ),
-                        SizedBox(height: 7),
-                        
-                        
                     ]
                 )
             )
@@ -297,108 +319,18 @@ class CandleChartPainter extends CustomPainter {
         }
 
         // draw horizontal rate markers
-        int global_high_rate = candles
-            .map((c)=>c.high_rate.cycles_per_token_quantum_rate.toInt())
-            .reduce((a,b)=>max(a,b));
-
-        int global_low_rate = candles
-            .map((c)=>c.low_rate.cycles_per_token_quantum_rate.toInt())
-            .reduce((a,b)=>min(a,b));
-
-        const int make_rate_room_after_global_lows_and_highs = 4;
-        if (global_high_rate - global_low_rate < make_rate_room_after_global_lows_and_highs) {
-            global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
-            global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
-        } else {
-            global_low_rate = max(0, global_low_rate - ((global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs));
-            global_high_rate += (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
-        }
-
-        const double starting_pixel_width_between_rate_markers = 30;
-        final int number_of_rate_markers = size.height ~/ starting_pixel_width_between_rate_markers;
-        int rate_width_between_rate_markers = (global_high_rate - global_low_rate) ~/ number_of_rate_markers;
-        double height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
-
-        if (rate_width_between_rate_markers == 0) {
-            rate_width_between_rate_markers = 1;
-        }
-
-        List<int> marker_rates_low_high = [];
-        for (int i=0; i<number_of_rate_markers; i++) {
-            final int marker_rate = global_low_rate + i*rate_width_between_rate_markers;
-            marker_rates_low_high.add(marker_rate);
-        }
-
-        // possible change last digits to zero
-        final int marker_rates_last_str_length = marker_rates_low_high.last.toString().length; 
-        if (marker_rates_last_str_length >= 2) {
-            
-            int change_last_digits_to_zero = 0;
-            
-            for (int i=0; i<marker_rates_last_str_length-1; i++) { // lowest rate
-                
-                Set<int> set_of_marker_rates_with_last_digit_zeros = 
-                    marker_rates_low_high
-                    .map((r){
-                        String r_str = r.toString();
-                        if (r_str.length >= marker_rates_last_str_length - i) {
-                            return int.parse(
-                                r_str.replaceRange(
-                                    max(0, r_str.length - 1 - i),
-                                    null,
-                                    ''.padRight(1 + i, '0')
-                                )
-                            );
-                        } else {
-                            return r;
-                        }
-                    }) 
-                    .toSet();
-
-                if (set_of_marker_rates_with_last_digit_zeros.length == marker_rates_low_high.length) {
-                    // still unique, change last digit to zero
-                    marker_rates_low_high = set_of_marker_rates_with_last_digit_zeros.toList();
-                    change_last_digits_to_zero += 1;
-                    // continue
-                } else {
-                    break;
-                }
-            }
-            
-            if (change_last_digits_to_zero > 0) {
-                
-                // update global_low_rate, global_high_rate, rate_width_between_rate_markers, and height_per_rate_quantum
-                global_low_rate = marker_rates_low_high.first;
-                global_high_rate = marker_rates_low_high.last;
-                rate_width_between_rate_markers = marker_rates_low_high[1] - marker_rates_low_high[0];
-                height_per_rate_quantum = size.height / (global_high_rate - global_low_rate);
-
-                // now make same space between rates.
-                for (int i=0; i<marker_rates_low_high.length; i++) {
-                    marker_rates_low_high[i] = global_low_rate + i*rate_width_between_rate_markers;
-                }
-
-                // update number of markers if need
-                while (size.height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum < 0) {
-                    marker_rates_low_high.removeLast();
-                }
-                while (size.height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum >= rate_width_between_rate_markers * height_per_rate_quantum) {
-                    marker_rates_low_high.add(global_low_rate + marker_rates_low_high.length * rate_width_between_rate_markers);
-                }
-
-            }
-        }
-
-        const double rate_marker_vertical_line_width = 2;
-        const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 10;//4;
-        final double horizontal_rate_marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
-        final double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
-
+        
+        final RateMarkersRangeSpecifics(
+            :global_low_rate, 
+            :global_high_rate, 
+            :height_per_rate_quantum, 
+            :marker_rates_low_high) 
+        = find_rate_markers_range_specifics(candles);
 
         for (int marker_rate in marker_rates_low_high) {
 
-            double marker_base_y = size.height - (marker_rate - global_low_rate) * height_per_rate_quantum;
-
+            double marker_base_y = calculate_marker_base_y(marker_rate: marker_rate, global_low_rate: global_low_rate, height_per_rate_quantum: height_per_rate_quantum);
+            
             canvas.drawRect(
                 Rect.fromLTRB(
                     horizontal_rate_marker_start_x,
@@ -470,58 +402,17 @@ class CandleChartPainter extends CustomPainter {
 
         // draw latest trade rate
         if (latest_candle != null && is_latest_page) { // is_latest_trade bc earlier pages might not be in the same rate-marker-range as the latest trade.
-            double latest_trade_marker_base_y = size.height - (latest_candle!.close_rate.cycles_per_token_quantum_rate.toInt() - global_low_rate) * height_per_rate_quantum;
-
-            TextPainter text_painter = TextPainter(
-                text: TextSpan(
-                    text: '${latest_candle!.close_rate}',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 13,
-                        fontFamily: 'CourierNewBold',
-
-                        //fontFeatures: [
-                        //    FontFeature.tabularFigures(),
-                        //],
-                    ),
-                ),
-                textDirection: TextDirection.ltr,
+            draw_rate_selection(
+                canvas: canvas,
+                size: size,
+                rate: latest_candle!.close_rate,
+                global_low_rate: global_low_rate,
+                height_per_rate_quantum: height_per_rate_quantum,
+                text_color: Colors.black,
+                background_paint: latest_candle!.open_rate > latest_candle!.close_rate ? red_paint : green_paint,
             );
-            text_painter.layout(
-                minWidth: 0,
-                maxWidth: size.width,
-            );
-
-            final double text_center_x = size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + (rate_marker_vertical_line_width / 2);
-
-            const double text_padding_x = 4;
-            const double text_padding_y = 2;
-            canvas.drawRRect(
-                RRect.fromRectAndRadius(
-                    Rect.fromLTRB(
-                        text_center_x - (text_painter.size.width / 2) - text_padding_x,
-                        latest_trade_marker_base_y - (text_painter.size.height / 2) - text_padding_y,
-                        text_center_x + (text_painter.size.width / 2) + text_padding_x,
-                        latest_trade_marker_base_y + (text_painter.size.height / 2) + text_padding_y,
-                    ),
-                    Radius.circular(20)
-                ),
-                latest_candle!.open_rate > latest_candle!.close_rate ? red_paint : green_paint,
-            );
-
-            text_painter.paint(
-                canvas,
-                Offset(
-                    text_center_x - (text_painter.size.width / 2),
-                    latest_trade_marker_base_y - (text_painter.size.height / 2),
-                )
-            );
-
-            text_painter.dispose();
-
         }
-
-
+        
     }
 
 
@@ -675,7 +566,7 @@ class TimestampsMarkersPainter extends CustomPainter {
 
         const double horizontal_border_width = 0.3;
 
-        for (int i=0; i < candles.length; i++) {
+        for (int i=0; i<candles.length; i+=5) {
             Candle candle = candles[i];
 
             TextPainter text_painter = create_text_painter_for_timestamp_markers(candle);
@@ -683,7 +574,7 @@ class TimestampsMarkersPainter extends CustomPainter {
             final double text_center_x = (i + 1) * width_between_bar_centers;
 
             final double paint_text_left = text_center_x - (text_painter.size.width / 2); 
-            final double paint_text_top = i % 2 == 0 ? 0 : i_minus_1_text_painter_height + height_between_timestamp_markers;
+            final double paint_text_top = 0;//i % 2 == 0 ? 0 : i_minus_1_text_painter_height + height_between_timestamp_markers;
             text_painter.paint(
                 canvas,
                 Offset(
@@ -694,7 +585,7 @@ class TimestampsMarkersPainter extends CustomPainter {
 
             i_minus_1_text_painter_height = text_painter.size.height;
 
-
+            /*
             canvas.drawRect(
                 Rect.fromLTWH(
                     ((i + 1) * width_between_bar_centers) - width_between_bar_centers - (horizontal_border_width / 2),
@@ -714,7 +605,7 @@ class TimestampsMarkersPainter extends CustomPainter {
                 ),
                 horizontal_border_paint,
             );
-
+            */
             
             text_painter.dispose();
         }
@@ -728,10 +619,292 @@ class TimestampsMarkersPainter extends CustomPainter {
 
 
 
+class ChartMouseRegion extends StatefulWidget {
+    List<Candle> candles;
+    final Paint hovercolor_paint;
+    ChartMouseRegion({required this.candles, required Color hovercolor}) : hovercolor_paint = Paint()..color = hovercolor;
+    State createState() => ChartMouseRegionState();     
+}
+class ChartMouseRegionState extends State<ChartMouseRegion> {
+    
+    Offset? mouse_position = null; // null if not in the region;
+    
+    Widget build(BuildContext context) {
+        //print(mouse_position);
+        return MouseRegion(
+            cursor: SystemMouseCursors.precise,
+            onHover: (PointerHoverEvent event) {
+                mouse_position = event.localPosition;
+                setState((){});
+            },
+            onEnter: (event) {
+                mouse_position = event.localPosition;
+                setState((){});
+            },
+            onExit: (event) {
+                mouse_position = null;
+                setState((){});
+            },
+            child: CustomPaint(
+                size: Size.infinite, // check this, maybe use layout builder and set this to maxConstarints
+                painter: PointerPainter(
+                    candles: widget.candles,
+                    hovercolor_paint: widget.hovercolor_paint,
+                    mouse_position: mouse_position,
+                ) 
+            )
+        );
+    }
+}
+
+
+
+class PointerPainter extends CustomPainter {
+    List<Candle> candles;
+    final Paint hovercolor_paint;
+    final Offset? mouse_position;
+
+    final Paint horizontal_dot_lines_paint = Paint()..color = Colors.grey;
+    final Paint horizontal_line_rate_selection_background = Paint()..color = Colors.grey;
+    final Color horizontal_line_rate_selection_text_color = Colors.black;
+    
+    PointerPainter({required this.candles, required this.hovercolor_paint, required this.mouse_position});
+    
+    void paint(Canvas canvas, Size size) {
+        
+        if (mouse_position == null || candles.isEmpty) {
+            return;
+        }
+        
+        // draw hovercolor on the candle column
+        // find candle
+        Candle? hover_candle;
+        late final double left;
+        late final double right;
+        for (int i=0; i<candles.length;i++) {
+            Candle candle = candles[i];
+            final double center_x = (i + 1) * width_between_bar_centers;
+            final double left_ = center_x - (width_between_bar_centers / 2); // or i can use bar_width
+            final double right_ = center_x + (width_between_bar_centers / 2);
+            
+            if (mouse_position!.dx >= left_ && mouse_position!.dx < right_) {
+                hover_candle = candle;
+                left = left_;
+                right = right_;
+                break;
+            }
+        }
+        if (hover_candle != null) { // if on a candle-vertical
+            // draw hovercolor on the vertical column of the candle
+            canvas.drawRect(
+                Rect.fromLTRB(
+                    left,
+                    0,
+                    right,
+                    size.height,
+                ),
+                hovercolor_paint
+            );
+        } 
+        
+        // draw horizontal dotted lines of the current mouse position and horizontal line rate
+        final RateMarkersRangeSpecifics(
+            :global_low_rate, 
+            :global_high_rate, 
+            :height_per_rate_quantum, 
+            :marker_rates_low_high,
+            :change_last_digits_to_zero,
+        ) = find_rate_markers_range_specifics(candles);
+    
+        // if in within the rate_markers_range
+        if (mouse_position!.dy >= calculate_marker_base_y(marker_rate: marker_rates_low_high.last, global_low_rate: global_low_rate, height_per_rate_quantum: height_per_rate_quantum) - 1
+        && mouse_position!.dy <= calculate_marker_base_y(marker_rate: marker_rates_low_high.first, global_low_rate: global_low_rate, height_per_rate_quantum: height_per_rate_quantum) + 1
+        && mouse_position!.dx <= size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line
+        ) {
+            const double line_width = 9;
+            const double space_between_lines = 3;
+            const double line_height = 0.5;
+            final int number_of_horizontal_lines = ((size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line) - mouse_position!.dx) ~/ (line_width + space_between_lines);
+            for (int i=0; i<number_of_horizontal_lines; i++) {
+                final double line_left_position = mouse_position!.dx + (i * (line_width + space_between_lines)) + space_between_lines; 
+                canvas.drawRect(
+                    Rect.fromLTRB(
+                        line_left_position,
+                        mouse_position!.dy + (line_height / 2),
+                        line_left_position + line_width,
+                        mouse_position!.dy - (line_height / 2),
+                    ),
+                    horizontal_dot_lines_paint,
+                );
+            }
+            
+            
+            BigInt cptqr = BigInt.from(((candle_chart_painter_height - mouse_position!.dy) / height_per_rate_quantum) + global_low_rate);                     
+            if (change_last_digits_to_zero >= 2) {
+                String cptqr_str = cptqr.toString();
+                cptqr = BigInt.parse(
+                    cptqr_str.replaceRange(
+                        max(0, cptqr_str.length - (change_last_digits_to_zero - 1)), // (change_last_digits_to_zero - 1) do one level deeper than the rate markers
+                        null,
+                        ''.padRight(change_last_digits_to_zero - 1, '0')
+                    )
+                );
+            }
+            draw_rate_selection(
+                canvas: canvas,
+                size: size,
+                rate: CyclesPerTokenRate(
+                    cycles_per_token_quantum_rate: cptqr,
+                    token_decimal_places: candles[0].volume_tokens.decimal_places
+                ),
+                global_low_rate: global_low_rate,
+                height_per_rate_quantum: height_per_rate_quantum,
+                text_color: horizontal_line_rate_selection_text_color,
+                background_paint: horizontal_line_rate_selection_background,
+            );            
+            
+        }
+    }
+    
+    bool shouldRepaint(CustomPainter old) {
+        return true;
+    }
+}
+
+
+
+
+
+
+
 
 
 
 // tools
+
+class RateMarkersRangeSpecifics {
+    final int global_low_rate;
+    final int global_high_rate;
+    final double height_per_rate_quantum;
+    final List<int> marker_rates_low_high;
+    final int change_last_digits_to_zero;
+    RateMarkersRangeSpecifics({
+        required this.global_low_rate, 
+        required this.global_high_rate, 
+        required this.height_per_rate_quantum, 
+        required this.marker_rates_low_high,
+        required this.change_last_digits_to_zero,
+    });
+}
+
+RateMarkersRangeSpecifics find_rate_markers_range_specifics(List<Candle> candles) {     // candles is the page_candles
+    
+    int global_high_rate = candles
+        .map((c)=>c.high_rate.cycles_per_token_quantum_rate.toInt())
+        .reduce((a,b)=>max(a,b));
+
+    int global_low_rate = candles
+        .map((c)=>c.low_rate.cycles_per_token_quantum_rate.toInt())
+        .reduce((a,b)=>min(a,b));
+
+    const int make_rate_room_after_global_lows_and_highs = 4;
+    if (global_high_rate - global_low_rate < make_rate_room_after_global_lows_and_highs) {
+        global_low_rate -= global_low_rate ~/ make_rate_room_after_global_lows_and_highs;
+        global_high_rate += global_high_rate ~/ make_rate_room_after_global_lows_and_highs; // global_high_rate ~/ ... ?
+    } else {
+        global_low_rate = max(0, global_low_rate - ((global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs));
+        global_high_rate += (global_high_rate - global_low_rate) ~/ make_rate_room_after_global_lows_and_highs;
+    }
+
+    const double starting_pixel_width_between_rate_markers = 30;
+    final int number_of_rate_markers = candle_chart_painter_height ~/ starting_pixel_width_between_rate_markers;
+    int rate_width_between_rate_markers = (global_high_rate - global_low_rate) ~/ number_of_rate_markers;
+    double height_per_rate_quantum = candle_chart_painter_height / (global_high_rate - global_low_rate);
+
+    if (rate_width_between_rate_markers == 0) {
+        rate_width_between_rate_markers = 1;
+    }
+
+    List<int> marker_rates_low_high = [];
+    for (int i=0; i<number_of_rate_markers; i++) {
+        final int marker_rate = global_low_rate + i*rate_width_between_rate_markers;
+        marker_rates_low_high.add(marker_rate);
+    }
+
+    // possible change last digits to zero
+    int change_last_digits_to_zero = 0;
+    final int marker_rates_last_str_length = marker_rates_low_high.last.toString().length; 
+    if (marker_rates_last_str_length >= 2) {
+                
+        for (int i=0; i<marker_rates_last_str_length-1; i++) { // lowest rate
+            
+            Set<int> set_of_marker_rates_with_last_digit_zeros = 
+                marker_rates_low_high
+                .map((r){
+                    String r_str = r.toString();
+                    if (r_str.length >= marker_rates_last_str_length - i) {
+                        return int.parse(
+                            r_str.replaceRange(
+                                max(0, r_str.length - 1 - i),
+                                null,
+                                ''.padRight(1 + i, '0')
+                            )
+                        );
+                    } else {
+                        return r;
+                    }
+                }) 
+                .toSet();
+
+            if (set_of_marker_rates_with_last_digit_zeros.length == marker_rates_low_high.length) {
+                // still unique, change last digit to zero
+                marker_rates_low_high = set_of_marker_rates_with_last_digit_zeros.toList();
+                change_last_digits_to_zero += 1;
+                // continue
+            } else {
+                break;
+            }
+        }
+        
+        if (change_last_digits_to_zero > 0) {
+            
+            // update global_low_rate, global_high_rate, rate_width_between_rate_markers, and height_per_rate_quantum
+            global_low_rate = marker_rates_low_high.first;
+            global_high_rate = marker_rates_low_high.last;
+            rate_width_between_rate_markers = marker_rates_low_high[1] - marker_rates_low_high[0];
+            height_per_rate_quantum = candle_chart_painter_height / (global_high_rate - global_low_rate);
+
+            // now make same space between rates.
+            for (int i=0; i<marker_rates_low_high.length; i++) {
+                marker_rates_low_high[i] = global_low_rate + i*rate_width_between_rate_markers;
+            }
+
+            // update number of markers if need
+            while (candle_chart_painter_height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum < 0) {
+                marker_rates_low_high.removeLast();
+            }
+            while (candle_chart_painter_height - (marker_rates_low_high.last - global_low_rate) * height_per_rate_quantum >= rate_width_between_rate_markers * height_per_rate_quantum) {
+                marker_rates_low_high.add(global_low_rate + marker_rates_low_high.length * rate_width_between_rate_markers);
+            }
+
+        }
+    }
+    
+    return RateMarkersRangeSpecifics(
+        global_low_rate: global_low_rate,
+        global_high_rate: global_high_rate,
+        marker_rates_low_high: marker_rates_low_high,
+        height_per_rate_quantum: height_per_rate_quantum,
+        change_last_digits_to_zero: change_last_digits_to_zero,
+    );
+
+}
+
+double calculate_marker_base_y({required int marker_rate, required int global_low_rate, required double height_per_rate_quantum}) {
+    return candle_chart_painter_height - (marker_rate - global_low_rate) * height_per_rate_quantum;
+}
+
+
 
 bool is_same_day(DateTime dt1, DateTime dt2) {
     if (dt1.month == dt2.month && dt1.year == dt2.year && dt1.day == dt2.day) {
@@ -775,7 +948,62 @@ TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
 }
 
 
+void draw_rate_selection({
+    required Canvas canvas,
+    required Size size,
+    required CyclesPerTokenRate rate,
+    required int global_low_rate,
+    required double height_per_rate_quantum,
+    required Color text_color,
+    required Paint background_paint,    
+}) {
+                
+    double latest_trade_marker_base_y = calculate_marker_base_y(marker_rate: rate.cycles_per_token_quantum_rate.toInt(), global_low_rate: global_low_rate, height_per_rate_quantum: height_per_rate_quantum);
 
+    TextPainter text_painter = TextPainter(
+        text: TextSpan(
+            text: '${rate}',
+            style: TextStyle(
+                color: text_color,
+                fontSize: 13,
+                fontFamily: 'CourierNewBold',
+            ),
+        ),
+        textDirection: TextDirection.ltr,
+    );
+    text_painter.layout(
+        minWidth: 0,
+        maxWidth: size.width,
+    );
+
+    final double text_center_x = size.width - save_space_on_the_right_for_the_rate_marks + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + (rate_marker_vertical_line_width / 2);
+
+    const double text_padding_x = 4;
+    const double text_padding_y = 2;
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTRB(
+                text_center_x - (text_painter.size.width / 2) - text_padding_x,
+                latest_trade_marker_base_y - (text_painter.size.height / 2) - text_padding_y,
+                text_center_x + (text_painter.size.width / 2) + text_padding_x,
+                latest_trade_marker_base_y + (text_painter.size.height / 2) + text_padding_y,
+            ),
+            Radius.circular(20)
+        ),
+        background_paint,
+    );
+
+    text_painter.paint(
+        canvas,
+        Offset(
+            text_center_x - (text_painter.size.width / 2),
+            latest_trade_marker_base_y - (text_painter.size.height / 2),
+        )
+    );
+
+    text_painter.dispose();
+}
+            
 
 
 
@@ -783,7 +1011,7 @@ List<Candle> make_test_candles() {
     List<Candle> candles = [];
     CyclesPerTokenRate base_rate = CyclesPerTokenRate.oftheTCyclesDoubleString('10', token_decimal_places: 8);
     for (int i=0;i<1000; i++) {
-        BigInt change_quantums_quantity = BigInt.from(i * 10000);
+        BigInt change_quantums_quantity = BigInt.from(i * 1000);
         CyclesPerTokenRate rate = CyclesPerTokenRate(cycles_per_token_quantum_rate: base_rate.quantums + change_quantums_quantity, token_decimal_places: 8);
         candles.add(
             Candle(
