@@ -15,6 +15,7 @@ import '../config/state_bind.dart';
 
 // volume of the candles is the quantity of the number of tokens traded during that time. (not the number of cycles.)
 
+// can implement zooming and click and drag to move instead of pages if i want.
 
 
 
@@ -22,18 +23,16 @@ import '../config/state_bind.dart';
 const double width_between_bar_centers = 17;
 const double bar_width = width_between_bar_centers - 5;
 
-const double card_max_width = 900;
-
-const double save_space_on_the_right_for_the_rate_marks = card_max_width / 13;
+const double save_space_on_the_right_for_the_rate_marks = 85;
 
 const double height_between_timestamp_markers = 3;
 
 const double candle_chart_painter_height = 350;
+const double volume_chart_painter_height = 50;
+const double space_between_candle_chart_and_volume_chart = 7;
 
 const double rate_marker_vertical_line_width = 2;
 const double rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line = 10;//4;
-const double horizontal_rate_marker_start_x = card_max_width - save_space_on_the_right_for_the_rate_marks;
-const double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
 
 
 
@@ -64,18 +63,19 @@ class CandlesChart extends StatefulWidget {
 }
 class CandlesChartState extends State<CandlesChart> {
 
-    final int candles_per_page = ((card_max_width - save_space_on_the_right_for_the_rate_marks) ~/ width_between_bar_centers) - 1;
-
+    final double card_max_width = 900;
+    
     int segment_length_minutes = 1; // option user can change this dropdown setState
     int page = 0; // first page is zero. first page is latest candles.
 
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
-
-
+        
         // TESTTEMP! DELETE THIS!
-        state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles = make_test_candles();
+        //state.cm_main.trade_contracts[widget.cm_main_trade_contracts_i].candles = make_test_candles();
+
+        final int candles_per_page = ((min(MediaQuery.of(context).size.width, card_max_width) - save_space_on_the_right_for_the_rate_marks) ~/ width_between_bar_centers) - 1;
 
         // make segment lengths  
         // be careful about references and copying. use Candle.clone().
@@ -211,8 +211,13 @@ class CandlesChartState extends State<CandlesChart> {
                                             elevation: 0,
                                         )
                                     ),
+                                ),                                
+                                SizedBox(width: 7),
+                                SizedBox(width: 7),
+                                Expanded(
+                                    child: TopRowCandleData(),
                                 ),
-                                Spacer(),
+                                //Spacer(),
                                 SizedBox(width: 7),
                                 Container(
                                     height: segment_length_selector_height,
@@ -231,7 +236,7 @@ class CandlesChartState extends State<CandlesChart> {
                                     ),
                                 ),
                                 SizedBox(width: 7),
-                                SizedBox(width: save_space_on_the_right_for_the_rate_marks),
+                                //SizedBox(width: save_space_on_the_right_for_the_rate_marks),
                             ]
                         ),
                         SizedBox(height: 7),
@@ -253,10 +258,10 @@ class CandlesChartState extends State<CandlesChart> {
                                                 )
                                             ),
                                         ),
-                                        SizedBox(height: 7),
+                                        SizedBox(height: space_between_candle_chart_and_volume_chart),
                                         // volume chart
                                         SizedBox(
-                                            height: 50,
+                                            height: volume_chart_painter_height,
                                             child: CustomPaint(
                                                 size: Size.infinite,
                                                 painter: VolumeChartPainter(
@@ -319,6 +324,8 @@ class CandleChartPainter extends CustomPainter {
         }
 
         // draw horizontal rate markers
+        final double horizontal_rate_marker_start_x = size.width - save_space_on_the_right_for_the_rate_marks;
+        final double horizontal_rate_marker_finish_x = horizontal_rate_marker_start_x + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line + rate_marker_vertical_line_width + rate_marker_horizontal_line_width_on_each_side_after_the_vertical_line;
         
         final RateMarkersRangeSpecifics(
             :global_low_rate, 
@@ -636,14 +643,24 @@ class ChartMouseRegionState extends State<ChartMouseRegion> {
             onHover: (PointerHoverEvent event) {
                 mouse_position = event.localPosition;
                 setState((){});
+                if (top_row_candle_data_set_state != null) {
+                    top_row_candle_data_set_state!();
+                }
             },
             onEnter: (event) {
                 mouse_position = event.localPosition;
                 setState((){});
+                if (top_row_candle_data_set_state != null) {
+                    top_row_candle_data_set_state!();
+                }
             },
             onExit: (event) {
                 mouse_position = null;
+                candle_selection = null;
                 setState((){});
+                if (top_row_candle_data_set_state != null) {
+                    top_row_candle_data_set_state!();
+                }
             },
             child: CustomPaint(
                 size: Size.infinite, // check this, maybe use layout builder and set this to maxConstarints
@@ -701,12 +718,16 @@ class PointerPainter extends CustomPainter {
                     left,
                     0,
                     right,
-                    size.height,
+                    candle_chart_painter_height + space_between_candle_chart_and_volume_chart + volume_chart_painter_height,
                 ),
                 hovercolor_paint
             );
-        } 
-        
+            candle_selection = hover_candle;
+        } else {
+            candle_selection = null;
+        }
+
+
         // draw horizontal dotted lines of the current mouse position and horizontal line rate
         final RateMarkersRangeSpecifics(
             :global_low_rate, 
@@ -772,7 +793,65 @@ class PointerPainter extends CustomPainter {
 }
 
 
+Candle? candle_selection;
+void Function()? top_row_candle_data_set_state;
 
+class TopRowCandleData extends StatefulWidget {
+    TopRowCandleData({super.key});
+    State createState() => TopRowCandleDataState();
+}
+class TopRowCandleDataState extends State<TopRowCandleData> {
+    
+    @override
+    void initState() {
+        super.initState();
+        top_row_candle_data_set_state = () { setState((){}); };
+    }
+    @override
+    void dispose() {
+        top_row_candle_data_set_state = null;
+        super.dispose();
+    }
+    
+    Widget build(BuildContext context) {
+        
+        if (candle_selection == null) {
+            return Container();
+        }
+        
+        DateTime dt = DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(candle_selection!.time_nanos).toInt());
+        String minute_str = dt.minute.toString();
+        if (minute_str.length == 1) {
+            minute_str = '0' + minute_str;
+        }
+        
+        const double data_item_width = 97;
+        
+        return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DefaultTextStyle.merge(
+                style: TextStyle(fontFamily: 'ChakraPetch', fontSize: 13, color: Colors.white70), 
+                child: Row(
+                    children: [
+                        for (String s in [
+                            '${dt.hour}:${minute_str} ${dt.month}/${dt.day}/${dt.year}',
+                            'open: ${candle_selection!.open_rate}',
+                            'low: ${candle_selection!.low_rate}',
+                            'high: ${candle_selection!.high_rate}',
+                            'close: ${candle_selection!.close_rate}',
+                            'volume: ${candle_selection!.volume_tokens}',
+                        ]) 
+                            Container(
+                                //width: data_item_width,
+                                padding: EdgeInsets.symmetric(horizontal: 11),
+                                child: Text(s),
+                            ),
+                    ]
+                )
+            )
+        );
+    }
+}
 
 
 
@@ -918,22 +997,22 @@ TextPainter create_text_painter_for_timestamp_markers(Candle candle) {
     // create timestamp string
     DateTime dt = DateTime.fromMillisecondsSinceEpoch(milliseconds_of_the_nanos(candle.time_nanos).toInt());
     String s = '';
-    if (is_same_day(dt, DateTime.now()) == false) {
-        s += '${dt.month}/${dt.day}\n';
-    }
     s += '${dt.hour}:';
     if (dt.minute < 10) {
         s += '0';
     }
     s += '${dt.minute}';
-
+    if (is_same_day(dt, DateTime.now()) == false) {
+        s += '\n${dt.month}/${dt.day}';
+    }
+    
     TextPainter text_painter = TextPainter(
         text: TextSpan(
             text: s,
             style: TextStyle(
                 color: Colors.white70,
                 fontSize: 9,
-                fontFamily: 'CourierNew',
+                fontFamily: 'ChakraPetch',// 'CourierNew',
             ),
         ),
         textDirection: TextDirection.ltr,
@@ -1011,7 +1090,7 @@ List<Candle> make_test_candles() {
     List<Candle> candles = [];
     CyclesPerTokenRate base_rate = CyclesPerTokenRate.oftheTCyclesDoubleString('10', token_decimal_places: 8);
     for (int i=0;i<1000; i++) {
-        BigInt change_quantums_quantity = BigInt.from(i * 1000);
+        BigInt change_quantums_quantity = BigInt.from(i * 10);
         CyclesPerTokenRate rate = CyclesPerTokenRate(cycles_per_token_quantum_rate: base_rate.quantums + change_quantums_quantity, token_decimal_places: 8);
         candles.add(
             Candle(
