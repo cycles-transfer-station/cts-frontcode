@@ -319,7 +319,7 @@ class BankTransferIcrc1FormState extends State<BankTransferIcrc1Form> {
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             child: Text('TRANSFER ${widget.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : widget.icrc1_ledger.symbol}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
@@ -570,7 +570,7 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                     ),
                     Padding(
                         padding: EdgeInsets.fromLTRB(7, 17, 7,7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             child: Text('TRANSFER ICP'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
@@ -790,7 +790,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             key: ValueKey('BurnIcpMintCyclesForm MINT CYCLES GO BUTTON'),
                             child: Text('MINT CYCLES'),
                             onPressed: () async {
@@ -960,7 +960,7 @@ class ManagementCanisterDepositCyclesFormState extends State<ManagementCanisterD
                     Text('Fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 11)),
                     Padding(
                         padding: EdgeInsets.all(7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             key: ValueKey('ManagementCanisterDepositCyclesForm DEPOSIT CYCLES GO BUTTON'),
                             child: Text('DEPOSIT CYCLES'),
                             onPressed: () async {

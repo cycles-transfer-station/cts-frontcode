@@ -66,7 +66,7 @@ class OutlineButton extends StatelessWidget {
 class IILoginButton extends StatelessWidget {
     IILoginButton({super.key});
     Widget build(BuildContext context) {
-        return FilledButton(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
+        return FilledButton.tonal(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
     }
 }
 
@@ -76,6 +76,7 @@ class IILoginButton extends StatelessWidget {
 class ScaffoldBodyHeader extends StatelessWidget {
     final Widget header;
     ScaffoldBodyHeader(this.header);
+
     Widget build(BuildContext context) {
         return Column(
             children: [
@@ -89,15 +90,16 @@ class ScaffoldBodyHeader extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(0,4.5,0,0),
                     margin: EdgeInsets.symmetric(horizontal: 13),
                     child: Divider(
-                        height: 4.0,   
+                        height: 4.0,
                         thickness: 4.0,
     //                    indent: 34.0,
     //                    endIndent: 34.0,
-                        //color: 
+                        //color:
                     )
+
                 )
             ]
-        ); 
+        );
     }
 }
 

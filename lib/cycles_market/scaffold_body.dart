@@ -12,20 +12,18 @@ import 'package:contentsize_tabbarview/contentsize_tabbarview.dart';
 
 import '../config/state.dart';
 import '../config/state_bind.dart';
-import '../config/pages.dart';
 import '../config/urls.dart';
 import './cycles_market.dart';
 import '../bank/forms.dart';
-import '../main.dart';
 import '../tools/widgets.dart';
-import '../tools/ii_login.dart';
 import '../tools/tools.dart';
 import '../user.dart';
+import './candles.dart';
 
 
 
 class CyclesMarketScaffoldBody extends StatefulWidget {
-    CyclesMarketScaffoldBody({Key? key}) : super(key: key);
+    const CyclesMarketScaffoldBody({Key? key}) : super(key: key);
     static CyclesMarketScaffoldBody create({Key? key}) => CyclesMarketScaffoldBody(key: key);
     State<CyclesMarketScaffoldBody> createState() => CyclesMarketScaffoldBodyState();
 }
@@ -35,10 +33,10 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
     
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         if (state.first_show_scaffold == false) {
-            return Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages. 
+            return const Text(''); // is never shown to the user. it is for when the router is loading the first-state of tcs or bank or ledgers and want to put the pages into the navigator but not build the ui for the pages.
         }
         
         double scaffold_body_header_max_width = 1300;
@@ -66,7 +64,7 @@ class CyclesMarketScaffoldBodyState extends State<CyclesMarketScaffoldBody> {
             )
         ]);
         */
-        
+
         return Center(
             child: Container(
                 child: Column(
@@ -173,6 +171,9 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
 
         return Card(
             child: DropdownMenu<int>(
+                menuStyle: MenuStyle(
+                    side: WidgetStatePropertyAll(BorderSide.none),
+                ),
                 controller: text_controller,
                 focusNode: focus_node,
                 enableSearch: true,
@@ -254,6 +255,11 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         return Container(
             child: Column(
                 children: [ 
+                    //temp
+                    /*
+                    for (Candle candle in state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].candles)
+                        Text('time: ${candle.time_nanos}, open: ${candle.open_rate}, high: ${candle.high_rate}, low: ${candle.low_rate}, close: ${candle.close_rate}, volume: ${candle.volume_tokens}'),
+                    */
                     LayoutBuilder(
                         builder: (BuildContext context, BoxConstraints constraints) {
                             double sbheight = 23;
@@ -266,6 +272,8 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         }
                     ),
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                    SizedBox(height: runSpacing),
+                    CandlesChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                     SizedBox(height: runSpacing),
                     Wrap(
                         alignment: WrapAlignment.center,
@@ -331,16 +339,18 @@ class VolumeStats extends StatelessWidget {
     VolumeStats({super.key, required this.cm_main_trade_contracts_i});
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
         ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
+        
+        const double row_height = 32;
         
         return Card(
             semanticContainer: false,
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
-                height: 56*2+2, // +2 for the divider space that gets taken up.
+                height: row_height*2,
                 child: ListView(
                     shrinkWrap: true,
                     scrollDirection: Axis.horizontal,
@@ -348,10 +358,12 @@ class VolumeStats extends StatelessWidget {
                         DividerTheme(
                             data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
                             child: DataTable(
-                                //headingRowHeight: 0,
+                                headingRowHeight: row_height,
+                                dataRowMaxHeight: row_height,
+                                dataRowMinHeight: row_height,
                                 headingTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNewBold'),
                                 dataTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNew'),
-                                //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
+                                dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
                                 //border: TableBorder.all(width: 1),
                                 columns: [
                                     DataColumn(label: Text('VOLUME')),
@@ -361,6 +373,7 @@ class VolumeStats extends StatelessWidget {
                                     DataColumn(label: Text('TOTAL')),
                                 ],
                                 rows: [
+                                    /*
                                     DataRow(
                                         cells: [
                                             DataCell(Text('CYCLES:')),
@@ -370,7 +383,7 @@ class VolumeStats extends StatelessWidget {
                                             DataCell(show_tokens_with_symbol(Cycles(cycles: volume_stats.volume_cycles.volume_sum), cycles_symbol)),
                                         ]
                                     ),
-                                    /*
+                                    */
                                      // maybe on hover ask if user wants to view the token volume in token-units
                                     DataRow(
                                         cells: [
@@ -381,7 +394,7 @@ class VolumeStats extends StatelessWidget {
                                             DataCell(show_tokens_with_symbol(Tokens(quantums: volume_stats.volume_tokens.volume_sum, decimal_places: tc.ledger_data.decimals), tc.ledger_data.symbol)),
                                         ]
                                     ),
-                                    */
+
                                 ]
                             )
                         )
@@ -391,6 +404,10 @@ class VolumeStats extends StatelessWidget {
         );
     }
 }
+
+
+
+
 
 
 
@@ -676,8 +693,8 @@ class PositionBook extends StatelessWidget {
 }
 
 
-const Color green = const Color(0xFF26a69a);
-const Color red = const Color(0xFFef5350);
+const Color green = /*Color(0xFF4B6D3C);*/Color(0xFF45635E);//const Color(0xFF26a69a);
+const Color red = /*Color(0xFF6D3C4B);*/Color(0xFF63454A);//const Color(0xFFef5350);
 
 
 
@@ -833,14 +850,14 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(0, 7, 0,7),
-                        child: FilledButton(
+                        child: FilledButton.tonal(
                             child: Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
                             onPressed: () async {
                                 if (form_key.currentState!.validate()==true) {
                                     
                                     form_key.currentState!.save();
                                     
-                                    state.loading_text = 'creating position';
+                                    state.loading_text = 'Creating position';
                                     state.is_loading = true;
                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
@@ -1094,7 +1111,7 @@ Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_d
             ,
             //SizedBox(width: 11),
             Spacer(),
-            OutlineButton(
+            Container(height: 30, width: 70, child: OutlineButton(
                 child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
                 on_press_complete: () async {
                     state.loading_text = 'closing position ${pl.id} ...';
@@ -1177,7 +1194,7 @@ Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_d
                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
 
                 }
-            )
+            ))
         ]
     );
 }

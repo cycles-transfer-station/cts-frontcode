@@ -63,7 +63,8 @@ class Icrc1TokenTradeContract extends Record {
         await Future.wait([
             this.load_position_book(),
             this.check_new_trades(),
-            this.load_volume_stats()
+            this.load_volume_stats(),
+            this.load_candles(),
         ]);
     }
     
@@ -144,7 +145,7 @@ class Icrc1TokenTradeContract extends Record {
                     ...sponse.trades_data,  
                     ...gather
                 ];
-                if (this.latest_trades.isNotEmpty && gather.first.id <= this.latest_trades.last.id) {
+                if (this.latest_trades.isNotEmpty && gather.isNotEmpty && gather.first.id <= this.latest_trades.last.id) {
                     gather = gather.skipWhile((e)=>e.id <= this.latest_trades.last.id).toList();
                     catch_up_complete = true;
                     break;
@@ -246,6 +247,48 @@ class Icrc1TokenTradeContract extends Record {
         );
     }
     
+
+    List<Candle> candles = [];
+    Future<void> load_candles() async {
+
+        List<Candle> gather = [];
+
+        while (true) {
+            Uint8List raw_sponse = await this.canister.call(
+                method_name: 'view_candles',
+                calltype: CallType.query,
+                put_bytes: c_forwards_one(Record.of_the_map({
+                    'opt_start_before_time_nanos': Option<Nat64>(value: gather.isEmpty ? null : Nat64(gather.first.time_nanos), value_type: Nat64()),
+                }))
+            );
+            ViewCandlesSponse sponse = ViewCandlesSponse.of_the_record(c_backwards_one(raw_sponse) as Record, token_decimal_places: this.ledger_data.decimals);
+
+            if (sponse.candles.isEmpty) {
+                break;
+            }
+
+            if (this.candles.isNotEmpty && this.candles.last.time_nanos >= sponse.candles.first.time_nanos) {
+                // make sure to re-fresh the last candle in this.candles because we could've gotten it last time before the candle-period was over.'
+                gather = [
+                    ...sponse.candles.skipWhile((c)=> this.candles.last.time_nanos > c.time_nanos),
+                    ...gather,
+                ];
+                this.candles.removeLast();  // replace the last candle in this.candle
+                break; // means we are caught up.
+            } else {
+                gather = [
+                    ...sponse.candles,
+                    ...gather,
+                ];
+            }
+
+            if (sponse.is_earliest_chunk) {
+                break;
+            }
+        }
+
+        this.candles.addAll(gather);
+    }
 }
 
 
@@ -466,6 +509,72 @@ class Volume {
         );
     }
 }
+
+
+
+class Candle {
+    BigInt time_nanos;      // of the time-period start
+    Cycles volume_cycles;
+    Tokens volume_tokens;
+    CyclesPerTokenRate open_rate;
+    CyclesPerTokenRate high_rate;
+    CyclesPerTokenRate low_rate;
+    CyclesPerTokenRate close_rate;
+
+    Candle({
+        required this.time_nanos,
+        required this.volume_cycles,
+        required this.volume_tokens,
+        required this.open_rate,
+        required this.high_rate,
+        required this.low_rate,
+        required this.close_rate,
+    });
+
+    static Candle of_the_record(Record r, {required int token_decimal_places}) {
+        return Candle(
+            time_nanos: (r['time_nanos'] as Nat64).value,
+            volume_cycles: Cycles.of_the_nat(r['volume_cycles'] as Nat),
+            volume_tokens: Tokens.of_the_nat(r['volume_tokens'] as Nat, decimal_places: token_decimal_places),
+            open_rate: CyclesPerTokenRate.of_the_nat(r['open_rate'] as Nat, token_decimal_places: token_decimal_places),
+            high_rate: CyclesPerTokenRate.of_the_nat(r['high_rate'] as Nat, token_decimal_places: token_decimal_places),
+            low_rate: CyclesPerTokenRate.of_the_nat(r['low_rate'] as Nat, token_decimal_places: token_decimal_places),
+            close_rate: CyclesPerTokenRate.of_the_nat(r['close_rate'] as Nat, token_decimal_places: token_decimal_places)
+        );
+    }
+    
+    // deep copy useful when changing segment lengths in the charts.
+    factory Candle.clone(Candle c) {
+        int token_decimal_places = c.volume_tokens.decimal_places;
+        return Candle(
+            time_nanos: c.time_nanos,
+            volume_cycles: Cycles(cycles: c.volume_cycles.cycles),
+            volume_tokens: Tokens(quantums: c.volume_tokens.quantums, decimal_places: token_decimal_places),
+            open_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.open_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+            high_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.high_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+            low_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.low_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+            close_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: c.close_rate.cycles_per_token_quantum_rate, token_decimal_places: token_decimal_places),
+        );
+    }
+}
+
+
+class ViewCandlesSponse {
+    List<Candle> candles;
+    bool is_earliest_chunk;
+    ViewCandlesSponse._({
+        required this.candles,
+        required this.is_earliest_chunk,
+    });
+    static ViewCandlesSponse of_the_record(Record r, {required int token_decimal_places}) {
+        return ViewCandlesSponse._(
+            is_earliest_chunk: (r['is_earliest_chunk'] as Bool).value,
+            candles: (r['candles'] as Vector).cast_vector<Record>().map((r)=>Candle.of_the_record(r, token_decimal_places: token_decimal_places)).toList(),
+        );
+    }
+}
+
+
 
 
 

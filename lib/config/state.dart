@@ -132,6 +132,7 @@ class CustomState {
             await local_fetch_root_key_future;
         }
 
+        this.first_show_scaffold = false;
         
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
             await this.cm_main.fresh_icrc1token_trade_contracts();
@@ -470,11 +471,15 @@ class CyclesPerTokenRate extends Cycles {
     }
     String toString() => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
     
-    
+    static CyclesPerTokenRate of_the_nat(CandidType nat, {required int token_decimal_places}) => CyclesPerTokenRate(
+        cycles_per_token_quantum_rate: (nat as Nat).value,
+        token_decimal_places: token_decimal_places
+    );
+
     
     
     // operators
-    _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+    static void _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         if (a.token_decimal_places != b.token_decimal_places) {
             throw Exception('Cannot perform operation on a CyclesPerTokenRate with a different token_decimal_places.');
         }
@@ -523,6 +528,25 @@ class CyclesPerTokenRate extends Cycles {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate <= t.cycles_per_token_quantum_rate;
     } 
+       
+    static CyclesPerTokenRate max(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+        _check_same_token_decimal_places(a, b);
+        if (a >= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+       
+    static CyclesPerTokenRate min(CyclesPerTokenRate a, CyclesPerTokenRate b) {
+        _check_same_token_decimal_places(a, b);
+        if (a <= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+       
        
 }
 
