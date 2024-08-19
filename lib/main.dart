@@ -38,11 +38,11 @@ class BaseState extends State<Base> {
                     surfaceTintColor: Colors.transparent,
                     shadowColor: Theme.of(context).colorScheme.shadow,
                 ),
-                bottomAppBarTheme: const BottomAppBarTheme(
-                    elevation: 1.5,
-                    color: grey_background,
-                    //surfaceTintColor: Colors.transparent,
-                    //shadowColor: Theme.of(context).colorScheme.shadow,
+                bottomAppBarTheme: BottomAppBarTheme(
+                    elevation: 0.5,
+                    //color: grey_background,
+                    surfaceTintColor: Colors.transparent,
+                    shadowColor: Theme.of(context).colorScheme.shadow,
                 ),
                 filledButtonTheme: const FilledButtonThemeData(
                     style: ButtonStyle(
