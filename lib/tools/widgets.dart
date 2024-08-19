@@ -50,10 +50,25 @@ class OutlineButton extends StatelessWidget {
     Widget build(BuildContext context) {    
         
         return OutlinedButton(
-            child: this.button_text != null ? Text(this.button_text!) : child!,
-            //style: ButtonStyle(
-            //    foregroundColor: MaterialStateProperty.all(Theme.of(context).colorScheme.onPrimary),
-            //),
+            child: this.button_text != null 
+                ? Container(
+                    padding: EdgeInsets.symmetric(horizontal: 9),
+                    child: Text(this.button_text!) 
+                )
+                : child!,
+            style: ButtonStyle(
+                foregroundColor: MaterialStateProperty.all(Colors.white70), // Theme.of(context).colorScheme.onPrimary is a cool blue color
+                padding: MaterialStateProperty.all(EdgeInsets.zero),
+                shape: MaterialStateProperty.all(
+                    RoundedRectangleBorder(
+                        side: BorderSide(),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(8),
+                        )
+                    )
+                ),
+                
+            ),
             onPressed: on_press_complete
         );
     }

@@ -1118,7 +1118,7 @@ Widget create_current_position_widget(PositionLog pl, Icrc1Ledger token_ledger_d
             ,
             //SizedBox(width: 11),
             Spacer(),
-            Container(height: 30, width: 70, child: OutlineButton(
+            Container(height: 22, width: 55, child: OutlineButton(
                 child: Text('CANCEL', style: TextStyle(fontSize: 11, fontFamily: 'CourierNew')),
                 on_press_complete: () async {
                     state.loading_text = 'closing position ${pl.id} ...';
@@ -1529,7 +1529,10 @@ class PositionDialogState extends State<PositionDialog> {
                                                 ),
                                                 SizedBox(height: 17),
                                                 OutlineButton(
-                                                    child: Text('VIEW TRADES', style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)),
+                                                    child: Container(
+                                                        padding: EdgeInsets.symmetric(horizontal: 9),
+                                                        child: Text('VIEW TRADES', style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)),
+                                                    ),
                                                     on_press_complete: () async {
                                                         await showDialog(
                                                             context: context, 
