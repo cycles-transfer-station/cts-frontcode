@@ -344,11 +344,13 @@ class VolumeStats extends StatelessWidget {
         Icrc1TokenTradeContract tc = state.cm_main.trade_contracts[this.cm_main_trade_contracts_i];
         ViewVolumeStatsSponse volume_stats = tc.volume_stats!;
         
+        const double row_height = 32;
+        
         return Card(
             semanticContainer: false,
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
-                height: 56*2+2, // +2 for the divider space that gets taken up.
+                height: row_height*2,
                 child: ListView(
                     shrinkWrap: true,
                     scrollDirection: Axis.horizontal,
@@ -356,10 +358,12 @@ class VolumeStats extends StatelessWidget {
                         DividerTheme(
                             data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
                             child: DataTable(
-                                //headingRowHeight: 0,
+                                headingRowHeight: row_height,
+                                dataRowMaxHeight: row_height,
+                                dataRowMinHeight: row_height,
                                 headingTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNewBold'),
                                 dataTextStyle: TextStyle(fontSize: 17, fontFamily: 'CourierNew'),
-                                //dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
+                                dividerThickness: 0,                                                        // renders 1px for some reason, https://github.com/flutter/flutter/issues/132214
                                 //border: TableBorder.all(width: 1),
                                 columns: [
                                     DataColumn(label: Text('VOLUME')),
