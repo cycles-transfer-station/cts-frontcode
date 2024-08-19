@@ -4,6 +4,7 @@ import 'dart:html' show window;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:ic_tools/tools.dart';
 import 'package:ic_tools/common.dart';
@@ -147,7 +148,13 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
     void initState() {
         super.initState();
         text_controller = TextEditingController();
-        focus_node = FocusNode(debugLabel: 'market token selector');
+        focus_node = FocusNode(
+            debugLabel: 'market token selector', 
+            canRequestFocus: switch (defaultTargetPlatform) {
+                TargetPlatform.android || TargetPlatform.iOS => false,
+                _ => true,
+            }
+        );
         focus_node.addListener(focus_node_listener);
     }
     void dispose() {
