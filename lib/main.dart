@@ -83,7 +83,7 @@ class BaseState extends State<Base> {
 
 
 const Color grey_background = Color(0xFF22242a);//Color.fromRGBO(30, 30, 31, 1/*0.9*/);
-const Color blue = Color(0xFF2A3854);//FF3B4A6B);//Color.fromRGBO(76,97,145, 1);
+const Color blue = Color(0xFF2A3854);//FF3B4A6B);//Color.fromRGBO(76,97,145, 1/*0.9*/);
 const Color purple = Color(0xFF2a254b); // 26365b // 27375c // 42456d
 
 const Color good_light_blue_color = Color(0xFF3B4A6B);
