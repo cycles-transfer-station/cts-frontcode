@@ -117,13 +117,7 @@ class CandlesChartState extends State<CandlesChart> {
             candles
             .getRange(candles_start_i, candles_finish_i).toList(); // toList for now. later maybe optimize painters to work with iterable.
 
-        final double timestamp_markers_painter_height = create_text_painter_for_timestamp_markers(page_candles[0]).size.height;
-        /*switch (page_candles.length) {
-            >= 2 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height + height_between_timestamp_markers + create_text_painter_for_timestamp_markers(page_candles[1]).size.height,
-            1 => create_text_painter_for_timestamp_markers(page_candles[0]).size.height,
-            _ => 0,
-        };*/
-
+        final double timestamp_markers_painter_height = page_candles.isNotEmpty ? create_text_painter_for_timestamp_markers(page_candles[0]).size.height : 0;
 
         const double candle_segment_length_selector_font_size = 11;
         const String candle_segment_length_selector_font_family = 'CourierNew';
