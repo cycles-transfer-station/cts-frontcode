@@ -25,7 +25,7 @@ class BaseState extends State<Base> {
             theme: ThemeData(
                 //brightness: Brightness.dark,
                 colorScheme: ColorScheme.fromSeed(
-                    seedColor: blue,
+                    seedColor: good_light_blue_color,
                     brightness: Brightness.dark,
                 ).copyWith(
                     background: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
