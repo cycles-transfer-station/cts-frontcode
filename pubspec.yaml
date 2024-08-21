@@ -3,7 +3,7 @@ description: Frontcode for the CYCLES-TRANSFER-STATION.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -30,20 +30,20 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   # cupertino_icons: ^1.0.2
 
-  archive: 3.3.1 
+  archive: 3.3.1
   ic_tools: 2.0.2
-  cbor: 
+  cbor:
     git:
       url: https://github.com/levifeldman/cbor.git
       ref: cb1b401d0b2ff630f1d3c8be3566771b2f8d0dd7
   data_table_2: ^2.5.6
   contentsize_tabbarview: ^0.0.2
-  dropdown_button2: ^2.3.9 
+  dropdown_button2: ^2.3.9
+  http: ^0.13.3
 
 dev_dependencies:
   flutter_test:
@@ -63,7 +63,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -84,38 +83,34 @@ flutter:
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
-  
+
   fonts:
     - family: AxaxaxBold
       fonts:
         - asset: fonts/axaxax_bd.otf
-   
+
     - family: NimbusMonoPS-Bold
-      fonts: 
-        - asset: fonts/NimbusMonoPS-Bold.otf 
-     
+      fonts:
+        - asset: fonts/NimbusMonoPS-Bold.otf
+
     - family: NotoSans-Bold
-      fonts: 
-        - asset: fonts/NotoSans-Bold.ttf 
-    
+      fonts:
+        - asset: fonts/NotoSans-Bold.ttf
+
     - family: NotoSansMono
-      fonts: 
-        - asset: fonts/NotoSansMono-VF.ttf 
-    
+      fonts:
+        - asset: fonts/NotoSansMono-VF.ttf
+
     - family: ChakraPetch
-      fonts: 
-       - asset: fonts/chakra-petch/ChakraPetch-Regular.ttf
+      fonts:
+        - asset: fonts/chakra-petch/ChakraPetch-Regular.ttf
     - family: ChakraPetchBold
       fonts:
-       - asset: fonts/chakra-petch/ChakraPetch-Bold.ttf
-    
-    - family: CourierNew
-      fonts: 
-       - asset: fonts/courier-new/CourierNewRegular.ttf
-    - family: CourierNewBold
-      fonts: 
-       - asset: fonts/courier-new/CourierNewBold.ttf
-    
+        - asset: fonts/chakra-petch/ChakraPetch-Bold.ttf
 
-        
-        
+    - family: CourierNew
+      fonts:
+        - asset: fonts/courier-new/CourierNewRegular.ttf
+    - family: CourierNewBold
+      fonts:
+        - asset: fonts/courier-new/CourierNewBold.ttf

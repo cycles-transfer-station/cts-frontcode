@@ -22,15 +22,15 @@ const List<String> number_chars = ['0','1','2','3','4','5','6','7','8','9'];
 
 
 class LoadingPage extends Page {
-    
+
     LoadingPage({LocalKey? key}) : super(key: key);
-    
+
     Route createRoute(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         return PageRouteBuilder(
             settings: this,
-            // do a cool fade in and fade out 
+            // do a cool fade in and fade out
             transitionDuration: const Duration(milliseconds: 250),
             reverseTransitionDuration: const Duration(milliseconds: 175),
             pageBuilder: (context, animation, animation2) {
@@ -76,7 +76,7 @@ class WelcomePage extends Page {
     static WelcomePage create({LocalKey? key}) => WelcomePage(key: key);
 
     Route createRoute(BuildContext context) {
-        
+
         return PageRouteBuilder(
             settings: this,
             pageBuilder: (context, animation, animation2) {
@@ -97,15 +97,15 @@ class WelcomePageWidget extends StatefulWidget {
 class WelcomePageWidgetState extends State<WelcomePageWidget> {
 
     GlobalKey<ScaffoldState> scaffold_key = GlobalKey<ScaffoldState>();
-    
-    
+
+
     @override
     Widget build(BuildContext context) {
-    
+
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         state.context = context;
-        
+
         const double appbar_leading_width = 56.0;
 
         return Scaffold(
@@ -212,6 +212,10 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                                 padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 7),
                             ),
                             const Spacer(),
+                            if (state.usd_per_one_xdr != null) Container(
+                                padding: EdgeInsets.symmetric(horizontal: 17),
+                                child: Text('1T-CYCLES = ${state.usd_per_one_xdr}-USD', style: TextStyle(fontFamily: 'CourierNew'))
+                            ),
                         ]
                     )
                 )
@@ -219,7 +223,3 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
         );
     }
 }
-
-
-
-

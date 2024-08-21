@@ -5,9 +5,9 @@ import 'dart:html' show window, CryptoKey, Event;
 import 'dart:js_util';
 import 'dart:async';
 
-
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
@@ -68,64 +68,67 @@ final bool is_on_local = window.location.hostname!.contains('localhost') || wind
 class CustomState {
 
     CustomState() {
-        
+
         if (window.location.hostname!.contains(em3jm) || window.location.hostname!.contains('cycles-transfer-station.com') || is_on_local) {
             cts = Canister(Principal.text(em3jm));
             cycles_market = Canister(Principal.text('el2py-miaaa-aaaar-qabxq-cai'));
             bank = Canister(Principal.text('wwikr-gqaaa-aaaar-qacva-cai'));
         } else if (window.location.hostname!.contains(x3ncx)) {
-            cts = Canister(Principal.text(x3ncx)); 
+            cts = Canister(Principal.text(x3ncx));
             cycles_market = Canister(Principal.text('x4med-gqaaa-aaaam-qbcfq-cai'));
             bank = Canister(Principal.text('ul6ir-xiaaa-aaaam-qbcna-cai'));
         } else {
             throw Exception('unknown stance');
         }
-        
+
         if (is_on_local) {
             ic_base_url = Uri.parse('http://127.0.0.1:8080');
             local_fetch_root_key_future = fetch_root_key();
         }
 
         cts_main_icp_id = common.icp_id(cts.principal);
-        
+
         print('CTS-MAIN: ${cts.principal.text}.');
-        
+
         dataTableShowLogs = false; // for the data_table_2 package
-        
+
         current_icrc1_ledger = CYCLES_BANK_LEDGER; // set here cause can only use CYCLES_BANK_LEDGER after bank-variable is set.
         known_icrc1_ledgers = [CYCLES_BANK_LEDGER];
-        
-    }    
+
+    }
 
     Future? local_fetch_root_key_future;
-    
+
     bool first_show_scaffold = false;
 
     CustomUrl current_url = CustomUrl('welcome');
-    
+
     String loading_text = 'loading ...';
-    bool is_loading = true; // state starts loading. the router sets the is_loading=false and calls tifyListeners() on a successfull completion of the load_first_state function. 
-    
+    bool is_loading = true; // state starts loading. the router sets the is_loading=false and calls tifyListeners() on a successfull completion of the load_first_state function.
+
     Completer show_loading_page_transition_completer = Completer();
-    
-    late BuildContext _scontext; 
-    
+
+    late BuildContext _scontext;
+
     void set context(BuildContext c) { this._scontext = c; }
     BuildContext get context => this._scontext;
-        
+
     CyclesPerTokenRateWithATimestamp? cmc_cycles_per_icp_rate_with_a_timestamp;
     CyclesPerTokenRate get cmc_cycles_per_icp_rate => this.cmc_cycles_per_icp_rate_with_a_timestamp!.cycles_per_token_rate;
-    
+
     CyclesMarketMain cm_main = CyclesMarketMain();
-    
+
     int cm_main_icrc1token_trade_contracts_i = 0;
-    
+
     User? user;
-    
-    late Icrc1Ledger current_icrc1_ledger; // for the selection of the bank-page-token // late cause bank is set in the constructor; 
+
+    late Icrc1Ledger current_icrc1_ledger; // for the selection of the bank-page-token // late cause bank is set in the constructor;
     late List<Icrc1Ledger> known_icrc1_ledgers;// late cause bank is set in the constructor;
 
-    Future<void> loadfirststate() async { 
+    Tokens? usd_per_one_xdr; //= Tokens(quantums: 0, token_decimal_places: 2);
+
+
+    Future<void> loadfirststate() async {
         print('load first state');
 
         if (is_on_local) {
@@ -133,22 +136,23 @@ class CustomState {
         }
 
         this.first_show_scaffold = false;
-        
+
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
             await this.cm_main.fresh_icrc1token_trade_contracts();
             this.known_icrc1_ledgers.addAll(this.cm_main.trade_contracts.map((tc)=>tc.ledger_data));
         });
-        
+
         await Future.wait([
             this.fresh_xdr_icp_rate(),
+            this.fresh_usd_per_one_xdr(),
             cycles_market_main_fresh_icrc1token_trade_contracts_future,
-            Future(()async{ 
+            Future(()async{
                 await this.load_state_of_the_browser_storage();
                 if (this.user != null) {
                     print('load user');
                     await cycles_market_main_fresh_icrc1token_trade_contracts_future;
                     this.user!.fresh_known_cm_trade_contracts_of_the_cm_main();
-                    
+
                     // get back cm escrow funds
                     Future.wait(this.cm_main.trade_contracts.map((tc)=>Future(()async{
                         await this.user!.fresh_cm_trade_contracts_balances([tc]);
@@ -156,7 +160,7 @@ class CustomState {
                             try{
                                 await this.user!.cm_transfer_balance(
                                     tc,
-                                    CyclesMarketTransferBalanceQuest(                                
+                                    CyclesMarketTransferBalanceQuest(
                                         amount: this.user!.cm_trade_contracts[tc]!.trade_contract_token_balance - tc.ledger_data.fee,
                                         ledger_transfer_fee: tc.ledger_data.fee,
                                         to: Icrc1Account(owner: this.user!.principal),
@@ -166,12 +170,12 @@ class CustomState {
                             } catch(cm_transfer_balance_error) {
                                 print('Error transfer cm token balance:\n${cm_transfer_balance_error}');
                             }
-                        } 
+                        }
                         if (this.user!.cm_trade_contracts[tc]!.trade_contract_cycles_balance > CYCLES_BANK_LEDGER.fee) {
                             try{
                                 await this.user!.cm_transfer_balance(
                                     tc,
-                                    CyclesMarketTransferBalanceQuest(                                
+                                    CyclesMarketTransferBalanceQuest(
                                         amount: this.user!.cm_trade_contracts[tc]!.trade_contract_cycles_balance - CYCLES_BANK_LEDGER.fee,
                                         ledger_transfer_fee: CYCLES_BANK_LEDGER.fee,
                                         to: Icrc1Account(owner: this.user!.principal),
@@ -183,7 +187,7 @@ class CustomState {
                             }
                         }
                     }))).then((_x){});
-                    
+
                     // makes sure that the loads are set in the first_load_-maps so that the router does not load them again.
                     this.user!.first_load_icrc1ledgers_balances[CYCLES_BANK_LEDGER] = this.user!.fresh_icrc1_balances([CYCLES_BANK_LEDGER]);
                     this.user!.first_load_icrc1ledgers_balances[Icrc1Ledgers.ICP] = this.user!.fresh_icrc1_balances([Icrc1Ledgers.ICP]);
@@ -196,17 +200,17 @@ class CustomState {
                         this.user!.first_load_icrc1ledgers_transactions[Icrc1Ledgers.ICP]!,
                         this.user!.fresh_bank_user_subaccount_icp_balance(),
                     ]);
-                    
-                } 
+
+                }
             }),
         ]);
     }
 
-    
+
     Future<void> fresh_xdr_icp_rate() async {
         // call the cmc
         //query call with the certification-data
-        
+
         Uint8List sponse = await common.SYSTEM_CANISTERS.cycles_mint.call(
             calltype: CallType.query,
             method_name: 'get_icp_xdr_conversion_rate',
@@ -231,26 +235,71 @@ class CustomState {
 
         this.cmc_cycles_per_icp_rate_with_a_timestamp = CyclesPerTokenRateWithATimestamp(
             cycles_per_token_rate: CyclesPerTokenRate(cycles_per_token_quantum_rate: certified_xdr_permyriad_per_icp.value, token_decimal_places: Icrc1Ledgers.ICP.decimals),
-            timestamp_seconds: certified_timestamp_seconds.value 
-        );        
+            timestamp_seconds: certified_timestamp_seconds.value
+        );
     }
 
-    
+    Future<void> fresh_usd_per_one_xdr() async {
+        const int number_of_tries = 3;
+        String? json;
+        for (int i=0; i<number_of_tries; i++) {
+            print('loading usd_per_one_xdr');
+            // uzbekistan
+            Uri url = Uri.parse('https://cbu.uz/ru/arkhiv-kursov-valyut/json/all/');
+            try  {
+                http.Response sponse = await http.get(url);
+                if (sponse.statusCode == 200) {
+                    json = sponse.body;
+                    break;
+                } else {
+                    print('Error getting USD per XDR rate\nstatus-code: ${sponse.statusCode}\n${sponse.body}');
+                    continue;
+                }
+            } catch(e,s) {
+                print('Exception thrown when calling to get USD per XDR rate');
+                print(e);
+                print(s);
+            }
+        }
+        if (json == null) {
+            print(Exception('Error getting USD per XDR rate'));
+            return;
+        }
+        // parse json
+        var list = jsonDecode(json);
+        Tokens? uzs_per_one_usd;
+        Tokens? uzs_per_one_xdr;
+        for (var item in list) {
+            if (item['Ccy'] == 'USD') {
+                uzs_per_one_usd = Tokens.of_the_double_string(item['Rate'], decimal_places: 2);
+            } else if (item['Ccy'] == 'XDR') {
+                uzs_per_one_xdr = Tokens.of_the_double_string(item['Rate'], decimal_places: 2);
+            }
+        }
+        if (uzs_per_one_usd != null && uzs_per_one_xdr != null) {
+            usd_per_one_xdr = Tokens.of_the_double_string(
+                (uzs_per_one_xdr.quantums / uzs_per_one_usd.quantums).toStringAsFixed(2),
+                decimal_places: 2
+            );
+            print('usd_per_one_xdr: $usd_per_one_xdr');
+        }
+    }
+
     Future<void> save_state_in_the_browser_storage() async {
         if (this.user != null) {
             await this.user!.caller.indexdb_save();
         }
     }
-    
+
     Future<void> load_state_of_the_browser_storage() async {
-    
+
         IICaller? ii_caller = await IICaller.indexdb_load();
-        
+
         if (ii_caller != null) {
             User user_of_the_idb = User(
                 state: this,
                 caller: ii_caller
-            );    
+            );
             if (user_of_the_idb.expiration_timestamp_nanoseconds == null) {
                 this.user = user_of_the_idb;
             } else if (get_current_time_nanoseconds() < user_of_the_idb.expiration_timestamp_nanoseconds! - BigInt.from(1000000000*60*10)) {
@@ -259,11 +308,11 @@ class CustomState {
                     this.user = user_of_the_idb;
                 }
             }
-            
+
         }
 
     }
-    
+
 }
 
 
@@ -282,12 +331,12 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
 
 
 Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
-    ledger: bank, 
-    symbol: 'CYCLES', 
-    name: 'CYCLES', 
-    decimals: 12, 
-    fee: BigInt.parse('10000000000'), 
-); 
+    ledger: bank,
+    symbol: 'CYCLES',
+    name: 'CYCLES',
+    decimals: 12,
+    fee: BigInt.parse('10000000000'),
+);
 
 
 
@@ -296,7 +345,7 @@ Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
 /*
 class Cycles extends Nat {
     BigInt get cycles => super.value;
-    
+
     String toString() {
         BigInt tcycles = this.cycles ~/ Cycles.T_CYCLES_DIVIDABLE_BY;
         BigInt cycles_less_than_1T = this.cycles % Cycles.T_CYCLES_DIVIDABLE_BY;
@@ -307,24 +356,24 @@ class Cycles extends Nat {
                 decimal_places = '0${decimal_places}';
             }
             while (decimal_places[decimal_places.length-1] == '0') {
-                decimal_places = decimal_places.substring(0, decimal_places.length-1);    
+                decimal_places = decimal_places.substring(0, decimal_places.length-1);
             }
             decimal_places = '.${decimal_places}';
         }
         String s = '${tcycles}${decimal_places}T';
         return s;
     }
-    
+
     Cycles({required BigInt cycles}) : super(cycles);
-    
+
     static Cycles oftheNat(CandidType nat) {
         return Cycles(
             cycles: (nat as Nat).value
         );
     }
-    
+
     static BigInt T_CYCLES_DIVIDABLE_BY = BigInt.from(pow(10, Cycles.T_CYCLES_DECIMAL_PLACES));
-    static int T_CYCLES_DECIMAL_PLACES = 12;    
+    static int T_CYCLES_DECIMAL_PLACES = 12;
     static Cycles oftheTCyclesDoubleString(String tcycles_string) {
         tcycles_string = tcycles_string.trim();
         if (tcycles_string == '') {
@@ -333,11 +382,11 @@ class Cycles extends Nat {
         List<String> tcycles_string_split = tcycles_string.split('.');
         if (tcycles_string_split.length > 2) {
             throw Exception('invalid number.');
-        } 
+        }
         BigInt tcycles = BigInt.parse(tcycles_string_split[0]);
-        BigInt cycles_less_than_1T = BigInt.from(0);        
+        BigInt cycles_less_than_1T = BigInt.from(0);
         if (tcycles_string_split.length == 2) {
-            String decimal_places = tcycles_string_split[1];        
+            String decimal_places = tcycles_string_split[1];
             if (decimal_places.length > Cycles.T_CYCLES_DECIMAL_PLACES) {
                 throw Exception('Max ${Cycles.T_CYCLES_DECIMAL_PLACES} decimal places for the TCycles');
             }
@@ -353,65 +402,65 @@ class Cycles extends Nat {
 // TCycles
 class Cycles extends Tokens {
     BigInt get cycles => super.quantums;
-    
+
     String toString() {
         String s = super.toString();
-        if (this.cycles != BigInt.from(0)) { s = s + 'T'; } 
+        if (this.cycles != BigInt.from(0)) { s = s + 'T'; }
         return s;
     }
-    
+
     Cycles round_decimal_places(int round_decimal_places) {
         return Cycles(cycles: super.round_decimal_places(round_decimal_places).quantums);
     }
-    
+
     Cycles add_quantums(BigInt add_quantums) {
         return Cycles(cycles: super.add_quantums(add_quantums).quantums);
     }
-    
+
     Cycles({required BigInt cycles}) : super(quantums: cycles, decimal_places: T_CYCLES_DECIMAL_PLACES);
-    
+
     static Cycles of_the_nat(CandidType nat) => Cycles.oftheNat(nat);
-    
+
     static Cycles oftheNat(CandidType nat) {
         return Cycles(
             cycles: (nat as Nat).value
         );
     }
-    
+
     static BigInt T_CYCLES_DIVIDABLE_BY = BigInt.from(pow(10, Cycles.T_CYCLES_DECIMAL_PLACES));
-    static int T_CYCLES_DECIMAL_PLACES = 12;    
-    
+    static int T_CYCLES_DECIMAL_PLACES = 12;
+
     static Cycles oftheTCyclesDoubleString(String tcycles_string) => Cycles(cycles: Tokens.of_the_double_string(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES).quantums);
-                    
+
     Cycles operator + (Cycles t) {
         return Cycles(cycles: this.cycles + t.cycles);
-    }    
+    }
     Cycles operator - (Cycles t) {
         return Cycles(cycles: this.cycles - t.cycles);
-    } 
+    }
     Cycles operator * (Cycles t) {
         return Cycles(cycles: this.cycles * t.cycles);
-    } 
+    }
     Cycles operator ~/ (Cycles t) {
         return Cycles(cycles: this.cycles ~/ t.cycles);
-    } 
+    }
     bool operator > (Cycles t) {
         return this.cycles > t.cycles;
-    } 
+    }
     bool operator < (Cycles t) {
         return this.cycles < t.cycles;
-    } 
+    }
     bool operator >= (Cycles t) {
         return this.cycles >= t.cycles;
-    } 
+    }
     bool operator <= (Cycles t) {
         return this.cycles <= t.cycles;
-    } 
-    
+    }
+
     @override
     bool operator ==(covariant Cycles other) => other is Cycles && other.cycles == this.cycles;
-    
-} 
+
+}
 
 
 Cycles tokens_transform_cycles(BigInt token_quantums, Cycles cycles_per_token) {
@@ -428,10 +477,10 @@ BigInt cycles_transform_tokens(Cycles cycles, Cycles cycles_per_token) {
 final BigInt CYCLES_PER_XDR = Cycles.T_CYCLES_DIVIDABLE_BY;
 
 Cycles icptokens_to_cycles(IcpTokens icpts, XDRICPRate xdr_icp_rate) {
-    return Cycles(cycles: 
-        icpts.e8s 
-        * xdr_icp_rate.xdr_permyriad_per_icp 
-        * CYCLES_PER_XDR 
+    return Cycles(cycles:
+        icpts.e8s
+        * xdr_icp_rate.xdr_permyriad_per_icp
+        * CYCLES_PER_XDR
         ~/ (IcpTokens.DIVIDABLE_BY * XDRICPRate.DIVIDABLE_BY)
     );
 }
@@ -441,7 +490,7 @@ IcpTokens cycles_to_icptokens(Cycles cycles, XDRICPRate xdr_icp_rate) {
         cycles.cycles
         * (IcpTokens.DIVIDABLE_BY * XDRICPRate.DIVIDABLE_BY)
         ~/ CYCLES_PER_XDR
-        ~/ xdr_icp_rate.xdr_permyriad_per_icp    
+        ~/ xdr_icp_rate.xdr_permyriad_per_icp
     );
 }
 
@@ -470,14 +519,14 @@ class CyclesPerTokenRate extends Cycles {
         );
     }
     String toString() => Cycles(cycles: this.cycles_per_token_quantum_rate * BigInt.from(pow(10, this.token_decimal_places))).toString();
-    
+
     static CyclesPerTokenRate of_the_nat(CandidType nat, {required int token_decimal_places}) => CyclesPerTokenRate(
         cycles_per_token_quantum_rate: (nat as Nat).value,
         token_decimal_places: token_decimal_places
     );
 
-    
-    
+
+
     // operators
     static void _check_same_token_decimal_places(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         if (a.token_decimal_places != b.token_decimal_places) {
@@ -490,45 +539,45 @@ class CyclesPerTokenRate extends Cycles {
             cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate + t.cycles_per_token_quantum_rate,
             token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
         );
-    }    
+    }
     CyclesPerTokenRate operator - (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return CyclesPerTokenRate(
             cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate - t.cycles_per_token_quantum_rate,
             token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
         );
-    } 
+    }
     CyclesPerTokenRate operator * (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return CyclesPerTokenRate(
             cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate * t.cycles_per_token_quantum_rate,
             token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
         );
-    } 
+    }
     CyclesPerTokenRate operator ~/ (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return CyclesPerTokenRate(
             cycles_per_token_quantum_rate: this.cycles_per_token_quantum_rate ~/ t.cycles_per_token_quantum_rate,
             token_decimal_places: this.token_decimal_places // we checked that they both have the same token_decimal_places.
         );
-    } 
+    }
     bool operator > (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate > t.cycles_per_token_quantum_rate;
-    } 
+    }
     bool operator < (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate < t.cycles_per_token_quantum_rate;
-    } 
+    }
     bool operator >= (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate >= t.cycles_per_token_quantum_rate;
-    } 
+    }
     bool operator <= (covariant CyclesPerTokenRate t) {
         _check_same_token_decimal_places(this, t);
         return this.cycles_per_token_quantum_rate <= t.cycles_per_token_quantum_rate;
-    } 
-       
+    }
+
     static CyclesPerTokenRate max(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         _check_same_token_decimal_places(a, b);
         if (a >= b) {
@@ -537,7 +586,7 @@ class CyclesPerTokenRate extends Cycles {
             return b;
         }
     }
-       
+
     static CyclesPerTokenRate min(CyclesPerTokenRate a, CyclesPerTokenRate b) {
         _check_same_token_decimal_places(a, b);
         if (a <= b) {
@@ -546,8 +595,8 @@ class CyclesPerTokenRate extends Cycles {
             return b;
         }
     }
-       
-       
+
+
 }
 
 class CyclesPerTokenRateWithATimestamp {
@@ -574,9 +623,9 @@ class XDRICPRateWithATimestamp {
 
 class XDRICPRate extends Nat64 {
     BigInt get xdr_permyriad_per_icp => super.value;
-    
+
     XDRICPRate({required BigInt xdr_permyriad_per_icp}): super(xdr_permyriad_per_icp);
-    
+
     static XDRICPRate oftheXdrPerMyriadPerIcpNat64(CandidType nat64) {
         return XDRICPRate(
             xdr_permyriad_per_icp: (nat64 as Nat64).value
@@ -594,7 +643,7 @@ class XDRICPRate extends Nat64 {
         BigInt xdr_per_icp = BigInt.parse(xdr_per_icp_string_split[0]);
         BigInt xdr_per_icp_less_than_1 = BigInt.from(0);
         if (xdr_per_icp_string_split.length == 2) {
-            String decimal_places = xdr_per_icp_string_split[1];        
+            String decimal_places = xdr_per_icp_string_split[1];
             if (decimal_places.length > XDRICPRate.DECIMAL_PLACES) {
                 throw Exception('Max ${XDRICPRate.DECIMAL_PLACES} decimal places for the XDR/ICP rate');
             }
@@ -609,7 +658,7 @@ class XDRICPRate extends Nat64 {
     String toString() {
         return '${this.xdr_permyriad_per_icp/XDRICPRate.DIVIDABLE_BY}';
     }
-    
+
     static int DECIMAL_PLACES = 4;
     static BigInt DIVIDABLE_BY = BigInt.from(pow(10, XDRICPRate.DECIMAL_PLACES));
 }
@@ -621,14 +670,14 @@ class CallError {
     final int error_code;
     final String error_message;
     CallError({required this.error_code, required this.error_message});
-    
+
     static CallError of_the_record(Record r) {
         return CallError(
             error_code: (r[0] as Nat32).value,
             error_message: (r[1] as candid.Text).value
         );
     }
-    
+
     String toString() {
         return 'error_code: ${this.error_code}, error_message: ${this.error_message}';
     }
@@ -642,7 +691,7 @@ class CallError {
 
 class CyclesTransferMemo extends Variant {
     CyclesTransferMemo._();
-    
+
     static CyclesTransferMemo blob(Blob blob) {
         CyclesTransferMemo ctm = CyclesTransferMemo._();
         ctm['Blob'] = blob;
@@ -668,13 +717,13 @@ class CyclesTransferMemo extends Variant {
             'Blob': (c) { if (c is! Blob) { throw Exception('CyclesTransferMemo Blob must be with the value of the Blob.'); } },
             'Text': (c) { if (c is! candid.Text) { throw Exception('CyclesTransferMemo Text must be with the value of the Text.'); } },
             'Nat': (c) { if (c is! Nat) { throw Exception('CyclesTransferMemo Nat must be with the value of the Nat.'); } },
-            'Int': (c) { if (c is! Int) { throw Exception('CyclesTransferMemo Int must be with the value of the Int.'); } } 
+            'Int': (c) { if (c is! Int) { throw Exception('CyclesTransferMemo Int must be with the value of the Int.'); } }
         });
         CyclesTransferMemo ctm = CyclesTransferMemo._();
         ctm[ctmvariant.keys.first] = ctmvariant.values.first;
         return ctm;
     }
-    
+
     String toString() {
         if (this.keys.first == candid_text_hash('Text')) {
             return '${(this.values.first as candid.Text).value}';
@@ -690,7 +739,7 @@ class CyclesTransferMemo extends Variant {
         }
         throw Exception('');
     }
-    
+
 }
 
 
@@ -710,8 +759,8 @@ class Icrc1Transaction {
     final BigInt tokens;
     final Icrc1Account? to;  // null on a burn
     final Icrc1Account? from; // null on a mint
-    final BigInt? created_at_time_nanos; 
-    final BigInt timestamp_nanos; 
+    final BigInt? created_at_time_nanos;
+    final BigInt timestamp_nanos;
     final Uint8List? memo; // max 32 bytes
     final BigInt? fee; // null on a mint or a burn
     Icrc1Transaction({
@@ -732,10 +781,10 @@ class Icrc1Transaction {
         return Icrc1Transaction(
             block: (tr['id'] as Nat).value,
             icrc1_transaction_kind: Icrc1TransactionKind.values.byName(kind),
-            tokens: (t['amount'] as Nat).value, 
-            to: t.find_option<Record>('to').nullmap(Icrc1Account.of_the_record), 
+            tokens: (t['amount'] as Nat).value,
+            to: t.find_option<Record>('to').nullmap(Icrc1Account.of_the_record),
             from: t.find_option<Record>('from').nullmap(Icrc1Account.of_the_record),
-            created_at_time_nanos: t.find_option<Nat64>('created_at_time').nullmap((n)=>n.value), 
+            created_at_time_nanos: t.find_option<Nat64>('created_at_time').nullmap((n)=>n.value),
             timestamp_nanos: (tk['timestamp'] as Nat64).value,
             memo: t.find_option<Vector>('memo').nullmap((v)=>Blob.of_the_vector_nat8(v.cast_vector<Nat8>()).bytes),
             fee: t.find_option<Nat>('fee').nullmap((m)=>m.value)
@@ -762,52 +811,14 @@ enum Icrc1TransactionKind {
 
 
 List<Uint8List> _pathbytes(List<dynamic> path) {
-    // a path is a list of labels, see the ic-spec. 
-    // this function converts string labels to utf8 blobs in a new-list for the convenience. 
+    // a path is a list of labels, see the ic-spec.
+    // this function converts string labels to utf8 blobs in a new-list for the convenience.
     List<dynamic> pathb = [];
-    for (int i=0;i<path.length;i++) { 
+    for (int i=0;i<path.length;i++) {
         pathb.add(path[i]);
         if (pathb[i] is String) {
-            pathb[i] = utf8.encode(pathb[i]);    
+            pathb[i] = utf8.encode(pathb[i]);
         }
     }
     return List.castFrom<dynamic, Uint8List>(pathb);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
