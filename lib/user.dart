@@ -313,9 +313,13 @@ class User {
         );
     }
     
-    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(BigInt burn_icp) async {
+    Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles(BigInt form_input_icp) async {
         await this.fresh_bank_user_subaccount_icp_balance();
+        
+        BigInt burn_icp = form_input_icp - Icrc1Ledgers.ICP.fee;
+        
         if (this.bank_user_subaccount_icp_balance < burn_icp + Icrc1Ledgers.ICP.fee) {
+            burn_icp -= Icrc1Ledgers.ICP.fee;
             await transfer_icp(
                 c_forwards_one(Record.of_the_map({
                     'memo': Nat64(BigInt.from(4)),
@@ -1305,6 +1309,3 @@ class PositionLogAndVoidPositionPayoutStatus {
         this.void_position_payout_complete
     );
 }
-
-
-

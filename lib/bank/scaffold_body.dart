@@ -64,7 +64,9 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     context: context,
                     builder: (BuildContext context) => AlertDialog(
                         key: transfer_dialog_key,
-                        title: null,//Center(child: Text('')),
+                        title: Center(
+                            child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}', /*style: TextStyle(fontSize:17)*/)
+                        ),
                         content: Container(
                             constraints: BoxConstraints(
                                 maxWidth: 700
@@ -75,17 +77,11 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                             child: SingleChildScrollView(
                                 child: Column(
                                     children: [
-                                        Container(
-                                            width: double.infinity,
-                                            padding: EdgeInsets.fromLTRB(7,11,7,11),
-                                            child: Center(
-                                                child: Text('TRANSFER-${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}', style: TextStyle(fontSize:17))
-                                            ),
-                                        ),
+                                        /*    
                                         SizedBox(
                                             height: 11,
                                             width: 3,
-                                        ),
+                                        ),*/
                                         BankIcrc1IdAndBalanceAndLoadBalanceAndFee(state.current_icrc1_ledger, key: ValueKey('BankTransferIcrc1FormState BankIcrc1IdAndBalanceAndLoadBalanceAndFee ${state.current_icrc1_ledger.symbol}')),
                                         SizedBox(
                                             width: 1,

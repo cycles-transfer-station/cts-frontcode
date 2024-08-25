@@ -131,42 +131,41 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
         
         return Padding(
             padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
-            child: Column(
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                    Text('${this.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : this.icrc1_ledger.symbol}-BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : this.icrc1_ledger == CYCLES_BANK_LEDGER ? Cycles(cycles: state.user!.icrc1_balances_cache[this.icrc1_ledger]!) : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17)),
-                    //Text('timestamp: ${state.user!.icp_balance != null ? seconds_of_the_nanos(state.user!.icp_balance!.timestamp_nanos) : 'unknown'}', style: TextStyle(fontSize:9)),
-                    Padding(
-                        padding: EdgeInsets.fromLTRB(7,13,7,7),
-                        child: FilledButton.tonal(
-                            child: Text('LOAD BALANCE', style: TextStyle(fontSize:11)),
-                            onPressed: () async {
-                                state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
-                                state.is_loading = true;
-                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                                try {
-                                    await state.user!.fresh_icrc1_balances([this.icrc1_ledger]);
-                                } catch(e) {
-                                    await showDialog(
-                                        context: state.context,
-                                        builder: (BuildContext context) {
-                                            return AlertDialog(
-                                                title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
-                                                content: Text('${etext(e)}'),
-                                                actions: <Widget>[
-                                                    TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('OK'),
-                                                    ),
-                                                ]
-                                            );
-                                        }   
-                                    );                                    
-                                }
-                                state.is_loading = false;
-                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                    Text('${this.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : this.icrc1_ledger.symbol}-BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : this.icrc1_ledger == CYCLES_BANK_LEDGER ? Cycles(cycles: state.user!.icrc1_balances_cache[this.icrc1_ledger]!) : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17, fontFamily: 'CourierNewBold')),
+                    SizedBox(width: 7),
+                    IconButton(
+                        iconSize: 18,
+                        icon: const Icon(Icons.refresh),
+                        onPressed: () async {
+                            state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
+                            state.is_loading = true;
+                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                            try {
+                                await state.user!.fresh_icrc1_balances([this.icrc1_ledger]);
+                            } catch(e) {
+                                await showDialog(
+                                    context: state.context,
+                                    builder: (BuildContext context) {
+                                        return AlertDialog(
+                                            title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
+                                            content: Text('${etext(e)}'),
+                                            actions: <Widget>[
+                                                TextButton(
+                                                    onPressed: () => Navigator.pop(context),
+                                                    child: const Text('OK'),
+                                                ),
+                                            ]
+                                        );
+                                    }   
+                                );                                    
                             }
-                        )
-                    ),   
+                            state.is_loading = false;
+                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
+                        }
+                    )
                 ]
             )
         );
@@ -190,7 +189,7 @@ class BankIcrc1IdAndBalanceAndLoadBalanceAndFee extends StatelessWidget {
                     child: Column(
                         children: [
                             Center(
-                                child: SelectableText('BANK-${icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol}-ID:', style: TextStyle(fontSize: 13)),
+                                child: SelectableText('${icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol}-ID:', style: TextStyle(fontSize: 13)),
                             ),
                             Center(
                                 child: SelectableText('${bank_icrc1_account_id}', style: TextStyle(fontSize: 11)),
@@ -541,21 +540,21 @@ class BankTransferIcpFormState extends State<BankTransferIcpForm> {
                     */
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'for: ',
+                            labelText: 'For: ',
                         ),
                         onSaved: (String? value) { to = value!.trim().toLowerCase(); },
                         validator: icp_id_string_validator          
                     ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'icp: '
+                            labelText: 'Tokens: '
                         ),
                         onSaved: (String? value) { icp = IcpTokens.of_the_double_string(value!); },
                         validator: icp_validator
                     ),
                     TextFormField(
                         decoration: InputDecoration(
-                            labelText: 'memo: '
+                            labelText: 'Memo: '
                         ),
                         onSaved: (String? value) { memo = value == null || value == '' ? Nat64(BigInt.from(0)) : Nat64(BigInt.parse(value)); },
                         validator: (String? value) {
@@ -682,12 +681,37 @@ class BurnIcpMintCyclesForm extends StatefulWidget {
 }
 class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    late TextEditingController text_controller;
     
-    late IcpTokens burn_icp;
+    IcpTokens burn_icp = IcpTokens(e8s: BigInt.zero);
     
     late Future<BurnIcpMintCyclesSuccess> burn_icp_mint_cycles_future;
     late Future<void> fresh_data_after_burn_icp_mint_cycles_future;
-        
+    
+    @override
+    void initState() {
+        super.initState();
+        text_controller = TextEditingController();
+        text_controller.addListener(() {
+            IcpTokens? valid_input;
+            try {
+                valid_input = IcpTokens.of_the_double_string(text_controller.text.trim()); 
+            } catch(e) {}
+            if (valid_input != null) {
+                burn_icp = valid_input;
+            } else {
+                burn_icp = IcpTokens(e8s: BigInt.zero);
+            }
+            setState((){});
+        });
+    }
+    
+    @override
+    void dispose() {
+        text_controller.dispose();
+        super.dispose();
+    }
+    
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -720,6 +744,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     Container(
                         width: double.infinity,
                         child: DataTable(
+                            dataTextStyle: TextStyle(fontFamily: 'CourierNew'),
                             headingRowHeight: 0,
                             showBottomBorder: true,
                             columns: <DataColumn>[
@@ -752,13 +777,20 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         width: 1,
                         height: 17
                     ),
-                    Container(
-                        width: double.infinity,
-                        child: Text('ICP-ledger-fees: ${IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2))}', style: TextStyle(fontSize: 13))
-                    ),
-                    Container(
-                        width: double.infinity,
-                        child: Text('CYCLES-fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 13))
+                    DefaultTextStyle.merge(
+                        style: TextStyle(fontFamily: 'CourierNew'),
+                        child: Column(
+                            children: [
+                                Container(
+                                    width: double.infinity,
+                                    child: Text('ICP-ledger-fees: ${IcpTokens(e8s: ICP_LEDGER_TRANSFER_FEE.e8s*BigInt.from(2))}-ICP', style: TextStyle(fontSize: 13))
+                                ),
+                                Container(
+                                    width: double.infinity,
+                                    child: Text('CYCLES-fee: ${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}', style: TextStyle(fontSize: 13))
+                                ),
+                            ]
+                        )
                     ),
                     SizedBox(
                         width: 1,
@@ -766,6 +798,8 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                     ),
                     TextFormField(
                         key: ValueKey('BurnIcpMintCycles TextFormField burn-icp'),
+                        controller: text_controller,
+                        style: TextStyle(fontFamily: 'CourierNewBold'),
                         decoration: InputDecoration(
                             labelText: 'Burn ICP: ',
                         ),
@@ -787,6 +821,45 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                             }
                             return null;
                         }
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 17
+                    ),
+                    DefaultTextStyle.merge(
+                        style: TextStyle(fontFamily: 'CourierNew'),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                Builder(
+                                    builder: (BuildContext context) {
+                                        Cycles? mint_cycles;
+                                        if (burn_icp.e8s > Icrc1Ledgers.ICP.fee * BigInt.from(2)) {
+                                            BigInt burn_icp_mount = burn_icp.e8s - Icrc1Ledgers.ICP.fee;    
+                                            if (state.user!.bank_user_subaccount_icp_balance < burn_icp_mount + Icrc1Ledgers.ICP.fee) {
+                                                burn_icp_mount -= Icrc1Ledgers.ICP.fee;
+                                            }
+                                            mint_cycles = tokens_transform_cycles(burn_icp_mount, state.cmc_cycles_per_icp_rate) - Cycles(cycles: CYCLES_BANK_LEDGER.fee);
+                                        }
+                                        String text = 'You will receive: ${mint_cycles == null ? '_' : mint_cycles}';
+                                        if (mint_cycles != null) {
+                                            text += '-CYCLES';
+                                            if (state.cycles_per_one_usd != null) {
+                                                text += ', ≈ \$${Tokens(quantums: cycles_transform_tokens(mint_cycles, state.cycles_per_one_usd!), decimal_places: 2)}-USD'; 
+                                            }
+                                        }
+                                        return Container(
+                                            width: double.infinity,
+                                            child: Text(text),
+                                        );
+                                    }
+                                )
+                            ]
+                        )
+                    ),
+                    SizedBox(
+                        width: 1,
+                        height: 17
                     ),
                     Padding(
                         padding: EdgeInsets.all(7),

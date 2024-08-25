@@ -125,8 +125,9 @@ class CustomState {
     late Icrc1Ledger current_icrc1_ledger; // for the selection of the bank-page-token // late cause bank is set in the constructor;
     late List<Icrc1Ledger> known_icrc1_ledgers;// late cause bank is set in the constructor;
 
-    Tokens? usd_per_one_xdr; //= Tokens(quantums: 0, token_decimal_places: 2);
-
+    // USD conversions
+    Tokens? usd_per_one_xdr;
+    CyclesPerTokenRate? cycles_per_one_usd;
 
     Future<void> loadfirststate() async {
         print('load first state');
@@ -281,7 +282,12 @@ class CustomState {
                 (uzs_per_one_xdr.quantums / uzs_per_one_usd.quantums).toStringAsFixed(2),
                 decimal_places: 2
             );
+            cycles_per_one_usd = CyclesPerTokenRate.oftheTCyclesDoubleString(
+                (uzs_per_one_usd.quantums / uzs_per_one_xdr.quantums).toStringAsFixed(2), 
+                token_decimal_places: 2,
+            );
             print('usd_per_one_xdr: $usd_per_one_xdr');
+            print('cycles_per_one_usd: ${cycles_per_one_usd}');
         }
     }
 
@@ -340,65 +346,6 @@ Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
 
 
 
-
-
-/*
-class Cycles extends Nat {
-    BigInt get cycles => super.value;
-
-    String toString() {
-        BigInt tcycles = this.cycles ~/ Cycles.T_CYCLES_DIVIDABLE_BY;
-        BigInt cycles_less_than_1T = this.cycles % Cycles.T_CYCLES_DIVIDABLE_BY;
-        String decimal_places = '';
-        if (cycles_less_than_1T != BigInt.from(0)) {
-            decimal_places = cycles_less_than_1T.toRadixString(10);
-            while (decimal_places.length < 12) {
-                decimal_places = '0${decimal_places}';
-            }
-            while (decimal_places[decimal_places.length-1] == '0') {
-                decimal_places = decimal_places.substring(0, decimal_places.length-1);
-            }
-            decimal_places = '.${decimal_places}';
-        }
-        String s = '${tcycles}${decimal_places}T';
-        return s;
-    }
-
-    Cycles({required BigInt cycles}) : super(cycles);
-
-    static Cycles oftheNat(CandidType nat) {
-        return Cycles(
-            cycles: (nat as Nat).value
-        );
-    }
-
-    static BigInt T_CYCLES_DIVIDABLE_BY = BigInt.from(pow(10, Cycles.T_CYCLES_DECIMAL_PLACES));
-    static int T_CYCLES_DECIMAL_PLACES = 12;
-    static Cycles oftheTCyclesDoubleString(String tcycles_string) {
-        tcycles_string = tcycles_string.trim();
-        if (tcycles_string == '') {
-            throw Exception('must be a number');
-        }
-        List<String> tcycles_string_split = tcycles_string.split('.');
-        if (tcycles_string_split.length > 2) {
-            throw Exception('invalid number.');
-        }
-        BigInt tcycles = BigInt.parse(tcycles_string_split[0]);
-        BigInt cycles_less_than_1T = BigInt.from(0);
-        if (tcycles_string_split.length == 2) {
-            String decimal_places = tcycles_string_split[1];
-            if (decimal_places.length > Cycles.T_CYCLES_DECIMAL_PLACES) {
-                throw Exception('Max ${Cycles.T_CYCLES_DECIMAL_PLACES} decimal places for the TCycles');
-            }
-            while (decimal_places.length < Cycles.T_CYCLES_DECIMAL_PLACES) {
-                decimal_places = '${decimal_places}0';
-            }
-            cycles_less_than_1T = BigInt.parse(decimal_places);
-        }
-        Cycles cycles = Cycles(cycles: (tcycles * Cycles.T_CYCLES_DIVIDABLE_BY) + cycles_less_than_1T);
-        return cycles;
-    }
-*/
 // TCycles
 class Cycles extends Tokens {
     BigInt get cycles => super.quantums;
@@ -470,8 +417,6 @@ Cycles tokens_transform_cycles(BigInt token_quantums, Cycles cycles_per_token) {
 BigInt cycles_transform_tokens(Cycles cycles, Cycles cycles_per_token) {
     return cycles.cycles ~/ cycles_per_token.cycles;
 }
-
-
 
 /*
 final BigInt CYCLES_PER_XDR = Cycles.T_CYCLES_DIVIDABLE_BY;
