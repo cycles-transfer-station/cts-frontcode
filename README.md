@@ -3,7 +3,7 @@
 ## This repo contains the code of the CYCLES-TRANSFER-STATION frontend website.
 
 ### Build Verification
-The build aims to be reproducible on Ubuntu Linux.
+The build aims to be reproducible on Fedora Linux.
 
 The reproducibility and verifiability of the frontend files is as follows. We calculate a batch-hash which is a single hash of all the frontend files.
 The batch-hash is the [representation-independent-hash](https://internetcomputer.org/docs/current/references/ic-interface-spec/#hash-of-map) of a map with the map-keys as the file-paths and with the map-values as the gzip-encoding of the files. The file-paths start from the build output directory `build/web`. The file-path map-key for `build/web/main.dart.js` is `/main.dart.js`. One file gets renamed for the hash and for the upload and that is the `index.html` file which file-path map-key is `/`. The calculation of the batch-hash from the build output files is done in the `scripts/batch_hash.dart` file for reference.
