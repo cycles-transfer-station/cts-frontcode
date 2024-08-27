@@ -833,7 +833,7 @@ class TopRowCandleDataState extends State<TopRowCandleData> {
                             'low: ${candle_selection!.low_rate}',
                             'high: ${candle_selection!.high_rate}',
                             'close: ${candle_selection!.close_rate}',
-                            'volume: ${candle_selection!.volume_tokens}',
+                            'volume: ${candle_selection!.volume_tokens.round_decimal_places(3)}',
                         ]) 
                             Container(
                                 //width: data_item_width,
@@ -1100,4 +1100,3 @@ List<Candle> make_test_candles() {
     }
     return candles;
 }
-
