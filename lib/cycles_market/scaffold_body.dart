@@ -764,20 +764,72 @@ class CreatePositionForm extends StatefulWidget {
 }
 class CreatePositionFormState extends State<CreatePositionForm> {
     GlobalKey<FormState> form_key = GlobalKey<FormState>();
+    late TextEditingController quantity_text_controller;
+    late TextEditingController rate_text_controller;
     
     late Tokens trade_amount;
     late CyclesPerTokenRate cycles_per_token_rate;
     
+    // for the text-controller-listeners
+    late CustomState state;
+    late MainStateBindScope<CustomState> main_state_bind_scope;    
+    
+    CyclesPerTokenRate? current_written_rate;
+    
+    @override
+    void initState() {
+        super.initState();
+        quantity_text_controller = TextEditingController();
+        rate_text_controller = TextEditingController();
+        rate_text_controller.addListener((){
+            CyclesPerTokenRate? valid_input;
+            try {
+                valid_input = CyclesPerTokenRate.oftheTCyclesDoubleString(rate_text_controller.text.trim(), token_decimal_places: state.cm_main.trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals);
+            } catch(e) {}
+            if (valid_input != null) {
+                current_written_rate = valid_input;
+            } else {
+                current_written_rate = null;
+            }
+            setState((){});
+        });
+        
+    }
+    @override
+    void dispose() {
+        quantity_text_controller.dispose();    
+        rate_text_controller.dispose();
+        super.dispose();
+    }
+    
     Widget build(BuildContext context) {
-        CustomState state = MainStateBind.get_state<CustomState>(context);
-        MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
+        state = MainStateBind.get_state<CustomState>(context);
+        main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
         final String buy_or_sell = widget.position_kind == PositionKind.Cycles ? 'BUY' : 'SELL';
         final Icrc1Ledger ledger_data = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data;
         final int token_decimal_places = ledger_data.decimals;        
         final String token_symbol = ledger_data.symbol;
         
-        int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
+        final int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
+        
+        
+        final BigInt create_position_number_of_transfer_fees = BigInt.from(2);
+        late final String max_quantity;
+        switch (widget.position_kind) {
+            case PositionKind.Cycles:
+                BigInt max_quantity_quantums = state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]! - (CYCLES_BANK_LEDGER.fee * create_position_number_of_transfer_fees);
+                if (max_quantity_quantums.isNegative) {
+                    max_quantity_quantums = BigInt.zero;
+                }
+                max_quantity = Cycles(cycles: max_quantity_quantums).toString().replaceFirst('T', '');
+            case PositionKind.Token:
+                BigInt max_quantity_quantums = state.user!.icrc1_balances_cache[ledger_data]! - (ledger_data.fee * create_position_number_of_transfer_fees);
+                if (max_quantity_quantums.isNegative) {
+                    max_quantity_quantums = BigInt.zero;
+                }
+                max_quantity = Tokens(quantums: max_quantity_quantums, decimal_places: token_decimal_places).toString();    
+        }
         
         List<Widget> cycles_balance_and_token_balance = [
             Container(
@@ -798,62 +850,42 @@ class CreatePositionFormState extends State<CreatePositionForm> {
             ),
         ];
         
+        
+        
         return Form(
             key: form_key,
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                     TextFormField(
+                        controller: quantity_text_controller,
+                        style: TextStyle(fontFamily: 'CourierNewBold'),
                         decoration: InputDecoration(
                             labelText: widget.position_kind == PositionKind.Cycles ? 'TCYCLES' : '$token_symbol',
+                            suffix: TextButton(
+                                child: Text('MAX', style: TextStyle(fontFamily: 'CourierNew')),
+                                onPressed: () {
+                                    quantity_text_controller.value = TextEditingValue(text: max_quantity, selection: TextSelection.collapsed(offset: max_quantity.length));
+                                }
+                            )
                         ),
                         onSaved: (String? value) { trade_amount = Tokens.of_the_double_string(value!, decimal_places: first_field_decimal_places); },
                         validator: tokens_validator(token_decimal_places: first_field_decimal_places)
                     ),
                     TextFormField(
+                        controller: rate_text_controller,     
+                        style: TextStyle(fontFamily: 'CourierNewBold'),
                         decoration: InputDecoration(
                             labelText: 'RATE (TCYCLES per ${token_symbol})',
+                            //suffixText: current_written_rate != null && state.cycles_per_one_usd != null ? ' ≈ ${Tokens(quantums: cycles_transform_tokens(Cycles(cycles: current_written_rate!.cycles_per_token_quantum_rate*(BigInt.from(10).pow(token_decimal_places))), state.cycles_per_one_usd!), decimal_places: 2)}-USD' : null,
+                            suffixStyle: TextStyle(fontFamily: 'CourierNew'),
                         ),
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
-                        validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)
+                        validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)                    
                     ),
                     SizedBox(height:6),
                     if (widget.position_kind == PositionKind.Cycles) ...cycles_balance_and_token_balance
                     else ...(cycles_balance_and_token_balance.reversed.toList()),
-                    Divider(),
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 4),
-                        child: Tooltip(
-                            message: 'ledger-fees: The ledger transfer fees needed to create the position.',
-                            child: Text(
-                                'ledger-fees: ' + (widget.position_kind == PositionKind.Token ? '${Tokens(quantums: ledger_data.fee * BigInt.from(2), decimal_places: token_decimal_places)}-${token_symbol}' : '${Cycles(cycles: CYCLES_BANK_LEDGER.fee*BigInt.from(2))}-${cycles_symbol}'), 
-                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14),//11)
-                            ),
-                        )
-                    ),
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 4),
-                        child: Tooltip(
-                            message: 'trade-fee: When a trade is made, this fee is on the payout of the opposite token.', 
-                            child: Text(
-                                'trade-fee: 0.5%', 
-                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
-                            )
-                        ),
-                    ),
-                    Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.symmetric(vertical: 4),
-                        child: Tooltip(
-                            message: 'payout-transfer-fee: When a trade is made, this ledger transfer fee is on the payout of the opposite token. Payouts happen on every order match.', 
-                            child: Text(
-                                'payout-transfer-fee: ' + (widget.position_kind == PositionKind.Token ? '${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}-${cycles_symbol}' : '${Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places)}-${token_symbol}'), 
-                                style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
-                            )
-                        ),
-                    ),
                     Container(
                         width: double.infinity,
                         padding: EdgeInsets.fromLTRB(0, 7, 0,7),
@@ -864,7 +896,87 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     form_key.currentState!.save();
                                     
-                                    state.loading_text = 'Creating position';
+                                    // show confirmation dialog
+                                    late final bool confirm;
+                                    await showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (BuildContext context) {
+                                            
+                                            Tokens trade_for_mount = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: cycles_transform_tokens(Cycles(cycles: trade_amount.quantums), cycles_per_token_rate), decimal_places: token_decimal_places) : tokens_transform_cycles(trade_amount.quantums, cycles_per_token_rate);
+                                            String trade_for_mount_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-' + token_symbol) : ('-CYCLES')}';                                            
+                                            
+                                            BigInt trade_payout_fees_if_fill_quantums = BigInt.from(trade_for_mount.quantums / BigInt.from(10000) * 50); 
+                                            Tokens trade_payout_fees_if_fill = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: trade_payout_fees_if_fill_quantums, decimal_places: token_decimal_places) : Cycles(cycles: trade_payout_fees_if_fill_quantums);
+                                            
+                                            Tokens ledger_fees_now = widget.position_kind == PositionKind.Token ? Tokens(quantums: ledger_data.fee * create_position_number_of_transfer_fees, decimal_places: token_decimal_places) : Cycles(cycles: CYCLES_BANK_LEDGER.fee * create_position_number_of_transfer_fees);
+                                            String ledger_fees_now_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-CYCLES') : ('-' + token_symbol)}';                                            
+                                            
+                                            return AlertDialog(
+                                                title: Text('CONFIRM', style: TextStyle(fontFamily: 'CourierNewBold')),
+                                                content: DefaultTextStyle.merge(
+                                                    style: TextStyle(fontFamily: 'CourierNew', fontSize: 17),    
+                                                    child: Container(
+                                                        constraints: BoxConstraints(
+                                                            maxWidth: 500,
+                            
+                                                        ),    
+                                                        child: SingleChildScrollView(
+                                                            child: Column(
+                                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                                children: [
+                                                                    Text(
+"""Trade: ${trade_amount}${widget.position_kind == PositionKind.Cycles ? 'T' : ''}-${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${trade_for_mount}${trade_for_mount_suffix}.
+Rate: ${cycles_per_token_rate}-CYCLES per 1-${token_symbol}.
+"""
+                                                                    ),
+                                                                    Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                            Text(
+"""Ledger fees: ${ledger_fees_now}${ledger_fees_now_suffix}.
+Market fees if the order fills: 0.5% = ${trade_payout_fees_if_fill}${trade_for_mount_suffix}.
+Payout-transfer-ledger-fee: ${(widget.position_kind == PositionKind.Token ? '${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}-${cycles_symbol}' : '${Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places)}-${token_symbol}')}.
+
+Amount to deduct from your account:\n${ledger_fees_now.add_quantums(trade_amount.quantums)}${ledger_fees_now_suffix}.
+
+Amount you will receive if the order is filled:\n${trade_for_mount.add_quantums(-trade_payout_fees_if_fill.quantums)}${trade_for_mount_suffix} (minus the payout-transfer-ledger-fee on each order-match).
+""",                                                                             
+                                                                                style: TextStyle(fontSize: 14),
+                                                                            )
+                                                                        ]
+                                                                    ),
+                                                                ]
+                                                            )
+                                                        )
+                                                    )
+                                                ),
+                                                actions: [
+                                                    TextButton(
+                                                        child: Text('CANCEL',  textAlign: TextAlign.end),
+                                                        onPressed: () {
+                                                            confirm = false;
+                                                            Navigator.of(context).pop();
+                                                        }
+                                                    ),
+                                                    TextButton(
+                                                        child: Text('OK',  textAlign: TextAlign.end),
+                                                        onPressed: () {
+                                                            confirm = true;
+                                                            Navigator.of(context).pop();
+                                                        }
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    if (confirm == false) {
+                                        return;
+                                    }
+                                    
+                                    
+                                    
+                                    state.loading_text = 'Creating Position';
                                     state.is_loading = true;
                                     MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                     
@@ -914,6 +1026,8 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
+                                    quantity_text_controller.clear();
+                                    rate_text_controller.clear();
                                     state.loading_text = 'Create position is success. \nPosition-ID: ${position_id}\nloading token balance and position data ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
@@ -1453,7 +1567,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                                         return v + l.tl.tokens - l.tl.tokens_payout_fee - l.tl.tokens_payout_ledger_transfer_fee;
                                                                                     }
                                                                                 );
-                                                                                return show_tokens_with_symbol(Tokens(quantums: final_tokens_payout, decimal_places: token_decimal_places), token_symbol);
+                                                                                return show_tokens_with_symbol(Tokens(quantums: final_tokens_payout, decimal_places: token_decimal_places), token_symbol, round_main_show: false);
                                                                             } else {
                                                                                 Cycles final_cycles_payout = tlaps_list.fold(
                                                                                     Cycles(cycles: BigInt.zero),
@@ -1461,7 +1575,7 @@ class PositionDialogState extends State<PositionDialog> {
                                                                                         return v + l.tl.cycles - l.tl.cycles_payout_fee - Cycles(cycles: l.tl.cycles_payout_ledger_transfer_fee);
                                                                                     }
                                                                                 );
-                                                                                return show_tokens_with_symbol(final_cycles_payout, cycles_symbol);
+                                                                                return show_tokens_with_symbol(final_cycles_payout, cycles_symbol, round_main_show: false);
                                                                             }
                                                                         default:
                                                                             return loading_widget;
@@ -1962,4 +2076,3 @@ void change_url_into_cm_market(int cm_main_trade_contracts_i, BuildContext conte
         d();
     }
 }
-
