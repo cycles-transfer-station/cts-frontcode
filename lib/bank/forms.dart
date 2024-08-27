@@ -914,6 +914,7 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                                     }
                                     
                                     form_key.currentState!.reset();
+                                    text_controller.clear();
                                     state.loading_text = 'Mint cycles success. \ncycles-mint: ${burn_icp_mint_cycles_success.mint_cycles} \nloading icp-balance, icp-transfers, cycles-balance, and cycles-transfers ...';
                                     main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                                     
