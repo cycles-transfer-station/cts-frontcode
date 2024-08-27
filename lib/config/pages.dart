@@ -214,7 +214,7 @@ class WelcomePageWidgetState extends State<WelcomePageWidget> {
                             const Spacer(),
                             if (state.usd_per_one_xdr != null) Container(
                                 padding: EdgeInsets.symmetric(horizontal: 17),
-                                child: Text('1T-CYCLES = ${state.usd_per_one_xdr}-USD', style: TextStyle(fontFamily: 'CourierNew'))
+                                child: Text('1T-CYCLES ≈ ${state.usd_per_one_xdr}-USD', style: TextStyle(fontFamily: 'CourierNew'))
                             ),
                         ]
                     )
