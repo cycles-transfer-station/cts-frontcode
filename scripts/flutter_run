@@ -1,1 +1,1 @@
-fvm flutter run -d web-server --web-renderer canvaskit --web-port 9999 --no-web-resources-cdn
+fvm flutter run -d chrome --web-renderer canvaskit --web-port 9999 --no-web-resources-cdn
