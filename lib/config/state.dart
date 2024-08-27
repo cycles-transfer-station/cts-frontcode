@@ -279,7 +279,7 @@ class CustomState {
         }
         if (uzs_per_one_usd != null && uzs_per_one_xdr != null) {
             usd_per_one_xdr = Tokens.of_the_double_string(
-                (uzs_per_one_xdr.quantums / uzs_per_one_usd.quantums).toStringAsFixed(2),
+                double_as_max_2_decimal_places_string(uzs_per_one_xdr.quantums / uzs_per_one_usd.quantums),
                 decimal_places: 2
             );
             cycles_per_one_usd = CyclesPerTokenRate.oftheTCyclesDoubleString(
@@ -321,6 +321,18 @@ class CustomState {
 
 }
 
+
+String double_as_max_2_decimal_places_string(double d) {
+    String ds = d.toString();
+    if (ds.contains('.')) {
+        List<String> parts = ds.split('.');
+        parts[1] = parts[1].substring(0, min(2, parts[1].length));
+        return '${parts[0]}.${parts[1]}';
+    } else {
+        return ds;
+    }
+
+}
 
 
 
