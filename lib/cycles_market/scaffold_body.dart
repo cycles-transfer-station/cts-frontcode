@@ -906,7 +906,10 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                             Tokens trade_for_mount = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: cycles_transform_tokens(Cycles(cycles: trade_amount.quantums), cycles_per_token_rate), decimal_places: token_decimal_places) : tokens_transform_cycles(trade_amount.quantums, cycles_per_token_rate);
                                             String trade_for_mount_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-' + token_symbol) : ('-CYCLES')}';                                            
                                             
-                                            BigInt trade_payout_fees_if_fill_quantums = BigInt.from(trade_for_mount.quantums / BigInt.from(10000) * 50); 
+                                            BigInt trade_payout_fees_if_fill_quantums 
+                                                = widget.position_kind == PositionKind.Cycles ?
+                                                cycles_transform_tokens(Cycles(cycles: tokens_transform_cycles(trade_for_mount.quantums, cycles_per_token_rate).quantums ~/ BigInt.from(10000) * BigInt.from(50)), cycles_per_token_rate) // fee is always calculated in the cycles-form. 
+                                                : trade_for_mount.quantums ~/ BigInt.from(10000) * BigInt.from(50); 
                                             Tokens trade_payout_fees_if_fill = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: trade_payout_fees_if_fill_quantums, decimal_places: token_decimal_places) : Cycles(cycles: trade_payout_fees_if_fill_quantums);
                                             
                                             Tokens ledger_fees_now = widget.position_kind == PositionKind.Token ? Tokens(quantums: ledger_data.fee * create_position_number_of_transfer_fees, decimal_places: token_decimal_places) : Cycles(cycles: CYCLES_BANK_LEDGER.fee * create_position_number_of_transfer_fees);
