@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'dart:math';
 import 'package:ic_tools/ic_tools.dart';
-
+export 'package:ic_tools/tools.dart' show Chunks;
 
 
 
@@ -30,18 +30,7 @@ String bytes_as_the_bitstring(Iterable<int> bytes) {
 
 
 
-extension Chunks<T extends List> on T {
-    List<T> chunks(int chunk_size) {
-        var b_len = this.length;
-        List<T> chunks = [];
-        for(int i = 0; i < b_len; i += chunk_size) {    
-            chunks.add(this.sublist(i,min(i+chunk_size, b_len)) as T);
-        }
-        return chunks;
-    }
-} 
-
 
 String principal_short(Principal p) {
-    return p.text.substring(0,9) + '...' + p.text.substring(p.text.length - 7);
+    return p.text.substring(0,8) + '..' + p.text.substring(p.text.length - 5);
 }

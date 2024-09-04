@@ -152,7 +152,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
 
         }
                 
-        print('router build. loading: ${state.is_loading}, current-url: ${state.current_url.name}, navigator pages: ${navigator_pages.map((p)=>p.runtimeType).toList()}');
+        //print('router build. loading: ${state.is_loading}, current-url: ${state.current_url.name}, navigator pages: ${navigator_pages.map((p)=>p.runtimeType).toList()}');
         return MainStateBind<CustomState>(
             key: ValueKey<String>('mainstatebind'),
             getState: _getState,

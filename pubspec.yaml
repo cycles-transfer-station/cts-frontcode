@@ -34,8 +34,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   # cupertino_icons: ^1.0.2
 
-  archive: 3.3.1
-  ic_tools: 2.0.2
+  ic_tools: 2.1.3
   cbor:
     git:
       url: https://github.com/levifeldman/cbor.git

@@ -220,7 +220,7 @@ class CustomState {
         Record rc = cs[0] as Record;
         Uint8List certificate_bytes = (rc['certificate'] as Blob).bytes;
         Map certificate = cbor_simple.cbor.decode(certificate_bytes) as Map;
-        await verify_certificate(certificate);
+        await verify_certificate(certificate, SubnetOrCanister.canister, common.SYSTEM_CANISTERS.cycles_mint.principal);
         BigInt btime = leb128.decodeUnsigned(lookup_path_value_in_an_ic_certificate_tree(certificate['tree'], _pathbytes(['time']))!);
         if (btime < get_current_time_nanoseconds() - BigInt.from(30*1000000000)) { throw Exception('time is too old on the certificate'); }
         Uint8List certified_data = lookup_path_value_in_an_ic_certificate_tree(certificate['tree'], _pathbytes(['canister', common.SYSTEM_CANISTERS.cycles_mint.principal.bytes, 'certified_data']))!;
