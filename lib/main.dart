@@ -46,7 +46,7 @@ class BaseState extends State<Base> {
                 ),
                 filledButtonTheme: const FilledButtonThemeData(
                     style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(good_light_green_color),
+                        backgroundColor: WidgetStatePropertyAll(good_light_blue_color/*good_light_green_color*/),
                     )
                 ),
                 outlinedButtonTheme: const OutlinedButtonThemeData(
@@ -90,4 +90,3 @@ const Color good_light_blue_color = Color(0xFF3B4A6B);
 const Color good_light_green_color = Color(0xFF334550);
 
 // when seed-color = FF2a254b, then #1c1b20 is the color of the card
-
