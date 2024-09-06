@@ -982,6 +982,22 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                                                                         DataRow(
                                                                                             cells: [
                                                                                                 DataCell(Text(
+                                                                                                    'Rate:' 
+                                                                                                )),
+                                                                                                DataCell(Builder(
+                                                                                                    builder: (BuildContext context) {
+                                                                                                        String text = /*'1-${token_symbol} = */'${cycles_per_token_rate}-CYCLES per 1-${token_symbol}'; 
+                                                                                                        /*if (state.cycles_per_one_usd != null) {
+                                                                                                            text += ' ≈ \$${Tokens(quantums: cycles_transform_tokens(Cycles(cycles: cycles_per_token_rate.cycles_per_token_quantum_rate * Tokens(quantums: BigInt.zero, decimal_places: token_decimal_places).dividable_by), state.cycles_per_one_usd!), decimal_places: 2)}-USD';
+                                                                                                        }*/
+                                                                                                        return Text(text);
+                                                                                                    }
+                                                                                                )),
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
                                                                                                     'Ledger fees:' 
                                                                                                 )),
                                                                                                 DataCell(Text(
@@ -998,29 +1014,15 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                                                                                     '${ledger_fees_now.add_quantums(trade_amount.quantums)}${ledger_fees_now_suffix}'
                                                                                                 ))
                                                                                             ]
-                                                                                        ),/*
+                                                                                        ),
+                                                                                        /*
                                                                                         DataRow(
                                                                                             cells: [
-                                                                                                DataCell(Text('')),
+                                                                                                DataCell(Text('If the position fills')),
                                                                                                 DataCell(Text(''))
                                                                                             ]
-                                                                                        ),*/
-                                                                                        DataRow(
-                                                                                            cells: [
-                                                                                                DataCell(Text(
-                                                                                                    'Rate:' 
-                                                                                                )),
-                                                                                                DataCell(Builder(
-                                                                                                    builder: (BuildContext context) {
-                                                                                                        String text = /*'1-${token_symbol} = */'${cycles_per_token_rate}-CYCLES per 1-${token_symbol}'; 
-                                                                                                        /*if (state.cycles_per_one_usd != null) {
-                                                                                                            text += ' ≈ \$${Tokens(quantums: cycles_transform_tokens(Cycles(cycles: cycles_per_token_rate.cycles_per_token_quantum_rate * Tokens(quantums: BigInt.zero, decimal_places: token_decimal_places).dividable_by), state.cycles_per_one_usd!), decimal_places: 2)}-USD';
-                                                                                                        }*/
-                                                                                                        return Text(text);
-                                                                                                    }
-                                                                                                )),
-                                                                                            ]
                                                                                         ),
+                                                                                        */
                                                                                         DataRow(
                                                                                             cells: [
                                                                                                 DataCell(Text(
