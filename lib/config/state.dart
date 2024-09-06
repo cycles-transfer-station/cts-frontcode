@@ -430,6 +430,10 @@ BigInt cycles_transform_tokens(Cycles cycles, Cycles cycles_per_token) {
     return cycles.cycles ~/ cycles_per_token.cycles;
 }
 
+Tokens cycles_per_token_rate_transform_usd(CyclesPerTokenRate cycles_per_token_rate, CyclesPerTokenRate cycles_per_one_usd) {
+    return Tokens(quantums: cycles_transform_tokens(Cycles(cycles: cycles_per_token_rate.cycles_per_token_quantum_rate * Tokens(quantums: BigInt.zero, decimal_places: cycles_per_token_rate.token_decimal_places).dividable_by), cycles_per_one_usd), decimal_places: 2);
+}
+
 /*
 final BigInt CYCLES_PER_XDR = Cycles.T_CYCLES_DIVIDABLE_BY;
 

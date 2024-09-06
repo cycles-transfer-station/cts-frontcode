@@ -129,44 +129,47 @@ class Icrc1TokenBalanceAndLoadIcrc1TokenBalance extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
         
-        return Padding(
-            padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                    Text('${this.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : this.icrc1_ledger.symbol}-BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : this.icrc1_ledger == CYCLES_BANK_LEDGER ? Cycles(cycles: state.user!.icrc1_balances_cache[this.icrc1_ledger]!) : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17, fontFamily: 'CourierNewBold')),
-                    SizedBox(width: 7),
-                    IconButton(
-                        iconSize: 18,
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () async {
-                            state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
-                            state.is_loading = true;
-                            MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
-                            try {
-                                await state.user!.fresh_icrc1_balances([this.icrc1_ledger]);
-                            } catch(e) {
-                                await showDialog(
-                                    context: state.context,
-                                    builder: (BuildContext context) {
-                                        return AlertDialog(
-                                            title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
-                                            content: Text('${etext(e)}'),
-                                            actions: <Widget>[
-                                                TextButton(
-                                                    onPressed: () => Navigator.pop(context),
-                                                    child: const Text('OK'),
-                                                ),
-                                            ]
-                                        );
-                                    }   
-                                );                                    
+        return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,    
+            child: Padding(
+                padding: EdgeInsets.fromLTRB(13.0, 13, 13,13),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                        Text('${this.icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : this.icrc1_ledger.symbol}-BALANCE: ${state.user!.icrc1_balances_cache[this.icrc1_ledger] == null ? 'unknown' : this.icrc1_ledger == CYCLES_BANK_LEDGER ? Cycles(cycles: state.user!.icrc1_balances_cache[this.icrc1_ledger]!) : Tokens(quantums: state.user!.icrc1_balances_cache[this.icrc1_ledger]!, decimal_places: this.icrc1_ledger.decimals)}', style: TextStyle(fontSize:17, fontFamily: 'CourierNewBold')),
+                        SizedBox(width: 4),
+                        IconButton(
+                            iconSize: 18,
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () async {
+                                state.loading_text = 'load bank ${this.icrc1_ledger.symbol} balance ...';
+                                state.is_loading = true;
+                                MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
+                                try {
+                                    await state.user!.fresh_icrc1_balances([this.icrc1_ledger]);
+                                } catch(e) {
+                                    await showDialog(
+                                        context: state.context,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('Error when checking the bank ${this.icrc1_ledger.symbol} balance:'),
+                                                content: Text('${etext(e)}'),
+                                                actions: <Widget>[
+                                                    TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('OK'),
+                                                    ),
+                                                ]
+                                            );
+                                        }   
+                                    );                                    
+                                }
+                                state.is_loading = false;
+                                main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
                             }
-                            state.is_loading = false;
-                            main_state_bind_scope.state_bind.changeState(state, tifyListeners: true);
-                        }
-                    )
-                ]
+                        )
+                    ]
+                )
             )
         );
     }
@@ -741,37 +744,49 @@ class BurnIcpMintCyclesFormState extends State<BurnIcpMintCyclesForm> {
                         width: 1,
                         height: 11
                     ),
-                    Container(
-                        width: double.infinity,
-                        child: DataTable(
-                            dataTextStyle: TextStyle(fontFamily: 'CourierNew'),
-                            headingRowHeight: 0,
-                            showBottomBorder: true,
-                            columns: <DataColumn>[
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        ),
+                    DataTable(
+                        dataTextStyle: TextStyle(fontFamily: 'CourierNew'),
+                        headingRowHeight: 0,
+                        showBottomBorder: true,
+                        dataRowMaxHeight: 70,
+                        dataRowMinHeight: kMinInteractiveDimension,
+                        columns: <DataColumn>[
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
                                     ),
                                 ),
-                                DataColumn(
-                                    label: Expanded(
-                                        child: Text(
-                                            '',
-                                        ),
+                            ),
+                            DataColumn(
+                                label: Expanded(
+                                    child: Text(
+                                        '',
                                     ),
                                 ),
-                            ],
-                            rows: [
-                                DataRow(
-                                    cells: [
-                                        DataCell(Text('CYCLES PER ICP RATE:', )),
-                                        DataCell(Text('${state.cmc_cycles_per_icp_rate}')),
-                                    ]
-                                ),
-                            ]
-                        )
+                            ),
+                        ],
+                        rows: [
+                            DataRow(
+                                cells: [
+                                    DataCell(Text('CYCLES PER ICP RATE:', )),
+                                    DataCell(
+                                        Builder(
+                                            builder: (BuildContext context) {
+                                                String text = '${state.cmc_cycles_per_icp_rate}';
+                                                if (state.cycles_per_one_usd != null) {
+                                                    text += ' ≈ \$${cycles_per_token_rate_transform_usd(
+                                                        state.cmc_cycles_per_icp_rate,
+                                                        state.cycles_per_one_usd!
+                                                    )}-USD';
+                                                } 
+                                                return Text(text);
+                                            }
+                                        )
+                                    ),
+                                ]
+                            ),
+                        ]
                     ),
                     SizedBox(
                         width: 1,

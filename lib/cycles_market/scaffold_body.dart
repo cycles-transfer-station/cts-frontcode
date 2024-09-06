@@ -813,22 +813,12 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         
         final int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
         
-        
-        final BigInt create_position_number_of_transfer_fees = BigInt.from(2);
         late final String max_quantity;
         switch (widget.position_kind) {
             case PositionKind.Cycles:
-                BigInt max_quantity_quantums = state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]! - (CYCLES_BANK_LEDGER.fee * create_position_number_of_transfer_fees);
-                if (max_quantity_quantums.isNegative) {
-                    max_quantity_quantums = BigInt.zero;
-                }
-                max_quantity = Cycles(cycles: max_quantity_quantums).toString().replaceFirst('T', '');
+                max_quantity = Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!).toString().replaceFirst('T', '');
             case PositionKind.Token:
-                BigInt max_quantity_quantums = state.user!.icrc1_balances_cache[ledger_data]! - (ledger_data.fee * create_position_number_of_transfer_fees);
-                if (max_quantity_quantums.isNegative) {
-                    max_quantity_quantums = BigInt.zero;
-                }
-                max_quantity = Tokens(quantums: max_quantity_quantums, decimal_places: token_decimal_places).toString();    
+                max_quantity = Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: token_decimal_places).toString();    
         }
         
         List<Widget> cycles_balance_and_token_balance = [
@@ -850,7 +840,8 @@ class CreatePositionFormState extends State<CreatePositionForm> {
             ),
         ];
         
-        
+        Tokens quantity_ledger_fee = widget.position_kind == PositionKind.Token ? Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places) : Cycles(cycles: CYCLES_BANK_LEDGER.fee);
+        Tokens ledger_fees_now = quantity_ledger_fee.add_quantums(quantity_ledger_fee.quantums); // two ledger fees to create a position 
         
         return Form(
             key: form_key,
@@ -870,13 +861,31 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                             )
                         ),
                         onSaved: (String? value) { trade_amount = Tokens.of_the_double_string(value!, decimal_places: first_field_decimal_places); },
-                        validator: tokens_validator(token_decimal_places: first_field_decimal_places)
+                        validator: (String? v) {
+                            final String? tokens_validator_result = tokens_validator(token_decimal_places: first_field_decimal_places)(v);
+                            if (tokens_validator_result != null) {
+                                return tokens_validator_result;
+                            }
+                            final BigInt try_trade_quantums = Tokens.of_the_double_string(v!, decimal_places: first_field_decimal_places).quantums;
+                            final BigInt user_balance_quantums = switch (widget.position_kind) {
+                                PositionKind.Cycles => state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!,
+                                PositionKind.Token => state.user!.icrc1_balances_cache[ledger_data]!,
+                            };
+                            if (try_trade_quantums > user_balance_quantums) {
+                                return 'Your balance is too low for this amount.';
+                            }
+                            Tokens minimum_quantity = Tokens(quantums: quantity_ledger_fee.quantums * BigInt.from(10) + BigInt.from(10000) + ledger_fees_now.quantums, decimal_places: quantity_ledger_fee.decimal_places); 
+                            if (try_trade_quantums < minimum_quantity.quantums) {
+                                return 'Minimum ${minimum_quantity}';
+                            }
+                            return null;
+                        }
                     ),
                     TextFormField(
                         controller: rate_text_controller,     
                         style: TextStyle(fontFamily: 'CourierNewBold'),
                         decoration: InputDecoration(
-                            labelText: 'RATE (TCYCLES per ${token_symbol})',
+                            labelText: 'RATE (TCYCLES per 1-${token_symbol})',
                             //suffixText: current_written_rate != null && state.cycles_per_one_usd != null ? ' ≈ ${Tokens(quantums: cycles_transform_tokens(Cycles(cycles: current_written_rate!.cycles_per_token_quantum_rate*(BigInt.from(10).pow(token_decimal_places))), state.cycles_per_one_usd!), decimal_places: 2)}-USD' : null,
                             suffixStyle: TextStyle(fontFamily: 'CourierNew'),
                         ),
@@ -896,6 +905,16 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                     
                                     form_key.currentState!.save();
                                     
+                                    // update trade_amount if not enough balance for position-creation-fees
+                                    final BigInt user_balance_quantums = switch (widget.position_kind) {
+                                        PositionKind.Cycles => state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!,
+                                        PositionKind.Token => state.user!.icrc1_balances_cache[ledger_data]!,
+                                    };
+                                    // form field validator already makes sure that the user has enough balance for the amount and that the position is for at least the minimum position quantity + ledger_fees_now
+                                    if (trade_amount.quantums + ledger_fees_now.quantums > user_balance_quantums) {
+                                        trade_amount = Tokens(quantums: user_balance_quantums - ledger_fees_now.quantums, decimal_places: trade_amount.decimal_places);
+                                    } 
+                                    
                                     // show confirmation dialog
                                     late final bool confirm;
                                     await showDialog(
@@ -912,41 +931,141 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                                 : trade_for_mount.quantums ~/ BigInt.from(10000) * BigInt.from(50); 
                                             Tokens trade_payout_fees_if_fill = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: trade_payout_fees_if_fill_quantums, decimal_places: token_decimal_places) : Cycles(cycles: trade_payout_fees_if_fill_quantums);
                                             
-                                            Tokens ledger_fees_now = widget.position_kind == PositionKind.Token ? Tokens(quantums: ledger_data.fee * create_position_number_of_transfer_fees, decimal_places: token_decimal_places) : Cycles(cycles: CYCLES_BANK_LEDGER.fee * create_position_number_of_transfer_fees);
                                             String ledger_fees_now_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-CYCLES') : ('-' + token_symbol)}';                                            
                                             
                                             return AlertDialog(
                                                 title: Text('CONFIRM', style: TextStyle(fontFamily: 'CourierNewBold')),
-                                                content: DefaultTextStyle.merge(
-                                                    style: TextStyle(fontFamily: 'CourierNew', fontSize: 17),    
-                                                    child: Container(
-                                                        constraints: BoxConstraints(
-                                                            maxWidth: 500,
-                            
-                                                        ),    
-                                                        child: SingleChildScrollView(
+                                                contentPadding: EdgeInsets.fromLTRB(0,16,0,0),
+                                                content: SingleChildScrollView(
+                                                    child: SingleChildScrollView(
+                                                        scrollDirection: Axis.horizontal,
+                                                        child: Container(
+                                                            constraints: BoxConstraints(
+                                                                minWidth: 550,
+                                                            ),    
+                                                            padding: EdgeInsets.fromLTRB(24,0,24,24),
                                                             child: Column(
                                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                                 children: [
-                                                                    Text(
-"""Trade: ${trade_amount}${widget.position_kind == PositionKind.Cycles ? 'T' : ''}-${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${trade_for_mount}${trade_for_mount_suffix}.
-Rate: ${cycles_per_token_rate}-CYCLES per 1-${token_symbol}.
-"""
-                                                                    ),
+                                                                    Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}', style: TextStyle(fontFamily: 'CourierNew', fontSize: 19)),
                                                                     Column(
                                                                         crossAxisAlignment: CrossAxisAlignment.start,
                                                                         children: [
-                                                                            Text(
-"""Ledger fees: ${ledger_fees_now}${ledger_fees_now_suffix}.
-Market fees if the order fills: 0.5% = ${trade_payout_fees_if_fill}${trade_for_mount_suffix}.
-Payout-transfer-ledger-fee: ${(widget.position_kind == PositionKind.Token ? '${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}-${cycles_symbol}' : '${Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places)}-${token_symbol}')}.
-
-Amount to deduct from your account:\n${ledger_fees_now.add_quantums(trade_amount.quantums)}${ledger_fees_now_suffix}.
-
-Amount you will receive if the order is filled:\n${trade_for_mount.add_quantums(-trade_payout_fees_if_fill.quantums)}${trade_for_mount_suffix} (minus the payout-transfer-ledger-fee on each order-match).
-""",                                                                             
-                                                                                style: TextStyle(fontSize: 14),
-                                                                            )
+                                                                            SizedBox(
+                                                                                height: 13,
+                                                                            ),    
+                                                                            DividerTheme(
+                                                                                data: DividerTheme.of(context).copyWith(color: const Color(0xFFFFFF)),
+                                                                                child: DataTable(
+                                                                                    headingRowHeight: 0,
+                                                                                    dataTextStyle: TextStyle(fontFamily: 'CourierNew', fontSize: 17), 
+                                                                                    dividerThickness: 0,
+                                                                                    columns: [
+                                                                                        DataColumn(
+                                                                                            label: Text('')
+                                                                                        ),
+                                                                                        DataColumn(
+                                                                                            label: Text('')
+                                                                                        ),
+                                                                                    ],
+                                                                                    rows: [
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Trade:' 
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${trade_amount}${widget.position_kind == PositionKind.Cycles ? 'T' : ''}-${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol}'
+                                                                                                )),
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Ledger fees:' 
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${ledger_fees_now}${ledger_fees_now_suffix}'
+                                                                                                )),
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Total cost:'
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${ledger_fees_now.add_quantums(trade_amount.quantums)}${ledger_fees_now_suffix}'
+                                                                                                ))
+                                                                                            ]
+                                                                                        ),/*
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text('')),
+                                                                                                DataCell(Text(''))
+                                                                                            ]
+                                                                                        ),*/
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Rate:' 
+                                                                                                )),
+                                                                                                DataCell(Builder(
+                                                                                                    builder: (BuildContext context) {
+                                                                                                        String text = /*'1-${token_symbol} = */'${cycles_per_token_rate}-CYCLES per 1-${token_symbol}'; 
+                                                                                                        /*if (state.cycles_per_one_usd != null) {
+                                                                                                            text += ' ≈ \$${Tokens(quantums: cycles_transform_tokens(Cycles(cycles: cycles_per_token_rate.cycles_per_token_quantum_rate * Tokens(quantums: BigInt.zero, decimal_places: token_decimal_places).dividable_by), state.cycles_per_one_usd!), decimal_places: 2)}-USD';
+                                                                                                        }*/
+                                                                                                        return Text(text);
+                                                                                                    }
+                                                                                                )),
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Position fill:'
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${trade_for_mount}${trade_for_mount_suffix}'                                                                       
+                                                                                                ))
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Position fill fee:'
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${trade_payout_fees_if_fill}${trade_for_mount_suffix}'                                                                       
+                                                                                                ))
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Position fill payout:'
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${trade_for_mount.add_quantums(-trade_payout_fees_if_fill.quantums)}${trade_for_mount_suffix}'
+                                                                                                ))
+                                                                                            ]
+                                                                                        ),
+                                                                                        DataRow(
+                                                                                            cells: [
+                                                                                                DataCell(Text(
+                                                                                                    'Payout ledger fee:'
+                                                                                                )),
+                                                                                                DataCell(Text(
+                                                                                                    '${widget.position_kind == PositionKind.Token ? '${Cycles(cycles: CYCLES_BANK_LEDGER.fee)}-${cycles_symbol}' : '${Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places)}-${token_symbol}'}'                                                                       
+                                                                                                ))
+                                                                                            ]
+                                                                                        )
+                                                                                    ]
+                                                                                ),
+                                                                            ),
+                                                                            SizedBox(height: 13),
+                                                                            
                                                                         ]
                                                                     ),
                                                                 ]

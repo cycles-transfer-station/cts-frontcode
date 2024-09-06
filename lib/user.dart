@@ -571,7 +571,7 @@ Current cm-escrow-account balance: ${Tokens(quantums: trade_contract_balance, de
                         'MinimumPosition' : (r) {
                             Cycles min_cycles = Cycles.of_the_nat((r as Record)['minimum_cycles'] as Nat);
                             Tokens min_tokens = Tokens.of_the_nat((r as Record)['minimum_tokens'] as Nat, decimal_places: trade_contract.ledger_data.decimals);
-                            throw Exception('Amount too little.\nminimum cycles: ${min_cycles}\nminimum ${trade_contract.ledger_data.symbol}: ${min_tokens}');
+                            throw Exception('Amount too little.\nMinimum amount: ${kind == PositionKind.Cycles ? min_cycles.toString() + '-CYCLES' : min_tokens.toString() + '-' + trade_contract.ledger_data.symbol}');
                         },
                         'CallerIsInTheMiddleOfADifferentCallThatLocksTheBalance': (_n) {
                             throw Exception('You are in the middle of a different call that locks the balance.');
