@@ -93,6 +93,7 @@ class User {
             'hvgxa-wqaaa-aaaaq-aacia-cai': 'h3e2i-naaaa-aaaaq-aacja-cai', // Sneed 
             'itgqj-7qaaa-aaaaq-aadoa-cai': 'i5e5b-eaaaa-aaaaq-aadpa-cai', // CTS
             'jcmow-hyaaa-aaaaq-aadlq-cai': 'iidmm-fiaaa-aaaaq-aadmq-cai', // WTN
+            'buwm7-7yaaa-aaaar-qagva-cai': 'btxkl-saaaa-aaaar-qagvq-cai', // nICP
         }; 
         return c_backwards(await Canister(Principal.text(ledger_index[l.ledger.principal.text]!)).call(
             calltype: CallType.call,
