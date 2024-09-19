@@ -23,13 +23,11 @@ class BaseState extends State<Base> {
             backButtonDispatcher   : RootBackButtonDispatcher(),
             title: 'CTS',
             theme: ThemeData(
-                //brightness: Brightness.dark,
                 colorScheme: ColorScheme.fromSeed(
                     seedColor: good_light_blue_color,
                     brightness: Brightness.dark,
-                ).copyWith(
-                    background: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
-                    secondaryContainer: good_light_green_color,
+                    dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+                    surface: grey_background, //Color(0xFF726f8c), // 1e202a // 353844 // 757b8f
                 ),
                 fontFamily: 'AxaxaxBold',
                 appBarTheme: AppBarTheme(
