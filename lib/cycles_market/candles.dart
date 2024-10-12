@@ -209,7 +209,7 @@ class CandlesChartState extends State<CandlesChart> {
                                 SizedBox(width: 7),
                                 SizedBox(width: 7),
                                 Expanded(
-                                    child: TopRowCandleData(),
+                                    child: TopRowCandleData(key: UniqueKey()),
                                 ),
                                 //Spacer(),
                                 SizedBox(width: 7),
