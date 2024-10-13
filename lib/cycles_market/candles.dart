@@ -12,6 +12,7 @@ import './cycles_market.dart';
 import '../config/state.dart';
 import './scaffold_body.dart';
 import '../config/state_bind.dart';
+import '../tools/widgets.dart';
 
 // volume of the candles is the quantity of the number of tokens traded during that time. (not the number of cycles.)
 
@@ -68,6 +69,14 @@ class CandlesChartState extends State<CandlesChart> {
     int segment_length_minutes = 1; // option user can change this dropdown setState
     int page = 0; // first page is zero. first page is latest candles.
 
+    late GlobalKey top_row_candle_data_key;
+    
+    @override
+    void initState() {
+        super.initState();
+        top_row_candle_data_key = GlobalKey();
+    }
+    
     Widget build(BuildContext context) {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         //MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
@@ -125,7 +134,6 @@ class CandlesChartState extends State<CandlesChart> {
         const double segment_length_selector_height = 22;
 
         return Card(
-            semanticContainer: false,
             child: Container(
                 constraints: BoxConstraints(
                     maxWidth: card_max_width,
@@ -209,7 +217,7 @@ class CandlesChartState extends State<CandlesChart> {
                                 SizedBox(width: 7),
                                 SizedBox(width: 7),
                                 Expanded(
-                                    child: TopRowCandleData(key: UniqueKey()),
+                                    child: TopRowCandleData(key: top_row_candle_data_key),
                                 ),
                                 //Spacer(),
                                 SizedBox(width: 7),
@@ -280,6 +288,7 @@ class CandlesChartState extends State<CandlesChart> {
                                     child: ChartMouseRegion(
                                         candles: page_candles,
                                         hovercolor: Theme.of(context).hoverColor,
+                                        top_row_candle_data_key: top_row_candle_data_key,
                                     )
                                 ),
                             ]
@@ -623,7 +632,8 @@ class TimestampsMarkersPainter extends CustomPainter {
 class ChartMouseRegion extends StatefulWidget {
     List<Candle> candles;
     final Paint hovercolor_paint;
-    ChartMouseRegion({required this.candles, required Color hovercolor}) : hovercolor_paint = Paint()..color = hovercolor;
+    GlobalKey top_row_candle_data_key;
+    ChartMouseRegion({required this.candles, required Color hovercolor, required this.top_row_candle_data_key}) : hovercolor_paint = Paint()..color = hovercolor;
     State createState() => ChartMouseRegionState();     
 }
 class ChartMouseRegionState extends State<ChartMouseRegion> {
@@ -637,24 +647,14 @@ class ChartMouseRegionState extends State<ChartMouseRegion> {
             onHover: (PointerHoverEvent event) {
                 mouse_position = event.localPosition;
                 setState((){});
-                if (top_row_candle_data_set_state != null) {
-                    top_row_candle_data_set_state!();
-                }
             },
             onEnter: (event) {
                 mouse_position = event.localPosition;
                 setState((){});
-                if (top_row_candle_data_set_state != null) {
-                    top_row_candle_data_set_state!();
-                }
             },
             onExit: (event) {
                 mouse_position = null;
-                candle_selection = null;
                 setState((){});
-                if (top_row_candle_data_set_state != null) {
-                    top_row_candle_data_set_state!();
-                }
             },
             child: CustomPaint(
                 size: Size.infinite, // check this, maybe use layout builder and set this to maxConstarints
@@ -662,6 +662,7 @@ class ChartMouseRegionState extends State<ChartMouseRegion> {
                     candles: widget.candles,
                     hovercolor_paint: widget.hovercolor_paint,
                     mouse_position: mouse_position,
+                    top_row_candle_data_key: widget.top_row_candle_data_key,
                 ) 
             )
         );
@@ -674,21 +675,27 @@ class PointerPainter extends CustomPainter {
     List<Candle> candles;
     final Paint hovercolor_paint;
     final Offset? mouse_position;
+    GlobalKey top_row_candle_data_key;
 
     final Paint horizontal_dot_lines_paint = Paint()..color = Colors.grey;
     final Paint horizontal_line_rate_selection_background = Paint()..color = Colors.grey;
     final Color horizontal_line_rate_selection_text_color = Colors.black;
     
-    PointerPainter({required this.candles, required this.hovercolor_paint, required this.mouse_position});
+    PointerPainter({required this.candles, required this.hovercolor_paint, required this.mouse_position, required this.top_row_candle_data_key});
     
     void paint(Canvas canvas, Size size) {
         
         if (mouse_position == null || candles.isEmpty) {
+            (top_row_candle_data_key.currentState! as TopRowCandleDataState).candle_selection = null;
+            WidgetsBinding.instance.addPostFrameCallback((_){
+                top_row_candle_data_key.currentState!.setState((){});    
+            });
             return;
         }
         
         // draw hovercolor on the candle column
         // find candle
+        // possible make this into a function and call it from TopRowCandleData but this is fine for now in one place.
         Candle? hover_candle;
         late final double left;
         late final double right;
@@ -716,11 +723,13 @@ class PointerPainter extends CustomPainter {
                 ),
                 hovercolor_paint
             );
-            candle_selection = hover_candle;
+            (top_row_candle_data_key.currentState! as TopRowCandleDataState).candle_selection = hover_candle;
         } else {
-            candle_selection = null;
+            (top_row_candle_data_key.currentState! as TopRowCandleDataState).candle_selection = null;
         }
-
+        WidgetsBinding.instance.addPostFrameCallback((_){
+            top_row_candle_data_key.currentState!.setState((){});
+        });
 
         // draw horizontal dotted lines of the current mouse position and horizontal line rate
         final RateMarkersRangeSpecifics(
@@ -787,8 +796,6 @@ class PointerPainter extends CustomPainter {
 }
 
 
-Candle? candle_selection;
-void Function()? top_row_candle_data_set_state;
 
 class TopRowCandleData extends StatefulWidget {
     TopRowCandleData({super.key});
@@ -796,17 +803,8 @@ class TopRowCandleData extends StatefulWidget {
 }
 class TopRowCandleDataState extends State<TopRowCandleData> {
     
-    @override
-    void initState() {
-        super.initState();
-        top_row_candle_data_set_state = () { setState((){}); };
-    }
-    @override
-    void dispose() {
-        top_row_candle_data_set_state = null;
-        super.dispose();
-    }
-    
+    Candle? candle_selection;
+        
     Widget build(BuildContext context) {
         
         if (candle_selection == null) {
