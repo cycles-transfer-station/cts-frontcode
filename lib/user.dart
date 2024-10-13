@@ -95,6 +95,7 @@ class User {
             'jcmow-hyaaa-aaaaq-aadlq-cai': 'iidmm-fiaaa-aaaaq-aadmq-cai', // WTN
             'buwm7-7yaaa-aaaar-qagva-cai': 'btxkl-saaaa-aaaar-qagvq-cai', // nICP
             'lkwrt-vyaaa-aaaaq-aadhq-cai': 'jqkzp-liaaa-aaaaq-aadiq-cai', // OGY
+            'ddsp7-7iaaa-aaaaq-aacqq-cai': 'dnqcx-eyaaa-aaaaq-aacrq-cai', // OpenFPL
         }; 
         return c_backwards(await Canister(Principal.text(ledger_index[l.ledger.principal.text]!)).call(
             calltype: CallType.call,
