@@ -751,6 +751,38 @@ class Icrc1Transaction {
             fee: t.find_option<Nat>('fee').nullmap((m)=>m.value)
         );
     }
+    
+    static Icrc1Transaction of_the_icrc3_record(Record icrc3_block) {
+        BigInt block_id = (icrc3_block['id'] as Nat).value;
+        Variant block_value = icrc3_block['block'] as Variant;
+        Vector<Record> block_value_map = (block_value['Map'] as Vector).cast_vector<Record>();
+        Map<String, Variant> map = { for (var r in block_value_map) (r[0] as candid.Text).value: (r[1] as Variant) };
+        Map<String, Variant> tx = { for (var r in ((map['tx']!['Map'] as Vector).cast_vector<Record>())) (r[0] as candid.Text).value: (r[1] as Variant) };
+        
+        Icrc1Account parse_icrc3_account_array(Variant array) {
+            Vector<Variant> vector = (array['Array'] as Vector).cast_vector<Variant>();
+            return Icrc1Account(
+                owner: Principal.bytes((vector[0]['Blob']! as Blob).bytes),
+                subaccount: vector.length == 1 ? null : (vector[1]['Blob']! as Blob).bytes,
+            ); 
+        }
+        
+        return Icrc1Transaction(
+            block: block_id,
+            timestamp_nanos: (map['ts']!['Nat'] as Nat).value,
+            created_at_time_nanos: tx['ts'].nullmap((value)=>(value['Nat'] as Nat).value), 
+            tokens: (tx['amt']!['Nat'] as Nat).value,
+            fee: map['fee'].nullmap((value)=>(value['Nat'] as Nat).value) 
+                 ?? tx['fee'].nullmap((value)=>(value['Nat'] as Nat).value),
+            memo: tx['memo'].nullmap((value)=>(value['Blob'] as Blob).bytes),
+            from: tx['from'].nullmap(parse_icrc3_account_array), 
+            to: tx['to'].nullmap(parse_icrc3_account_array),
+            icrc1_transaction_kind: map['btype'].nullmap((value)=>icrc1_transaction_kind_of_the_btype((value['Text'] as candid.Text).value))
+            ?? icrc1_transaction_kind_of_the_op((tx['op']!['Text'] as candid.Text).value),           
+        );
+    }
+
+    
     String toString() {
         return '$block';
     }
@@ -761,6 +793,25 @@ enum Icrc1TransactionKind {
     mint,
     burn,
     transfer
+}
+
+Icrc1TransactionKind icrc1_transaction_kind_of_the_btype(String btype) {
+    return switch (btype) {
+        '1mint' => Icrc1TransactionKind.mint,
+        '1burn' => Icrc1TransactionKind.burn,
+        '1xfer' => Icrc1TransactionKind.transfer,
+        '2xfer' => Icrc1TransactionKind.transfer,
+        _ => throw Exception('unsupported btype')
+    };
+}
+
+Icrc1TransactionKind icrc1_transaction_kind_of_the_op(String op) {
+    return switch (op) {
+        'mint' => Icrc1TransactionKind.mint,
+        'burn' => Icrc1TransactionKind.burn,
+        'xfer' => Icrc1TransactionKind.transfer,
+        _ => throw Exception('unsupported op')
+    };
 }
 
 

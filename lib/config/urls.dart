@@ -6,6 +6,7 @@ import '../bank/scaffold_body.dart';
 import '../cycles_market/scaffold_body.dart';
 import '../welcome/scaffold_body.dart';
 import '../about/scaffold_body.dart';
+import '../view_bank_icrc3_log/scaffold_body.dart';
 
 
 //:variables of the url-path are with the syntax: <variablename>.
@@ -49,6 +50,11 @@ final Map<String, Map> urlmap = {
         'path': '/about',
         'page': WelcomePage.create,
         'main_page_scaffold_body': AboutScaffoldBody.create
+    },
+    'view_bank_icrc3_log': {
+        'path': '/bank/<token_ledger_id>/log/<block_id>',
+        'page': WelcomePage.create,
+        'main_page_scaffold_body': ViewBankIcrc3LogScaffoldBody.create
     }
 };
 

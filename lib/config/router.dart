@@ -93,7 +93,7 @@ class CustomRouteLegate extends RouterDelegate<CustomUrl> with ChangeNotifier, P
         }
         
         state.first_show_scaffold = false; // when url changes, treat it like a fresh url load. // :portant.
-        print('setNewRoutePath');
+        //print('setNewRoutePath');
         // does this re-build the state? yes.
     }
 

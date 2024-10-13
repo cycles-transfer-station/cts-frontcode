@@ -488,12 +488,11 @@ class Icrc1TransactionCard extends StatelessWidget {
                                         children: [
                                             Text('operation: ${t.icrc1_transaction_kind.name}'),
                                             Text('tokens: ${Tokens(quantums: t.tokens, decimal_places: ledger.decimals)}'),
-                                            Text('from: ${t.from}'),
-                                            Text('to: ${t.to}'),
-                                            Row(children: [
+                                            if (t.from != null) Text('from: ${t.from}'),
+                                            if (t.to != null) Text('to: ${t.to}'),
+                                            if (t.memo != null && t.memo!.isNotEmpty) Row(children: [
                                                 Text('memo: '),
-                                                if (t.memo == null) Text('')
-                                                else if (t.memo!.length <= 8) Text('${bytesasahexstring(t.memo!)}')
+                                                if (t.memo!.length <= 8) Text('${bytesasahexstring(t.memo!)}')
                                                 else Tooltip(
                                                     message: bytesasahexstring(t.memo!),
                                                     child: Text('${bytesasahexstring(t.memo!.sublist(0, 8))}...')
