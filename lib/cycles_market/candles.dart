@@ -133,7 +133,7 @@ class CandlesChartState extends State<CandlesChart> {
         const double segment_length_selector_left_padding = 3;
         const double segment_length_selector_height = 22;
 
-        return Card(
+        return CardWithBorder(
             child: Container(
                 constraints: BoxConstraints(
                     maxWidth: card_max_width,
@@ -826,7 +826,7 @@ class TopRowCandleDataState extends State<TopRowCandleData> {
                 child: Row(
                     children: [
                         for (String s in [
-                            '${dt.hour}:${minute_str} ${dt.month}/${dt.day}/${dt.year}',
+                            '${dt.month}/${dt.day}/${dt.year} ${dt.hour}:${minute_str}',
                             'open: ${candle_selection!.open_rate}',
                             'low: ${candle_selection!.low_rate}',
                             'high: ${candle_selection!.high_rate}',

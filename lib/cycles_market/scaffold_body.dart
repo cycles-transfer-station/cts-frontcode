@@ -176,7 +176,7 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
         state = MainStateBind.get_state<CustomState>(context);
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
-        return Card(
+        return CardWithBorder(
             child: DropdownMenu<int>(
                 menuStyle: MenuStyle(
                     side: WidgetStatePropertyAll(BorderSide.none),
@@ -353,8 +353,7 @@ class VolumeStats extends StatelessWidget {
         
         const double row_height = 32;
         
-        return Card(
-            semanticContainer: false,
+        return CardWithBorder(
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
                 height: row_height*2,
@@ -508,8 +507,7 @@ class MarketTradesState extends State<MarketTrades> {
             reached_the_begining = true;
         }
                             
-        return Card(
-            semanticContainer: false,
+        return CardWithBorder(
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
                 child: Column(
@@ -583,8 +581,7 @@ class PositionBook extends StatelessWidget {
         
         double sell_positions_dataRowHeight = DataTableTheme.of(context).dataRowMinHeight ?? kMinInteractiveDimension; // the default for the DataTable2
         
-        return Card(
-            semanticContainer: false,
+        return CardWithBorder(
             child: Container(
                 margin: EdgeInsets.all(13),
                 child: Column(
@@ -715,7 +712,7 @@ class CreatePositionWidget extends StatelessWidget {
         final String token_symbol = state.cm_main.icrc1token_trade_contracts[this.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol;
         
         
-        return Card(semanticContainer: false, child: Container(
+        return CardWithBorder(child: Container(
             margin: EdgeInsets.all(13),
             width: 300,
             /*
@@ -1226,8 +1223,7 @@ class UserCMLogsState extends State<UserCMLogs> {
         CustomState state = MainStateBind.get_state<CustomState>(context);
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
                 
-        return Card(
-            semanticContainer: false,
+        return CardWithBorder(
             child: Container(
                 margin: EdgeInsets.symmetric(vertical: 13),
                 child: Column(

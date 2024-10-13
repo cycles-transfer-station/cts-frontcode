@@ -5,6 +5,7 @@ import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../config/state.dart';
 import '../bank/cards.dart';
+import '../tools/widgets.dart';
 
 class IcpTransferListItem extends StatelessWidget {
     late final IcpTransfer icp_transfer;
@@ -28,7 +29,7 @@ class IcpTransferListItem extends StatelessWidget {
         return Container(
             padding: EdgeInsets.all(11),            
             constraints: BoxConstraints(maxWidth: 300),
-            child: Card(
+            child: LedgerBlockLogCard(
                 child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[

@@ -131,7 +131,19 @@ class ScrollConfigurationWithTheMouse extends StatelessWidget {
 }
 
 
+class CardWithBorder extends StatelessWidget {
+    Widget child;
+    CardWithBorder({super.key, required this.child});
+    Widget build(BuildContext context) {
+        return Container(
+            decoration: BoxDecoration(
+                border: Border.all(width: 1.4, color: Colors.white30), // color: Colors.blueAccent
+                borderRadius: BorderRadius.circular(9), 
+            ),
+            child: child,
+        );
+    }
+}
 
 
-
-
+typedef LedgerBlockLogCard = CardWithBorder;  

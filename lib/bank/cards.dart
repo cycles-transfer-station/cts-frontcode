@@ -12,6 +12,7 @@ import '../user.dart';
 import '../config/state.dart';
 import '../config/state_bind.dart';
 import '../tools/tools.dart';
+import '../tools/widgets.dart';
 
 
 const double ct_list_item_body_font_size = 17;
@@ -178,7 +179,7 @@ class CyclesTransferListItem extends StatelessWidget {
         return Container(
             constraints: BoxConstraints(maxWidth: 350),
             padding: EdgeInsets.all(11),
-            child: Card(
+            child: LedgerBlockLogCard(
                 child: Column(
                     //mainAxisSize: MainAxisSize.min,
                     children: <Widget>[

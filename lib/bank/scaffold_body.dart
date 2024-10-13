@@ -103,7 +103,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
 
             column_children.addAll([
                 SizedBox(height: 13),
-                Card(
+                CardWithBorder(
                     child: Container(margin: EdgeInsets.all(33), child: Column(
                         children: [
                             Container(
@@ -469,7 +469,7 @@ class Icrc1TransactionCard extends StatelessWidget {
         return Container(
             padding: EdgeInsets.all(11),
             constraints: BoxConstraints(maxWidth: 320),
-            child: Card(
+            child: LedgerBlockLogCard(
                 child: Column(
                     //mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
