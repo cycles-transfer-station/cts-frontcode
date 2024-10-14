@@ -103,7 +103,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
 
             column_children.addAll([
                 SizedBox(height: 13),
-                CardWithBorder(
+                Container(
                     child: Container(margin: EdgeInsets.all(33), child: Column(
                         children: [
                             Container(
@@ -347,6 +347,7 @@ class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
             // remove the border
             inputDecorationTheme: InputDecorationTheme(
                 outlineBorder: BorderSide.none,
+                border: InputBorder.none,
             ),
             controller: text_controller,
             focusNode: focus_node,

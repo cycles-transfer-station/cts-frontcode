@@ -18,6 +18,7 @@ import './cycles_market.dart';
 import '../bank/forms.dart';
 import '../tools/widgets.dart';
 import '../tools/tools.dart';
+import '../tools/ii_login.dart';
 import '../user.dart';
 import './candles.dart';
 
@@ -279,8 +280,17 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         }
                     ),
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
-                    SizedBox(height: runSpacing),
-                    CandlesChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                    SizedBox(height: runSpacing*2),
+                    Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.start,
+                        runSpacing: runSpacing,
+                        spacing: wrap_spacing,
+                        children: [
+                            CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                            CandlesChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                        ]
+                    ),
                     SizedBox(height: runSpacing),
                     Wrap(
                         alignment: WrapAlignment.center,
@@ -318,20 +328,9 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                     ),
                     if (state.user != null) ...[
                         SizedBox(height: runSpacing),
-                        Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.start,
-                            runSpacing: runSpacing,
-                            spacing: wrap_spacing,
-                            children: [
-                                Container(
-                                    child: CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                                ),
-                                Container(
-                                    child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                                )
-                            ]
-                        ),
+                        Container(
+                            child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
+                        ), 
                     ],
                     SizedBox(height: 13),
                 ]
@@ -811,11 +810,13 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         final int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
         
         late final String max_quantity;
-        switch (widget.position_kind) {
-            case PositionKind.Cycles:
-                max_quantity = Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!).toString().replaceFirst('T', '');
-            case PositionKind.Token:
-                max_quantity = Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: token_decimal_places).toString();    
+        if (state.user != null) {
+            switch (widget.position_kind) {
+                case PositionKind.Cycles:
+                    max_quantity = Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!).toString().replaceFirst('T', '');
+                case PositionKind.Token:
+                    max_quantity = Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: token_decimal_places).toString();    
+            }
         }
         
         List<Widget> cycles_balance_and_token_balance = [
@@ -823,7 +824,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 4),
                 child: Text(
-                    'CYCLES-BALANCE: ${Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!)}', 
+                    'CYCLES-BALANCE: ${state.user != null ? Cycles(cycles: state.user!.icrc1_balances_cache[CYCLES_BANK_LEDGER]!) : '_'}', 
                     style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
                 ),
             ),
@@ -831,7 +832,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 4),
                 child: Text(
-                    '${ledger_data.symbol}-BALANCE: ${Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals)}', 
+                    '${ledger_data.symbol}-BALANCE: ${state.user != null ? Tokens(quantums: state.user!.icrc1_balances_cache[ledger_data]!, decimal_places: ledger_data.decimals) : '_'}', 
                     style: TextStyle(fontFamily: 'CourierNew', fontSize: 14)
                 ),
             ),
@@ -853,7 +854,9 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                             suffix: TextButton(
                                 child: Text('MAX', style: TextStyle(fontFamily: 'CourierNew')),
                                 onPressed: () {
-                                    quantity_text_controller.value = TextEditingValue(text: max_quantity, selection: TextSelection.collapsed(offset: max_quantity.length));
+                                    if (state.user != null) {
+                                        quantity_text_controller.value = TextEditingValue(text: max_quantity, selection: TextSelection.collapsed(offset: max_quantity.length));
+                                    }
                                 }
                             )
                         ),
@@ -898,6 +901,35 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         child: FilledButton.tonal(
                             child: Text('TRADE ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
                             onPressed: () async {
+                                if (state.user == null) {
+                                    
+                                    await showDialog(
+                                        context: context,
+                                        barrierDismissible: true,
+                                        builder: (BuildContext context) {
+                                            return AlertDialog(
+                                                title: Text('LOG-IN', style: TextStyle(fontFamily: 'CourierNewBold')),
+                                                contentPadding: EdgeInsets.fromLTRB(0,16,0,0),
+                                                content: Container(
+                                                    height: 130,
+                                                    child: Center(
+                                                        child: IILoginButton(do_before: (){ Navigator.of(context).pop(); }),
+                                                    ),
+                                                ),
+                                                actions: [
+                                                    TextButton(
+                                                        child: Text('CANCEL',  textAlign: TextAlign.end),
+                                                        onPressed: () {
+                                                            Navigator.of(context).pop();
+                                                        }
+                                                    ),
+                                                ]
+                                            );
+                                        }
+                                    );
+                                    return;
+                                }
+                                
                                 if (form_key.currentState!.validate()==true) {
                                     
                                     form_key.currentState!.save();

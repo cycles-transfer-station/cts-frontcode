@@ -79,9 +79,19 @@ class OutlineButton extends StatelessWidget {
 
 
 class IILoginButton extends StatelessWidget {
-    IILoginButton({super.key});
+    void Function()? do_before;
+    IILoginButton({super.key, this.do_before});
     Widget build(BuildContext context) {
-        return FilledButton.tonal(child: Text('LOG-IN'), onPressed: () async { await ii_login(context); });
+        return FilledButton.tonal(
+            child: Text('LOG-IN'), 
+            onPressed: () async { 
+                if (do_before != null) {
+                    do_before!();
+                }
+                await ii_login(context);
+                
+            }
+        );
     }
 }
 
