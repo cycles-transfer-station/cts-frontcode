@@ -259,7 +259,7 @@ class CustomState {
             } catch(e,s) {
                 print('Exception thrown when calling to get USD per XDR rate');
                 print(e);
-                print(s);
+                //print(s);
             }
         }
         if (json == null) {
