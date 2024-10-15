@@ -65,7 +65,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                     builder: (BuildContext context) => AlertDialog(
                         key: transfer_dialog_key,
                         title: Center(
-                            child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol}', /*style: TextStyle(fontSize:17)*/)
+                            child: Text('TRANSFER ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : state.current_icrc1_ledger.symbol}', /*style: TextStyle(fontSize:17)*/)
                         ),
                         content: Container(
                             constraints: BoxConstraints(
@@ -157,7 +157,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                     //style: ElevatedButton.styleFrom(backgroundColor: blue),
                                     child: Text('LOAD TRANSFERS'),
                                     onPressed: () async {
-                                        state.loading_text = 'loading bank \$${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers ...';
+                                        state.loading_text = 'loading bank \$${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : state.current_icrc1_ledger.symbol} transfers ...';
                                         state.is_loading = true;
                                         MainStateBind.set_state<CustomState>(context, state, tifyListeners: true);
                                         try {
@@ -170,7 +170,7 @@ class CyclesBankScaffoldBody extends StatelessWidget {
                                                 context: state.context,
                                                 builder: (BuildContext context) {
                                                     return AlertDialog(
-                                                        title: Text('Error when loading the bank ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol} transfers:'),
+                                                        title: Text('Error when loading the bank ${state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : state.current_icrc1_ledger.symbol} transfers:'),
                                                         content: Text('${etext(e)}'),
                                                         actions: <Widget>[
                                                             TextButton(
@@ -335,7 +335,7 @@ class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
         // if go away from focus, set the text back to the current token symbol in case someone left something else in the text field.
         if (focus_node.hasPrimaryFocus == false) {
             print('setting token selector text back to the current token symbol');
-            text_controller.text = state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : state.current_icrc1_ledger.symbol;
+            text_controller.text = state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : state.current_icrc1_ledger.symbol;
         }
     }
 
@@ -357,7 +357,7 @@ class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
             dropdownMenuEntries: <DropdownMenuEntry<Icrc1Ledger>>[
                 for (Icrc1Ledger icrc1_ledger in state.known_icrc1_ledgers)
                     DropdownMenuEntry<Icrc1Ledger>(
-                        label: icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES' : icrc1_ledger.symbol,
+                        label: icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : icrc1_ledger.symbol,
                         value: icrc1_ledger,
                         style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'CourierNewBold', fontSize: 22)))
                     ),
