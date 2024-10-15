@@ -142,10 +142,11 @@ class CustomState {
             await this.cm_main.fresh_icrc1token_trade_contracts();
             this.known_icrc1_ledgers.addAll(this.cm_main.trade_contracts.map((tc)=>tc.ledger_data));
         });
+        
+        this.fresh_usd_per_one_xdr().then((_){}); // don't await. We can't rely on third party services for loading time.
 
         await Future.wait([
             this.fresh_xdr_icp_rate(),
-            this.fresh_usd_per_one_xdr(),
             cycles_market_main_fresh_icrc1token_trade_contracts_future,
             Future(()async{
                 await this.load_state_of_the_browser_storage();
