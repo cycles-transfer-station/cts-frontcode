@@ -140,7 +140,13 @@ class CustomState {
 
         Future cycles_market_main_fresh_icrc1token_trade_contracts_future = Future(()async{
             await this.cm_main.fresh_icrc1token_trade_contracts();
-            this.known_icrc1_ledgers.addAll(this.cm_main.trade_contracts.map((tc)=>tc.ledger_data));
+            for (int i=0; i<this.cm_main.trade_contracts.length; i++) {
+                Icrc1Ledger icrc1_ledger = this.cm_main.trade_contracts[i].ledger_data; 
+                this.known_icrc1_ledgers.add(icrc1_ledger);
+                if (icrc1_ledger.symbol == 'CTS') {
+                    this.cm_main_icrc1token_trade_contracts_i = i;
+                } 
+            }
         });
         
         this.fresh_usd_per_one_xdr().then((_){}); // don't await. We can't rely on third party services for loading time.
