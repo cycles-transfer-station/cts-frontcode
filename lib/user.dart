@@ -79,26 +79,6 @@ class User {
     }
     // helper for fresh_icrc1_transactions
     Future<Variant> _call_icrc1_index_transactions(Icrc1Ledger l, [Nat? start]) async {
-        final Map<String, String> ledger_index = {
-            'zfcdd-tqaaa-aaaaq-aaaga-cai': 'zlaol-iaaaa-aaaaq-aaaha-cai', // DKP
-            '2ouva-viaaa-aaaaq-aaamq-cai': '2awyi-oyaaa-aaaaq-aaanq-cai', // CHAT
-            '73mez-iiaaa-aaaaq-aaasq-cai': '7vojr-tyaaa-aaaaq-aaatq-cai', // Kinic
-            '6rdgd-kyaaa-aaaaq-aaavq-cai': '6dfr2-giaaa-aaaaq-aaawq-cai', // Hot or Not
-            '4c4fd-caaaa-aaaaq-aaa3a-cai': '5ithz-aqaaa-aaaaq-aaa4a-cai', // ICGhost
-            'xsi2v-cyaaa-aaaaq-aabfq-cai': 'xaonm-oiaaa-aaaaq-aabgq-cai', // Modclub
-            'rxdbk-dyaaa-aaaaq-aabtq-cai': 'q5mdq-biaaa-aaaaq-aabuq-cai', // Nuance
-            'tyyy3-4aaaa-aaaaq-aab7a-cai': 'efv5g-kqaaa-aaaaq-aacaa-cai', // Gold DAO
-            'emww2-4yaaa-aaaaq-aacbq-cai': 'e6qbd-qiaaa-aaaaq-aaccq-cai', // TRAX
-            'f54if-eqaaa-aaaaq-aacea-cai': 'ft6fn-7aaaa-aaaaq-aacfa-cai', // Neutrinite
-            'hvgxa-wqaaa-aaaaq-aacia-cai': 'h3e2i-naaaa-aaaaq-aacja-cai', // Sneed 
-            'itgqj-7qaaa-aaaaq-aadoa-cai': 'i5e5b-eaaaa-aaaaq-aadpa-cai', // CTS
-            'jcmow-hyaaa-aaaaq-aadlq-cai': 'iidmm-fiaaa-aaaaq-aadmq-cai', // WTN
-            'buwm7-7yaaa-aaaar-qagva-cai': 'btxkl-saaaa-aaaar-qagvq-cai', // nICP
-            'lkwrt-vyaaa-aaaaq-aadhq-cai': 'jqkzp-liaaa-aaaaq-aadiq-cai', // OGY
-            'ddsp7-7iaaa-aaaaq-aacqq-cai': 'dnqcx-eyaaa-aaaaq-aacrq-cai', // OpenFPL
-            'ca6gz-lqaaa-aaaaq-aacwa-cai': 'co4lr-qaaaa-aaaaq-aacxa-cai', // ICS
-            'hhaaz-2aaaa-aaaaq-aacla-cai': 'gnpcd-yqaaa-aaaaq-aacma-cai', // ICL
-        }; 
         return c_backwards(await Canister(Principal.text(ledger_index[l.ledger.principal.text]!)).call(
             calltype: CallType.call,
             method_name: 'get_account_transactions',
@@ -164,14 +144,21 @@ class User {
                     this.cycles_transfers.addAll(gather);     
                     
                 } else /*tokens besides icp or cycles*/{ 
-                    if (is_on_local == true) {
-                        await Future.delayed(Duration(milliseconds: 50)); // for the frames
-                        return;
-                    }
                     
                     if (this.icrc1_transactions_cache[l] == null) { 
                         this.icrc1_transactions_cache[l] = []; 
                     }
+                    
+                    if (is_on_local == true) {
+                        await Future.delayed(Duration(milliseconds: 1)); // for the frames
+                        return;
+                    }
+                    
+                    if (ledger_index.containsKey(l) == false) {
+                        await Future.delayed(Duration(milliseconds: 1));
+                        return;
+                    }
+                    
                     if (this.icrc1_transactions_cache[l]!.length == 0) {
                         print('first load');
                         Nat? last_tx_seen = null;
@@ -1315,3 +1302,24 @@ class PositionLogAndVoidPositionPayoutStatus {
         this.void_position_payout_complete
     );
 }
+
+final Map<String, String> ledger_index = {
+    'zfcdd-tqaaa-aaaaq-aaaga-cai': 'zlaol-iaaaa-aaaaq-aaaha-cai', // DKP
+    '2ouva-viaaa-aaaaq-aaamq-cai': '2awyi-oyaaa-aaaaq-aaanq-cai', // CHAT
+    '73mez-iiaaa-aaaaq-aaasq-cai': '7vojr-tyaaa-aaaaq-aaatq-cai', // Kinic
+    '6rdgd-kyaaa-aaaaq-aaavq-cai': '6dfr2-giaaa-aaaaq-aaawq-cai', // Hot or Not
+    '4c4fd-caaaa-aaaaq-aaa3a-cai': '5ithz-aqaaa-aaaaq-aaa4a-cai', // ICGhost
+    'xsi2v-cyaaa-aaaaq-aabfq-cai': 'xaonm-oiaaa-aaaaq-aabgq-cai', // Modclub
+    'rxdbk-dyaaa-aaaaq-aabtq-cai': 'q5mdq-biaaa-aaaaq-aabuq-cai', // Nuance
+    'tyyy3-4aaaa-aaaaq-aab7a-cai': 'efv5g-kqaaa-aaaaq-aacaa-cai', // Gold DAO
+    'emww2-4yaaa-aaaaq-aacbq-cai': 'e6qbd-qiaaa-aaaaq-aaccq-cai', // TRAX
+    'f54if-eqaaa-aaaaq-aacea-cai': 'ft6fn-7aaaa-aaaaq-aacfa-cai', // Neutrinite
+    'hvgxa-wqaaa-aaaaq-aacia-cai': 'h3e2i-naaaa-aaaaq-aacja-cai', // Sneed 
+    'itgqj-7qaaa-aaaaq-aadoa-cai': 'i5e5b-eaaaa-aaaaq-aadpa-cai', // CTS
+    'jcmow-hyaaa-aaaaq-aadlq-cai': 'iidmm-fiaaa-aaaaq-aadmq-cai', // WTN
+    'buwm7-7yaaa-aaaar-qagva-cai': 'btxkl-saaaa-aaaar-qagvq-cai', // nICP
+    'lkwrt-vyaaa-aaaaq-aadhq-cai': 'jqkzp-liaaa-aaaaq-aadiq-cai', // OGY
+    'ddsp7-7iaaa-aaaaq-aacqq-cai': 'dnqcx-eyaaa-aaaaq-aacrq-cai', // OpenFPL
+    'ca6gz-lqaaa-aaaaq-aacwa-cai': 'co4lr-qaaaa-aaaaq-aacxa-cai', // ICS
+    'hhaaz-2aaaa-aaaaq-aacla-cai': 'gnpcd-yqaaa-aaaaq-aacma-cai', // ICL
+}; 
