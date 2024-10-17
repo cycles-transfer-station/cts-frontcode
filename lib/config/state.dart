@@ -849,14 +849,19 @@ extension ImageLogo on Icrc1Ledger {
     Image? image_logo() {
         const String base64_data_url_start = "data:image/png;base64,";
         const double width_height = 30;
-        return this.logo_data_url.nullmap((url_string)=>Image.memory(
-            base64.decode(url_string.substring(base64_data_url_start.length)),
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            color: null,
-            width: width_height,
-            height: width_height,
-        ));
+        try {
+            return this.logo_data_url.nullmap((url_string)=>Image.memory(
+                base64.decode(url_string.substring(base64_data_url_start.length)),
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                color: null,
+                width: width_height,
+                height: width_height,
+            ));
+        } catch(e) {
+            print('Error creating image out of logo for ledger: ${this.ledger.principal}\n${e}');
+            return null;
+        }
     }
 }
 
