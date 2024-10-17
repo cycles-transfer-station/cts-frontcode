@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart' show Image;
 
 import 'package:ic_tools/ic_tools.dart';
 import 'package:ic_tools/tools.dart';
@@ -63,6 +64,15 @@ const String em3jm = 'em3jm-bqaaa-aaaar-qabxa-cai';
 const String x3ncx = 'x3ncx-liaaa-aaaam-qbcfa-cai';
 
 final bool is_on_local = window.location.hostname!.contains('localhost') || window.location.hostname!.contains('127.0.0.1');
+
+// fresh in the loadfirststate
+Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
+    ledger: bank,
+    symbol: 'CYCLES (TCY)',
+    name: 'CYCLES (TCY)',
+    decimals: 12,
+    fee: BigInt.parse('10000000000'),
+);
 
 
 class CustomState {
@@ -129,6 +139,10 @@ class CustomState {
     Tokens? usd_per_one_xdr;
     CyclesPerTokenRate? cycles_per_one_usd;
 
+    // token-logo widget cache
+    Map<Icrc1Ledger, Image?> token_logo_widget_cache = {}; // so that we don't have to decode the base64 every time.
+    
+    
     Future<void> loadfirststate() async {
         print('load first state');
 
@@ -143,6 +157,7 @@ class CustomState {
             for (int i=0; i<this.cm_main.trade_contracts.length; i++) {
                 Icrc1Ledger icrc1_ledger = this.cm_main.trade_contracts[i].ledger_data; 
                 this.known_icrc1_ledgers.add(icrc1_ledger);
+                this.token_logo_widget_cache[icrc1_ledger] = icrc1_ledger.image_logo();
                 if (icrc1_ledger.symbol == 'CTS') {
                     this.cm_main_icrc1token_trade_contracts_i = i;
                 } 
@@ -151,7 +166,22 @@ class CustomState {
         
         this.fresh_usd_per_one_xdr().then((_){}); // don't await. We can't rely on third party services for loading time.
 
+        Future<void> fresh_bank_icrc1_metadata = Future(()async{ // load cycles-bank-ledger
+            Icrc1Ledger load = await Icrc1Ledger.load(CYCLES_BANK_LEDGER.ledger.principal);
+            CYCLES_BANK_LEDGER = Icrc1Ledger(
+                symbol: CYCLES_BANK_LEDGER.symbol,
+                name: CYCLES_BANK_LEDGER.name,
+                decimals: load.decimals,
+                fee: load.fee,
+                ledger: load.ledger,
+                logo_data_url: load.logo_data_url
+            );
+            this.known_icrc1_ledgers[0] = CYCLES_BANK_LEDGER; // update it here.
+            this.token_logo_widget_cache[CYCLES_BANK_LEDGER] = CYCLES_BANK_LEDGER.image_logo();
+        });
+        
         await Future.wait([
+            fresh_bank_icrc1_metadata,
             this.fresh_xdr_icp_rate(),
             cycles_market_main_fresh_icrc1token_trade_contracts_future,
             Future(()async{
@@ -355,13 +385,6 @@ Uint8List principal_as_an_icpsubaccountbytes(Principal principal) {
 
 
 
-Icrc1Ledger CYCLES_BANK_LEDGER = Icrc1Ledger(
-    ledger: bank,
-    symbol: 'CYCLES',
-    name: 'CYCLES',
-    decimals: 12,
-    fee: BigInt.parse('10000000000'),
-);
 
 
 
@@ -820,6 +843,23 @@ Icrc1TransactionKind icrc1_transaction_kind_of_the_op(String op) {
         _ => throw Exception('unsupported op')
     };
 }
+
+
+extension ImageLogo on Icrc1Ledger {
+    Image? image_logo() {
+        const String base64_data_url_start = "data:image/png;base64,";
+        const double width_height = 30;
+        return this.logo_data_url.nullmap((url_string)=>Image.memory(
+            base64.decode(url_string.substring(base64_data_url_start.length)),
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            color: null,
+            width: width_height,
+            height: width_height,
+        ));
+    }
+}
+
 
 
 

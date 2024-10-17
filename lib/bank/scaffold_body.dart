@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -335,7 +336,7 @@ class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
         // if go away from focus, set the text back to the current token symbol in case someone left something else in the text field.
         if (focus_node.hasPrimaryFocus == false) {
             print('setting token selector text back to the current token symbol');
-            text_controller.text = state.current_icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : state.current_icrc1_ledger.symbol;
+            text_controller.text = state.current_icrc1_ledger.symbol;
         }
     }
 
@@ -354,10 +355,15 @@ class CyclesBankTokenSelectorState extends State<CyclesBankTokenSelector> {
             enableSearch: true,
             enableFilter: false, // we want the user to always be able to know that there are many tokens. the search already moves the highlighted selection so no need for this flag.
             textStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 22),
+            leadingIcon: state.token_logo_widget_cache[state.current_icrc1_ledger].nullmap((image_widget)=>Container(
+                margin: EdgeInsets.all(12),
+                child: image_widget,
+            )),
             dropdownMenuEntries: <DropdownMenuEntry<Icrc1Ledger>>[
                 for (Icrc1Ledger icrc1_ledger in state.known_icrc1_ledgers)
                     DropdownMenuEntry<Icrc1Ledger>(
-                        label: icrc1_ledger == CYCLES_BANK_LEDGER ? 'CYCLES (TCY)' : icrc1_ledger.symbol,
+                        leadingIcon: state.token_logo_widget_cache[icrc1_ledger],
+                        label: icrc1_ledger.symbol,
                         value: icrc1_ledger,
                         style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'CourierNewBold', fontSize: 22)))
                     ),
