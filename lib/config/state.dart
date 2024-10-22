@@ -421,6 +421,28 @@ class Cycles extends Tokens {
 
     static Cycles oftheTCyclesDoubleString(String tcycles_string) => Cycles(cycles: Tokens.of_the_double_string(tcycles_string, decimal_places: Cycles.T_CYCLES_DECIMAL_PLACES).quantums);
 
+    static Cycles max(Cycles a, Cycles b) {
+        if (a.cycles >= b.cycles) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+
+    static Cycles min(Cycles a, Cycles b) {
+        if (a.cycles <= b.cycles) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+    
+    static Cycles get zero => Cycles(cycles: BigInt.zero);
+    static Cycles get one => Cycles(cycles: BigInt.one);
+    static Cycles get two => Cycles(cycles: BigInt.two);
+    
+    
+    
     Cycles operator + (Cycles t) {
         return Cycles(cycles: this.cycles + t.cycles);
     }

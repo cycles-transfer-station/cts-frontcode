@@ -751,6 +751,62 @@ class CreatePositionWidget extends StatelessWidget {
 }
 
 
+class TradeFeeTier {
+    // the max volume (inclusive) of the trade fees of this tier. anything over this amount is the next tier
+    int volume_tcycles;
+    int trade_fee_ten_thousandths;
+    
+    TradeFeeTier({required this.volume_tcycles, required this.trade_fee_ten_thousandths});
+
+    Cycles volume_cycles() {
+        return Cycles(cycles: BigInt.from(this.volume_tcycles) * Cycles.T_CYCLES_DIVIDABLE_BY);
+    }
+}
+
+final List<TradeFeeTier> trade_fees_tiers = [
+    TradeFeeTier(
+        volume_tcycles: 1000,
+        trade_fee_ten_thousandths: 50,
+    ),
+    TradeFeeTier(
+        volume_tcycles: 5000,
+        trade_fee_ten_thousandths: 30,
+        ),
+    TradeFeeTier(
+        volume_tcycles: 50000,
+        trade_fee_ten_thousandths: 10,
+    ),
+    TradeFeeTier(
+        volume_tcycles: 100000,
+        trade_fee_ten_thousandths: 5,
+    ),
+    TradeFeeTier(
+        volume_tcycles: 1000000000000, //u128::MAX,
+        trade_fee_ten_thousandths: 1,
+    ),
+]; 
+
+Cycles/*fee-cycles*/ calculate_trade_fee(Cycles current_position_trade_volume_cycles, Cycles trade_cycles) {    
+    Cycles trade_cycles_mainder = trade_cycles;
+    Cycles fee_cycles = Cycles.zero;
+    for (int i=0;i<trade_fees_tiers.length;i++) {
+        if (current_position_trade_volume_cycles + trade_cycles - trade_cycles_mainder + Cycles.one/*plus one for start with the fee tier for the current-trade-mount*/ 
+        <= trade_fees_tiers[i].volume_cycles()) {
+            Cycles trade_cycles_in_the_current_tier = Cycles.min(
+                trade_cycles_mainder,
+                Cycles.max(Cycles.zero, trade_fees_tiers[i].volume_cycles() - (current_position_trade_volume_cycles + trade_cycles - trade_cycles_mainder)), 
+            );
+            trade_cycles_mainder -= trade_cycles_in_the_current_tier;
+            fee_cycles += Cycles(cycles: trade_cycles_in_the_current_tier.cycles ~/ BigInt.from(10000) * BigInt.from(trade_fees_tiers[i].trade_fee_ten_thousandths)); 
+            
+            if (trade_cycles_mainder == Cycles.zero) {
+                break;
+            }
+        } 
+    }
+    return fee_cycles;
+}
+
 
 class CreatePositionForm extends StatefulWidget {
     final int cm_main_icrc1token_trade_contracts_i;
@@ -954,12 +1010,19 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                             Tokens trade_for_mount = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: cycles_transform_tokens(Cycles(cycles: trade_amount.quantums), cycles_per_token_rate), decimal_places: token_decimal_places) : tokens_transform_cycles(trade_amount.quantums, cycles_per_token_rate);
                                             String trade_for_mount_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-' + token_symbol) : ('-CYCLES')}';                                            
                                             
+                                            
+                                            Tokens trade_payout_fees_if_fill = 
+                                                widget.position_kind == PositionKind.Cycles 
+                                                ? Tokens(quantums: cycles_transform_tokens(calculate_trade_fee(Cycles.zero, tokens_transform_cycles(trade_for_mount.quantums, cycles_per_token_rate)), cycles_per_token_rate), decimal_places: token_decimal_places) // fee is always calculated in the cycles-form. 
+                                                : calculate_trade_fee(Cycles.zero, Cycles(cycles: trade_for_mount.quantums));
+                                            
+                                            /*
                                             BigInt trade_payout_fees_if_fill_quantums 
                                                 = widget.position_kind == PositionKind.Cycles ?
                                                 cycles_transform_tokens(Cycles(cycles: tokens_transform_cycles(trade_for_mount.quantums, cycles_per_token_rate).quantums ~/ BigInt.from(10000) * BigInt.from(50)), cycles_per_token_rate) // fee is always calculated in the cycles-form. 
                                                 : trade_for_mount.quantums ~/ BigInt.from(10000) * BigInt.from(50); 
                                             Tokens trade_payout_fees_if_fill = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: trade_payout_fees_if_fill_quantums, decimal_places: token_decimal_places) : Cycles(cycles: trade_payout_fees_if_fill_quantums);
-                                            
+                                            */
                                             String ledger_fees_now_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-CYCLES') : ('-' + token_symbol)}';                                            
                                             
                                             return AlertDialog(
