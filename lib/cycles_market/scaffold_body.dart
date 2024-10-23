@@ -21,7 +21,7 @@ import '../tools/tools.dart';
 import '../tools/ii_login.dart';
 import '../user.dart';
 import './candles.dart';
-
+import '../main.dart' show grey_background;
 
 
 class CyclesMarketScaffoldBody extends StatefulWidget {
@@ -178,33 +178,36 @@ class CyclesMarketTokenSelectorState extends State<CyclesMarketTokenSelector> {
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
 
         return CardWithBorder(
-            child: DropdownMenu<int>(
-                menuStyle: MenuStyle(
-                    side: WidgetStatePropertyAll(BorderSide.none),
-                ),
-                controller: text_controller,
-                focusNode: focus_node,
-                enableSearch: true,
-                enableFilter: false, // we want the user to always be able to know that there are many tokens. the search already moves the highlighted selection so no need for this flag.
-                textStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 22),
-                dropdownMenuEntries: <DropdownMenuEntry<int>>[
-                    for (int i = 0; i < state.cm_main.icrc1token_trade_contracts.length; i++)
-                        DropdownMenuEntry<int>(
-                            label: state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol,
-                            value: i,
-                            style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'CourierNewBold', fontSize: 22)))
-                        ),
-                ],
-                initialSelection: state.cm_main_icrc1token_trade_contracts_i,
-                onSelected: (int? select_i) {
-                    if (select_i is int) {
-                        if (select_i != state.cm_main_icrc1token_trade_contracts_i) {
-                            change_url_into_cm_market(select_i, context);
-                        } else {
-                            setState((){});
+            child: Container(
+                color: grey_background,
+                child: DropdownMenu<int>(
+                    menuStyle: MenuStyle(
+                        side: WidgetStatePropertyAll(BorderSide.none),
+                    ),
+                    controller: text_controller,
+                    focusNode: focus_node,
+                    enableSearch: true,
+                    enableFilter: false, // we want the user to always be able to know that there are many tokens. the search already moves the highlighted selection so no need for this flag.
+                    textStyle: DefaultTextStyle.of(context).style.copyWith(fontFamily: 'CourierNewBold', fontSize: 22),
+                    dropdownMenuEntries: <DropdownMenuEntry<int>>[
+                        for (int i = 0; i < state.cm_main.icrc1token_trade_contracts.length; i++)
+                            DropdownMenuEntry<int>(
+                                label: state.cm_main.icrc1token_trade_contracts[i].ledger_data.symbol,
+                                value: i,
+                                style: ButtonStyle(textStyle: WidgetStatePropertyAll(TextStyle(fontFamily: 'CourierNewBold', fontSize: 22)))
+                            ),
+                    ],
+                    initialSelection: state.cm_main_icrc1token_trade_contracts_i,
+                    onSelected: (int? select_i) {
+                        if (select_i is int) {
+                            if (select_i != state.cm_main_icrc1token_trade_contracts_i) {
+                                change_url_into_cm_market(select_i, context);
+                            } else {
+                                setState((){});
+                            }
                         }
                     }
-                }
+                )
             )
         );
     }
@@ -256,10 +259,8 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
         state = MainStateBind.get_state<CustomState>(context);
         main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
-        const double tb_padding_market_trades_and_position_book = 11;
-        const double runSpacing = 13;
-        const double wrap_spacing = runSpacing * 2;
-
+        const double wrap_spacing = 13 * 2;
+        
         return Container(
             child: Column(
                 children: [ 
@@ -280,59 +281,33 @@ class CyclesMarketTradeContractTradePageState extends State<CyclesMarketTradeCon
                         }
                     ),
                     VolumeStats(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
-                    SizedBox(height: runSpacing*2),
+                    SizedBox(height: wrap_spacing),
                     Wrap(
                         alignment: WrapAlignment.center,
                         crossAxisAlignment: WrapCrossAlignment.start,
-                        runSpacing: runSpacing,
+                        runSpacing: wrap_spacing,
                         spacing: wrap_spacing,
                         children: [
                             CreatePositionWidget(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                             CandlesChart(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                            PositionBook(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
+                            MarketTrades(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),   
+                            UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i),
                         ]
                     ),
-                    SizedBox(height: runSpacing),
+                    SizedBox(height: wrap_spacing),
+                    /*
                     Wrap(
                         alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.start,
                         spacing: wrap_spacing,
-                        runSpacing: runSpacing,
+                        runSpacing: wrap_spacing,
                         children: [
-                            Container(
-                                padding: EdgeInsets.symmetric(vertical: tb_padding_market_trades_and_position_book),
-                                child: MarketTrades(cm_main_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i) 
-                            ),
-                            /*
-                            MouseRegion(
-                                child: Container(
-                                    child: Chart(
-                                        cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i,
-                                        key: ValueKey('CyclesMarketTradeContractTradePage Candlestick-Chart cm_main_icrc1token_trade_contracts_i ${widget.cm_main_icrc1token_trade_contracts_i}')
-                                    ),
-                                    constraints: BoxConstraints(maxHeight: 450, maxWidth: 800, minWidth: 300),
-                                    padding: EdgeInsets.symmetric(horizontal: 73),
-                                ),
-                                onEnter: (event) {
-                                    widget.stop_scroll(true);
-                                },
-                                onExit: (event) {
-                                    widget.stop_scroll(false);
-                                }
-                            ),
-                            */
-                            Container(
-                                padding: EdgeInsets.symmetric(vertical: tb_padding_market_trades_and_position_book),
-                                child: PositionBook(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                            ),  
+                        
                         ]
                     ),
-                    if (state.user != null) ...[
-                        SizedBox(height: runSpacing),
-                        Container(
-                            child: UserCMLogs(cm_main_icrc1token_trade_contracts_i: widget.cm_main_icrc1token_trade_contracts_i)
-                        ), 
-                    ],
-                    SizedBox(height: 13),
+                    SizedBox(height: wrap_spacing),
+                    */
                 ]
             )
         );   
@@ -508,11 +483,14 @@ class MarketTradesState extends State<MarketTrades> {
                             
         return CardWithBorder(
             child: Container(
+                constraints: BoxConstraints(
+                    maxWidth: 511,
+                ),
                 margin: EdgeInsets.symmetric(vertical: 13),
                 child: Column(
                     children: [
                         Text('LATEST TRADES'),
-                        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
+                        ScrollConfigurationWithTheMouse(SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
                             margin: EdgeInsets.symmetric(horizontal: 17),
                             constraints: BoxConstraints(
                                 maxHeight: 400,
@@ -542,7 +520,7 @@ class MarketTradesState extends State<MarketTrades> {
                                         ),
                                 ]
                             )
-                        ))
+                        )))
                     ]
                 )
             )
@@ -709,7 +687,7 @@ class CreatePositionWidget extends StatelessWidget {
         MainStateBindScope<CustomState> main_state_bind_scope = MainStateBind.get_main_state_bind_scope<CustomState>(context);
         
         final String token_symbol = state.cm_main.icrc1token_trade_contracts[this.cm_main_icrc1token_trade_contracts_i].ledger_data.symbol;
-        
+        final int token_decimal_places = state.cm_main.icrc1token_trade_contracts[this.cm_main_icrc1token_trade_contracts_i].ledger_data.decimals;
         
         return CardWithBorder(child: Container(
             margin: EdgeInsets.all(13),
@@ -736,8 +714,8 @@ class CreatePositionWidget extends StatelessWidget {
                         Container(
                             child: ContentSizeTabBarView(
                                 children: [
-                                    CreatePositionForm(position_kind: PositionKind.Cycles, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
-                                    CreatePositionForm(position_kind: PositionKind.Token, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i),
+                                    CreatePositionForm(position_kind: PositionKind.Cycles, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i, token_decimal_places: token_decimal_places),
+                                    CreatePositionForm(position_kind: PositionKind.Token, cm_main_icrc1token_trade_contracts_i: cm_main_icrc1token_trade_contracts_i, token_decimal_places: token_decimal_places),
                                 ],
                             ),
                         ),
@@ -811,7 +789,8 @@ Cycles/*fee-cycles*/ calculate_trade_fee(Cycles current_position_trade_volume_cy
 class CreatePositionForm extends StatefulWidget {
     final int cm_main_icrc1token_trade_contracts_i;
     final PositionKind position_kind;
-    CreatePositionForm({super.key, required this.position_kind, required this.cm_main_icrc1token_trade_contracts_i});
+    final int token_decimal_places;
+    CreatePositionForm({super.key, required this.position_kind, required this.cm_main_icrc1token_trade_contracts_i, required this.token_decimal_places});
     State<CreatePositionForm> createState() => CreatePositionFormState();
 }
 class CreatePositionFormState extends State<CreatePositionForm> {
@@ -826,13 +805,25 @@ class CreatePositionFormState extends State<CreatePositionForm> {
     late CustomState state;
     late MainStateBindScope<CustomState> main_state_bind_scope;    
     
+    Tokens? current_written_quantity;
     CyclesPerTokenRate? current_written_rate;
+    
+    late final int first_field_decimal_places;
     
     @override
     void initState() {
         super.initState();
+        first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : widget.token_decimal_places;
         quantity_text_controller = TextEditingController();
         rate_text_controller = TextEditingController();
+        quantity_text_controller.addListener((){
+            Tokens? valid_input;
+            try {
+                valid_input = Tokens.of_the_double_string(quantity_text_controller.text.trim(), decimal_places: first_field_decimal_places);
+            } catch(e) {}
+            current_written_quantity = valid_input;
+            setState((){});
+        });
         rate_text_controller.addListener((){
             CyclesPerTokenRate? valid_input;
             try {
@@ -862,9 +853,7 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         final Icrc1Ledger ledger_data = state.cm_main.icrc1token_trade_contracts[widget.cm_main_icrc1token_trade_contracts_i].ledger_data;
         final int token_decimal_places = ledger_data.decimals;        
         final String token_symbol = ledger_data.symbol;
-        
-        final int first_field_decimal_places = widget.position_kind == PositionKind.Cycles ? Cycles.T_CYCLES_DECIMAL_PLACES : token_decimal_places;
-        
+                
         late final String max_quantity;
         if (state.user != null) {
             switch (widget.position_kind) {
@@ -897,11 +886,19 @@ class CreatePositionFormState extends State<CreatePositionForm> {
         Tokens quantity_ledger_fee = widget.position_kind == PositionKind.Token ? Tokens(quantums: ledger_data.fee, decimal_places: token_decimal_places) : Cycles(cycles: CYCLES_BANK_LEDGER.fee);
         Tokens ledger_fees_now = quantity_ledger_fee.add_quantums(quantity_ledger_fee.quantums); // two ledger fees to create a position 
         
+        String trade_for_mount_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-' + token_symbol) : ('-CYCLES')}';                                            
+        
+        
+        String ledger_fees_now_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-CYCLES') : ('-' + token_symbol)}';                                            
+        
+        
         return Form(
             key: form_key,
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
+                    SizedBox(height: 17),
+                    Text('Trade your ${widget.position_kind == PositionKind.Cycles ? 'CYCLES' : token_symbol} for ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'}'),
                     TextFormField(
                         controller: quantity_text_controller,
                         style: TextStyle(fontFamily: 'CourierNewBold'),
@@ -937,6 +934,8 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                             return null;
                         }
                     ),
+                    SizedBox(height: 20),
+                    Text('Choose your ${token_symbol} price:', style: TextStyle()),
                     TextFormField(
                         controller: rate_text_controller,     
                         style: TextStyle(fontFamily: 'CourierNewBold'),
@@ -948,7 +947,39 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                         onSaved: (String? value) { cycles_per_token_rate = CyclesPerTokenRate.oftheTCyclesDoubleString(value!, token_decimal_places: token_decimal_places); },
                         validator: cycles_per_token_rate_validator(token_decimal_places: token_decimal_places)                    
                     ),
-                    SizedBox(height:6),
+                    SizedBox(height: 20),
+                    Text('You will receive ${widget.position_kind == PositionKind.Cycles ? token_symbol : 'CYCLES'} if your posiion gets filled:', style: TextStyle()),
+                    SizedBox(height: 20),
+                    if (current_written_quantity == null || current_written_rate == null
+                        || current_written_quantity!.quantums == BigInt.zero || current_written_rate!.cycles_per_token_quantum_rate == BigInt.zero) ...[
+                        Text(' ... '),
+                    ]
+                    else ...[
+                        Builder(
+                            builder: (BuildContext context) {
+                                Tokens trade_for_mount = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: cycles_transform_tokens(Cycles(cycles: current_written_quantity!.quantums), current_written_rate!), decimal_places: token_decimal_places) : tokens_transform_cycles(current_written_quantity!.quantums, current_written_rate!);
+                                Tokens trade_payout_fees_if_fill = 
+                                    widget.position_kind == PositionKind.Cycles 
+                                    ? Tokens(quantums: cycles_transform_tokens(calculate_trade_fee(Cycles.zero, tokens_transform_cycles(trade_for_mount.quantums, current_written_rate!)), current_written_rate!), decimal_places: token_decimal_places) // fee is always calculated in the cycles-form. 
+                                    : calculate_trade_fee(Cycles.zero, Cycles(cycles: trade_for_mount.quantums));
+                                return DefaultTextStyle.merge(
+                                    style: TextStyle(fontFamily: 'CourierNew'),
+                                    child: Align(
+                                        //alignment: Alignment.centerLeft,
+                                        child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                                Text('${trade_for_mount}${trade_for_mount_suffix}'),
+                                                Text('Market-fee: ${trade_payout_fees_if_fill}${trade_for_mount_suffix}'),
+                                                Text('Total: ${trade_for_mount.add_quantums(-trade_payout_fees_if_fill.quantums)}${trade_for_mount_suffix}')
+                                            ]
+                                        )
+                                    )
+                                );
+                            }
+                        ),
+                    ],
+                    SizedBox(height: 20),
                     if (widget.position_kind == PositionKind.Cycles) ...cycles_balance_and_token_balance
                     else ...(cycles_balance_and_token_balance.reversed.toList()),
                     Container(
@@ -1006,24 +1037,11 @@ class CreatePositionFormState extends State<CreatePositionForm> {
                                         context: context,
                                         barrierDismissible: false,
                                         builder: (BuildContext context) {
-                                            
                                             Tokens trade_for_mount = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: cycles_transform_tokens(Cycles(cycles: trade_amount.quantums), cycles_per_token_rate), decimal_places: token_decimal_places) : tokens_transform_cycles(trade_amount.quantums, cycles_per_token_rate);
-                                            String trade_for_mount_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-' + token_symbol) : ('-CYCLES')}';                                            
-                                            
-                                            
                                             Tokens trade_payout_fees_if_fill = 
                                                 widget.position_kind == PositionKind.Cycles 
                                                 ? Tokens(quantums: cycles_transform_tokens(calculate_trade_fee(Cycles.zero, tokens_transform_cycles(trade_for_mount.quantums, cycles_per_token_rate)), cycles_per_token_rate), decimal_places: token_decimal_places) // fee is always calculated in the cycles-form. 
                                                 : calculate_trade_fee(Cycles.zero, Cycles(cycles: trade_for_mount.quantums));
-                                            
-                                            /*
-                                            BigInt trade_payout_fees_if_fill_quantums 
-                                                = widget.position_kind == PositionKind.Cycles ?
-                                                cycles_transform_tokens(Cycles(cycles: tokens_transform_cycles(trade_for_mount.quantums, cycles_per_token_rate).quantums ~/ BigInt.from(10000) * BigInt.from(50)), cycles_per_token_rate) // fee is always calculated in the cycles-form. 
-                                                : trade_for_mount.quantums ~/ BigInt.from(10000) * BigInt.from(50); 
-                                            Tokens trade_payout_fees_if_fill = widget.position_kind == PositionKind.Cycles ? Tokens(quantums: trade_payout_fees_if_fill_quantums, decimal_places: token_decimal_places) : Cycles(cycles: trade_payout_fees_if_fill_quantums);
-                                            */
-                                            String ledger_fees_now_suffix = '${widget.position_kind == PositionKind.Cycles ? ('-CYCLES') : ('-' + token_symbol)}';                                            
                                             
                                             return AlertDialog(
                                                 title: Text('CONFIRM', style: TextStyle(fontFamily: 'CourierNewBold')),
@@ -1323,13 +1341,15 @@ class UserCMLogsState extends State<UserCMLogs> {
                 margin: EdgeInsets.symmetric(vertical: 13),
                 child: Column(
                     children: [
-                        Text('LOGS'),
-                        SingleChildScrollView(
+                        Text('USER-LOGS'),
+                        ScrollConfigurationWithTheMouse(SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Container(
                                 margin: EdgeInsets.symmetric(horizontal: 17),
                                 constraints: BoxConstraints(maxHeight: 505, maxWidth: 909),
-                                child: PaginatedDataTable2(
+                                child: state.user == null 
+                                 ? Center(child: IILoginButton())
+                                 : PaginatedDataTable2(
                                     wrapInCard: false,
                                     minWidth: 500,
                                     renderEmptyRowsInTheEnd: false,
@@ -1372,7 +1392,7 @@ class UserCMLogsState extends State<UserCMLogs> {
                                     ),
                                 ),
                             )
-                        )
+                        ))
                     ]
                 )
             )

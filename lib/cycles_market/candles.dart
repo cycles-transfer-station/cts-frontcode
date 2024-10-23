@@ -64,7 +64,7 @@ class CandlesChart extends StatefulWidget {
 }
 class CandlesChartState extends State<CandlesChart> {
 
-    final double card_max_width = 900;
+    final double card_max_width = 650;
     
     int segment_length_minutes = 1; // option user can change this dropdown setState
     int page = 0; // first page is zero. first page is latest candles.

@@ -42,9 +42,10 @@ class BaseState extends State<Base> {
                     surfaceTintColor: Colors.transparent,
                     shadowColor: Theme.of(context).colorScheme.shadow,
                 ),
-                filledButtonTheme: const FilledButtonThemeData(
+                filledButtonTheme: FilledButtonThemeData(
                     style: ButtonStyle(
                         backgroundColor: WidgetStatePropertyAll(good_light_blue_color/*good_light_green_color*/),
+                        shape: WidgetStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(7))),
                     )
                 ),
                 outlinedButtonTheme: const OutlinedButtonThemeData(
