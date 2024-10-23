@@ -28,8 +28,8 @@ const double save_space_on_the_right_for_the_rate_marks = 85;
 
 const double height_between_timestamp_markers = 3;
 
-const double candle_chart_painter_height = 343;
-const double volume_chart_painter_height = 50;
+const double candle_chart_painter_height = 391;
+const double volume_chart_painter_height = 98;
 const double space_between_candle_chart_and_volume_chart = 7;
 
 const double rate_marker_vertical_line_width = 2;

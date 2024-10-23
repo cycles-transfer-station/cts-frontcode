@@ -565,7 +565,7 @@ class PositionBook extends StatelessWidget {
                     children: [
                         Text('POSITION BOOK'),
                         Container(
-                            constraints: BoxConstraints(maxHeight: 400, maxWidth: 400),
+                            constraints: BoxConstraints(maxHeight: 500, maxWidth: 400),
                             child: Column(
                                 children: [
                                     ConstrainedBox(
