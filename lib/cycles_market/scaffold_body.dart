@@ -493,7 +493,7 @@ class MarketTradesState extends State<MarketTrades> {
                         ScrollConfigurationWithTheMouse(SingleChildScrollView(scrollDirection: Axis.horizontal, child: Container(
                             margin: EdgeInsets.symmetric(horizontal: 17),
                             constraints: BoxConstraints(
-                                maxHeight: 400,
+                                maxHeight: 505,
                                 maxWidth: 700
                             ),
                             child: DataTable2(
